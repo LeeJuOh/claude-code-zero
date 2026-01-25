@@ -1,0 +1,10 @@
+{
+  "name": "notebooklm-connector",
+  "version": "1.0.0",
+  "description": "Plugin for managing NotebookLM notebooks and querying them via Chrome integration",
+  "author": {
+    "name": "LeeJuOh"
+  },
+  "license": "MIT",
+  "keywords": ["notebooklm", "claude-code", "chrome", "research", "knowledge-base", "automation"]
+}

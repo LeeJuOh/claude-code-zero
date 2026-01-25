@@ -1,0 +1,19 @@
+{
+  "$schema": "https://claude.ai/schemas/plugin-marketplace/v1",
+  "name": "claude-code-zero-personal-toolkit",
+  "owner": {
+    "name": "LeeJuOh",
+    "email": "xop4p@naver.com"
+  },
+  "plugins": [
+    {
+      "name": "notebooklm-connector",
+      "source": {
+        "source": "github",
+        "repo": "LeeJuOh/claude-code-zero"
+      },
+      "version": "1.0.0",
+      "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
+    }
+  ]
+}

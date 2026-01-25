@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 참고용으로 다운로드한 외부 저장소들은 커밋하지 않음
+# (로컬에서만 참조하며, Git 히스토리에 포함하지 않음)
+# 주의: 루트 레벨 references/만 ignore (플러그인 내부 references/는 문서이므로 커밋)
+/references/
+
+# 개발 중 테스트 데이터
+*.log
+*.tmp
+.env
+.env.local
+
+# Claude Code 플러그인 데이터
+plugins/*/data/
+plugins/*/.venv/
+
+# NotebookLM Connector - 사용자 데이터 (개인 노트북 정보)
+# notebooks/ 디렉토리: 사용자가 추가한 노트북 메타데이터
+plugins/notebooklm-connector/skills/notebook-registry/notebooks/*.json
+
+# logs/ 디렉토리: Q&A 히스토리 (미래에 추가될 경우)
+plugins/notebooklm-connector/skills/notebook-registry/logs/*.json
+
+# 주의: library.json, archive.json은 초기 빈 버전만 커밋됩니다.
+# 노트북을 추가한 후에는 이 파일들을 커밋하지 마세요!
