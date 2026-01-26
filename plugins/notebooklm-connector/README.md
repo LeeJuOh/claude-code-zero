@@ -6,9 +6,10 @@ A plugin for managing and querying NotebookLM notebooks using Claude Code's Chro
 
 This plugin provides:
 
-1. **Notebook Registry Management** (Skill: `notebook-registry`)
+1. **NotebookLM Manager** (Skill: `notebooklm-manager`)
    - Add, list, delete, and update NotebookLM notebooks
    - Search and manage notebooks by topic
+   - Query orchestration with follow-up loop mechanism
 
 2. **Chrome Integration-Based Querying** (Agent: `notebooklm-chrome-researcher`)
    - Uses Claude Code's Chrome integration beta feature
@@ -26,10 +27,10 @@ This plugin stores your notebook metadata locally. Please be careful not to comm
 ### What Gets Stored
 
 📁 **User Data (DO NOT commit to Git):**
-- `skills/notebook-registry/library.json` - Your active notebooks list
-- `skills/notebook-registry/archive.json` - Your archived notebooks
-- `skills/notebook-registry/notebooks/*.json` - Full metadata for each notebook
-- `skills/notebook-registry/logs/*.json` - Q&A history (if implemented)
+- `skills/notebooklm-manager/library.json` - Your active notebooks list
+- `skills/notebooklm-manager/archive.json` - Your archived notebooks
+- `skills/notebooklm-manager/notebooks/*.json` - Full metadata for each notebook
+- `skills/notebooklm-manager/logs/*.json` - Q&A history (if implemented)
 
 These files contain:
 - Notebook URLs
@@ -53,7 +54,7 @@ The repository includes a `.gitignore` that protects:
 ```bash
 # ✅ Good: Add specific plugin files only
 git add plugins/notebooklm-connector/agents/
-git add plugins/notebooklm-connector/skills/notebook-registry/SKILL.md
+git add plugins/notebooklm-connector/skills/notebooklm-manager/SKILL.md
 
 # ⚠️ Careful: Review what's included
 git add plugins/notebooklm-connector/
@@ -69,7 +70,7 @@ git commit -a
 
 ```bash
 # Remove file from last commit (before push)
-git reset HEAD~1 plugins/notebooklm-connector/skills/notebook-registry/library.json
+git reset HEAD~1 plugins/notebooklm-connector/skills/notebooklm-manager/library.json
 git commit --amend
 
 # If already pushed, contact repository admin or use git filter-branch
@@ -84,7 +85,7 @@ plugins/notebooklm-connector/
 ├── .claude-plugin/
 │   └── plugin.json           # Plugin metadata
 ├── skills/
-│   └── notebook-registry/
+│   └── notebooklm-manager/
 │       ├── SKILL.md          # Notebook registry skill documentation
 │       ├── library.json      # Active notebooks index
 │       ├── archive.json      # Archived notebooks index
@@ -237,7 +238,7 @@ Claude:
 
 ## Features
 
-### Skill: notebook-registry
+### Skill: notebooklm-manager
 
 Manages the notebook registry.
 
@@ -249,9 +250,9 @@ Manages the notebook registry.
 - **Search**: Find notebooks by topic
 
 **File Locations**:
-- `${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/library.json` (active index)
-- `${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/archive.json` (archived index)
-- `${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/notebooks/*.json` (per-notebook metadata)
+- `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/library.json` (active index)
+- `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/archive.json` (archived index)
+- `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/notebooks/*.json` (per-notebook metadata)
 
 ### Agent: notebooklm-chrome-researcher
 
@@ -491,9 +492,9 @@ The agent provides answers in this format:
 
 2. **File Paths**:
    - Use absolute paths to avoid runtime issues:
-     - `${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/library.json`
-     - `${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/archive.json`
-     - `${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/notebooks/*.json`
+     - `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/library.json`
+     - `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/archive.json`
+     - `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/notebooks/*.json`
 
 3. **Browser Automation**:
    - Must be logged into Google account in Chrome before accessing NotebookLM

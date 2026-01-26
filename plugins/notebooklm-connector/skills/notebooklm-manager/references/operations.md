@@ -11,7 +11,7 @@ Complete specifications for all registry operations.
 - With `--all`: 600-1000 tokens (library.json + archive.json)
 
 **Algorithm:**
-1. Read `${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/library.json`
+1. Read `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/library.json`
 2. If `--all` flag present, also read `archive.json`
 3. Parse notebook entries
 4. Calculate relative timestamps
@@ -126,26 +126,75 @@ Use: list, list --all, search <query>
 
 ### Smart Add (URL only)
 
-**Recommended approach** - Auto-discovers metadata.
+**Recommended approach** - Auto-discovers metadata by actually querying NotebookLM.
 
 **Algorithm:**
 1. Validate URL format (must start with `https://notebooklm.google.com/notebook/`)
 2. Check if URL already exists in `library.json` → If yes, ERROR duplicate
 3. Check if URL exists in `archive.json` → If yes, prompt to enable
-4. Invoke `notebooklm-chrome-researcher` agent with discovery question:
+4. **Determine clear_history value (MANDATORY):**
+
+   a) User wants to CLEAR history (clear_history = "yes"):
+      - Intent: 채팅 히스토리를 삭제/클리어하고 싶다는 의도
+      - Examples: "히스토리 삭제", "채팅 지워", "clear history", "새로 시작해서"
+      - WARNING: This is SLOW (~10-15 seconds overhead)
+
+   b) User wants to KEEP history (clear_history = "no") - **RECOMMENDED**:
+      - Intent: 기존 대화를 유지하고 싶다는 의도
+      - Examples: "히스토리 유지", "삭제하지 말고", "이어서 물어봐"
+      - BENEFIT: Faster queries, no deletion overhead
+
+   c) User didn't mention → **ASK with AskUserQuestion:**
+   ```javascript
+   AskUserQuestion({
+     questions: [{
+       question: "노트북 질의 전에 NotebookLM의 기존 채팅 히스토리를 삭제할까요?",
+       header: "Chat History",
+       options: [
+         { label: "아니오 (권장)", description: "기존 대화 유지 - 빠른 응답" },
+         { label: "예", description: "새로운 컨텍스트에서 시작 - 느림" }
+       ],
+       multiSelect: false
+     }]
+   });
    ```
-   What is the content of this notebook? What topics are covered?
-   Provide a complete overview briefly and concisely.
+5. **Convert to "yes" or "no"** (NEVER pass "ask" to agent)
+6. Invoke `notebooklm-connector:notebooklm-chrome-researcher` agent with explicit clear_history value:
    ```
-5. Parse discovered content to extract:
-   - Name
-   - Topics (as array)
-   - Description
-   - Content types (if mentioned)
-6. Generate ID from discovered name using kebab-case
-7. Create `notebooks/{id}.json` with full metadata
-8. Add minimal entry to `library.json`
-9. Display confirmation
+   URL: [notebook-url]
+   Question: What is this notebook about? Describe the main topics and content.
+   clear_history: [yes or no - from step 5]
+   mode: discover
+   ```
+7. **Parse agent response (CRITICAL - use EXACT title):**
+
+   Agent returns format:
+   ```
+   **Notebook Title**: [EXACT title from page]
+   **Answer**: [description]
+   **Extracted Metadata**:
+   - Topics: [topic1, topic2, ...]
+   ...
+   ```
+
+   **Parsing rules:**
+   - Extract `name` from "**Notebook Title**:" line - USE EXACTLY AS-IS
+   - Do NOT modify, translate, or "improve" the title
+   - Extract topics from "Topics:" line
+   - Extract description from "**Answer**:" section
+
+8. Generate ID from **Notebook Title** using kebab-case:
+   - Preserve non-ASCII characters (Korean, etc.)
+   - Convert to lowercase
+   - Replace spaces with hyphens
+   - Remove special characters except hyphens and non-ASCII
+   - Examples:
+     - "Gemini API 레퍼런스" → "gemini-api-레퍼런스"
+     - "Claude Code Docs" → "claude-code-docs"
+     - "OpenAI API Documentation" → "openai-api-documentation"
+9. Create `notebooks/{id}.json` with full metadata
+10. Add minimal entry to `library.json`
+11. Display confirmation with EXACT notebook title
 
 **Example:**
 ```bash

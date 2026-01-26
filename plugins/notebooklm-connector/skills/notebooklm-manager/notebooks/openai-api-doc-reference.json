@@ -1,0 +1,32 @@
+{
+  "id": "openai-api-doc-reference",
+  "name": "OpenAI API Doc & Reference",
+  "url": "https://notebooklm.google.com/notebook/418a19cc-2df3-4f41-92fa-896912ae4c75",
+  "description": "Comprehensive OpenAI API documentation covering Responses API, Chat Completions, tool integration, structured outputs, multimodal capabilities (vision and audio), and optimization techniques for developers",
+  "topics": [
+    "Responses API",
+    "Tools and Function Calling",
+    "Structured Outputs",
+    "Multimodal Features",
+    "API Optimization"
+  ],
+  "tags": [
+    "documentation",
+    "api-reference",
+    "openai"
+  ],
+  "use_cases": [
+    "Learning OpenAI API features",
+    "API integration reference",
+    "Function calling examples",
+    "Optimization best practices"
+  ],
+  "content_types": [
+    "web",
+    "pdf"
+  ],
+  "created_at": "2026-01-26T00:00:00Z",
+  "updated_at": "2026-01-26T00:00:00Z",
+  "last_used": "2026-01-26T14:42:35Z",
+  "enabled": true
+}

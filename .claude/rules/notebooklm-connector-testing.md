@@ -71,7 +71,7 @@ You: "What plugins do I have?"
 **기대 응답:**
 ```
 You have the notebooklm-connector plugin installed, which includes:
-- Skill: notebook-registry
+- Skill: notebooklm-manager
 - Agent: notebooklm-chrome-researcher
 ```
 

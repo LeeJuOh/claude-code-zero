@@ -14,83 +14,141 @@ if (!url.startsWith('https://notebooklm.google.com/notebook/')) {
 **Step 2: Check Duplicates**
 ```javascript
 // Read library.json
-const library = Read('${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/library.json');
-if (library.notebooks[url]) {
-  return ERROR: "Notebook already exists in active library."
+const library = Read('${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/library.json');
+
+// Check if URL already exists in active library (search by URL, not ID)
+const existingInLibrary = Object.values(library.notebooks).find(nb => nb.url === url);
+if (existingInLibrary) {
+  return ERROR: `Notebook already exists in active library.
+
+Name: ${existingInLibrary.name}
+ID: ${existingInLibrary.id}
+
+Available actions:
+- View details: show ${existingInLibrary.id}
+- Update metadata: update ${existingInLibrary.id} --name "..." --topics "..."`;
 }
 
 // Read archive.json
-const archive = Read('${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/archive.json');
-if (archive.notebooks[url]) {
-  ASK: "Found in archive. Enable this notebook? (yes/no)"
+const archive = Read('${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/archive.json');
+
+// Check if URL exists in archive
+const existingInArchive = Object.values(archive.notebooks).find(nb => nb.url === url);
+if (existingInArchive) {
+  ASK: `Found in archive: ${existingInArchive.name}
+
+Enable this notebook? (yes/no)`;
+
   if (user_says_yes) {
     // Move from archive to library (enable operation)
-    return enable(notebook_id);
+    return enable(existingInArchive.id);
   } else {
     return CANCEL;
   }
 }
 ```
 
-**Step 3: Invoke Discovery Agent (MANDATORY - Use Task Tool)**
+**Step 2.5: Determine clear_history Value (MANDATORY)**
+
 ```javascript
-// CRITICAL: Use Task tool, NOT Chrome tools directly!
+// Check if user expressed intent about chat history
+
+// a) User wants to CLEAR history:
+//    Intent: 채팅 히스토리를 삭제/클리어하고 싶다는 의도
+//    Examples: "히스토리 삭제", "채팅 지워", "기록 클리어",
+//              "clear history", "새로 시작해서 물어봐"
+//    → clearHistoryValue = "yes"
+//    WARNING: This is SLOW (~10-15 seconds overhead)
+
+// b) User wants to KEEP history (RECOMMENDED):
+//    Intent: 기존 대화를 유지하고 싶다는 의도
+//    Examples: "히스토리 유지", "삭제하지 말고", "이어서 물어봐"
+//    → clearHistoryValue = "no"
+//    BENEFIT: Faster queries, no deletion overhead
+
+// c) User didn't mention → MUST ASK (default: "아니오" for speed):
+const clearHistory = AskUserQuestion({
+  questions: [{
+    question: "노트북 질의 전에 NotebookLM의 기존 채팅 히스토리를 삭제할까요?",
+    header: "Chat History",
+    options: [
+      { label: "아니오 (권장)", description: "기존 대화 유지 - 빠른 응답" },
+      { label: "예", description: "새로운 컨텍스트에서 시작 - 느림" }
+    ],
+    multiSelect: false
+  }]
+});
+const clearHistoryValue = clearHistory.includes("아니오") ? "no" : "yes";
+```
+
+**Step 3: Invoke Agent (MANDATORY - Use Task Tool)**
+```javascript
+// CRITICAL: Pass explicit "yes" or "no", NEVER "ask"!
 const response = Task({
   subagent_type: "notebooklm-chrome-researcher",
-  description: "Discovering notebook metadata",
-  prompt: `Query this NotebookLM notebook and tell me about its content:
+  description: "Query/Discover notebook",
+  prompt: `URL: ${url}
+Question: ${question}
+clear_history: ${clearHistoryValue}
 
-URL: ${url}
-
-Question: What is the main topic and content of this notebook? Please provide:
-1. The main subject or topic
-2. Key areas or subtopics covered
-3. Type of content (documentation, research, tutorial, notes, etc.)
-
-Be concise but comprehensive (2-3 sentences).`
+Return NotebookLM's answer with follow-up suggestions.`
 });
 
-// Agent handles: Chrome integration, auth, navigation, querying, extraction
-// You receive: Text response with discovered information
+// Agent handles: Chrome integration, navigation, SENDING question, extraction
+// You receive: NotebookLM's actual response
 ```
 
 **Step 4: Parse Agent Response**
 ```javascript
-// Agent returns natural language like:
-// "This notebook covers React documentation, focusing on Hooks,
-//  Components, and JSX syntax. It contains official documentation
-//  and code examples for building React applications."
+// Agent returns structured format:
+// **Notebook Title**: Gemini API 레퍼런스
+// **Answer**: This notebook covers Gemini API documentation...
+// **Extracted Metadata**:
+// - Topics: API, Gemini, Google AI
+// - Content Types: documentation, reference
+// ...
 
-// Extract metadata:
-const metadata = {
-  name: extractMainTopic(response),        // "React Documentation"
-  topics: extractTopics(response),         // ["React", "Hooks", "Components", "JSX"]
-  description: response.trim(),            // Full response (max 500 chars)
-  content_types: inferContentTypes(response) // ["documentation", "code examples"]
-};
+// Parse the structured response:
+function parseAgentResponse(response) {
+  const lines = response.split('\n');
 
-// Smart parsing helpers:
-function extractMainTopic(text) {
-  // Look for first major topic/noun phrase
-  // "This notebook covers X" → return "X"
-  // "About Y" → return "Y"
-  // Fallback: First capitalized phrase
+  // 1. Extract EXACT notebook title (CRITICAL - do NOT modify)
+  const titleLine = lines.find(l => l.startsWith('**Notebook Title**:'));
+  const name = titleLine
+    ? titleLine.replace('**Notebook Title**:', '').trim()
+    : null;
+
+  // 2. Extract answer/description
+  const answerStart = lines.findIndex(l => l.startsWith('**Answer**:'));
+  const metadataStart = lines.findIndex(l => l.startsWith('**Extracted Metadata**'));
+  let description = '';
+  if (answerStart !== -1) {
+    const endIdx = metadataStart !== -1 ? metadataStart : lines.length;
+    description = lines.slice(answerStart, endIdx)
+      .join('\n')
+      .replace('**Answer**:', '')
+      .trim()
+      .substring(0, 500); // Max 500 chars
+  }
+
+  // 3. Extract topics from metadata section
+  const topicsLine = lines.find(l => l.includes('Topics:'));
+  const topics = topicsLine
+    ? topicsLine.split(':')[1].split(',').map(t => t.trim()).filter(Boolean)
+    : [];
+
+  // 4. Extract content types
+  const contentTypesLine = lines.find(l => l.includes('Content Types:'));
+  const content_types = contentTypesLine
+    ? contentTypesLine.split(':')[1].split(',').map(t => t.trim()).filter(Boolean)
+    : ['notes'];
+
+  return { name, description, topics, content_types };
 }
 
-function extractTopics(text) {
-  // Find capitalized words/phrases (likely topics)
-  // Look for patterns: "including X, Y, and Z"
-  // Limit to top 5 most relevant
-  // Remove common words: "This", "The", "It", etc.
-}
-
-function inferContentTypes(text) {
-  // Keyword matching:
-  if (text.includes("documentation")) return ["documentation"];
-  if (text.includes("tutorial")) return ["tutorial"];
-  if (text.includes("research")) return ["research"];
-  // Default: ["notes"]
-}
+// IMPORTANT: Use the EXACT name from agent response
+// Do NOT modify, translate, or "improve" the title
+// The agent extracts it directly from NotebookLM page DOM
 ```
 
 **Step 5: Generate ID**
@@ -98,15 +156,21 @@ function inferContentTypes(text) {
 function generateId(name) {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')   // Non-alphanumeric → hyphen
-    .replace(/^-+|-+$/g, '')       // Remove leading/trailing
-    .substring(0, 50);             // Max 50 chars
+    // Preserve non-ASCII characters (Korean, Japanese, Chinese, etc.)
+    // Only remove special punctuation, keep letters and numbers
+    .replace(/[\s]+/g, '-')           // Spaces → hyphen
+    .replace(/[^\p{L}\p{N}-]/gu, '')  // Remove non-letter, non-number except hyphen (Unicode-aware)
+    .replace(/-+/g, '-')              // Multiple hyphens → single
+    .replace(/^-+|-+$/g, '')          // Remove leading/trailing hyphens
+    .substring(0, 50);                // Max 50 chars
 }
 
 // Examples:
 // "React Documentation" → "react-documentation"
+// "Gemini API 레퍼런스" → "gemini-api-레퍼런스"
+// "Claude Code 공식 문서" → "claude-code-공식-문서"
 // "ML & AI Basics" → "ml-ai-basics"
-// "Claude Code Guide (2024)" → "claude-code-guide-2024"
+// "OpenAI API Documentation" → "openai-api-documentation"
 
 // Check collision:
 let id = generateId(metadata.name);
@@ -136,7 +200,7 @@ const fullMetadata = {
 };
 
 Write(
-  `${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/notebooks/${id}.json`,
+  `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/notebooks/${id}.json`,
   JSON.stringify(fullMetadata, null, 2)
 );
 ```
@@ -144,7 +208,7 @@ Write(
 **Step 7: Add to Library (Minimal Entry)**
 ```javascript
 // Read existing library
-const library = Read('${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/library.json');
+const library = Read('${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/library.json');
 
 // Add new entry
 library.notebooks[id] = {
@@ -159,7 +223,7 @@ library.updated_at = now;
 
 // Write back
 Write(
-  '${CLAUDE_PLUGIN_ROOT}/skills/notebook-registry/library.json',
+  '${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/library.json',
   JSON.stringify(library, null, 2)
 );
 ```
@@ -168,17 +232,17 @@ Write(
 ```
 ✅ Notebook added successfully!
 
-Name: {metadata.name}
-ID: {id}
+📖 {metadata.name} ({id})
+
 Topics: {topics[0]}, {topics[1]}, {topics[2]}
 
 📊 Discovered content:
 {description (first 200 chars)}...
 
-Next steps:
-- Query: "Ask my {id} about [topic]"
-- Details: show {id}
-- List all: list
+---
+Query this notebook:
+  "Ask my {id} about [your question]"
+  "Query {id}: [your question]"
 ```
 
 ---
@@ -451,15 +515,14 @@ All operations should provide clear, actionable success messages.
    Topics: Machine Learning, Neural Networks
    Last used: 3h ago
 
-Next steps:
-- Query a notebook: "Ask my claude-code-docs about hooks"
-- View details: show <id>
-- Add notebook: add <url>
+---
+Query: "Ask my claude-code-docs about [question]"
 ```
 
 ### Show Operation
 ```
-📖 Notebook: Claude Code Documentation (claude-code-docs)
+📖 Claude Code Documentation (claude-code-docs)
+
 Status: ✅ Active
 URL: https://notebooklm.google.com/notebook/abc123
 
@@ -469,15 +532,11 @@ agent development, plugin creation, MCP integration, and API reference.
 
 Topics: Claude Code, CLI, Agent Development, SDK, Plugins
 Tags: documentation, reference, official
-Content Types: web, pdf
 
-Created: 2026-01-20
-Last used: 2h ago
+Created: 2026-01-20 | Last used: 2h ago
 
-Next steps:
-- Query: "Ask my claude-code-docs about <topic>"
-- Update: update claude-code-docs --tags "documentation,updated"
-- Disable: disable claude-code-docs
+---
+Query: "Ask my claude-code-docs about [question]"
 ```
 
 ### Add Operation (Smart Add)
@@ -486,32 +545,28 @@ Next steps:
 ⏳ Querying NotebookLM...
 ✅ Notebook added successfully!
 
-Name: React Documentation
-ID: react-documentation
+📖 React Documentation (react-documentation)
+
 Topics: React, Hooks, JSX, Components
 
 📊 Discovered content:
 This notebook covers React documentation, focusing on Hooks, Components,
 and JSX syntax. It contains official documentation and code examples...
 
-Next steps:
-- Start querying: "Ask my react-documentation about Hooks rules"
-- View details: show react-documentation
-- List all: list
+---
+Query: "Ask my react-documentation about [question]"
 ```
 
 ### Add Operation (Manual)
 ```
 ✅ Notebook added successfully!
 
-Name: Python Asyncio Guide
-ID: python-asyncio-guide
+📖 Python Asyncio Guide (python-asyncio-guide)
+
 Topics: Python, Asyncio, Concurrency
 
-Next steps:
-- Query: "Ask my python-asyncio-guide about event loops"
-- View: show python-asyncio-guide
-- Update later: update python-asyncio-guide --description "..."
+---
+Query: "Ask my python-asyncio-guide about [question]"
 ```
 
 ### Enable Operation
@@ -592,26 +647,13 @@ The notebook and all its data have been permanently removed.
 ```
 🔍 Search results for "react" (3 found)
 
-Active notebooks:
+Active:
+1. react-hooks-guide — React, Hooks, Frontend (5d ago)
+2. react-documentation — React, JSX, Components (2w ago)
 
-1. react-hooks-guide
-   Topics: React, Hooks, Frontend
-   Description: Complete guide to React Hooks including useState...
-   Last used: 5d ago
+Archived:
+3. old-react-tutorial — React, Legacy, Tutorial (3mo ago)
 
-2. react-documentation
-   Topics: React, JSX, Components
-   Description: Official React documentation with examples...
-   Last used: 2w ago
-
-Archived notebooks:
-
-3. old-react-tutorial [ARCHIVED]
-   Topics: React, Legacy, Tutorial
-   Last used: 3mo ago
-
-Next steps:
-- View details: show react-hooks-guide
-- Query: "Ask my react-hooks-guide about useEffect"
-- Enable archived: enable old-react-tutorial
+---
+Query: "Ask my react-hooks-guide about [question]"
 ```
