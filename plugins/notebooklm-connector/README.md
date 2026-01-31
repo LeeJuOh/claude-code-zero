@@ -18,83 +18,6 @@ This plugin provides:
 
 ---
 
-## ⚠️ Privacy & Data Management
-
-**IMPORTANT: Personal Data Protection**
-
-This plugin stores your notebook metadata locally. Please be careful not to commit your personal data:
-
-### What Gets Stored
-
-📁 **User Data (DO NOT commit to Git):**
-- `skills/notebooklm-manager/library.json` - Your active notebooks list
-- `skills/notebooklm-manager/archive.json` - Your archived notebooks
-- `skills/notebooklm-manager/notebooks/*.json` - Full metadata for each notebook
-- `skills/notebooklm-manager/logs/*.json` - Q&A history (if implemented)
-
-These files contain:
-- Notebook URLs
-- Topics you're interested in
-- Descriptions and metadata
-- Query history
-
-### Git Configuration
-
-The repository includes a `.gitignore` that protects:
-- ✅ `notebooks/*.json` - All notebook metadata files
-- ✅ `logs/*.json` - All Q&A logs
-
-**Initial empty files are committed** for structure, but:
-- ⚠️ After adding notebooks, `library.json` and `archive.json` will contain your data
-- ⚠️ **Be careful with `git add .` or `git commit -a`**
-- ⚠️ Always review changes before committing: `git diff`
-
-### Best Practices
-
-```bash
-# ✅ Good: Add specific plugin files only
-git add plugins/notebooklm-connector/agents/
-git add plugins/notebooklm-connector/skills/notebooklm-manager/SKILL.md
-
-# ⚠️ Careful: Review what's included
-git add plugins/notebooklm-connector/
-git status  # Check what's staged
-git diff --staged  # Review changes
-
-# ❌ Dangerous: Might include personal data
-git add .
-git commit -a
-```
-
-### If You Accidentally Commit Personal Data
-
-```bash
-# Remove file from last commit (before push)
-git reset HEAD~1 plugins/notebooklm-connector/skills/notebooklm-manager/library.json
-git commit --amend
-
-# If already pushed, contact repository admin or use git filter-branch
-```
-
----
-
-## Directory Structure
-
-```
-plugins/notebooklm-connector/
-├── .claude-plugin/
-│   └── plugin.json           # Plugin metadata
-├── skills/
-│   └── notebooklm-manager/
-│       ├── SKILL.md          # Notebook registry skill documentation
-│       ├── library.json      # Active notebooks index
-│       ├── archive.json      # Archived notebooks index
-│       └── notebooks/        # Per-notebook metadata (one file per notebook)
-├── agents/
-│   └── notebooklm-chrome-researcher.md  # Chrome integration research agent
-└── README.md                 # This file
-```
-
 ## Chrome Integration Requirements
 
 This plugin uses **Claude Code's Chrome integration beta feature** to query NotebookLM directly in your browser.
@@ -200,7 +123,7 @@ Site-level permissions are managed through the Chrome extension settings:
 User: "Add Vercel AI SDK documentation to my notebooks"
 Claude:
   - Requests alias, topic, url information
-  - Updates library.json and writes notebooks/*.json (metadata)
+  - Registers notebook metadata
   - "✅ Notebook added successfully."
 ```
 
@@ -231,9 +154,9 @@ User: "What are the rules of Hooks in React docs?"
 Claude:
   1. Verify Chrome integration
   2. Call notebooklm-chrome-researcher agent
-  3. Confirm chat history deletion
-  4. Query NotebookLM
-  5. Provide answer in Source/Answer/Quote/🔍 format
+  3. Query NotebookLM
+  4. Wait for response with thinking indicator detection
+  5. Provide answer with citations
 ```
 
 ## Features
@@ -249,11 +172,6 @@ Manages the notebook registry.
 - **Update**: Update notebook information
 - **Search**: Find notebooks by topic
 
-**File Locations**:
-- `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/library.json` (active index)
-- `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/archive.json` (archived index)
-- `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/notebooks/*.json` (per-notebook metadata)
-
 ### Agent: notebooklm-chrome-researcher
 
 Queries NotebookLM using Claude Code's Chrome integration.
@@ -263,7 +181,7 @@ Queries NotebookLM using Claude Code's Chrome integration.
 - NotebookLM login status verification
 - **Chat History Management**: Delete/keep options before querying
 - UI waiting and stability guarantees
-- Structured answer format (Source/Answer/Quote/🔍)
+- Structured answer format (Title/Answer/Citations/Follow-ups)
 - Tab preservation (user can verify)
 
 **Constraints**:
@@ -459,22 +377,6 @@ chrome://extensions  # Verify "Claude in Chrome" is enabled
 /chrome  # In Claude Code
 ```
 
-## Answer Format
-
-The agent provides answers in this format:
-
-```
-**Source**: https://notebooklm.google.com/notebook/...
-
-**Answer**: [Detailed answer content]
-
-**Quote**: [Original citation (evidence)]
-
-**🔍 Missing & Next Steps**:
-- [Follow-up questions if further investigation needed]
-- [If answer is complete] None - answer complete
-```
-
 ## Requirements
 
 1. **Claude Code**: Local installation required
@@ -482,53 +384,10 @@ The agent provides answers in this format:
 3. **NotebookLM Login**: Must be logged into Google account in Chrome
 4. **Notebook Sharing**: NotebookLM notebooks must be shared as "Anyone with link"
 
-## Best Practices
-
-### Development and Execution Notes
-
-1. **Plugin Structure**:
-   - `skills/`, `agents/` folders required at root
-   - `plugin.json` located in `.claude-plugin/` folder
-
-2. **File Paths**:
-   - Use absolute paths to avoid runtime issues:
-     - `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/library.json`
-     - `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/archive.json`
-     - `${CLAUDE_PLUGIN_ROOT}/skills/notebooklm-manager/notebooks/*.json`
-
-3. **Browser Automation**:
-   - Must be logged into Google account in Chrome before accessing NotebookLM
-   - Login session is shared
-
-4. **DOM Element Recognition**:
-   - NotebookLM has React-based complex UI
-   - Defensive instructions like "verify input field activation", "wait for loading to stop"
-
-5. **--chrome Disabled Response**:
-   - Agent checks browser connection at step 0
-   - If not connected, guides user to `claude --chrome` or `/chrome`
-
-6. **UI Manipulation Vulnerabilities**:
-   - Agent may fail when NotebookLM UI changes
-   - Uses visual elements ("three-dot menu", "trash icon") and text-based navigation
-
-7. **Permissions and Security**:
-   - Browser control is sensitive operation
-   - Recommend `claude --chrome --permission-mode acceptEdits` for testing
-
-## Validation
-
-Validate the plugin:
-```bash
-cd plugins/notebooklm-connector
-claude plugin validate .
-```
-
 ## References
 
 - [Claude Code Official Documentation](https://github.com/anthropics/claude-code)
 - [NotebookLM](https://notebooklm.google.com)
-- Reference: `references/notebooklm-skill/` (open source reference)
 
 ## License
 

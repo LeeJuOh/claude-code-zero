@@ -50,14 +50,6 @@ Thumbs.db
 
 # Claude Code 플러그인 데이터
 plugins/*/data/
+plugins/**/data/
 plugins/*/.venv/
 
-# NotebookLM Connector - 사용자 데이터 (개인 노트북 정보)
-# notebooks/ 디렉토리: 사용자가 추가한 노트북 메타데이터
-plugins/notebooklm-connector/skills/notebook-registry/notebooks/*.json
-
-# logs/ 디렉토리: Q&A 히스토리 (미래에 추가될 경우)
-plugins/notebooklm-connector/skills/notebook-registry/logs/*.json
-
-# 주의: library.json, archive.json은 초기 빈 버전만 커밋됩니다.
-# 노트북을 추가한 후에는 이 파일들을 커밋하지 마세요!
