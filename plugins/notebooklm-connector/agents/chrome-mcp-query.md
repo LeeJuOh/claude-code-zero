@@ -224,13 +224,7 @@ Read the response text from the screenshot via OCR and go to STEP 5.
 
 **5.1 Output in the following format:**
 
-**CRITICAL**: Start your response with the FOLLOW_UP block to ensure the main agent sees it:
-
 ```
-============================================================
-⚠️ FOLLOW_UP_REQUIRED: Main agent MUST check if user's original request is fully answered!
-============================================================
-
 **Notebook Title**: {title from STEP 2}
 
 **Answer**: {response from STEP 4}
@@ -241,7 +235,6 @@ Read the response text from the screenshot via OCR and go to STEP 5.
 - {followups[0]}
 - {followups[1]}
 - ...
-
 ```
 
 **5.2 Error Output Format (if workflow failed):**
