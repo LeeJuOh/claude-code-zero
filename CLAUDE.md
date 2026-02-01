@@ -46,6 +46,7 @@ Example: "Create a review agent. Refer to logic in @references/other-plugin/agen
 
 ## Coding Style and Naming
 
+- **Language**: Always write all plugin content in **English** (SKILL.md, agent.md, README.md, comments, descriptions, etc.)
 - **Plugin names**: `kebab-case` (e.g., `notebook-researcher`, `code-reviewer`)
 - **Version management**: Semantic Versioning (1.0.0)
 - **Description**: Write `description` field clearly and concisely

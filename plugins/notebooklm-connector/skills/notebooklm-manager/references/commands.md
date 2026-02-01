@@ -28,7 +28,7 @@ When user provides a URL with `add <url>` (without `--manual`):
 2. **Invoke agent in discover mode**
    ```
    Task({
-     subagent_type: "notebooklm-connector:notebooklm-chrome-researcher",
+     subagent_type: "notebooklm-connector:chrome-mcp-query",
      prompt: "URL: {url}\nQuestion: What is the main topic and content of this notebook? List the document titles.\nmode: discover\nclearHistory: false"
    })
    ```

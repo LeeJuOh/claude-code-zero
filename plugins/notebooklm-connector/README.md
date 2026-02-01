@@ -11,7 +11,7 @@ This plugin provides:
    - Search and manage notebooks by topic
    - Query orchestration with follow-up loop mechanism
 
-2. **Chrome Integration-Based Querying** (Agent: `notebooklm-chrome-researcher`)
+2. **Chrome Integration-Based Querying** (Agent: `chrome-mcp-query`)
    - Uses Claude Code's Chrome integration beta feature
    - Query NotebookLM and collect answers
    - Chat history management (delete/keep options)
@@ -172,7 +172,7 @@ Manages the notebook registry.
 - **Update**: Update notebook information
 - **Search**: Find notebooks by topic
 
-### Agent: notebooklm-chrome-researcher
+### Agent: chrome-mcp-query
 
 Queries NotebookLM using Claude Code's Chrome integration.
 

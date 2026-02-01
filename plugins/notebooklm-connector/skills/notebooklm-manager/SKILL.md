@@ -73,7 +73,7 @@ Pass result to agent as `clearHistory: true/false` in the prompt.
 
 Track sessions per-notebook for intelligent resume decisions.
 
-**Session State (in-memory, conversation-scoped - resets on new session):**
+**Session State (in-memory, conversation-scoped):**
 ```
 _sessions = {
   "<notebook-id>": {
@@ -84,25 +84,29 @@ _sessions = {
 }
 ```
 
+**Session Update Rules:**
+1. **After new sub-agent creation**: Extract agentId from Task result → `_sessions[id].agentId = newAgentId`
+2. **After each query**: `_sessions[id].questionCount++`
+3. **When "New Session" selected**: `_sessions[id] = { agentId: null, questionCount: 0, lastQueried: now }`
+
 **Decision Logic:**
 
 | Condition | Action |
 |-----------|--------|
-| Same notebook, count < 5, < 10 min old | Resume with agentId |
-| Same notebook, count >= 5 | Ask user: continue or fresh? |
-| Same notebook, > 10 min stale | New agent |
-| Different notebook | Use that notebook's session |
-| "new session" / "start fresh" | New agent, reset count |
+| agentId == null | Create new sub-agent → save agentId |
+| agentId != null && count < 5 | Resume with agentId |
+| count >= 5 | Ask user: "Continue or New Session?" |
+| > 10 min stale | New sub-agent, reset session |
 
 **Session prompt (at 5+ questions):**
 ```
 AskUserQuestion({
   questions: [{
-    question: "Continue current session or start fresh?",
+    question: "Would you like to continue the current session or start a new one?",
     header: "Session (5+ questions)",
     options: [
-      { label: "Continue", description: "Keep context" },
-      { label: "New Session (Recommended)", description: "Start fresh" }
+      { label: "Continue", description: "Maintain existing context" },
+      { label: "New Session (Recommended)", description: "Start with new sub-agent" }
     ],
     multiSelect: false
   }]
@@ -111,6 +115,7 @@ AskUserQuestion({
 
 **Based on selection:**
 - "New Session" → `_sessions[id] = { agentId: null, questionCount: 0, lastQueried: now }`
+                → On next Task call, create new sub-agent → save new agentId
 - "Continue" → Resume with existing agentId
 
 ### 6. Agent Invocation
@@ -139,41 +144,25 @@ Task({
 })
 ```
 
-### 7. Follow-Up Mechanism (CRITICAL)
+### 7. Follow-Up Mechanism (⚠️ CRITICAL - MANDATORY)
 
-Every agent response ends with a follow-up prompt and returns an `agentId`.
+**Core Principles:**
+- Sub-agent returns response + FOLLOW_UP_REQUIRED block, then terminates
+- **Main agent MUST perform the CHECKLIST**
 
-**Required behavior:**
-1. **STOP** - Do not immediately respond to user
-2. **ANALYZE** - Compare answer to user's original request
-3. **IDENTIFY GAPS** - Is more information needed?
-4. **ASK FOLLOW-UP** - If gaps exist, use resume with agentId:
-   ```
-   Task({
-     subagent_type: "notebooklm-connector:chrome-mcp-query",
-     resume: {agentId},
-     prompt: "Follow-up: [comprehensive question with context]"
-   })
-   ```
-5. **REPEAT** - Until information is complete
-6. **SYNTHESIZE** - Combine all answers before responding to user
+**Quick Reference (5 Steps):**
 
-**Limit**: Max 3 follow-ups. After 3, ask user: "Continue investigation or summarize now?"
+1. **Check** for `⚠️ FOLLOW_UP_REQUIRED` in response
+2. **Analyze** user's original request → list keywords
+3. **Verify** each keyword is covered (✅/❌)
+4. **Query** for missing topics via `Task(resume: agentId)`
+5. **Complete** when all covered OR 3 follow-ups done → synthesize
 
-**Why resume?** The sub-agent retains previous analysis context, enabling immediate follow-up without re-navigation.
+**Max 3 follow-ups**: Ask user to summarize or continue after limit reached.
 
-**Example flow:**
-```
-User: "How do I implement streaming with error handling in Gemini API?"
+**Why resume?** Sub-agent retains previous context, enabling immediate follow-up without re-navigation.
 
-Agent 1: Returns streaming info + FOLLOW-UP CHECK
-→ Main agent identifies: error handling details missing
-→ Resume with: "Follow-up: What are the specific error types and recommended handling patterns for streaming?"
-
-Agent 2: Returns error handling details
-→ Main agent: Information complete
-→ Synthesize both answers and respond to user
-```
+See `references/follow-up-workflow.md` for detailed workflow, examples, and session update rules.
 
 ---
 
@@ -240,3 +229,4 @@ data/
 
 - `references/commands.md` - Full command reference
 - `references/schemas.md` - JSON schemas
+- `references/follow-up-workflow.md` - Detailed follow-up mechanism

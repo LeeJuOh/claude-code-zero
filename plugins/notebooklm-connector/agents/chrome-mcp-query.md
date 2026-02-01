@@ -8,11 +8,21 @@ description: |
   The notebooklm-manager skill resolves notebook names to URLs before invoking this agent.
 
   <example>
+  Context: User wants to query a registered notebook by name
   user: "Ask my gemini-docs notebook about function calling"
+  assistant: "I'll query the gemini-docs notebook for information about function calling."
+  <commentary>
+  The skill has resolved the notebook name to URL and invokes this agent with the full URL.
+  </commentary>
   </example>
 
   <example>
+  Context: User provides a direct NotebookLM URL
   user: "Query https://notebooklm.google.com/notebook/abc123 about main topics"
+  assistant: "I'll navigate to the notebook and extract information about the main topics."
+  <commentary>
+  Direct URL provided - agent navigates to the URL and queries NotebookLM directly.
+  </commentary>
   </example>
 model: sonnet
 tools:
@@ -134,7 +144,7 @@ After navigate, wait **5 seconds** before proceeding to allow the page to fully 
 mcp__claude-in-chrome__javascript_tool({
   action: "javascript_exec",
   tabId: {tabId from STEP 1},
-  text: "(() => { const title = document.querySelector('h1')?.textContent || document.title.split(' - ')[0]; const els = document.querySelectorAll('.to-user-container .message-text-content'); return { title: title, previousCount: els.length }; })()"
+  text: "(() => { const title = document.querySelector('input.title-input')?.value || document.querySelector('input.mat-title-large')?.value || document.title.split(' - ')[0] || 'Unknown Notebook'; const els = document.querySelectorAll('.to-user-container .message-text-content'); return { title: title, previousCount: els.length }; })()"
 })
 ```
 
@@ -179,12 +189,13 @@ mcp__claude-in-chrome__form_input({
 **4.1 Execute the following JavaScript:**
 
 This script internally polls every 1.5 seconds up to 10 times, and automatically returns when the response stabilizes.
+**Important**: The script returns the FULL response text regardless of length.
 
 ```
 mcp__claude-in-chrome__javascript_tool({
   action: "javascript_exec",
   tabId: {tabId},
-  text: "(async () => { const previousCount = {previousCount from STEP 2}; const POLL_MS = 1500, MAX = 10, STABLE_NEEDED = 2; let lastText = null, stable = 0; for (let i = 0; i < MAX; i++) { await new Promise(r => setTimeout(r, POLL_MS)); const thinking = !!document.querySelector('div.thinking-message')?.offsetParent; const els = document.querySelectorAll('.to-user-container .message-text-content'); const count = els.length; if (thinking || count <= previousCount) continue; const text = els[count - 1].innerText; stable = (text === lastText) ? stable + 1 : 1; lastText = text; if (stable >= STABLE_NEEDED) { const followups = Array.from(document.querySelectorAll('.suggested-question, .followup-chip, button[class*=\"chip\"]')).map(e => e.textContent.trim()).filter(t => t.length > 10); return { _action: 'OUTPUT_NOW', stable: true, response: text, followups: followups }; } } return { _action: 'SCREENSHOT_FALLBACK', stable: false, partial: lastText }; })()"
+  text: "(async () => { const previousCount = {previousCount from STEP 2}; const POLL_MS = 1500, MAX = 10, STABLE_NEEDED = 2; let lastText = null, stable = 0; for (let i = 0; i < MAX; i++) { await new Promise(r => setTimeout(r, POLL_MS)); const thinking = !!document.querySelector('div.thinking-message')?.offsetParent; const els = document.querySelectorAll('.to-user-container .message-text-content'); const count = els.length; if (thinking || count <= previousCount) continue; const text = els[count - 1].innerText; stable = (text === lastText) ? stable + 1 : 1; lastText = text; if (stable >= STABLE_NEEDED) { const followups = Array.from(document.querySelectorAll('.suggested-question, .followup-chip, button[class*=\"chip\"]')).map(e => e.textContent.trim()).filter(t => t.length > 10); return { _action: 'OUTPUT_NOW', stable: true, response: text, responseLength: text.length, followups: followups }; } } return { _action: 'SCREENSHOT_FALLBACK', stable: false, partial: lastText }; })()"
 })
 ```
 
@@ -213,26 +224,41 @@ Read the response text from the screenshot via OCR and go to STEP 5.
 
 **5.1 Output in the following format:**
 
+**CRITICAL**: Start your response with the FOLLOW_UP block to ensure the main agent sees it:
+
 ```
+============================================================
+⚠️ FOLLOW_UP_REQUIRED: Main agent MUST check if user's original request is fully answered!
+============================================================
+
 **Notebook Title**: {title from STEP 2}
 
 **Answer**: {response from STEP 4}
 
+**Response Length**: {responseLength} characters
+
 **Suggested follow-ups**:
 - {followups[0]}
 - {followups[1]}
-- {followups[2]}
+- ...
 
----
-FOLLOW-UP CHECK (for main agent):
-Is this answer COMPLETE for the user's original request?
-- If gaps exist → resume this agent with: Task({ resume: {agentId}, prompt: "Follow-up: [question]" })
-- If complete → synthesize and respond to user
+============================================================
+📋 CHECKLIST FOR MAIN AGENT (DO NOT SKIP):
+1. What did the user originally ask? List the key topics/keywords.
+2. Which topics are covered in this response?
+3. Which topics are MISSING from this response?
+4. If ANY topics are missing → You MUST call Task(resume: agentId) with a follow-up question!
+5. Maximum 3 follow-up queries allowed before summarizing.
+============================================================
 ```
 
 **5.2 Error Output Format (if workflow failed):**
 
 ```
+============================================================
+⚠️ QUERY_FAILED: Error occurred during NotebookLM query
+============================================================
+
 **Notebook Title**: {title if obtained, else "Unknown"}
 
 **Error**: {error type}
