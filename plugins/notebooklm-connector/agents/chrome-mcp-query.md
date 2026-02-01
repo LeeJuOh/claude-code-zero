@@ -242,14 +242,6 @@ Read the response text from the screenshot via OCR and go to STEP 5.
 - {followups[1]}
 - ...
 
-============================================================
-📋 CHECKLIST FOR MAIN AGENT (DO NOT SKIP):
-1. What did the user originally ask? List the key topics/keywords.
-2. Which topics are covered in this response?
-3. Which topics are MISSING from this response?
-4. If ANY topics are missing → You MUST call Task(resume: agentId) with a follow-up question!
-5. Maximum 3 follow-up queries allowed before summarizing.
-============================================================
 ```
 
 **5.2 Error Output Format (if workflow failed):**

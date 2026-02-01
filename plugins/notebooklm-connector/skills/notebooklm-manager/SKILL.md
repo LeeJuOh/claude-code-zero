@@ -69,34 +69,58 @@ Pass result to agent as `clearHistory: true/false` in the prompt.
 
 **Note**: Clearing history may trigger a confirmation modal in NotebookLM, which can slow down automation. Default "No" is recommended.
 
-### 5. Session Management
+### 5. Session Management (File-Based, Per-Session)
 
-Track sessions per-notebook for intelligent resume decisions.
+Track agentId per notebook using persistent file storage, isolated per Claude Code session.
 
-**Session State (in-memory, conversation-scoped):**
-```
-_sessions = {
-  "<notebook-id>": {
-    agentId: string | null,
-    questionCount: number,
-    lastQueried: ISO timestamp
-  }
+**Session ID**: `${CLAUDE_SESSION_ID}` (automatically replaced with current session ID)
+
+**Session State File**: `${SKILL_ROOT}/data/sessions/${CLAUDE_SESSION_ID}.json`
+
+**Why session-scoped?**
+- Cannot resume a sub-agent from terminal A in terminal B
+- Each Claude Code session uses an independent state file
+- Prevents conflicts in multi-terminal environments
+
+**Schema**:
+```json
+{
+  "notebooks": {
+    "<notebook-id>": {
+      "agentId": "string or null",
+      "questionCount": 0,
+      "lastQueried": "ISO timestamp"
+    }
+  },
+  "created_at": "ISO timestamp",
+  "updated_at": "ISO timestamp"
 }
 ```
 
-**Session Update Rules:**
-1. **After new sub-agent creation**: Extract agentId from Task result → `_sessions[id].agentId = newAgentId`
-2. **After each query**: `_sessions[id].questionCount++`
-3. **When "New Session" selected**: `_sessions[id] = { agentId: null, questionCount: 0, lastQueried: now }`
+#### 5.1 Session Operations
 
-**Decision Logic:**
+**BEFORE every query:**
+1. Read `${SKILL_ROOT}/data/sessions/${CLAUDE_SESSION_ID}.json`
+   - Directory not found → Create `data/sessions/`
+   - File not found → Create with empty notebooks: `{"notebooks": {}, "created_at": "<now>", "updated_at": "<now>"}`
+2. Look up `notebooks[notebook-id]`
+   - Not found → No session exists (agentId is null)
+
+**AFTER every query:**
+1. Update session:
+   - Set `notebooks[id].agentId` from Task result
+   - Increment `notebooks[id].questionCount`
+   - Set `notebooks[id].lastQueried` to current ISO timestamp
+   - Set `updated_at` to current ISO timestamp
+2. Write updated state to `${SKILL_ROOT}/data/sessions/${CLAUDE_SESSION_ID}.json`
+
+#### 5.2 Decision Logic
 
 | Condition | Action |
 |-----------|--------|
-| agentId == null | Create new sub-agent → save agentId |
-| agentId != null && count < 5 | Resume with agentId |
+| Session not found / agentId null | Create new sub-agent, save agentId |
+| agentId exists AND count < 5 | Resume with existing agentId |
 | count >= 5 | Ask user: "Continue or New Session?" |
-| > 10 min stale | New sub-agent, reset session |
 
 **Session prompt (at 5+ questions):**
 ```
@@ -114,9 +138,14 @@ AskUserQuestion({
 ```
 
 **Based on selection:**
-- "New Session" → `_sessions[id] = { agentId: null, questionCount: 0, lastQueried: now }`
-                → On next Task call, create new sub-agent → save new agentId
+- "New Session" → Set `notebooks[id] = { agentId: null, questionCount: 0, lastQueried: now }` → On next Task call, create new sub-agent → save new agentId
 - "Continue" → Resume with existing agentId
+
+#### 5.3 Automatic Cleanup (Hooks)
+
+- **SessionEnd hook**: Automatically deletes session file when session terminates
+- **SessionStart hook**: Cleans up session files older than 24 hours (TTL)
+- **Abnormal termination protection**: TTL-based cleanup prevents orphan files
 
 ### 6. Agent Invocation
 
@@ -230,3 +259,22 @@ data/
 - `references/commands.md` - Full command reference
 - `references/schemas.md` - JSON schemas
 - `references/follow-up-workflow.md` - Detailed follow-up mechanism
+
+---
+
+## Plan Mode Support (Automatic)
+
+In Plan Mode, the skill is automatically invoked via a UserPromptSubmit hook when notebook-related keywords are detected.
+
+**How it works:**
+1. Hook detects keywords: "notebook", "노트북", "notebooklm", or NotebookLM URLs
+2. Hook checks if current mode is Plan Mode (`permission_mode: "plan"`)
+3. If Plan Mode: Hook runs `claude -p` to invoke this skill in an independent process
+4. Results are injected back as context for the main session to use in planning
+
+**No syntax change required.** Use the same natural language:
+- "Ask my claude-code-docs notebook about hooks"
+- "Query gemini-api notebook for function calling examples"
+- "Compare information from claude-docs and gemini-api notebooks"
+
+**Note:** In Plan Mode, each query runs in a fresh process. Session state (agentId, questionCount) from previous queries is not preserved across Plan Mode invocations
