@@ -77,7 +77,7 @@ subsequent queries to the same URL in the same session.
 ```
 Task({
   subagent_type: "notebooklm-connector:chrome-mcp-query",
-  prompt: `Execute 5 steps: Input parsing → Tab setup → Title extraction → Submit question → Poll response → Output and exit
+  prompt: `Execute the workflow: Input parsing → Tab setup → Title extraction → Submit question → Poll response → Output and exit
 
 URL: {url}
 Question: {question}
@@ -115,7 +115,7 @@ After Task returns, check the agent output:
 ### 5. Post-Query Coverage Analysis (MANDATORY — DO NOT SKIP)
 
 **After EVERY successful Task(chrome-mcp-query) return, perform this checklist BEFORE presenting any answer.**
-The PostToolUse hook will also remind you via `COVERAGE_CHECK_REQUIRED` message.
+The PostToolUse hook will also remind you via `COVERAGE_REMINDER` message.
 
 **DO NOT present the answer yet. DO NOT generate "Suggested follow-ups" yet.**
 

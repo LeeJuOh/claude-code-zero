@@ -296,16 +296,16 @@ mcp__claude-in-chrome__javascript_tool({
 })
 ```
 
-- Response text를 얻었으면 → **STEP 5로 이동**
-- Error가 반환되었으면 → Step 4.3.2로 이동
+- If response text is obtained → **Go to STEP 5**
+- If error is returned → Go to Step 4.3.2
 
 **Step 4.3.2**: Take ONE screenshot:
 ```
 mcp__claude-in-chrome__computer({ action: "screenshot" })
 ```
-Read the response text from the screenshot via OCR → **STEP 5로 이동**
+Read the response text from the screenshot via OCR → **Go to STEP 5**
 
-**After Step 4.3.2, go directly to STEP 5.** 이 시점에서 가진 데이터(partial이라도)로 출력한다.
+**After Step 4.3.2, go directly to STEP 5.** Output with whatever data you have at this point (even if partial).
 
 **✓ STEP 4 Complete Check**: Do you have response and followups? → Go to STEP 5
 
@@ -360,60 +360,60 @@ Do not call any tools after STEP 5. Only output and exit.
 
 ---
 
-# Exit Conditions (이 중 하나라도 해당하면 → STEP 5로 이동하여 출력 후 종료)
+# Exit Conditions (if any condition is met → go to STEP 5, output, and terminate)
 
-1. 폴링 JS가 `_action: "OUTPUT_NOW"` 반환 — 정상 완료
-2. Recovery Step 4.3.1에서 response text 획득 — JS 추출 성공
-3. Recovery Step 4.3.2의 screenshot 완료 — OCR로 읽고 종료
-4. title + response(partial이라도) 확보 완료 — 데이터 충분
+1. Polling JS returns `_action: "OUTPUT_NOW"` — normal completion
+2. Recovery Step 4.3.1 obtains response text — JS extraction success
+3. Recovery Step 4.3.2 screenshot taken — read via OCR and terminate
+4. title + response (even partial) obtained — sufficient data
 
-어떤 경우든 STEP 5 이후에는 추가 도구를 호출하지 않는다. 현재 가진 데이터로 출력한다.
+In any case, do not call additional tools after STEP 5. Output with the data you currently have.
 
 ---
 
-# Execution Paths (정확한 도구 호출 순서)
+# Execution Paths (exact tool call sequence)
 
-## Happy Path (폴링 성공):
-1. `tabs_context_mcp` — 탭 확인
-2. `javascript_tool` — STEP 2: 메타데이터 추출
-3. `javascript_tool` — STEP 3: textarea 채우기
-4. `computer(key Enter)` — STEP 3: 제출
-5. `javascript_tool` — STEP 4: 폴링 → OUTPUT_NOW
-→ STEP 5: 출력 후 종료 (총 5회)
+## Happy Path (polling success):
+1. `tabs_context_mcp` — check tabs
+2. `javascript_tool` — STEP 2: extract metadata
+3. `javascript_tool` — STEP 3: fill textarea
+4. `computer(key Enter)` — STEP 3: submit
+5. `javascript_tool` — STEP 4: poll → OUTPUT_NOW
+→ STEP 5: output and terminate (5 tool calls total)
 
-## Recovery Path (폴링 실패):
-1~4. Happy Path와 동일
-5. `javascript_tool` — STEP 4: 폴링 → SCREENSHOT_FALLBACK
-6. `javascript_tool` — STEP 4.3.1: 최종 JS 추출 시도
-   → 성공 시 STEP 5로 종료 (총 6회)
-7. `computer(screenshot)` — STEP 4.3.2: 스크린샷 1회
-→ STEP 5: 출력 후 종료 (총 7회)
+## Recovery Path (polling failure):
+1-4. Same as Happy Path
+5. `javascript_tool` — STEP 4: poll → SCREENSHOT_FALLBACK
+6. `javascript_tool` — STEP 4.3.1: final JS extraction attempt
+   → On success, go to STEP 5 (6 tool calls total)
+7. `computer(screenshot)` — STEP 4.3.2: one screenshot
+→ STEP 5: output and terminate (7 tool calls total)
 
-## Tab Navigation Path (새 탭 필요 시):
-1. `tabs_context_mcp` — 탭 확인 → 매칭 없음
-2. `tabs_create_mcp` — 새 탭 생성
-3. `navigate` — 전체 노트북 URL로 이동
-4~N. 이후 Happy Path 또는 Recovery Path 진행
+## Tab Navigation Path (when new tab needed):
+1. `tabs_context_mcp` — check tabs → no match
+2. `tabs_create_mcp` — create new tab
+3. `navigate` — navigate to full notebook URL
+4-N. Continue with Happy Path or Recovery Path
 
-## 사용하는 도구:
-- `javascript_tool`: 텍스트 추출 전용 (DOM 데이터는 JS로 직접 읽는다)
-- `computer(key)`: Enter 키 입력 전용
-- `computer(screenshot)`: Recovery 시 OCR 읽기용 (최대 1회)
-- `tabs_context_mcp`, `tabs_create_mcp`, `navigate`: 탭 관리용
+## Tools used:
+- `javascript_tool`: text extraction only (DOM data is read directly via JS)
+- `computer(key)`: Enter key input only
+- `computer(screenshot)`: OCR reading for recovery (max 1 time)
+- `tabs_context_mcp`, `tabs_create_mcp`, `navigate`: tab management
 
 ---
 
 # Text Extraction Method
 
-DOM에 있는 모든 텍스트는 viewport 위치와 무관하게 JavaScript로 직접 읽을 수 있다.
-화면에 보이지 않는 텍스트도 `.innerText` 또는 `.textContent`로 추출한다.
+All text in the DOM can be read directly via JavaScript regardless of viewport position.
+Even text not visible on screen can be extracted using `.innerText` or `.textContent`.
 
-예시: follow-up suggestion이 화면 밖에 있어도 JS selector로 추출:
+Example: follow-up suggestions outside the viewport can be extracted via JS selectors:
 ```javascript
 document.querySelectorAll('.suggested-question').forEach(e => e.textContent)
 ```
 
-텍스트 데이터가 필요하면 항상 `javascript_tool`로 추출한다.
+Always use `javascript_tool` to extract text data.
 
 ---
 

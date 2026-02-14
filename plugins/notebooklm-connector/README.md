@@ -76,7 +76,7 @@ Unlike traditional browser automation approaches that spawn fresh Playwright/hea
 
 | Hook | Event | Scope | Purpose |
 |------|-------|-------|---------|
-| `follow-up-reminder.sh` | `PostToolUse` | Plugin-level (`hooks/hooks.json`) | Blocks with `decision:"block"` + coverage analysis instructions after agent completes |
+| `follow-up-reminder.sh` | `PostToolUse` | Plugin-level (`hooks/hooks.json`) | Approves with `decision:"block"` + coverage analysis instructions in `reason` after agent completes |
 
 ---
 
@@ -88,7 +88,7 @@ This plugin was inspired by a reference implementation (`notebooklm-skill`) but 
 |--------|-------------------------------|-------------|
 | **Browser** | Fresh Playwright session per query | Shared Chrome session via MCP |
 | **Auth** | Persistent profile + cookie injection | User's existing Chrome login |
-| **Follow-up** | Text appended to response | PostToolUse hook + `decision:"block"` prompt |
+| **Follow-up** | Text appended to response | PostToolUse hook + `decision:"block"` with instructions in `reason` |
 | **Session** | Stateless (fresh each time) | Stateless (agent reuses existing browser tab) |
 | **Dependencies** | Python, Playwright, venv | None (pure Claude Code plugin) |
 
@@ -102,7 +102,7 @@ This plugin was inspired by a reference implementation (`notebooklm-skill`) but 
 User ──► Skill(notebooklm-manager) ──► Task(chrome-mcp-query) ──► Chrome MCP ──► NotebookLM
                                               │ (Task completes)
                                         PostToolUse Hook (plugin-level hooks.json)
-                                        → decision:"block" + reason: COVERAGE_CHECK_REQUIRED
+                                        → decision:"block" + reason: COVERAGE_REMINDER
                                               │
                                         Coverage analysis (Section 5)
                                         → new query or deliver response
@@ -124,7 +124,7 @@ The follow-up system ensures comprehensive answers through a hook-driven feedbac
 Agent returns response ──► PostToolUse hook fires (plugin-level hooks.json)
                            │
                            ▼
-                     decision:"block" + reason: COVERAGE_CHECK_REQUIRED
+                     decision:"block" + reason: COVERAGE_REMINDER
                            │
                            ▼
                      Claude performs:
@@ -284,7 +284,7 @@ Or in Claude Code:
 User: "What are the rules of Hooks in React docs?"
 Claude:
   1. Verify Chrome integration
-  2. Call notebooklm-chrome-researcher agent
+  2. Call chrome-mcp-query agent
   3. Query NotebookLM
   4. Wait for response with thinking indicator detection
   5. Provide answer with citations
@@ -322,17 +322,19 @@ Queries NotebookLM using Claude Code's Chrome integration.
 
 ## Chat History Handling
 
-The agent **always** confirms with the user before querying:
+Before the **first query** to a notebook in a session, the skill confirms with the user:
 
 ```
-Should we delete the previous session before starting? (yes/no)
+Clear NotebookLM chat history before querying? (No / Yes)
 
 Note: NotebookLM's chat history is kept personally.
 Previous conversation context may affect the current question.
 ```
 
-- **"Yes"**: Delete history via "Delete Chat History" menu in chat panel
-- **"No"**: Keep existing conversation context
+- **"No" (Recommended)**: Keep previous context, faster response
+- **"Yes"**: Start fresh, may involve UI modal interaction
+
+After asking once for a given notebook URL, this confirmation is skipped for subsequent queries to the same URL in the same session.
 
 ## Error Handling & Troubleshooting
 
@@ -345,7 +347,7 @@ Previous conversation context may affect the current question.
 | **Modal dialog detected** | JavaScript alert/confirm appeared | 1. Manually dismiss dialog in Chrome<br>2. Tell Claude to continue<br>3. Report which action triggered it | Known Chrome automation limitation |
 | **No notebook URL** | Notebook not in registry | 1. List notebooks: "list my notebooks"<br>2. Add notebook: "add <url>"<br>3. Verify URL format | Must start with `https://notebooklm.google.com/notebook/` |
 | **UI element not found** | NotebookLM UI changed or still loading | 1. Wait 5-10 seconds<br>2. Manually verify page loaded<br>3. Check URL is correct<br>4. Try manual refresh | UI detection may need updates |
-| **Response timeout (60s)** | Network slow or long document | 1. Retry with same question<br>2. Simplify question<br>3. Check network connection | Large documents take longer |
+| **Response timeout (75s)** | Network slow or long document | 1. Retry with same question<br>2. Simplify question<br>3. Check network connection | Large documents take longer |
 | **Tab creation failed** | Chrome permissions or resources | 1. Close unused Chrome tabs<br>2. Check `/chrome` permissions<br>3. Restart Chrome | Resource limitation |
 | **Session expired** | Google session timed out | 1. Re-login to NotebookLM in Chrome<br>2. Verify you see notebook interface<br>3. Retry query | Sessions expire after inactivity |
 

@@ -13,7 +13,9 @@ Active notebooks index (minimal for fast loading).
       "id": "claude-docs",
       "name": "Claude Code Documentation",
       "url": "https://notebooklm.google.com/notebook/abc123",
-      "topics": ["Claude Code", "CLI", "Plugins"]
+      "topics": ["Claude Code", "CLI", "Plugins"],
+      "addedAt": "2026-01-20T08:00:00Z",
+      "discoveredBy": "smart-add"
     }
   },
   "schema_version": "3.0",

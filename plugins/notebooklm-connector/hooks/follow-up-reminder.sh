@@ -10,7 +10,7 @@ fi
 
 cat << 'EOF'
 {
-  "decision": "approve",
+  "decision": "block",
   "reason": "COVERAGE_REMINDER: Before presenting the answer, perform coverage analysis per SKILL.md Section 5 (STEP A→B→C→D)."
 }
 EOF
