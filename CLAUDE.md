@@ -42,7 +42,7 @@ Example: "Create a review agent. Refer to logic in @references/other-plugin/agen
 ### 3. Registration and Validation
 
 - Register the plugin in `marketplace.json`
-- Run `claude plugin validate .` to verify
+- Run `unset CLAUDECODE && claude plugin validate .` to verify
 
 ## Coding Style and Naming
 
@@ -53,7 +53,8 @@ Example: "Create a review agent. Refer to logic in @references/other-plugin/agen
 
 ## Common Commands
 
-- **Marketplace validation**: `claude plugin validate .`
+- **Marketplace validation**: `unset CLAUDECODE && claude plugin validate .`
+  - **IMPORTANT**: Claude Code 세션 내부에서는 `claude` 명령 실행 시 nested session 에러 발생. 반드시 `unset CLAUDECODE &&` 를 앞에 붙여야 함.
 - **Local testing**: `claude --plugin-dir ./plugins/<plugin-name>`
 
 ## Important Notes
@@ -77,7 +78,7 @@ The `references/` folder is git-ignored. This means:
 2. You read and understand ONLY those specified files
 3. Create your implementation in `plugins/<new-plugin>/`
 4. Register in `marketplace.json` when ready to deploy
-5. Validate with `claude plugin validate .`
+5. Validate with `unset CLAUDECODE && claude plugin validate .`
 
 ### Directory Separation
 

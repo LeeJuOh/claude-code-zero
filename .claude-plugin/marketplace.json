@@ -19,6 +19,17 @@
       },
       "version": "1.0.0",
       "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
+    },
+    {
+      "name": "toolbox",
+      "source": {
+        "source": "github",
+        "repo": "LeeJuOh/claude-code-zero",
+        "path": "plugins/toolbox",
+        "ref": "v1.0.0"
+      },
+      "version": "1.0.0",
+      "description": "Personal utility commands and tools for Claude Code"
     }
   ]
 }

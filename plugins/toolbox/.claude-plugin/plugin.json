@@ -1,0 +1,10 @@
+{
+  "name": "toolbox",
+  "version": "1.0.0",
+  "description": "Personal utility commands and tools for Claude Code",
+  "author": {
+    "name": "LeeJuOh"
+  },
+  "license": "MIT",
+  "keywords": ["personal", "toolbox", "utilities", "commands"]
+}

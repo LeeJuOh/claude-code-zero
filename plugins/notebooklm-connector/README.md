@@ -18,6 +18,137 @@ This plugin provides:
 
 ---
 
+## Architecture
+
+### Core Design: Shared Chrome Session via MCP
+
+Unlike traditional browser automation approaches that spawn fresh Playwright/headless sessions per query, this plugin leverages **Claude Code's Chrome integration (MCP)** to share the user's existing Chrome session. This means:
+
+- No separate browser process or authentication flow
+- Uses the user's live NotebookLM login state
+- Real browser tabs visible for verification
+- Zero external dependencies (pure Claude Code plugin)
+
+### Architecture Overview
+
+```
+┌───────────────────────┐
+│     User Request      │
+└───────────┬───────────┘
+            ▼
+┌───────────────────────┐
+│  Skill Layer          │
+│  notebooklm-manager   │
+│                       │
+│  - Query orchestration│
+│  - Notebook registry  │
+│  - Follow-up analysis │
+│                       │
+│  - Coverage analysis  │
+│  (triggered by hook)  │
+│  → new query or deliver│
+└───────────┬───────────┘
+            │ Task(chrome-mcp-query)
+            ▼
+┌───────────────────────┐
+│  Agent Layer          │
+│  chrome-mcp-query     │
+│                       │
+│  - 6-step workflow    │
+│  - Tab management     │
+│  - JS polling         │
+│  - Response extraction│
+└───────────┬───────────┘
+            │ Chrome MCP tools
+            ▼
+┌───────────────────────┐     ┌───────────────────────┐
+│  Browser Layer        │     │  Data Layer           │
+│  Chrome + Extension   │     │  (file-based)         │
+│                       │     │                       │
+│  - Tab create/navigate│     │  data/library.json    │
+│  - Form input/submit  │     │  data/notebooks/*.json│
+│  - JavaScript exec    │     │  data/archive.json    │
+│  - Screenshot fallback│     │                       │
+└───────────────────────┘     └───────────────────────┘
+```
+
+**Hook Layer** (cross-cutting):
+
+| Hook | Event | Scope | Purpose |
+|------|-------|-------|---------|
+| `follow-up-reminder.sh` | `PostToolUse` | Plugin-level (`hooks/hooks.json`) | Blocks with `decision:"block"` + coverage analysis instructions after agent completes |
+
+---
+
+## How It Differs (vs Reference)
+
+This plugin was inspired by a reference implementation (`notebooklm-skill`) but takes a fundamentally different architectural approach:
+
+| Aspect | Reference (`notebooklm-skill`) | This Plugin |
+|--------|-------------------------------|-------------|
+| **Browser** | Fresh Playwright session per query | Shared Chrome session via MCP |
+| **Auth** | Persistent profile + cookie injection | User's existing Chrome login |
+| **Follow-up** | Text appended to response | PostToolUse hook + `decision:"block"` prompt |
+| **Session** | Stateless (fresh each time) | Stateless (agent reuses existing browser tab) |
+| **Dependencies** | Python, Playwright, venv | None (pure Claude Code plugin) |
+
+---
+
+## Operating Modes
+
+### Normal Mode
+
+```
+User ──► Skill(notebooklm-manager) ──► Task(chrome-mcp-query) ──► Chrome MCP ──► NotebookLM
+                                              │ (Task completes)
+                                        PostToolUse Hook (plugin-level hooks.json)
+                                        → decision:"block" + reason: COVERAGE_CHECK_REQUIRED
+                                              │
+                                        Coverage analysis (Section 5)
+                                        → new query or deliver response
+```
+
+- Skill triggers directly from user prompt
+- After Task completes, **PostToolUse hook** (defined in plugin-level `hooks/hooks.json`) fires
+- Hook returns `decision:"block"` with coverage analysis instructions as `reason`, which Claude processes as a direct prompt
+- Works regardless of whether the skill is active (plugin-level scope)
+- Agent reuses existing browser tab for the same URL, enabling follow-up queries without re-navigation
+
+---
+
+## Follow-Up Mechanism
+
+The follow-up system ensures comprehensive answers through a hook-driven feedback loop:
+
+```
+Agent returns response ──► PostToolUse hook fires (plugin-level hooks.json)
+                           │
+                           ▼
+                     decision:"block" + reason: COVERAGE_CHECK_REQUIRED
+                           │
+                           ▼
+                     Claude performs:
+                     1. Are all user topics covered?
+                     2. Any missing keywords? (✅/❌)
+                           │
+                    ┌──────┴──────┐
+                    ▼             ▼
+              Gaps exist     All covered
+                    │             │
+                    ▼             ▼
+            Task(new agent  Synthesize &
+             same URL)      deliver to user
+            (max 3 times)
+```
+
+**Why plugin-level hook (`hooks/hooks.json`)?**
+- Fires regardless of whether `notebooklm-manager` skill is active
+- Works when main agent calls `Task(chrome-mcp-query)` directly
+- Filters by `tool_input.subagent_type` to target only `chrome-mcp-query` — no side effects on other Task invocations
+- Follow-up queries reuse the existing Chrome tab — no extra session overhead
+
+---
+
 ## Chrome Integration Requirements
 
 This plugin uses **Claude Code's Chrome integration beta feature** to query NotebookLM directly in your browser.
@@ -26,10 +157,10 @@ This plugin uses **Claude Code's Chrome integration beta feature** to query Note
 
 Before using this plugin, ensure you have:
 
-✅ **Google Chrome browser** - Required (Brave/Arc not yet supported)
+✅ **Google Chrome or Microsoft Edge** - Required (third-party Chromium browsers like Brave/Arc are not supported)
 ✅ **Claude in Chrome extension** - Version 1.0.36 or higher ([Install from Chrome Web Store](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn))
 ✅ **Claude Code CLI** - Version 2.0.73 or higher
-✅ **Paid Claude plan** - Pro, Team, or Enterprise
+✅ **Paid Claude plan** - Pro, Max, Team, or Enterprise
 ✅ **Google account login** - **You must be logged into NotebookLM in Chrome**
 
 ### Setup Steps
@@ -214,7 +345,7 @@ Previous conversation context may affect the current question.
 | **Modal dialog detected** | JavaScript alert/confirm appeared | 1. Manually dismiss dialog in Chrome<br>2. Tell Claude to continue<br>3. Report which action triggered it | Known Chrome automation limitation |
 | **No notebook URL** | Notebook not in registry | 1. List notebooks: "list my notebooks"<br>2. Add notebook: "add <url>"<br>3. Verify URL format | Must start with `https://notebooklm.google.com/notebook/` |
 | **UI element not found** | NotebookLM UI changed or still loading | 1. Wait 5-10 seconds<br>2. Manually verify page loaded<br>3. Check URL is correct<br>4. Try manual refresh | UI detection may need updates |
-| **Response timeout (120s)** | Network slow or long document | 1. Retry with same question<br>2. Simplify question<br>3. Check network connection | Large documents take longer |
+| **Response timeout (60s)** | Network slow or long document | 1. Retry with same question<br>2. Simplify question<br>3. Check network connection | Large documents take longer |
 | **Tab creation failed** | Chrome permissions or resources | 1. Close unused Chrome tabs<br>2. Check `/chrome` permissions<br>3. Restart Chrome | Resource limitation |
 | **Session expired** | Google session timed out | 1. Re-login to NotebookLM in Chrome<br>2. Verify you see notebook interface<br>3. Retry query | Sessions expire after inactivity |
 
@@ -246,6 +377,9 @@ claude --chrome
 2. Update Chrome extension to 1.0.36+
 3. Restart both Chrome and Claude Code
 4. Check Chrome extension permissions
+5. If this is your first time connecting, restart Chrome to register the native messaging host
+   - The native messaging host is installed at `~/.anthropic/native-messaging/` (macOS/Linux)
+6. If the extension service worker went idle, click the extension icon to wake it up, then reconnect
 
 #### 2. Authentication Keeps Failing
 
@@ -299,7 +433,7 @@ claude --chrome
 #### 4. Response Never Completes
 
 **Symptoms**:
-- Waiting over 120 seconds
+- Waiting over 60 seconds
 - "Response timeout" error
 - Loading indicator stuck
 
@@ -342,7 +476,7 @@ claude --chrome
 1. Check URL format: https://notebooklm.google.com/notebook/<id>
 2. Open URL manually in Chrome
 3. Verify notebook loads correctly
-4. Check sharing: Notebook must be "Anyone with link"
+4. If accessing someone else's notebook, ensure it is shared with you
 
 # Wait longer
 1. Try: "Continue anyway" when prompted
@@ -382,7 +516,7 @@ chrome://extensions  # Verify "Claude in Chrome" is enabled
 1. **Claude Code**: Local installation required
 2. **Chrome Integration**: `--chrome` flag or `/chrome` command
 3. **NotebookLM Login**: Must be logged into Google account in Chrome
-4. **Notebook Sharing**: NotebookLM notebooks must be shared as "Anyone with link"
+4. **Notebook Sharing**: Only required if accessing notebooks owned by others (shared via "Anyone with link")
 
 ## References
 
