@@ -15,9 +15,9 @@
         "source": "github",
         "repo": "LeeJuOh/claude-code-zero",
         "path": "plugins/notebooklm-connector",
-        "ref": "v1.0.0"
+        "ref": "v1.0.2"
       },
-      "version": "1.0.0",
+      "version": "1.0.2",
       "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
     },
     {
@@ -26,9 +26,9 @@
         "source": "github",
         "repo": "LeeJuOh/claude-code-zero",
         "path": "plugins/toolbox",
-        "ref": "v1.0.0"
+        "ref": "v1.0.2"
       },
-      "version": "1.0.0",
+      "version": "1.0.2",
       "description": "Personal utility commands and tools for Claude Code"
     }
   ]
