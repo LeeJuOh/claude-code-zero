@@ -53,3 +53,5 @@ plugins/*/data/
 plugins/**/data/
 plugins/*/.venv/
 
+/docs/
+plugins/notebooklm-connector/docs/

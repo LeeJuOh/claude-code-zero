@@ -1,26 +1,44 @@
-# Repository Overview
+# AGENTS.md
 
-This repository is a **personal marketplace** for Claude Code features (plugins, skills, agents).
-Develop new features and manage deployments through `marketplace.json`.
+## Repository Overview
+
+Personal marketplace for Claude Code plugins. Plugins are developed under `plugins/` and deployments are managed through `marketplace.json`.
 
 ## Directory Structure
 
-- **Marketplace definition**: `.claude-plugin/marketplace.json` at the root
-- **Source code (workspace)**: `plugins/<plugin-name>/`
-- **Reference materials**: `references/`
-    - This is where external open-source code is stored.
-    - **IMPORTANT**: Only read files from this folder when the user explicitly specifies them using `@references/...` syntax. Do NOT explore this folder on your own.
+```
+.claude-plugin/marketplace.json   # Marketplace definition (plugin registry)
+plugins/<plugin-name>/            # Plugin source code (git-committed)
+references/                       # External reference materials (git-ignored)
+```
 
-## 🛠️ Development Workflow
+## Plugin Development
 
-### 1. Analysis (User-Directed Analysis)
+### Plugin Component Structure
 
-The user will provide:
-- The implementation goal
-- **Specific reference files** to consult
+Standard plugin layout inside `plugins/<plugin-name>/`:
 
-Example: "Create a review agent. Refer to logic in @references/other-plugin/agent.md"
+```
+.claude-plugin/plugin.json   # Plugin manifest (required)
+commands/                     # Slash commands (*.md)
+agents/                       # Sub-agents (*.md)
+```
 
-**Your task:**
-- Read ONLY the specified files
-- Understand the structure and logic from those files
+### Workflow
+
+1. **Analysis** — User provides the goal and specific reference files to read. Read ONLY those files.
+2. **Implementation** — Create a new directory under `plugins/`. Never modify files in `references/`.
+3. **Registration** — Add the plugin entry to `.claude-plugin/marketplace.json`.
+
+## references/ Folder
+
+- Git-ignored. External open-source code stored here for local reference only.
+- Read files ONLY when the user explicitly specifies them using `@references/...` syntax.
+- Never explore this folder on your own. Never modify files in it.
+
+## Coding Style
+
+- **Language**: All plugin content in English (agent.md, README.md, comments, descriptions)
+- **Plugin names**: kebab-case (e.g., `notebook-researcher`, `code-reviewer`)
+- **Versioning**: Semantic Versioning (e.g., `1.0.0`)
+- **Descriptions**: Clear and concise

@@ -1,86 +1,71 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Repository Overview
 
-This repository is a **personal marketplace** for Claude Code features (plugins, skills, agents).
-Develop new features and manage deployments through `marketplace.json`.
+Personal marketplace for Claude Code plugins. Plugins are developed under `plugins/` and deployments are managed through `marketplace.json`.
 
 ## Directory Structure
 
-- **Marketplace definition**: `.claude-plugin/marketplace.json` at the root
-- **Source code (workspace)**: `plugins/<plugin-name>/`
-- **Reference materials**: `references/`
-  - This is where external open-source code is stored.
-  - **IMPORTANT**: Only read files from this folder when the user explicitly specifies them using `@references/...` syntax. Do NOT explore this folder on your own.
+```
+.claude-plugin/marketplace.json   # Marketplace definition (plugin registry)
+plugins/<plugin-name>/            # Plugin source code (git-committed)
+references/                       # External reference materials (git-ignored)
+```
 
-## 🛠️ Development Workflow
+## Plugin Development
 
-### 1. Analysis (User-Directed Analysis)
+### Official Documentation
 
-The user will provide:
-- The implementation goal
-- **Specific reference files** to consult
+Before developing a plugin, fetch the latest spec from the official documentation:
 
-Example: "Create a review agent. Refer to logic in @references/other-plugin/agent.md"
+- Entry point: https://code.claude.com/docs/llms.txt
+- Key references: plugins.md, plugins-reference.md, hooks.md, skills.md, sub-agents.md
 
-**Your task:**
-- Read ONLY the specified files
-- Understand the structure and logic from those files
+Always verify plugin.json schema, hook event types, skill frontmatter fields, and agent frontmatter fields against the official docs before implementation.
 
-**Do NOT:**
-- Randomly explore the `references/` folder
-- Search for files without user direction
+### Plugin Component Structure
 
-### 2. Implementation
+Standard plugin layout inside `plugins/<plugin-name>/`:
 
-- Create a new directory under `plugins/`
-- Write code based on the analyzed logic, tailored to requirements
-- **IMPORTANT**: Never modify files in `references/` folder
+```
+.claude-plugin/plugin.json   # Plugin manifest (required)
+commands/                     # Slash commands (*.md)
+skills/                       # Skills with SKILL.md
+agents/                       # Sub-agents (*.md)
+hooks/                        # Hooks (hooks.json + scripts)
+.mcp.json                    # MCP server configuration (optional)
+```
 
-### 3. Registration and Validation
+### Workflow
 
-- Register the plugin in `marketplace.json`
-- Run `unset CLAUDECODE && claude plugin validate .` to verify
+1. **Analysis** — User provides the goal and specific reference files to read. Read ONLY those files.
+2. **Implementation** — Create a new directory under `plugins/`. Never modify files in `references/`.
+3. **Registration** — Add the plugin entry to `.claude-plugin/marketplace.json`.
+4. **Validation** — Run the validation command below.
 
-## Coding Style and Naming
+### Validation
 
-- **Language**: Always write all plugin content in **English** (SKILL.md, agent.md, README.md, comments, descriptions, etc.)
-- **Plugin names**: `kebab-case` (e.g., `notebook-researcher`, `code-reviewer`)
-- **Version management**: Semantic Versioning (1.0.0)
-- **Description**: Write `description` field clearly and concisely
+```bash
+unset CLAUDECODE && claude plugin validate .
+```
 
-## Common Commands
+`unset CLAUDECODE` is required to avoid nested session errors when running `claude` inside an active Claude Code session.
 
-- **Marketplace validation**: `unset CLAUDECODE && claude plugin validate .`
-  - **IMPORTANT**: Claude Code 세션 내부에서는 `claude` 명령 실행 시 nested session 에러 발생. 반드시 `unset CLAUDECODE &&` 를 앞에 붙여야 함.
-- **Local testing**: `claude --plugin-dir ./plugins/<plugin-name>`
+### Local Testing
 
-## Important Notes
+```bash
+claude --plugin-dir ./plugins/<plugin-name>
+```
 
-### Why User-Directed Analysis?
+## references/ Folder
 
-1. **Token efficiency**: Avoid wasting tokens on unnecessary file exploration
-2. **Precision**: Focus only on relevant reference code
-3. **User control**: User knows best which implementations to reference
+- Git-ignored. External open-source code stored here for local reference only.
+- Read files ONLY when the user explicitly specifies them using `@references/...` syntax.
+- Never explore this folder on your own. Never modify files in it.
 
-### .gitignore Configuration
+## Coding Style
 
-The `references/` folder is git-ignored. This means:
-- External repositories cloned into `references/` will NOT be committed
-- This keeps your repository clean while allowing local file access
-- Only content in `plugins/` will be committed to Git
-
-### Plugin Development Flow
-
-1. User specifies reference files to analyze (e.g., `@references/example/core.py`)
-2. You read and understand ONLY those specified files
-3. Create your implementation in `plugins/<new-plugin>/`
-4. Register in `marketplace.json` when ready to deploy
-5. Validate with `unset CLAUDECODE && claude plugin validate .`
-
-### Directory Separation
-
-- `references/` = Learning materials (Git-ignored, user-directed reading only)
-- `plugins/` = Your production code (Git-committed, deployable)
+- **Language**: All plugin content in English (SKILL.md, agent.md, README.md, comments, descriptions)
+- **Plugin names**: kebab-case (e.g., `notebook-researcher`, `code-reviewer`)
+- **Versioning**: Semantic Versioning (e.g., `1.0.0`)
+- **Descriptions**: Clear and concise
