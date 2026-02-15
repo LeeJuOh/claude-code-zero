@@ -82,8 +82,8 @@ If the curl command fails (non-zero exit code), report the error clearly to the 
 
 ## Output
 
-1. Report the total number of URLs found first (include the filter pattern if one was used)
-   - Example: "Found 47 URLs" or "Found 12 URLs matching pattern `en`"
+1. Count the number of lines in the curl output above to determine the total URL count
+   - Report: "Found 47 URLs" or "Found 12 URLs matching pattern `en`"
 2. Ask the user whether to save the results to a file
    - If yes: save to an appropriate filename (e.g., `sitemap-urls.txt`) and report the path
    - If no: display the URL list in a fenced code block. If there are more than 100 URLs, show only the first 50 and note the total count

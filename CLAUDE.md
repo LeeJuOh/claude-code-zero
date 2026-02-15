@@ -14,15 +14,11 @@ references/                       # External reference materials (git-ignored)
 
 ## Official Documentation
 
-For any plugin or marketplace related work (development, configuration, troubleshooting), always consult the official docs first:
-
-1. Fetch the entry point: https://code.claude.com/docs/llms.txt
-2. Identify the relevant page URLs from the index
-3. Fetch those pages to get the latest spec
+Entry point: https://code.claude.com/docs/llms.txt
 
 Key pages: plugins.md, plugins-reference.md, plugin-marketplaces.md, discover-plugins.md, hooks.md, skills.md, sub-agents.md
 
-Always verify schemas, field types, and supported options against the official docs before making changes.
+See **Workflow step 1 (Docs)** for the mandatory consultation process.
 
 ## Plugin Development
 
@@ -31,8 +27,8 @@ Always verify schemas, field types, and supported options against the official d
 Standard plugin layout inside `plugins/<plugin-name>/`:
 
 ```
-.claude-plugin/plugin.json   # Plugin manifest (required)
-commands/                     # Slash commands (*.md)
+.claude-plugin/plugin.json   # Plugin manifest (optional, auto-discovers if omitted)
+commands/                     # Slash commands — legacy; use skills/ for new skills
 skills/                       # Skills with SKILL.md
 agents/                       # Sub-agents (*.md)
 hooks/                        # Hooks (hooks.json + scripts)
@@ -41,10 +37,13 @@ hooks/                        # Hooks (hooks.json + scripts)
 
 ### Workflow
 
-1. **Analysis** — User provides the goal and specific reference files to read. Read ONLY those files.
-2. **Implementation** — Create a new directory under `plugins/`. Never modify files in `references/`.
-3. **Registration** — Add the plugin entry to `.claude-plugin/marketplace.json`.
-4. **Validation** — Run the validation command below.
+Applies to all plugin work: creation, modification, improvement, and refactoring.
+
+1. **Docs** — Fetch https://code.claude.com/docs/llms.txt, identify relevant pages, and fetch them. Verify schemas and options against the latest spec before making any changes.
+2. **Analysis** — User provides the goal and specific reference files to read. Read ONLY those files.
+3. **Implementation** — Create or modify files under `plugins/`. Never modify files in `references/`.
+4. **Registration** — Add the plugin entry to `.claude-plugin/marketplace.json` (new plugins only).
+5. **Validation** — Run the validation command below.
 
 ### Validation
 
