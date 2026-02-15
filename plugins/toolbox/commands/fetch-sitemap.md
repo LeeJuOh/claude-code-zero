@@ -1,6 +1,6 @@
 ---
 description: Extract URLs from an XML sitemap with optional regex filtering
-allowed-tools: Bash(curl *)
+allowed-tools: Bash(curl *), Write
 argument-hint: <url> [pattern]
 disable-model-invocation: true
 ---
@@ -32,19 +32,30 @@ If `$0` does not start with `http://` or `https://`, inform the user that a vali
 
 ## Sitemap Auto-Discovery
 
-When the URL does **not** end with `.xml`, automatically discover the sitemap by probing the following locations **one at a time, stopping as soon as one returns HTTP `200`** (do NOT run probes in parallel):
+When the URL does **not** end with `.xml`, automatically discover the sitemap by probing the following locations **one at a time, stopping as soon as one produces output** (do NOT run probes in parallel):
+
+**Probes 1–2** — fetch and extract in a single curl:
 
 1. `{url}/sitemap.xml` — path-specific (e.g., `https://kotlinlang.org/docs/sitemap.xml`)
 2. `{origin}/sitemap.xml` — site root (e.g., `https://kotlinlang.org/sitemap.xml`), where `{origin}` is the scheme + host of the URL
-3. `{origin}/robots.txt` — fetch and parse for `Sitemap:` lines, use the first match
-
-For each probe, check with:
 
 ```bash
-curl -sfL --compressed --connect-timeout 5 --max-time 10 -o /dev/null -w '%{http_code}' <probe-url>
+curl -sfL --compressed --connect-timeout 5 --max-time 10 <probe-url> | grep -oE '<loc>[^<]+</loc>' | sed 's/<loc>//;s/<\/loc>//'
 ```
 
-Use the first URL that returns HTTP `200`. If none of the probes succeed, report an error to the user and stop:
+If the output is non-empty, the sitemap is found **and the URLs are already extracted** — skip the Extraction section entirely and go straight to Output. If empty, try the next probe.
+
+**Probe 3** — robots.txt (different format, two-step):
+
+3. `{origin}/robots.txt` — fetch and parse for `Sitemap:` lines, use the first match
+
+```bash
+curl -sfL --compressed --connect-timeout 5 --max-time 10 <origin>/robots.txt
+```
+
+If a `Sitemap:` line is found, use that URL and proceed to the Extraction section.
+
+If none of the probes succeed, report an error to the user and stop:
 
 ```
 Could not auto-discover a sitemap for <url>. Try providing the direct sitemap XML URL instead.
@@ -56,7 +67,9 @@ When a sitemap is discovered (not passed directly), print which URL was found be
 Sitemap found: <discovered-url>
 ```
 
-## Instructions
+## Extraction
+
+**If URLs were already extracted during auto-discovery, skip this entire section.** If a filter pattern (`$1`) is provided, apply it to the already-extracted URLs in memory — do not re-fetch.
 
 Run the following bash command to extract URLs from the sitemap:
 
@@ -82,13 +95,13 @@ If the curl command fails (non-zero exit code), report the error clearly to the 
 
 ## Output
 
-1. Count the number of lines in the curl output above to determine the total URL count
+1. Count the extracted URLs to determine the total count
    - Report: "Found 47 URLs" or "Found 12 URLs matching pattern `en`"
-2. Ask the user whether to save the results to a file
-   - If yes: save to an appropriate filename (e.g., `sitemap-urls.txt`) and report the path
-   - If no: display the URL list in a fenced code block. If there are more than 100 URLs, show only the first 50 and note the total count
+2. Display the URL list in a fenced code block. If there are more than 100 URLs, show only the first 50 and note the total count
 3. If no URLs matched, inform the user that no results were found
 4. If curl failed, report the error clearly (do not silently show "no results")
+
+**Never re-fetch:** All URLs have already been fetched. If the user later asks to save the results to a file, use the Write tool with the already-displayed output. Never run curl again for the same sitemap.
 
 ## Examples
 
