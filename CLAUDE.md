@@ -63,6 +63,11 @@ claude --plugin-dir ./plugins/<plugin-name>
 - Read files ONLY when the user explicitly specifies them using `@references/...` syntax.
 - Never explore this folder on your own. Never modify files in it.
 
+## Git Workflow
+
+- Tags must be created on `main` only. Never tag on `develop`.
+- Commit messages: English only, 1-2 concise sentences focusing on the core change.
+
 ## Coding Style
 
 - **Language**: All plugin content in English (SKILL.md, agent.md, README.md, comments, descriptions)
