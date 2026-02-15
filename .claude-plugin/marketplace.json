@@ -11,23 +11,13 @@
   "plugins": [
     {
       "name": "notebooklm-connector",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/LeeJuOh/claude-code-zero.git",
-        "path": "plugins/notebooklm-connector",
-        "ref": "v1.0.2"
-      },
+      "source": "./plugins/notebooklm-connector",
       "version": "1.0.2",
       "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
     },
     {
       "name": "toolbox",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/LeeJuOh/claude-code-zero.git",
-        "path": "plugins/toolbox",
-        "ref": "v1.0.2"
-      },
+      "source": "./plugins/toolbox",
       "version": "1.0.2",
       "description": "Personal utility commands and tools for Claude Code"
     }

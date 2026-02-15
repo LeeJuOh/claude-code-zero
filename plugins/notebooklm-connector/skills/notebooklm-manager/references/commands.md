@@ -50,9 +50,8 @@ When user provides a URL with `add <url>` (without `--manual`):
      "name": "Claude API Documentation",
      "url": "https://notebooklm.google.com/notebook/...",
      "topics": ["API", "Claude", "Documentation"],
-     "description": "Auto-discovered notebook about Claude API",
-     "addedAt": "<ISO timestamp - use current datetime>",
-     "discoveredBy": "smart-add"
+     "added_at": "<ISO timestamp - use current datetime>",
+     "discovered_by": "smart-add"
    }
    ```
 

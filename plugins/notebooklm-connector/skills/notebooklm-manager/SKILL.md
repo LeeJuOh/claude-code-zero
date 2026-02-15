@@ -181,10 +181,11 @@ data/
 **Initialization**:
 - If `data/` folder does not exist, create it
 - If `library.json` does not exist, create with:
-  `{"notebooks": {}, "schema_version": "3.0", "updated_at": "<ISO timestamp>"}`
+  `{"notebooks": {}, "schema_version": "1.0", "updated_at": "<ISO timestamp>"}`
 - If `archive.json` does not exist, create with:
-  `{"notebooks": {}, "schema_version": "3.0", "updated_at": "<ISO timestamp>"}`
+  `{"notebooks": {}, "schema_version": "1.0", "updated_at": "<ISO timestamp>"}`
 - If `notebooks/` folder does not exist, create it
+- Each `notebooks/{id}.json` must include `"schema_version": "1.0"` as the first field
 
 ---
 

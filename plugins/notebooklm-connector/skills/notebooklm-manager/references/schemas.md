@@ -14,11 +14,11 @@ Active notebooks index (minimal for fast loading).
       "name": "Claude Code Documentation",
       "url": "https://notebooklm.google.com/notebook/abc123",
       "topics": ["Claude Code", "CLI", "Plugins"],
-      "addedAt": "2026-01-20T08:00:00Z",
-      "discoveredBy": "smart-add"
+      "added_at": "2026-01-20T08:00:00Z",
+      "discovered_by": "smart-add"
     }
   },
-  "schema_version": "3.0",
+  "schema_version": "1.0",
   "updated_at": "2026-01-25T14:30:00Z"
 }
 ```
@@ -33,22 +33,19 @@ Full metadata, loaded on-demand.
 
 ```json
 {
+  "schema_version": "1.0",
   "id": "claude-docs",
   "name": "Claude Code Documentation",
   "url": "https://notebooklm.google.com/notebook/abc123",
   "description": "Official Claude Code documentation",
   "topics": ["Claude Code", "CLI", "Plugins", "MCP", "Hooks"],
-  "tags": ["documentation", "reference"],
-  "use_cases": ["Feature lookup", "API reference"],
-  "content_types": ["web", "pdf"],
   "created_at": "2026-01-20T08:00:00Z",
-  "updated_at": "2026-01-24T11:30:00Z",
-  "enabled": true
+  "updated_at": "2026-01-24T11:30:00Z"
 }
 ```
 
 ## Empty States
 
 ```json
-{"notebooks": {}, "schema_version": "3.0", "updated_at": "..."}
+{"notebooks": {}, "schema_version": "1.0", "updated_at": "..."}
 ```
