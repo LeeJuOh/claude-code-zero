@@ -76,12 +76,12 @@ claude --plugin-dir ./plugins/<plugin-name>
 
 When the user requests a tag on `main`:
 
-1. **Confirm branch** — Verify you are on `main`. Abort if not.
-2. **Ask about marketplace update** — Before creating the tag, ask the user which plugins in `marketplace.json` should have their `ref` and `version` updated to the new tag. Show the current `ref`/`version` of each plugin for reference.
-3. **Update marketplace.json** — For selected plugins, update `ref` to the new tag (e.g., `v1.1.0`) and `version` to match (e.g., `1.1.0`).
-4. **Commit** — Commit the marketplace.json change (e.g., `release: update marketplace refs to <tag>`).
-5. **Create tag** — Create the annotated tag on the commit that includes the marketplace update.
-6. **Confirm push** — Ask the user before pushing the tag and commits to remote.
+1. **Ask about marketplace update** — Before creating the tag, ask the user which plugins in `marketplace.json` should have their `ref` and `version` updated to the new tag. Show the current `ref`/`version` of each plugin for reference.
+2. **Update on develop** — On `develop`, update `marketplace.json` for selected plugins (`ref` to the new tag, `version` to match). Commit (e.g., `release: update marketplace refs to <tag>`).
+3. **Merge to main** — Switch to `main` and merge `develop`.
+4. **Create tag** — Create the annotated tag on `main`.
+5. **Switch back** — Return to `develop`.
+6. **Confirm push** — Ask the user before pushing `main`, `develop`, and the tag to remote.
 
 ## Coding Style
 
