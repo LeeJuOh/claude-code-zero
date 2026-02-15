@@ -1,20 +1,19 @@
 ---
 description: Write or update a handoff document for the next agent
 argument-hint: [path]
+disable-model-invocation: true
 ---
 
 Write or update a handoff document so the next agent with fresh context can continue this work.
 
 ## Arguments
 
-Parse `$ARGUMENTS` as the file path for the handoff document.
-
-- If a path is provided, use it as the save location (e.g., `handoffs/auth-refactor.md`)
-- If no path is provided, default to `HANDOFF.md` in the project root
+- `$0`: file path for the handoff document (optional, defaults to `HANDOFF.md` in the project root)
+  - Example: `handoffs/auth-refactor.md`
 
 ## Steps
 
-1. Determine the target file path from the argument (or default to `HANDOFF.md`)
+1. Determine the target file path from `$0` (or default to `HANDOFF.md`)
 2. Check if the target file already exists
 3. If it exists, read it first to understand prior context before updating
 4. Create or update the document with:
