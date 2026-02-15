@@ -12,16 +12,19 @@ plugins/<plugin-name>/            # Plugin source code (git-committed)
 references/                       # External reference materials (git-ignored)
 ```
 
+## Official Documentation
+
+For any plugin or marketplace related work (development, configuration, troubleshooting), always consult the official docs first:
+
+1. Fetch the entry point: https://code.claude.com/docs/llms.txt
+2. Identify the relevant page URLs from the index
+3. Fetch those pages to get the latest spec
+
+Key pages: plugins.md, plugins-reference.md, plugin-marketplaces.md, discover-plugins.md, hooks.md, skills.md, sub-agents.md
+
+Always verify schemas, field types, and supported options against the official docs before making changes.
+
 ## Plugin Development
-
-### Official Documentation
-
-Before developing a plugin, fetch the latest spec from the official documentation:
-
-- Entry point: https://code.claude.com/docs/llms.txt
-- Key references: plugins.md, plugins-reference.md, hooks.md, skills.md, sub-agents.md
-
-Always verify plugin.json schema, hook event types, skill frontmatter fields, and agent frontmatter fields against the official docs before implementation.
 
 ### Plugin Component Structure
 
@@ -67,6 +70,19 @@ claude --plugin-dir ./plugins/<plugin-name>
 
 - Tags must be created on `main` only. Never tag on `develop`.
 - Commit messages: English only, 1-2 concise sentences focusing on the core change.
+- Do NOT append `Co-Authored-By` trailers to commit messages.
+- Do NOT auto-push after committing. Only push when the user explicitly requests it.
+
+### Release Workflow (Tagging on main)
+
+When the user requests a tag on `main`:
+
+1. **Confirm branch** — Verify you are on `main`. Abort if not.
+2. **Ask about marketplace update** — Before creating the tag, ask the user which plugins in `marketplace.json` should have their `ref` and `version` updated to the new tag. Show the current `ref`/`version` of each plugin for reference.
+3. **Update marketplace.json** — For selected plugins, update `ref` to the new tag (e.g., `v1.1.0`) and `version` to match (e.g., `1.1.0`).
+4. **Commit** — Commit the marketplace.json change (e.g., `release: update marketplace refs to <tag>`).
+5. **Create tag** — Create the annotated tag on the commit that includes the marketplace update.
+6. **Confirm push** — Ask the user before pushing the tag and commits to remote.
 
 ## Coding Style
 

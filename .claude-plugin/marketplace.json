@@ -12,8 +12,8 @@
     {
       "name": "notebooklm-connector",
       "source": {
-        "source": "github",
-        "repo": "LeeJuOh/claude-code-zero",
+        "source": "url",
+        "url": "https://github.com/LeeJuOh/claude-code-zero.git",
         "path": "plugins/notebooklm-connector",
         "ref": "v1.0.2"
       },
@@ -23,8 +23,8 @@
     {
       "name": "toolbox",
       "source": {
-        "source": "github",
-        "repo": "LeeJuOh/claude-code-zero",
+        "source": "url",
+        "url": "https://github.com/LeeJuOh/claude-code-zero.git",
         "path": "plugins/toolbox",
         "ref": "v1.0.2"
       },

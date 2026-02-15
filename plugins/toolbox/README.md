@@ -2,6 +2,43 @@
 
 Personal utility commands and tools for Claude Code.
 
+## Installation
+
+### 1. Add the marketplace
+
+```shell
+/plugin marketplace add LeeJuOh/claude-code-zero
+```
+
+### 2. Install the plugin
+
+```shell
+/plugin install toolbox@claude-code-zero
+```
+
+Install with a specific scope:
+
+```shell
+# User scope (default, available across all projects)
+/plugin install toolbox@claude-code-zero --scope user
+
+# Project scope (shared with team via version control)
+/plugin install toolbox@claude-code-zero --scope project
+```
+
+### 3. Verify installation
+
+Run `/plugin` and check the **Installed** tab to confirm.
+
+### Plugin management
+
+```shell
+/plugin disable toolbox@claude-code-zero    # Disable
+/plugin enable toolbox@claude-code-zero     # Re-enable
+/plugin update toolbox@claude-code-zero     # Update
+/plugin uninstall toolbox@claude-code-zero  # Uninstall
+```
+
 ## Commands
 
 ### `/fetch-sitemap`
