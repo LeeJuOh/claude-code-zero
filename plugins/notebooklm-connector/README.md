@@ -55,12 +55,12 @@ NotebookLM uses Gemini to answer questions strictly from your uploaded sources. 
 
 ## Prerequisites
 
-This plugin requires Claude Code's Chrome integration to interact with NotebookLM in your browser.
+This plugin requires Claude Code's Chrome integration (beta) to interact with NotebookLM in your browser.
 
-- **Google Chrome or Microsoft Edge** (Brave/Arc not supported)
+- **Google Chrome or Microsoft Edge** (Brave, Arc, and other Chromium-based browsers are not supported. WSL is also not supported.)
 - **Claude in Chrome extension** v1.0.36+ ([Chrome Web Store](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn))
 - **Claude Code CLI** v2.0.73+
-- **Paid Claude plan** (Pro, Max, Team, or Enterprise)
+- **Direct Anthropic plan** (Pro, Max, Teams, or Enterprise) — not available through third-party providers (Amazon Bedrock, Google Cloud Vertex AI, Microsoft Foundry)
 - **Google account** logged into [NotebookLM](https://notebooklm.google.com) in Chrome
 
 ### Setup
