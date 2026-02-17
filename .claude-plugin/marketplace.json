@@ -12,7 +12,7 @@
     {
       "name": "notebooklm-connector",
       "source": "./plugins/notebooklm-connector",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
     },
     {
