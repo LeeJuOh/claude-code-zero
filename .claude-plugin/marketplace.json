@@ -22,10 +22,10 @@
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
-      "name": "karpathy-guidelines",
-      "source": "./plugins/karpathy-guidelines",
+      "name": "plugin-bookmarks",
+      "source": "./plugins/plugin-bookmarks",
       "version": "1.0.0",
-      "description": "Behavioral guidelines to reduce common LLM coding mistakes, derived from Andrej Karpathy's observations"
+      "description": "Bookmark third-party Claude Code plugins you want to remember"
     }
   ]
 }

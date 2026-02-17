@@ -1,0 +1,10 @@
+{
+  "name": "plugin-bookmarks",
+  "version": "1.0.0",
+  "description": "Bookmark third-party Claude Code plugins you want to remember",
+  "author": {
+    "name": "LeeJuOh"
+  },
+  "license": "MIT",
+  "keywords": ["bookmarks", "plugins", "wishlist", "registry"]
+}
