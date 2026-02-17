@@ -1,6 +1,6 @@
 # NotebookLM Connector
 
-> Query your Google NotebookLM notebooks directly from Claude Code — source-grounded, citation-backed answers without leaving the terminal.
+> Query your Google NotebookLM notebooks directly from Claude Code — source-grounded answers without leaving the terminal.
 
 ## The Problem
 
@@ -12,7 +12,7 @@ Working with external documentation in Claude Code often means choosing between 
 
 ## The Solution
 
-NotebookLM Connector bridges Claude Code and Google NotebookLM through Chrome browser automation. You ask Claude a question in natural language, and the plugin routes it to NotebookLM, which answers strictly from your uploaded documents — then brings the response back into your terminal with citations.
+Not  ebookLM Connector bridges Claude Code and Google NotebookLM through Chrome browser automation. You ask Claude a question in natural language, and the plugin routes it to NotebookLM, which answers strictly from your uploaded documents — then brings the response back into your terminal with citations.
 
 ```
 You (in Claude Code)
@@ -39,7 +39,6 @@ Final Answer (with citations)
 Key differentiators:
 
 - **Source-grounded**: Answers come only from documents you uploaded to NotebookLM — no hallucinations from training data.
-- **Citation-backed**: Every answer includes quoted passages and source references you can verify.
 - **Automatic follow-up**: Coverage analysis detects gaps in the answer and sends additional queries (up to 3 rounds) before presenting the final result.
 
 ## Why NotebookLM?
@@ -49,7 +48,7 @@ Key differentiators:
 | Feed docs into context | High | Varies by doc size | None | Small, single documents |
 | Web search | None | Unverified sources | None | General knowledge |
 | Local RAG pipeline | Medium | Depends on chunking | High (infra + tuning) | Large private corpora |
-| **NotebookLM via this plugin** | **None** | **Document-only, cited** | **Medium (one-time)** | **Technical references, API docs** |
+| **NotebookLM via this plugin** | **None** | **Document-only** | **Medium (one-time)** | **Technical references, API docs** |
 
 NotebookLM uses Gemini to answer questions strictly from your uploaded sources. This plugin automates the interaction so you never leave Claude Code.
 
@@ -135,7 +134,7 @@ Ask Claude a question about any topic in that notebook:
 "What authentication methods does the API support?"
 ```
 
-Claude routes the question to NotebookLM, retrieves the answer with citations, then runs coverage analysis to check whether all parts of your question were addressed.
+Claude routes the question to NotebookLM, retrieves the answer, then runs coverage analysis to check whether all parts of your question were addressed.
 
 ### 3. See coverage analysis in action
 
@@ -162,10 +161,6 @@ Claude:
 **Answer**: Function calling requires a `tools` parameter containing
 `function_declarations` with name, description, and parameters schema...
 
-**Citations**:
-[1] "The tools parameter accepts an array of function declarations..." - Source: Gemini API Reference
-[2] "Each function declaration must include name (string), description..." - Source: Function Calling Guide
-
 ---
 **Suggested follow-ups**:
 - How do I handle the function call response?
@@ -180,7 +175,7 @@ You need to compare features across documentation:
 You: "Compare rate limits and pricing between different Gemini model tiers"
 ```
 
-The plugin queries NotebookLM, detects that "pricing" wasn't fully covered in the first response, automatically sends a follow-up query about pricing, then presents a unified answer covering both topics with citations from both responses.
+The plugin queries NotebookLM, detects that "pricing" wasn't fully covered in the first response, automatically sends a follow-up query about pricing, then presents a unified answer covering both topics.
 
 ## Architecture
 
@@ -188,13 +183,13 @@ The plugin queries NotebookLM, detects that "pricing" wasn't fully covered in th
 
 ```
 notebooklm-connector/
-├── .claude-plugin/plugin.json        # Plugin manifest
+├── .claude-plugin/plugin.json
 ├── skills/notebooklm-manager/
-│   ├── SKILL.md                      # Orchestration logic
-│   ├── references/                   # Command + schema docs
-│   └── data/                         # Notebook registry (JSON)
-├── agents/chrome-mcp-query.md        # Chrome automation agent
-└── hooks/hooks.json                  # PostToolUse coverage reminder
+│   ├── SKILL.md
+│   ├── references/              # Command + schema docs
+│   └── data/
+├── agents/chrome-mcp-query.md
+└── hooks/hooks.json
 ```
 
 ### Query Flow
@@ -244,12 +239,7 @@ After every query, the skill analyzes whether all keywords and topics from your 
 
 ### Chat History Management
 
-Before the first query to a notebook in a session, you can choose to clear NotebookLM's chat history:
-
-- **No** (recommended): Keep previous context for faster responses
-- **Yes**: Start fresh with no prior context
-
-This prompt appears once per notebook URL per session.
+By default, previous chat context in NotebookLM is preserved for faster responses. To start fresh, explicitly ask Claude to clear history before querying (e.g., "Clear history and ask my notebook about X").
 
 ### Tab Reuse
 

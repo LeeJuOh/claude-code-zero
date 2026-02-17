@@ -68,7 +68,6 @@ When embedding the question text into JavaScript strings, you MUST escape it pro
 **0.1 Parse from prompt:**
 - `URL`: Target NotebookLM URL (required)
 - `Question`: User's question (required)
-- `mode`: "query" or "discover" (default: "query")
 - `clearHistory`: true/false (default: false)
 
 **✓ STEP 0 Complete Check**: Parameters parsed → Go to STEP 1

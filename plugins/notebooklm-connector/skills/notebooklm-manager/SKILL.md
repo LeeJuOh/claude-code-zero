@@ -46,31 +46,12 @@ Read `${SKILL_ROOT}/data/library.json` to find notebook URL.
 - **File not found → Create `data/` folder and files with `[]`**
 - Not found → Show "Did you mean?" with similar IDs
 
-### 3. Chat History Confirmation (First Query Only)
+### 3. Chat History
 
-**Before the first query to a notebook**, ask user about chat history:
+Default: `clearHistory: false` (keep previous context).
 
-```
-AskUserQuestion({
-  questions: [{
-    question: "Clear NotebookLM chat history before querying?",
-    header: "History",
-    options: [
-      { label: "No (Recommended)", description: "Keep previous context, faster response" },
-      { label: "Yes", description: "Start fresh, may involve UI modal interaction" }
-    ],
-    multiSelect: false
-  }]
-})
-```
-
-Pass result to agent as `clearHistory: true/false` in the prompt.
-
-**Note**: Clearing history may trigger a confirmation modal in NotebookLM, which can slow down automation. Default "No" is recommended.
-
-Track per-notebook first-query status within the current conversation.
-After asking once for a given notebook URL, skip the confirmation for
-subsequent queries to the same URL in the same session.
+Set `clearHistory: true` only when the user explicitly requests it
+(e.g., "clear history and query…", "start fresh on this notebook").
 
 ### 4. Agent Invocation
 
@@ -81,7 +62,6 @@ Task({
 
 URL: {url}
 Question: {question}
-mode: query
 clearHistory: {true/false}
 
 Output the response immediately upon receiving it and exit.`
@@ -142,9 +122,6 @@ Max 3 follow-ups. After limit: AskUserQuestion to confirm whether to continue.
 **Notebook**: [Title] (`{id}`)
 
 **Answer**: [response]
-
-**Citations**:
-[1] "quote" - Source: [doc]
 
 ---
 **Suggested follow-ups**:
