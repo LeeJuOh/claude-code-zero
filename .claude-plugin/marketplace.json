@@ -20,6 +20,12 @@
       "source": "./plugins/toolbox",
       "version": "1.1.1",
       "description": "Personal utility commands and tools for Claude Code"
+    },
+    {
+      "name": "karpathy-guidelines",
+      "source": "./plugins/karpathy-guidelines",
+      "version": "1.0.0",
+      "description": "Behavioral guidelines to reduce common LLM coding mistakes, derived from Andrej Karpathy's observations"
     }
   ]
 }
