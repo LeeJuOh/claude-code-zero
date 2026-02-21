@@ -12,20 +12,26 @@
     {
       "name": "notebooklm-connector",
       "source": "./plugins/notebooklm-connector",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
     },
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
       "name": "plugin-bookmarks",
       "source": "./plugins/plugin-bookmarks",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Bookmark third-party Claude Code plugins you want to remember"
+    },
+    {
+      "name": "extension-analyzer",
+      "source": "./plugins/extension-analyzer",
+      "version": "1.0.0",
+      "description": "Analyze Claude Code extensions with security audit, architecture review, and visual report generation"
     },
     {
       "name": "macos-notifier",
