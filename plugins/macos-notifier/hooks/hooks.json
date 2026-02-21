@@ -1,0 +1,17 @@
+{
+  "description": "macOS desktop notifications for Claude Code events",
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

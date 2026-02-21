@@ -26,6 +26,12 @@
       "source": "./plugins/plugin-bookmarks",
       "version": "1.0.0",
       "description": "Bookmark third-party Claude Code plugins you want to remember"
+    },
+    {
+      "name": "macos-notifier",
+      "source": "./plugins/macos-notifier",
+      "version": "1.0.0",
+      "description": "Silent macOS desktop notifications when Claude Code needs attention"
     }
   ]
 }

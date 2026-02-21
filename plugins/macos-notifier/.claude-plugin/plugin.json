@@ -1,0 +1,7 @@
+{
+  "name": "macos-notifier",
+  "description": "Silent macOS desktop notifications when Claude Code needs attention",
+  "author": { "name": "LeeJuOh" },
+  "license": "MIT",
+  "keywords": ["macos", "notification", "hooks", "desktop"]
+}
