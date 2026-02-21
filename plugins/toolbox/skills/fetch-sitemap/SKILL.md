@@ -1,4 +1,5 @@
 ---
+name: fetch-sitemap
 description: Extract URLs from an XML sitemap with optional regex filtering
 allowed-tools: Bash(curl *), Write
 argument-hint: <url> [pattern]
