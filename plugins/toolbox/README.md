@@ -77,6 +77,24 @@ Write or update a handoff document so the next agent with fresh context can cont
 /handoff handoffs/api-migration.md
 ```
 
+### `/worktree`
+
+Create a git worktree for an existing or new branch with `.worktreeinclude` file copying.
+
+**Usage:**
+
+```
+/worktree <branch> [path]
+```
+
+**Examples:**
+
+```
+/worktree feature/auth              # existing or new branch
+/worktree fix/login-bug work/login  # specific path
+/worktree develop                   # checkout existing branch
+```
+
 ## License
 
 MIT
