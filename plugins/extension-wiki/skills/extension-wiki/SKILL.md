@@ -1,11 +1,13 @@
 ---
-name: extension-analyzer
+name: extension-wiki
 description: >
   Analyze Claude Code extensions to generate visual reports with security audit,
   architecture review, and quality scores. Use when asked to analyze, audit,
-  inspect, or review a plugin or extension. Not for plugin development,
-  installation, validation, or creation — use plugin-dev skills for those.
-argument-hint: "<path-or-url> [--lang ko|en|ja]"
+  inspect, review, document, or generate a wiki for a plugin or extension.
+  Supports inline markdown reports and self-contained HTML wiki reports.
+  Not for plugin development, installation, validation, or creation — use
+  plugin-dev skills for those.
+argument-hint: "<path-or-url> [--lang ko|en|ja] [--output <path>]"
 allowed-tools:
   - Read
   - Glob
@@ -14,12 +16,12 @@ allowed-tools:
   - Task
   - AskUserQuestion
   - Bash(gh repo clone *)
-  - Bash(rm -rf /tmp/extension-analyzer-*)
+  - Bash(rm -rf /tmp/extension-wiki-*)
 ---
 
-# Extension Analyzer
+# Extension Wiki
 
-Analyze Claude Code extensions and generate visual reports with security audit and quality scores.
+Analyze Claude Code extensions and generate visual reports (inline markdown or self-contained HTML) with security audit and quality scores.
 
 ## Instructions
 
@@ -52,11 +54,12 @@ Pass the detected language to sub-agents and use it for Phase 5 report assembly.
 
 ### Analysis Mode Detection
 
-| Mode | Trigger Keywords | Output Scope |
-|------|-----------------|--------------|
-| `analyze` (default) | "analyze", "분석", "inspect", "report" | Full 7-category report |
-| `security` | "security audit", "보안 감사", "권한 분석", "permission" | Security & permissions only |
-| `overview` | "overview", "개요", "요약", "summary" | Identity + component inventory only |
+| Mode | Trigger Keywords | Output |
+|------|-----------------|--------|
+| `analyze` (default) | "analyze", "분석", "inspect", "report" | Inline markdown (full 7-category) |
+| `security` | "security audit", "보안 감사", "권한 분석", "permission" | Inline markdown (security only) |
+| `overview` | "overview", "개요", "요약", "summary" | Inline markdown (identity + inventory) |
+| `report` | "wiki", "document", "docs", "html", "문서화", "위키", "리포트 생성" | Self-contained HTML file |
 
 ### Workflow
 
@@ -64,9 +67,9 @@ Pass the detected language to sub-agents and use it for Phase 5 report assembly.
 
 - **Local path**: Verify directory exists, proceed directly
 - **Installed plugin**: Search `~/.claude/plugins/cache/` for matching directory
-- **GitHub URL**: Clone to `/tmp/extension-analyzer-{random}`:
+- **GitHub URL**: Clone to `/tmp/extension-wiki-{random}`:
   ```
-  Bash(gh repo clone {owner/repo} /tmp/extension-analyzer-{random})
+  Bash(gh repo clone {owner/repo} /tmp/extension-wiki-{random})
   ```
   For subpath URLs (`github.com/owner/repo/tree/branch/plugins/foo`):
   1. Extract `owner/repo` for cloning
@@ -129,7 +132,7 @@ Output for Phase 4: plugin identity + file path inventory + existence flags + la
 
 For `overview` mode, skip this phase — go directly to Phase 5.
 
-For `analyze` and `security` modes, delegate to agents in parallel.
+For `analyze`, `security`, and `report` modes, delegate to agents in parallel.
 
 **Agent prompt**: Provide each agent with:
 - Plugin identity (name, version, author — from plugin.json)
@@ -138,6 +141,8 @@ For `analyze` and `security` modes, delegate to agents in parallel.
 - Output language
 - Analysis mode
 
+**For `report` mode** — same dispatch as `analyze` mode (both agents always needed for HTML report).
+
 **For `analyze` mode with large plugins (total components > 15)** — split feature-architect into batches.
 
 Count total = skills + agents + commands. Split each type in half:
@@ -145,13 +150,13 @@ Count total = skills + agents + commands. Split each type in half:
 ```
 S = number of skills, A = number of agents, C = number of commands
 
-Task(subagent_type: "extension-analyzer:feature-architect", prompt: {
+Task(subagent_type: "extension-wiki:feature-architect", prompt: {
   skills 1..ceil(S/2) + agents 1..ceil(A/2) + commands 1..ceil(C/2)
 })
-Task(subagent_type: "extension-analyzer:feature-architect", prompt: {
+Task(subagent_type: "extension-wiki:feature-architect", prompt: {
   skills ceil(S/2)+1..S + agents ceil(A/2)+1..A + commands ceil(C/2)+1..C + MCP + LSP
 })
-Task(subagent_type: "extension-analyzer:security-auditor", prompt: {all file paths})
+Task(subagent_type: "extension-wiki:security-auditor", prompt: {all file paths})
 ```
 
 MCP, LSP, hooks, and rules are lightweight — keep them in Batch 2 only.
@@ -160,17 +165,19 @@ All three tasks run in parallel. Merge feature-architect batch results before Ph
 **For `analyze` mode with standard plugins (total components <= 15)**:
 
 ```
-Task(subagent_type: "extension-analyzer:feature-architect", prompt: {all file paths})
-Task(subagent_type: "extension-analyzer:security-auditor", prompt: {all file paths})
+Task(subagent_type: "extension-wiki:feature-architect", prompt: {all file paths})
+Task(subagent_type: "extension-wiki:security-auditor", prompt: {all file paths})
 ```
 
 **For `security` mode** — launch only security-auditor:
 
 ```
-Task(subagent_type: "extension-analyzer:security-auditor", prompt: {all file paths})
+Task(subagent_type: "extension-wiki:security-auditor", prompt: {all file paths})
 ```
 
 #### Phase 5: Report Assembly
+
+For `analyze`, `security`, and `overview` modes — assemble inline markdown report:
 
 Assemble the report using `references/report-template.md` format:
 
@@ -187,15 +194,40 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 Output the report directly to the user (inline markdown).
 
+#### Phase 5R: HTML Report Generation (report mode only)
+
+For `report` mode, generate a self-contained HTML file instead of inline markdown.
+
+1. **Determine output path**:
+   - If `--output <path>` is specified → use that path
+   - Otherwise → `{target-directory}/extension-wiki-report.html`
+
+2. **Delegate to report-writer agent**:
+   ```
+   Task(subagent_type: "extension-wiki:report-writer", prompt: {
+     feature-architect analysis results (full text),
+     security-auditor analysis results (full text),
+     plugin metadata (name, version, author, license, keywords),
+     output file path,
+     output language
+   })
+   ```
+
+3. **Report completion**: After the agent writes the HTML file, output the `file:///` URL to the user:
+   ```
+   Report generated: file:///{absolute-path}/extension-wiki-report.html
+   ```
+
 #### Phase 6: Cleanup
 
 If the source was cloned from GitHub:
 ```
-Bash(rm -rf /tmp/extension-analyzer-{directory})
+Bash(rm -rf /tmp/extension-wiki-{directory})
 ```
 
 ### Reference Files
 
 - `references/analysis-criteria.md` — 7-category evaluation criteria and weights
 - `references/security-rules.md` — Security patterns and risk classification
-- `references/report-template.md` — Report output format templates
+- `references/report-template.md` — Report output format templates (inline markdown)
+- `references/html-report-template.md` — HTML report structure and style guide (report mode)

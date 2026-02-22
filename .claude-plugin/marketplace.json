@@ -28,10 +28,10 @@
       "description": "Bookmark third-party Claude Code plugins you want to remember"
     },
     {
-      "name": "extension-analyzer",
-      "source": "./plugins/extension-analyzer",
+      "name": "extension-wiki",
+      "source": "./plugins/extension-wiki",
       "version": "1.0.0",
-      "description": "Analyze Claude Code extensions with security audit, architecture review, and visual report generation"
+      "description": "Analyze Claude Code plugins and generate wiki-style HTML reports with security audit, architecture review, and quality scores"
     },
     {
       "name": "macos-notifier",

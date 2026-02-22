@@ -3,14 +3,14 @@ name: security-auditor
 color: red
 description: |
   Analyze security posture, permission models, and risk levels
-  of Claude Code plugin components. Delegated by the extension-analyzer skill.
+  of Claude Code plugin components. Delegated by the extension-wiki skill.
 
   <example>
   Context: Skill delegates security analysis with metadata and file paths
   user: "Analyze security for plugin at ./plugins/my-plugin with components: [SKILL] my-skill, [AGENT] my-agent"
   assistant: "I'll audit the permission model, tool scope, hook scripts, and MCP trust boundaries."
   <commentary>
-  The extension-analyzer skill provides metadata and file paths. This agent reads the actual files and performs security analysis.
+  The extension-wiki skill provides metadata and file paths. This agent reads the actual files and performs security analysis.
   </commentary>
   </example>
 model: sonnet

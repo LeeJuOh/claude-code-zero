@@ -55,3 +55,4 @@ plugins/*/.venv/
 
 /docs/
 plugins/notebooklm-connector/docs/
+.claude/worktrees

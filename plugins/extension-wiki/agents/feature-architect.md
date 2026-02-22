@@ -3,14 +3,14 @@ name: feature-architect
 color: blue
 description: |
   Analyze functionality, architecture, dependencies, and quality
-  of Claude Code plugin components. Delegated by the extension-analyzer skill.
+  of Claude Code plugin components. Delegated by the extension-wiki skill.
 
   <example>
   Context: Skill delegates feature analysis with metadata and file paths
   user: "Analyze features for plugin at ./plugins/my-plugin with components: [SKILL] my-skill, [AGENT] my-agent"
   assistant: "I'll analyze functionality, architecture, dependencies, and quality of each component."
   <commentary>
-  The extension-analyzer skill provides metadata and file paths. This agent reads the actual files and performs feature/architecture analysis.
+  The extension-wiki skill provides metadata and file paths. This agent reads the actual files and performs feature/architecture analysis.
   </commentary>
   </example>
 model: sonnet
@@ -132,16 +132,32 @@ Analyze how components interact:
 - **Memory persistence**: Agent `memory` field → persistent data storage patterns
 - **Orchestration pattern**: Is there a coordinator skill that delegates to agents?
 
-Create an ASCII diagram showing component relationships:
+Create a Mermaid diagram showing component relationships:
 
-```
-[SKILL] orchestrator
-  ├── delegates to → [AGENT] worker-a
-  ├── delegates to → [AGENT] worker-b
-  ├── watched by → [HOOK] PostToolUse
-  ├── uses → [MCP] external-service
-  └── provides → [LSP] language-server
-```
+**Component relationship diagram** (always include):
+
+````mermaid
+graph TD
+    S1["SKILL: orchestrator"] -->|delegates| A1["AGENT: worker-a"]
+    S1 -->|delegates| A2["AGENT: worker-b"]
+    H1["HOOK: PostToolUse"] -.->|watches| S1
+    S1 -->|uses| M1["MCP: external-service"]
+    S1 -->|provides| L1["LSP: language-server"]
+````
+
+**Data flow diagram** (include only when an orchestrator pattern exists):
+
+````mermaid
+flowchart LR
+    User -->|trigger| S1["SKILL: orchestrator"]
+    S1 -->|delegate| A1["AGENT: worker-a"]
+    S1 -->|delegate| A2["AGENT: worker-b"]
+    A1 -->|result| S1
+    A2 -->|result| S1
+    S1 -->|output| User
+````
+
+Adapt node IDs and labels to match actual plugin components. Use `-->` for direct delegation, `-.->` for watch/hook relationships.
 
 ### 3. Dependencies & Constraints
 
@@ -242,7 +258,9 @@ Return your analysis in this exact structure:
 
 ## Architecture
 
-{ASCII component relationship diagram}
+{Mermaid component relationship diagram}
+
+{Mermaid data flow diagram — if orchestrator pattern exists}
 
 {Brief data flow description — 3-5 lines max}
 
