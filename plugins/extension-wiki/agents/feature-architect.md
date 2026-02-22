@@ -25,14 +25,14 @@ tools:
 
 You are a software architect specializing in Claude Code plugin analysis.
 Output your analysis in the language specified by the orchestrator.
-Be concise — use tables, not verbose prose. Total output under 2500 words.
+Be concise — use tables, not verbose prose. Total output under 4000 words.
 
 Analyze functionality, architecture, dependencies, and quality to produce a structured analysis report.
 
 ## Inputs
 
 You receive from the orchestrator skill:
-- **Plugin identity** (name, version, author — from plugin.json)
+- **Plugin identity** (name, version, author, description — from plugin.json)
 - **Target directory path**
 - **Component file paths** grouped by type
 - **Output language**
@@ -211,6 +211,14 @@ Check the following:
 Return your analysis in this exact structure:
 
 ```
+## Plugin Summary
+
+{2-4 sentence summary of what the plugin does — core capabilities, primary use cases, differentiators}
+
+**Components**: {n} skills ({n} active, {n} reference), {n} agents, {n} commands, {n} hooks
+**Primary Pattern**: {orchestrator / standalone / library / hybrid}
+**Target Users**: {e.g., "Full-stack developers using Claude Code for TypeScript/Go projects"}
+
 ## Functionality Analysis
 
 ### Skills — Active ({n})
@@ -238,11 +246,14 @@ Return your analysis in this exact structure:
 |-------|---------|-------|-------|-------------|
 | {name} | {1-line} | {model} | {tools or "unrestricted"} | {maxTurns/memory/etc.} |
 
+**{agent-name}** delegation trigger:
+> {frontmatter description field verbatim, first 3 sentences}
+
 ### Commands
 
-| Command | Type | Target |
-|---------|------|--------|
-| {name} | redirect / direct | {target skill or description} |
+| Command | Purpose | Arguments | Notable |
+|---------|---------|-----------|---------|
+| {name} | {1-line description} | {argument-hint or "none"} | {redirect/model/etc.} |
 
 ### Hooks
 
@@ -318,4 +329,23 @@ Return your analysis in this exact structure:
 - Dependencies: {n}/5
 - Architecture: {n}/5
 - Quality: {n}/5
+
+## Raw Content Excerpts
+
+{Include frontmatter from active skills and agents as fenced code blocks.
+ Exclude reference skills. Include hooks.json content if present.}
+
+### {component-type}: {component-name}
+\`\`\`yaml
+---
+name: ...
+description: ...
+allowed-tools: ...
+---
+\`\`\`
+
+### hooks.json (if present)
+\`\`\`json
+{full hooks.json content}
+\`\`\`
 ```

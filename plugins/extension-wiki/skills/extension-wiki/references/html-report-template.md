@@ -158,31 +158,282 @@ tr:hover { background: var(--bg-secondary); }
 </header>
 ```
 
-### 2. Score Overview
+### 2. Plugin Overview
+
+Between header and scores. Blue left-border card with summary and statistics.
+
+```html
+<div class="card plugin-overview">
+  <h2>Plugin Overview</h2>
+  <p class="plugin-summary">{2-4 sentence summary from feature-architect "Plugin Summary"}</p>
+  <div class="overview-stats">
+    <div class="stat-box"><div class="stat-number">{n}</div><div class="stat-label">Skills</div></div>
+    <div class="stat-box"><div class="stat-number">{n}</div><div class="stat-label">Agents</div></div>
+    <div class="stat-box"><div class="stat-number">{n}</div><div class="stat-label">Commands</div></div>
+    <div class="stat-box"><div class="stat-number">{n}</div><div class="stat-label">Hooks</div></div>
+  </div>
+  <div class="overview-meta">
+    <span><strong>Pattern:</strong> {orchestrator/standalone/library/hybrid}</span>
+    <span><strong>Target Users:</strong> {target user description}</span>
+  </div>
+</div>
+```
+
+```css
+.plugin-overview {
+  border-left: 4px solid var(--accent);
+}
+.plugin-summary {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+.overview-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.stat-box {
+  flex: 1;
+  text-align: center;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+.overview-meta {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+```
+
+### 3. Score Overview
 
 7-category score bars + overall score with grade letter. Use the score-row pattern above.
 
-### 3. Components
+### 4. Components
 
 Component cards grouped by type. Each card shows:
 - Badge with component type
 - Name and purpose (1-line)
 - Key attributes (tools, model, constraints)
 
-### 4. Architecture
+**Section descriptions**: Each component sub-section MUST include a `.section-desc` paragraph explaining the component type:
+
+```css
+.section-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  line-height: 1.5;
+}
+```
+
+Required description texts per sub-section (translate to target language):
+
+| Sub-section | Description |
+|-------------|-------------|
+| Active Skills | Skills with tool access, agent delegation, or hooks. Claude auto-triggers them or users invoke via `/name`. |
+| Reference Skills | Pure knowledge documents. Claude reads them as context and applies guidelines. No tool access or side effects. |
+| Commands | Legacy slash commands from `commands/` directory. Modern plugins use `skills/` instead. |
+| Agents | Specialized sub-agents that Claude auto-delegates to. The `description` field determines when delegation occurs. |
+| Hooks | Automations triggered by Claude Code lifecycle events (tool use, session start/end, etc.). |
+
+**Agent delegation trigger block**: After each agent card, show the agent's `description` field verbatim:
+
+```html
+<div class="agent-delegation-trigger">
+  <strong>Delegation trigger:</strong>
+  <p>{agent description field verbatim, first 3 sentences}</p>
+</div>
+```
+
+```css
+.agent-delegation-trigger {
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  color: var(--text-secondary);
+}
+.agent-delegation-trigger strong {
+  color: var(--text);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+```
+
+**Raw data viewer**: Inside component cards for active skills and agents, include a collapsible frontmatter viewer:
+
+```html
+<details class="raw-data-viewer">
+  <summary>View source (frontmatter)</summary>
+  <pre><code>---
+name: ...
+description: ...
+allowed-tools: ...
+---</code></pre>
+</details>
+```
+
+```css
+.raw-data-viewer {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.raw-data-viewer summary {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  cursor: pointer;
+}
+.raw-data-viewer summary:hover {
+  background: #eef2f7;
+}
+.raw-data-viewer pre {
+  margin: 0;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  background: #f1f5f9;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+```
+
+**Commands table**: Use Purpose + Arguments + Notable columns:
+
+```html
+<table>
+  <tr><th>Command</th><th>Purpose</th><th>Arguments</th><th>Notable</th></tr>
+  <tr><td>{name}</td><td>{description}</td><td>{argument-hint}</td><td>{redirect/model/etc.}</td></tr>
+</table>
+```
+
+### 5. Architecture
+
+Mermaid diagrams are wrapped in a clickable container with fullscreen overlay support:
 
 ```html
 <div class="card">
   <h2>Architecture</h2>
-  <pre class="mermaid">
-    graph TD
-      S1["SKILL: name"] -->|delegates| A1["AGENT: name"]
-  </pre>
+  <div class="diagram-container" onclick="openDiagramOverlay(this)">
+    <div class="diagram-hint">Click to enlarge</div>
+    <pre class="mermaid">
+      graph TD
+        S1["SKILL: name"] -->|delegates| A1["AGENT: name"]
+    </pre>
+  </div>
   <p>{brief data flow description}</p>
+</div>
+
+<!-- Fullscreen overlay (once, at end of body) -->
+<div class="diagram-overlay" id="diagramOverlay" onclick="closeDiagramOverlay(event)">
+  <div class="overlay-controls">
+    <button onclick="zoomDiagram(1.2)">+</button>
+    <button onclick="zoomDiagram(0.8)">−</button>
+    <button onclick="closeDiagramOverlay(event)">✕</button>
+  </div>
+  <div class="overlay-content" id="overlayContent"></div>
 </div>
 ```
 
-### 5. Security Audit
+```css
+.diagram-container {
+  cursor: pointer;
+  position: relative;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: box-shadow 0.2s;
+  overflow: hidden;
+}
+.diagram-container:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.diagram-hint {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.diagram-container:hover .diagram-hint {
+  opacity: 1;
+}
+.diagram-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+.diagram-overlay.active {
+  display: flex;
+}
+.overlay-controls {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 1001;
+}
+.overlay-controls button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.overlay-controls button:hover {
+  background: #f0f0f0;
+}
+.overlay-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow: auto;
+  transform: scale(1);
+  transition: transform 0.2s;
+}
+```
+
+### 6. Security Audit
 
 - Overall risk badge (colored by level)
 - Permission matrix table
@@ -196,15 +447,15 @@ Component cards grouped by type. Each card shows:
 </details>
 ```
 
-### 6. Usage Guide
+### 7. Usage Guide
 
 Installation commands, prerequisites table, trigger phrases, when to use / not to use.
 
-### 7. Dependencies
+### 8. Dependencies
 
 Tool dependencies, external dependencies, environment variables, model requirements — all as tables.
 
-### 8. Quality
+### 9. Quality
 
 Checklist with pass/fail indicators:
 
@@ -219,7 +470,7 @@ Checklist with pass/fail indicators:
 .check.fail { color: var(--danger); }
 ```
 
-### 9. Footer
+### 10. Footer
 
 ```html
 <footer style="text-align:center; padding:2rem; color:var(--text-secondary); font-size:0.8rem;">
@@ -234,6 +485,37 @@ Checklist with pass/fail indicators:
 ```html
 <script>
   mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+</script>
+```
+
+### Diagram Fullscreen Overlay
+
+```html
+<script>
+  let currentScale = 1;
+
+  function openDiagramOverlay(container) {
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+    const overlay = document.getElementById('diagramOverlay');
+    const content = document.getElementById('overlayContent');
+    content.innerHTML = '';
+    content.appendChild(svg.cloneNode(true));
+    currentScale = 1;
+    content.style.transform = 'scale(1)';
+    overlay.classList.add('active');
+  }
+
+  function closeDiagramOverlay(e) {
+    if (e.target.closest('.overlay-content') && !e.target.closest('.overlay-controls button')) return;
+    document.getElementById('diagramOverlay').classList.remove('active');
+  }
+
+  function zoomDiagram(factor) {
+    currentScale *= factor;
+    currentScale = Math.max(0.3, Math.min(currentScale, 5));
+    document.getElementById('overlayContent').style.transform = 'scale(' + currentScale + ')';
+  }
 </script>
 ```
 

@@ -31,9 +31,11 @@ Output the HTML file in the language specified by the orchestrator.
 You receive from the orchestrator skill:
 - **Feature-architect analysis results** (full structured text)
 - **Security-auditor analysis results** (full structured text)
-- **Plugin metadata** (name, version, author, license, keywords)
+- **Plugin metadata** (name, version, author, license, keywords, description)
 - **Output file path** (absolute path for the HTML file)
 - **Output language**
+
+The feature-architect results include a "Plugin Summary" section (overview, component counts, pattern, target users) and "Raw Content Excerpts" (frontmatter from active skills and agents).
 
 ## Output
 
@@ -61,7 +63,8 @@ Generate a single `.html` file with all styles inline. External dependencies are
 </head>
 <body>
   <!-- Header: plugin name, version, author, generation date -->
-  <!-- Nav TOC: section jump links -->
+  <!-- Nav TOC: section jump links (include Plugin Overview) -->
+  <!-- Plugin Overview: summary, component stats, pattern, target users -->
   <!-- Score Overview: 7-category visual bars + overall grade -->
   <!-- Components: skill/agent/hook/MCP/LSP cards -->
   <!-- Architecture: Mermaid diagrams -->
@@ -84,3 +87,9 @@ Generate a single `.html` file with all styles inline. External dependencies are
 4. **Collapsible sections**: Use `<details><summary>` for findings and detailed component info
 5. **Responsive**: Max-width container (900px), responsive cards with flexbox
 6. **Language**: Translate all section headers and labels to the target language. Keep component names, file paths, and technical terms untranslated
+7. **Plugin Overview**: Always generate a Plugin Overview section (between Header and Score Overview) using the "Plugin Summary" from feature-architect data. Include component count stat boxes, primary pattern, and target users
+8. **Section descriptions**: Each component sub-section (Active Skills, Reference Skills, Commands, Agents, Hooks) MUST include a `.section-desc` paragraph explaining the component type — see `references/html-report-template.md` for required texts
+9. **Commands table**: Use Purpose, Arguments, and Notable columns (not just Type/Target)
+10. **Agent delegation triggers**: Show each agent's `description` field verbatim in an `.agent-delegation-trigger` block below the agent card
+11. **Raw data viewers**: Include collapsible `.raw-data-viewer` panels with frontmatter source for active skills and agents. Use `<details>` pattern from the template
+12. **Mermaid zoom**: Wrap Mermaid diagrams in `.diagram-container` with click handler. Include the fullscreen `.diagram-overlay` with zoom controls at end of body — see `references/html-report-template.md` for JS

@@ -135,7 +135,7 @@ For `overview` mode, skip this phase — go directly to Phase 5.
 For `analyze`, `security`, and `report` modes, delegate to agents in parallel.
 
 **Agent prompt**: Provide each agent with:
-- Plugin identity (name, version, author — from plugin.json)
+- Plugin identity (name, version, author, description — from plugin.json)
 - Target directory path
 - Component file paths grouped by type (from Phase 2 Glob)
 - Output language
@@ -205,9 +205,9 @@ For `report` mode, generate a self-contained HTML file instead of inline markdow
 2. **Delegate to report-writer agent**:
    ```
    Task(subagent_type: "extension-wiki:report-writer", prompt: {
-     feature-architect analysis results (full text),
+     feature-architect analysis results (full text, including Plugin Summary and Raw Content Excerpts),
      security-auditor analysis results (full text),
-     plugin metadata (name, version, author, license, keywords),
+     plugin metadata (name, version, author, license, keywords, description),
      output file path,
      output language
    })
