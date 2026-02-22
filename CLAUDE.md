@@ -27,7 +27,7 @@ See **Workflow step 1 (Docs)** for the mandatory consultation process.
 Standard plugin layout inside `plugins/<plugin-name>/`:
 
 ```
-.claude-plugin/plugin.json   # Plugin manifest (optional, auto-discovers if omitted)
+.claude-plugin/plugin.json   # Plugin manifest (no version — version lives in marketplace.json)
 commands/                     # Slash commands — legacy; use skills/ for new skills
 skills/                       # Skills with SKILL.md
 agents/                       # Sub-agents (*.md)
@@ -87,5 +87,5 @@ When the user requests a tag on `main`:
 
 - **Language**: All plugin content in English (SKILL.md, agent.md, README.md, comments, descriptions)
 - **Plugin names**: kebab-case (e.g., `notebook-researcher`, `code-reviewer`)
-- **Versioning**: Semantic Versioning (e.g., `1.0.0`)
+- **Versioning**: Semantic Versioning (e.g., `1.0.0`). Version is set only in `marketplace.json`, not in individual `plugin.json` files (all plugins use relative-path sources).
 - **Descriptions**: Clear and concise
