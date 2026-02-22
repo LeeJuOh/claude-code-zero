@@ -79,7 +79,7 @@ Write or update a handoff document so the next agent with fresh context can cont
 
 ### `/worktree`
 
-Create a git worktree for an existing or new branch with `.worktreeinclude` file copying.
+Create a git worktree for an existing or new branch with `.worktreeinclude` (copy) and `.worktreelink` (symlink) support.
 
 **Usage:**
 
@@ -94,6 +94,13 @@ Create a git worktree for an existing or new branch with `.worktreeinclude` file
 /worktree fix/login-bug work/login  # specific path
 /worktree develop                   # checkout existing branch
 ```
+
+**Configuration files** (placed in project root):
+
+- `.worktreeinclude` — glob patterns for items to **copy** into the worktree (small config: `.env`, `.vscode/`)
+- `.worktreelink` — glob patterns for items to **symlink** into the worktree (heavy shared items: `node_modules`, `.venv`)
+
+Processing order: `.worktreeinclude` first (copy), then `.worktreelink` (symlink). If the same path appears in both, the copy takes precedence.
 
 ## License
 
