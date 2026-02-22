@@ -18,7 +18,7 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.1.2",
+      "version": "1.2.0",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
