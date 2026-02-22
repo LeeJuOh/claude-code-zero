@@ -72,16 +72,13 @@ Component          | permissionMode     | Tools                    | Hook Type  
 
 ## Findings Format
 
-Each finding should include:
+Each finding should be compact (3-4 lines max):
 
 ```
-### [{RISK_LEVEL}] Finding Title
-
-- **Component**: [TYPE] component-name
-- **Location**: file/path:line
-- **Pattern**: What was detected
-- **Impact**: What could happen
-- **Recommendation**: How to mitigate
+[{SEVERITY}] #{n}: {Title}
+> {Component} | {file:line}
+{1-2 sentence: what was found + why it matters}
+**Fix**: {1 sentence recommendation}
 ```
 
 ## Overall Risk Determination

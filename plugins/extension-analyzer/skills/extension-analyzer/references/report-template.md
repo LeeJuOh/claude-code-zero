@@ -41,18 +41,56 @@ Bar: 30-char wide block characters. Example: ███████████�
 
 ## Components ({total})
 
-**Skills ({n})**: {comma-separated names}
-**Commands ({n})**: {name} -> {target}, ...
-**Agents ({n})**: {name} ({model}), ...
-**Hooks ({n})**: {event} -> {script} [{type}], ...
-{if MCP > 0:} **MCP ({n})**: {names}
-{if LSP > 0:} **LSP ({n})**: {names}
+### Skills — Active ({n})
 
-{if any skills have auxiliary files:}
-### Auxiliary Files
+| Skill | Purpose | Tools | Notable |
+|-------|---------|-------|---------|
+| {name} | {1-line} | {tools} | {fork/hooks/aux files} |
+
+{if any active skills have auxiliary files:}
+#### Auxiliary Files
 | Skill | Files |
 |-------|-------|
 | {name} | {file1}, {file2}, ... |
+
+### Skills — Reference ({n})
+
+{Include this section only when feature-architect applied skill classification.
+ For small plugins where all skills were analyzed individually, list all skills in the Active table above.}
+
+| Category | Skills | Description |
+|----------|--------|-------------|
+| {category} | {comma-separated names} | {1-line group description} |
+
+### Commands ({n})
+
+| Category | Commands |
+|----------|----------|
+| {functional group} | {comma-separated names} |
+
+### Agents ({n})
+
+| Agent | Purpose | Model | Constraints |
+|-------|---------|-------|-------------|
+| {name} | {1-line} | {model} | {maxTurns/memory/etc.} |
+
+### Hooks ({n})
+
+| Event | Type | Script | Effect |
+|-------|------|--------|--------|
+| {event} | {cmd/prompt/agent} | {file} | {1-line} |
+
+{if MCP > 0:}
+### MCP ({n})
+| Server | Purpose |
+|--------|---------|
+| {name} | {1-line} |
+
+{if LSP > 0:}
+### LSP ({n})
+| Server | Languages |
+|--------|-----------|
+| {name} | {languages} |
 
 ---
 
@@ -110,7 +148,13 @@ Bar: 30-char wide block characters. Example: ███████████�
 ## Detailed Analysis
 
 ### Functionality
-{Table-based summaries from feature-architect — skills table, agents table, commands table, hooks table, MCP/LSP table}
+{Table-based summaries from feature-architect:
+ - Skills — Active table (with detail blocks for complex skills)
+ - Skills — Reference table (category-grouped, if classification was applied)
+ - Agents table
+ - Commands table (category-grouped)
+ - Hooks table
+ - MCP/LSP table}
 
 ### Dependencies
 {Tool + external dependency + env var + model tables}
@@ -189,7 +233,6 @@ Overall     {bar30chars} {n}/5  {grade}
 | `[HOOK]` | {n} | {events -> scripts (type: command/prompt/agent)} |
 | `[MCP]` | {n} | {server names} |
 | `[LSP]` | {n} | {server names -> languages} |
-| `[RULE]` | {n} | {file names} |
 | **Total** | **{total}** | |
 ````
 

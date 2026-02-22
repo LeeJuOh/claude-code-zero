@@ -1,19 +1,10 @@
 ---
 name: extension-analyzer
-description: |
-  Claude Code extension analyzer that scans plugins, skills, commands, hooks,
-  agents, MCP servers, and rules to generate visual reports with risk assessment
-  and quality scores.
-
-  Trigger phrases: "analyze plugin", "audit plugin", "inspect plugin",
-  "analyze extension", "security audit", "plugin report",
-  "what does this plugin do", "analyze <path>", "inspect <path>",
-  "plugin analysis", "plugin security", "plugin overview",
-  "extension analysis", "extension audit",
-  "플러그인 분석", "보안 감사", "확장 분석", "플러그인 검사".
-
-  Do NOT use for: plugin development, plugin installation, plugin validation,
-  or plugin creation. Use plugin-dev skills for those tasks.
+description: >
+  Analyze Claude Code extensions to generate visual reports with security audit,
+  architecture review, and quality scores. Use when asked to analyze, audit,
+  inspect, or review a plugin or extension. Not for plugin development,
+  installation, validation, or creation — use plugin-dev skills for those.
 argument-hint: "<path-or-url> [--lang ko|en|ja]"
 allowed-tools:
   - Read
@@ -24,7 +15,6 @@ allowed-tools:
   - AskUserQuestion
   - Bash(gh repo clone *)
   - Bash(rm -rf /tmp/extension-analyzer-*)
-  - Bash(ls *)
 ---
 
 # Extension Analyzer
@@ -78,6 +68,10 @@ Pass the detected language to sub-agents and use it for Phase 5 report assembly.
   ```
   Bash(gh repo clone {owner/repo} /tmp/extension-analyzer-{random})
   ```
+  For subpath URLs (`github.com/owner/repo/tree/branch/plugins/foo`):
+  1. Extract `owner/repo` for cloning
+  2. Extract the subpath after `/tree/{branch}/` (e.g., `plugins/foo`)
+  3. Clone the full repo, then set the analysis target to the subpath within the clone
 - **Current directory**: Use cwd
 
 If source cannot be found, inform user and stop.
@@ -144,17 +138,26 @@ For `analyze` and `security` modes, delegate to agents in parallel.
 - Output language
 - Analysis mode
 
-**For `analyze` mode with large plugins (skills > 8)** — split feature-architect into batches:
+**For `analyze` mode with large plugins (total components > 15)** — split feature-architect into batches.
+
+Count total = skills + agents + commands. Split each type in half:
 
 ```
-Task(subagent_type: "extension-analyzer:feature-architect", prompt: {skills 1..ceil(N/2) + agents + hooks})
-Task(subagent_type: "extension-analyzer:feature-architect", prompt: {skills ceil(N/2)+1..N + commands + MCP + LSP})
+S = number of skills, A = number of agents, C = number of commands
+
+Task(subagent_type: "extension-analyzer:feature-architect", prompt: {
+  skills 1..ceil(S/2) + agents 1..ceil(A/2) + commands 1..ceil(C/2)
+})
+Task(subagent_type: "extension-analyzer:feature-architect", prompt: {
+  skills ceil(S/2)+1..S + agents ceil(A/2)+1..A + commands ceil(C/2)+1..C + MCP + LSP
+})
 Task(subagent_type: "extension-analyzer:security-auditor", prompt: {all file paths})
 ```
 
-All three run in parallel. Merge feature-architect batch results before Phase 5.
+MCP, LSP, hooks, and rules are lightweight — keep them in Batch 2 only.
+All three tasks run in parallel. Merge feature-architect batch results before Phase 5.
 
-**For `analyze` mode with standard plugins (skills <= 8)**:
+**For `analyze` mode with standard plugins (total components <= 15)**:
 
 ```
 Task(subagent_type: "extension-analyzer:feature-architect", prompt: {all file paths})

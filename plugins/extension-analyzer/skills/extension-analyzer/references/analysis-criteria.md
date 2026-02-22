@@ -106,12 +106,12 @@ overall = (identity * 0.05) + (functionality * 0.20) + (usage * 0.10)
 
 ## Visual Bar
 
-Use filled/empty blocks to represent the score:
+Use 30-char wide block characters to represent the score:
 
 ```
-[█████] 5/5  A
-[████░] 4/5  B
-[███░░] 3/5  C
-[██░░░] 2/5  D
-[█░░░░] 1/5  F
+██████████████████████████████ 5.0/5  A
+████████████████████████░░░░░░ 4.0/5  B
+██████████████████░░░░░░░░░░░░ 3.0/5  C
+████████████░░░░░░░░░░░░░░░░░░ 2.0/5  D
+██████░░░░░░░░░░░░░░░░░░░░░░░░ 1.0/5  F
 ```

@@ -1,11 +1,11 @@
 {
   "name": "extension-analyzer",
-  "version": "1.0.0",
   "description": "Analyze Claude Code plugins with security audit, architecture review, and visual report generation",
   "author": {
     "name": "LeeJuOh",
     "email": "xop4p@naver.com"
   },
+  "repository": "https://github.com/LeeJuOh/claude-code-zero",
   "license": "MIT",
   "keywords": ["analyzer", "security", "audit", "report", "plugin"]
 }

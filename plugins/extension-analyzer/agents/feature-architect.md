@@ -14,6 +14,7 @@ description: |
   </commentary>
   </example>
 model: sonnet
+maxTurns: 20
 tools:
   - Read
   - Glob
@@ -40,6 +41,31 @@ You receive from the orchestrator skill:
 Read the actual component files (SKILL.md, agent.md, command.md, hooks.json, etc.) yourself.
 
 ## Analysis Procedure
+
+### 0. Skill Classification (large plugins only)
+
+When the batch contains more than 8 skills, classify each skill before detailed analysis.
+
+**Read each SKILL.md frontmatter** and classify:
+
+- **Active skill**: Has any of `allowed-tools`, `context: fork`, `agent`, `hooks` fields in frontmatter, OR has auxiliary files (scripts, configs, templates) beyond SKILL.md itself in its directory.
+- **Reference skill**: None of the above — a pure knowledge/guidance document with no tool access or delegation.
+
+**Group reference skills by category**:
+
+| Category | Detection heuristics |
+|----------|---------------------|
+| Language/Framework | Name contains language/framework identifier (typescript, python, go, java, react, django, swift, rust, etc.) |
+| Infrastructure | Name contains docker, deploy, database, cloud, k8s, terraform, ci-cd, etc. |
+| Workflow | Name contains tdd, testing, verification, review, workflow, git, etc. |
+| Security | Name contains security, auth, permission, crypto, etc. |
+| Other | Does not match any above category |
+
+**Output difference**:
+- **Active skills**: Analyze individually with full detail (step 1 below)
+- **Reference skills**: Read only frontmatter (`name`, `description`). Output as grouped category rows — no individual analysis needed.
+
+When the batch has 8 or fewer skills, skip classification and analyze all skills individually.
 
 ### 1. Functionality Analysis
 
@@ -171,7 +197,7 @@ Return your analysis in this exact structure:
 ```
 ## Functionality Analysis
 
-### Skills
+### Skills — Active ({n})
 
 | Skill | Purpose | Trigger | Tools | Notable |
 |-------|---------|---------|-------|---------|
@@ -180,6 +206,15 @@ Return your analysis in this exact structure:
 {Only for skills with special behavior (context:fork, inline hooks,
  rich auxiliary files, complex cross-references) — add 2-3 line detail block.
  Skip simple skills.}
+
+### Skills — Reference ({n})
+
+{Include this section only when skill classification was applied (batch has > 8 skills).
+ If all skills were analyzed individually, omit this section.}
+
+| Category | Skills | Description |
+|----------|--------|-------------|
+| {category} | {comma-separated names} | {1-line group description} |
 
 ### Agents
 

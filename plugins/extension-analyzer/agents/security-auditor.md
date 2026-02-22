@@ -14,6 +14,7 @@ description: |
   </commentary>
   </example>
 model: sonnet
+maxTurns: 20
 tools:
   - Read
   - Glob
@@ -82,7 +83,7 @@ Hooks can appear in three locations:
 
 #### 3b. Hook Event Impact Assessment
 
-All 15 hook events and their security relevance:
+All 14 hook events and their security relevance:
 
 | Event | Security Impact |
 |-------|----------------|
@@ -98,7 +99,6 @@ All 15 hook events and their security relevance:
 | `Stop` | Session end interception — can execute cleanup or exfiltration |
 | `TeammateIdle` | Multi-agent coordination — can trigger actions on idle |
 | `TaskCompleted` | Task completion handler — can inject follow-up tasks |
-| `ConfigChange` | Config modification watcher — can detect and react to setting changes |
 | `PreCompact` | Context compaction — can inject content into compressed context |
 | `SessionEnd` | Session termination — final execution opportunity |
 
