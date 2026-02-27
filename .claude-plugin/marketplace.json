@@ -12,7 +12,7 @@
     {
       "name": "notebooklm-connector",
       "source": "./plugins/notebooklm-connector",
-      "version": "1.0.4",
+      "version": "1.1.0",
       "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
     },
     {
@@ -24,7 +24,7 @@
     {
       "name": "plugin-bookmarks",
       "source": "./plugins/plugin-bookmarks",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "description": "Bookmark third-party Claude Code plugins you want to remember"
     },
     {
