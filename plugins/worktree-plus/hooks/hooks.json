@@ -1,0 +1,25 @@
+{
+  "description": "Custom worktree create/remove with .worktreeinclude support",
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/worktree-create.sh"
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/worktree-remove.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

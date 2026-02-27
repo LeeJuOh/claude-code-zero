@@ -38,6 +38,12 @@
       "source": "./plugins/macos-notifier",
       "version": "1.0.0",
       "description": "Silent macOS desktop notifications when Claude Code needs attention"
+    },
+    {
+      "name": "worktree-plus",
+      "source": "./plugins/worktree-plus",
+      "version": "1.0.0",
+      "description": "Enhanced git worktree: custom branch prefix, selective copy/symlink for gitignored files"
     }
   ]
 }

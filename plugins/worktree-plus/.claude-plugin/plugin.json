@@ -1,0 +1,7 @@
+{
+  "name": "worktree-plus",
+  "description": "Enhanced git worktree: custom branch prefix, selective copy/symlink for gitignored files",
+  "author": { "name": "LeeJuOh" },
+  "license": "MIT",
+  "keywords": ["worktree", "git", "hooks"]
+}
