@@ -20,6 +20,12 @@ Key pages: plugins.md, plugins-reference.md, plugin-marketplaces.md, discover-pl
 
 See **Workflow step 1 (Docs)** for the mandatory consultation process.
 
+## Reference Materials
+
+`docs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf` — Anthropic's official guide covering skill fundamentals, YAML frontmatter, progressive disclosure, testing, distribution, and patterns.
+
+Mandatory reference for all plugin work. See **Workflow step 1 (Docs)**.
+
 ## Plugin Development
 
 ### Plugin Component Structure
@@ -39,7 +45,7 @@ hooks/                        # Hooks (hooks.json + scripts)
 
 Applies to all plugin work: creation, modification, improvement, and refactoring.
 
-1. **Docs** — Fetch https://code.claude.com/docs/llms.txt, identify relevant pages, and fetch them. Verify schemas and options against the latest spec before making any changes.
+1. **Docs** — Fetch https://code.claude.com/docs/llms.txt, identify relevant pages, and fetch them. Verify schemas and options against the latest spec before making any changes. Also consult `docs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf`.
 2. **Analysis** — User provides the goal and specific reference files to read. Read ONLY those files.
 3. **Implementation** — Create or modify files under `plugins/`. Never modify files in `references/`.
 4. **Registration** — Add the plugin entry to `.claude-plugin/marketplace.json` (new plugins only).
