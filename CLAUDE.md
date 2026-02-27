@@ -91,7 +91,7 @@ When the user requests a tag on `main`:
 
 ## Coding Style
 
-- **Language**: All plugin content in English (SKILL.md, agent.md, README.md, comments, descriptions)
+- **Language**: All plugin deliverables in English (SKILL.md, agent.md, README.md, comments, descriptions, code). All development conversation (plans, discussions, questions) in Korean.
 - **Plugin names**: kebab-case (e.g., `notebook-researcher`, `code-reviewer`)
 - **Versioning**: Semantic Versioning (e.g., `1.0.0`). Version is set only in `marketplace.json`, not in individual `plugin.json` files (all plugins use relative-path sources).
 - **Descriptions**: Clear and concise
