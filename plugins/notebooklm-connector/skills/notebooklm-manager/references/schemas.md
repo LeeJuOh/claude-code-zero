@@ -1,6 +1,6 @@
 # JSON Schemas
 
-Storage: `${SKILL_ROOT}/data/`
+Storage: `~/.claude/claude-code-zero/notebooklm-connector/data/`
 
 ## library.json
 

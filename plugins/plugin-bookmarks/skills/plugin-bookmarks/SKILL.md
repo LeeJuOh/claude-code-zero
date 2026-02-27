@@ -23,7 +23,7 @@ Save and manage bookmarks of third-party Claude Code plugins.
 
 ### Storage
 
-Location: `${SKILL_ROOT}/data/wishlist.json`
+Location: `~/.claude/claude-code-zero/plugin-bookmarks/data/wishlist.json`
 
 Schema:
 ```json
@@ -41,7 +41,11 @@ Schema:
 
 `installHint` is optional. If absent or `null`, the install command is unknown.
 
-**Initialization**: If `wishlist.json` does not exist, create it with `{"plugins": {}}`.
+Data directory and file are automatically created by the init hook on first skill invocation.
+
+**Migration (one-time)**:
+On first use after updating from an older version, if data exists at `${SKILL_ROOT}/data/wishlist.json`
+but NOT at the new location, copy it to `~/.claude/claude-code-zero/plugin-bookmarks/data/wishlist.json`.
 
 ### URL Heuristics
 

@@ -11,4 +11,4 @@ Bookmark third-party Claude Code plugins you want to remember. No installation m
 
 ## Data
 
-Bookmarks are stored in `skills/plugin-bookmarks/data/wishlist.json`. Each entry includes `name`, `url`, `description`, and an optional `installHint` field with the install command.
+Bookmarks are stored in `~/.claude/claude-code-zero/plugin-bookmarks/data/wishlist.json`. Each entry includes `name`, `url`, `description`, and an optional `installHint` field with the install command. Data is stored outside the plugin directory to persist across plugin updates.

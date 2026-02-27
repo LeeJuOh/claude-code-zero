@@ -1,5 +1,5 @@
 {
-  "description": "Data initialization, write auto-approval, and follow-up coverage reminder",
+  "description": "Data initialization and write auto-approval",
   "hooks": {
     "PreToolUse": [
       {
@@ -17,17 +17,6 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/approve-data-write.sh"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/follow-up-reminder.sh"
           }
         ]
       }

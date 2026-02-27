@@ -42,8 +42,8 @@ Extract from user message:
 
 ### 2. Notebook Lookup
 
-Read `${SKILL_ROOT}/data/library.json` to find notebook URL.
-- **File not found → Create `data/` folder and files with `[]`**
+Read `~/.claude/claude-code-zero/notebooklm-connector/data/library.json` to find notebook URL.
+- **File not found → Data directory may not be initialized. Tell user to restart the session.**
 - Not found → Show "Did you mean?" with similar IDs
 
 ### 3. Chat History
@@ -146,7 +146,7 @@ See `references/commands.md` for full command reference.
 
 ## Storage
 
-Location: `${SKILL_ROOT}/data/`
+Location: `~/.claude/claude-code-zero/notebooklm-connector/data/`
 
 ```
 data/
@@ -155,14 +155,12 @@ data/
 └── notebooks/{id}.json # Full metadata (on-demand)
 ```
 
-**Initialization**:
-- If `data/` folder does not exist, create it
-- If `library.json` does not exist, create with:
-  `{"notebooks": {}, "schema_version": "1.0", "updated_at": "<ISO timestamp>"}`
-- If `archive.json` does not exist, create with:
-  `{"notebooks": {}, "schema_version": "1.0", "updated_at": "<ISO timestamp>"}`
-- If `notebooks/` folder does not exist, create it
-- Each `notebooks/{id}.json` must include `"schema_version": "1.0"` as the first field
+Data directory and empty files are automatically created by the init hook on first skill invocation.
+
+**Migration (one-time)**:
+On first use after updating from an older version, if data exists at `${SKILL_ROOT}/data/`
+but NOT at the new location, copy all files (library.json, archive.json, notebooks/*.json)
+from the old location to `~/.claude/claude-code-zero/notebooklm-connector/data/`.
 
 ---
 

@@ -186,11 +186,16 @@ notebooklm-connector/
 ├── .claude-plugin/plugin.json
 ├── skills/notebooklm-manager/
 │   ├── SKILL.md
-│   ├── references/              # Command + schema docs
-│   └── data/
+│   └── references/              # Command + schema docs
 ├── agents/chrome-mcp-query.md
-└── hooks/hooks.json
+└── hooks/
+    ├── hooks.json
+    ├── init-data.sh             # Data directory initialization
+    ├── approve-data-write.sh    # Auto-approve writes to data dir
+    └── follow-up-reminder.sh    # Coverage analysis reminder
 ```
+
+User data is stored outside the plugin directory at `~/.claude/claude-code-zero/notebooklm-connector/data/` to persist across plugin updates.
 
 ### Query Flow
 
@@ -201,6 +206,8 @@ notebooklm-connector/
 
 ### Data Storage
 
+Location: `~/.claude/claude-code-zero/notebooklm-connector/data/`
+
 ```
 data/
 ├── library.json            # Active notebook index (fast lookup)
@@ -208,8 +215,11 @@ data/
 └── notebooks/{id}.json     # Full metadata per notebook (loaded on-demand)
 ```
 
+- Data is stored outside the plugin directory to persist across plugin updates.
 - `library.json` stores minimal entries (id, name, url, topics) for fast loading.
 - `notebooks/{id}.json` stores full metadata (description, tags, use cases, content types) and is loaded only when needed.
+- The init hook automatically creates the data directory and empty files on first skill invocation.
+- On first use after updating from an older version, existing data is migrated from the old location automatically.
 
 ## Commands Reference
 
