@@ -16,6 +16,7 @@ allowed-tools:
   - Task
   - AskUserQuestion
   - Bash(gh repo clone *)
+  - Bash(ls *)
   - Bash(rm -rf /tmp/extension-wiki-*)
 ---
 
@@ -81,50 +82,49 @@ If source cannot be found, inform user and stop.
 
 #### Phase 2: Discovery
 
-Scan the target directory for all plugin components using Glob:
+Scan the target directory for all plugin components.
 
-**Core components:**
-```
-.claude-plugin/plugin.json
-plugin.json
-skills/*/SKILL.md
-skills/**/*              (auxiliary files: templates, examples, scripts within skill dirs)
-commands/*.md
-agents/*.md
-hooks/hooks.json
-hooks/*.json
-.mcp.json
-.lsp.json
-settings.json
-CLAUDE.md
-README.md
-LICENSE*
-```
+**Step 1**: Run 3 Glob calls in parallel (single message):
 
-**Supplementary structure:**
-```
-scripts/                 (hook/utility scripts)
-tests/                   (test infrastructure)
-lib/                     (shared libraries)
-docs/                    (additional documentation)
-CHANGELOG.md             (version history)
-```
+| # | Pattern | Captures |
+|---|---------|----------|
+| 1 | `**/*.md` | SKILL.md, agent .md, command .md, CLAUDE.md, README.md, CHANGELOG.md |
+| 2 | `**/*.json` | plugin.json, hooks.json, .mcp.json, .lsp.json, settings.json |
+| 3 | `LICENSE*` | License files |
 
-Build a component inventory: count and list of each type found, including `[LSP]` for `.lsp.json`.
+**Step 2**: If Glob results are sparse (< 5 files found), verify with `Bash(ls)`:
+```
+Bash(ls {target-directory}/)
+```
+Then run targeted Glob on discovered directories (e.g., `skills/**/*`, `agents/**/*`).
+
+**Step 3**: Classify results into component types:
+
+| Component | Path pattern |
+|-----------|-------------|
+| Skill | `skills/*/SKILL.md` |
+| Skill auxiliary | `skills/*/*` (non-SKILL.md) |
+| Agent | `agents/*.md` |
+| Command | `commands/*.md` |
+| Hook config | `hooks/hooks.json` or `hooks/*.json` |
+| MCP config | `.mcp.json` |
+| LSP config | `.lsp.json` |
+| Plugin manifest | `**/plugin.json` |
+
+Build a component inventory with counts and file lists.
 
 #### Phase 3: Metadata Collection
 
-Read only essential identity files:
+Read identity files in a single message with parallel Read calls:
 
-1. **`plugin.json` / `.claude-plugin/plugin.json`** → name, version, author, license, keywords, description, homepage, repository, outputStyles, lspServers
-2. **`README.md`** → exists/absent
-3. **`LICENSE`** → exists/absent, type
-4. **`CHANGELOG.md`** → exists/absent
-5. **`tests/`** → exists/absent (from Phase 2 Glob)
+- `plugin.json` (or `.claude-plugin/plugin.json` — whichever Phase 2 found)
+- `README.md` (only if found in Phase 2)
+- `hooks/hooks.json` (only if found in Phase 2)
 
-Do NOT read individual SKILL.md, agent.md, command.md, or hook files here.
-Sub-agents will read component files directly — this avoids duplicate reads
-and reduces orchestrator context usage.
+Existence of LICENSE, CHANGELOG.md, tests/ is already known from Phase 2.
+
+Do NOT read SKILL.md, agent.md, command.md, or hook script files.
+Sub-agents read component files directly — avoids duplicate reads.
 
 Output for Phase 4: plugin identity + file path inventory + existence flags + language.
 
