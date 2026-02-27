@@ -1,28 +1,25 @@
 ---
 name: extension-wiki
 description: >
-  Analyze Claude Code extensions to generate visual reports with security audit,
-  architecture review, and quality scores. Use when asked to analyze, audit,
-  inspect, review, document, or generate a wiki for a plugin or extension.
-  Supports inline markdown reports and self-contained HTML wiki reports.
-  Not for plugin development, installation, validation, or creation — use
-  plugin-dev skills for those.
-argument-hint: "<path-or-url> [--lang ko|en|ja] [--output <path>]"
+  Analyze Claude Code extensions and generate self-contained HTML wiki reports
+  with security audit, architecture diagrams, and quality scores.
+  Use when asked to analyze, audit, inspect, review, document, or wiki a plugin
+  or extension. Default output is an interactive HTML report; use --format md
+  for inline markdown. Not for plugin development, installation, or creation.
+argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja] [--output <path>]"
 allowed-tools:
   - Read
   - Glob
   - Grep
-  - Write
   - Task
   - AskUserQuestion
   - Bash(gh repo clone *)
-  - Bash(ls *)
   - Bash(rm -rf /tmp/extension-wiki-*)
 ---
 
 # Extension Wiki
 
-Analyze Claude Code extensions and generate visual reports (inline markdown or self-contained HTML) with security audit and quality scores.
+Analyze Claude Code extensions and generate self-contained HTML wiki reports (or inline markdown) with security audit and quality scores.
 
 ## Instructions
 
@@ -55,12 +52,23 @@ Pass the detected language to sub-agents and use it for Phase 5 report assembly.
 
 ### Analysis Mode Detection
 
-| Mode | Trigger Keywords | Output |
-|------|-----------------|--------|
-| `analyze` (default) | "analyze", "분석", "inspect", "report" | Inline markdown (full 7-category) |
-| `security` | "security audit", "보안 감사", "권한 분석", "permission" | Inline markdown (security only) |
-| `overview` | "overview", "개요", "요약", "summary" | Inline markdown (identity + inventory) |
-| `report` | "wiki", "document", "docs", "html", "문서화", "위키", "리포트 생성" | Self-contained HTML file |
+Determine **what** to analyze:
+
+| Mode | Trigger Keywords | Scope |
+|------|-----------------|-------|
+| `analyze` **(default)** | "analyze", "분석", "inspect", "report", "wiki", "document", "리포트", "문서화" | Full 7-category analysis |
+| `security` | "security audit", "보안 감사", "권한 분석", "permission" | Security only |
+| `overview` | "overview", "개요", "요약", "summary" | Identity + inventory only |
+
+### Output Format Detection
+
+Determine **how** to present the result (independent of analysis mode):
+
+| Format | Trigger | Applies to |
+|--------|---------|------------|
+| HTML **(default)** | Default for `analyze` mode | `analyze` only |
+| Inline markdown | "--format md", "markdown", "md", "인라인", "텍스트" | `analyze` only |
+| Inline markdown **(always)** | — | `security`, `overview` (too brief for HTML) |
 
 ### Workflow
 
@@ -92,9 +100,9 @@ Scan the target directory for all plugin components.
 | 2 | `**/*.json` | plugin.json, hooks.json, .mcp.json, .lsp.json, settings.json |
 | 3 | `LICENSE*` | License files |
 
-**Step 2**: If Glob results are sparse (< 5 files found), verify with `Bash(ls)`:
+**Step 2**: If Glob results are sparse (< 5 files found), run additional Glob:
 ```
-Bash(ls {target-directory}/)
+Glob("*", path: {target-directory})
 ```
 Then run targeted Glob on discovered directories (e.g., `skills/**/*`, `agents/**/*`).
 
@@ -132,7 +140,7 @@ Output for Phase 4: plugin identity + file path inventory + existence flags + la
 
 For `overview` mode, skip this phase — go directly to Phase 5.
 
-For `analyze`, `security`, and `report` modes, delegate to agents in parallel.
+For `analyze` and `security` modes, delegate to agents in parallel.
 
 **Agent prompt**: Provide each agent with:
 - Plugin identity (name, version, author, description — from plugin.json)
@@ -140,8 +148,6 @@ For `analyze`, `security`, and `report` modes, delegate to agents in parallel.
 - Component file paths grouped by type (from Phase 2 Glob)
 - Output language
 - Analysis mode
-
-**For `report` mode** — same dispatch as `analyze` mode (both agents always needed for HTML report).
 
 **For `analyze` mode with large plugins (total components > 15)** — split feature-architect into batches.
 
@@ -175,15 +181,15 @@ Task(subagent_type: "extension-wiki:security-auditor", prompt: {all file paths})
 Task(subagent_type: "extension-wiki:security-auditor", prompt: {all file paths})
 ```
 
-#### Phase 5: Report Assembly
+#### Phase 5: Report Assembly (inline markdown)
 
-For `analyze`, `security`, and `overview` modes — assemble inline markdown report:
+For `security` mode, `overview` mode, or `analyze` mode with `--format md` — assemble inline markdown report:
 
 Assemble the report using `references/report-template.md` format:
 
 - **`overview` mode**: Identity + Component Inventory sections only
 - **`security` mode**: Security-focused report with risk summary, permission matrix, findings
-- **`analyze` mode**: Full report with all 7 categories, scores, and visual bars
+- **`analyze` mode (--format md)**: Full report with all 7 categories, scores, and visual bars
 
 For scoring, apply criteria from `references/analysis-criteria.md`.
 For risk levels, apply rules from `references/security-rules.md`.
@@ -194,9 +200,9 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 Output the report directly to the user (inline markdown).
 
-#### Phase 5R: HTML Report Generation (report mode only)
+#### Phase 5R: HTML Report Generation (analyze mode — default format)
 
-For `report` mode, generate a self-contained HTML file instead of inline markdown.
+For `analyze` mode with HTML format (the default), generate a self-contained HTML file.
 
 1. **Determine output path**:
    - If `--output <path>` is specified → use that path

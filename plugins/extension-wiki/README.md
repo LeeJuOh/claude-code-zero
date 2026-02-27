@@ -1,6 +1,6 @@
 # Extension Wiki
 
-Analyze Claude Code extensions (plugins, skills, commands, hooks, agents, MCP servers, rules) and generate visual reports with risk assessment and quality scores. Supports inline markdown output and self-contained HTML wiki reports.
+Analyze Claude Code extensions (plugins, skills, commands, hooks, agents, MCP servers, rules) and generate self-contained HTML wiki reports with risk assessment and quality scores. Also supports inline markdown output.
 
 ## Features
 
@@ -13,7 +13,7 @@ Analyze Claude Code extensions (plugins, skills, commands, hooks, agents, MCP se
 
 ## Usage
 
-### Analyze a local plugin
+### Analyze a local plugin (generates HTML report by default)
 
 ```
 analyze ./plugins/my-plugin
@@ -23,6 +23,12 @@ analyze ./plugins/my-plugin
 
 ```
 analyze github.com/owner/repo
+```
+
+### Inline markdown output
+
+```
+analyze ./plugins/my-plugin --format md
 ```
 
 ### Security audit only
@@ -37,22 +43,19 @@ security audit ./plugins/my-plugin
 overview ./plugins/my-plugin
 ```
 
-### Generate HTML wiki report
+### Custom output path
 
 ```
-wiki ./plugins/my-plugin
-document ./plugins/my-plugin --lang ko
-html report ./plugins/my-plugin --output ~/reports/my-plugin.html
+analyze ./plugins/my-plugin --output ~/reports/my-plugin.html
 ```
 
 ## Analysis Modes
 
 | Mode | Trigger | Output |
 |------|---------|--------|
-| `analyze` (default) | "analyze", "inspect", "report" | Inline markdown (full 7-category) |
+| `analyze` (default) | "analyze", "inspect", "report", "wiki", "document" | HTML (default) or inline markdown (`--format md`) |
 | `security` | "security audit", "permission" | Inline markdown (security only) |
 | `overview` | "overview", "summary" | Inline markdown (identity + inventory) |
-| `report` | "wiki", "document", "html" | Self-contained HTML file |
 
 ## Architecture
 
