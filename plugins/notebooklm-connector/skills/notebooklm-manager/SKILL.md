@@ -17,7 +17,8 @@ description: |
   Requires: claude --chrome with claude-in-chrome MCP.
 allowed-tools:
   - Read
-  - Write
+  - Write(~/.claude/plugins/notebooklm-connector/data/**)
+  - Edit(~/.claude/plugins/notebooklm-connector/data/**)
   - Task
   - AskUserQuestion
 ---
@@ -42,7 +43,7 @@ Extract from user message:
 
 ### 2. Notebook Lookup
 
-Read `~/.claude/claude-code-zero/notebooklm-connector/data/library.json` to find notebook URL.
+Read `~/.claude/plugins/notebooklm-connector/data/library.json` to find notebook URL.
 - **File not found → Data directory may not be initialized. Tell user to restart the session.**
 - Not found → Show "Did you mean?" with similar IDs
 
@@ -146,7 +147,7 @@ See `references/commands.md` for full command reference.
 
 ## Storage
 
-Location: `~/.claude/claude-code-zero/notebooklm-connector/data/`
+Location: `~/.claude/plugins/notebooklm-connector/data/`
 
 ```
 data/
@@ -158,15 +159,15 @@ data/
 Data directory and empty files are automatically created by the init hook on first skill invocation.
 
 **Migration (one-time)**:
-On first use after updating from an older version, if data exists at `${SKILL_ROOT}/data/`
-but NOT at the new location, copy all files (library.json, archive.json, notebooks/*.json)
-from the old location to `~/.claude/claude-code-zero/notebooklm-connector/data/`.
+On first use after updating from an older version, if data exists at `~/.claude/claude-code-zero/notebooklm-connector/data/`
+but NOT at the new location, files are automatically copied
+to `~/.claude/plugins/notebooklm-connector/data/`.
 
 ---
 
 ## Tool Boundaries
 
-- **Use**: Read, Write, Task, AskUserQuestion
+- **Use**: Read, Write (data dir), Edit (data dir), Task, AskUserQuestion
 - **Do NOT use**: Chrome MCP tools directly (`mcp__claude-in-chrome__*`)
 
 ---

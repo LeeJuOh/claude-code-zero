@@ -1,6 +1,6 @@
 {
-  "name": "extension-wiki",
-  "description": "Analyze Claude Code plugins and generate wiki-style HTML reports with security audit, architecture review, and plugin profiles",
+  "name": "agent-extension-wiki",
+  "description": "Analyze agent plugins (currently supports Claude Code) and generate wiki-style HTML reports with security audit, architecture review, and plugin profiles",
   "author": {
     "name": "LeeJuOh",
     "email": "xop4p@naver.com"

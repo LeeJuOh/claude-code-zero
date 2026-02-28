@@ -1,12 +1,14 @@
 ---
-name: extension-wiki
+name: agent-extension-wiki
 description: >
-  Analyze Claude Code extensions and generate self-contained HTML wiki reports
+  Analyze agent extensions and generate self-contained HTML wiki reports
   with security audit, architecture diagrams, and plugin profiles.
+  Currently supports Claude Code plugins.
   Use when asked to analyze, audit, inspect, review, document, or wiki a plugin
   or extension. Default output is an interactive HTML report; use --format md
   for inline markdown. Not for plugin development, installation, or creation.
 argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja] [--output <path>]"
+compatibility: "Requires gh CLI for GitHub URL analysis"
 allowed-tools:
   - Read
   - Write
@@ -15,14 +17,14 @@ allowed-tools:
   - Task
   - AskUserQuestion
   - Bash(gh repo clone *)
-  - Bash(rm -rf /tmp/extension-wiki-*)
-  - Bash(find /tmp/extension-wiki-*)
-  - Bash(ls /tmp/extension-wiki-*)
+  - Bash(rm -rf /tmp/agent-extension-wiki-*)
+  - Bash(find /tmp/agent-extension-wiki-*)
+  - Bash(ls /tmp/agent-extension-wiki-*)
 ---
 
-# Extension Wiki
+# Agent Extension Wiki
 
-Analyze Claude Code extensions and generate self-contained HTML wiki reports (or inline markdown) with security audit and plugin profiles.
+Analyze agent extensions and generate self-contained HTML wiki reports (or inline markdown) with security audit and plugin profiles. Currently supports Claude Code plugins.
 
 ## Instructions
 
@@ -79,9 +81,9 @@ Determine **how** to present the result (independent of analysis mode):
 
 - **Local path**: Verify directory exists, proceed directly
 - **Installed plugin**: Search `~/.claude/plugins/cache/` for matching directory
-- **GitHub URL**: Clone to `/tmp/extension-wiki-{random}`:
+- **GitHub URL**: Clone to `/tmp/agent-extension-wiki-{random}`:
   ```
-  Bash(gh repo clone {owner/repo} /tmp/extension-wiki-{random})
+  Bash(gh repo clone {owner/repo} /tmp/agent-extension-wiki-{random})
   ```
   For subpath URLs (`github.com/owner/repo/tree/branch/plugins/foo`):
   1. Extract `owner/repo` for cloning
@@ -90,6 +92,28 @@ Determine **how** to present the result (independent of analysis mode):
 - **Current directory**: Use cwd
 
 If source cannot be found, inform user and stop.
+
+#### Phase 1.5: Platform Detection
+
+Detect which agent platform the target directory belongs to.
+Use Glob to check for platform-unique files. Both platforms share the SKILL.md format (agentskills.io open standard), so detection relies on platform-specific infrastructure files.
+
+| Platform | Unique signals (any match → detected) |
+|----------|---------------------------------------|
+| **Claude Code** | `.claude/` directory, `.claude-plugin/plugin.json`, `CLAUDE.md`, `agents/*.md` (markdown agents), `hooks/hooks.json`, `.mcp.json`, `.lsp.json` |
+| **Codex** *(not yet supported)* | `.codex/` directory, `.codex/config.toml`, `AGENTS.md`, `agents/*.toml`, `agents/openai.yaml` |
+
+**Shared** (not usable for detection): `SKILL.md`, `skills/`, `scripts/`, `references/`, `assets/` — both platforms follow the agentskills.io open standard.
+
+Detection priority: Check unique signals first. `.claude/` vs `.codex/` directory is the strongest differentiator. If both platforms match (unlikely), prefer the one with more matches.
+
+If no known platform is detected, inform the user:
+"Could not detect the agent platform. Currently supported: Claude Code. Is this a Claude Code plugin?"
+
+If Codex is detected, inform the user:
+"Detected Codex plugin structure. Codex analysis is not yet supported — only Claude Code is currently available."
+
+Set `{platform}` variable for subsequent phases. Currently only `claude-code` is implemented.
 
 #### Phase 2: Discovery
 
@@ -162,13 +186,13 @@ Count total = skills + agents + commands. Split each type in half:
 ```
 S = number of skills, A = number of agents, C = number of commands
 
-Task(subagent_type: "extension-wiki:feature-architect", prompt: {
+Task(subagent_type: "agent-extension-wiki:feature-architect", prompt: {
   skills 1..ceil(S/2) + agents 1..ceil(A/2) + commands 1..ceil(C/2)
 })
-Task(subagent_type: "extension-wiki:feature-architect", prompt: {
+Task(subagent_type: "agent-extension-wiki:feature-architect", prompt: {
   skills ceil(S/2)+1..S + agents ceil(A/2)+1..A + commands ceil(C/2)+1..C + MCP + LSP
 })
-Task(subagent_type: "extension-wiki:security-auditor", prompt: {all file paths})
+Task(subagent_type: "agent-extension-wiki:security-auditor", prompt: {all file paths})
 ```
 
 MCP, LSP, hooks, and rules are lightweight — keep them in Batch 2 only.
@@ -177,30 +201,30 @@ All three tasks run in parallel. Merge feature-architect batch results before Ph
 **For `analyze` mode with standard plugins (total components <= 15)**:
 
 ```
-Task(subagent_type: "extension-wiki:feature-architect", prompt: {all file paths})
-Task(subagent_type: "extension-wiki:security-auditor", prompt: {all file paths})
+Task(subagent_type: "agent-extension-wiki:feature-architect", prompt: {all file paths})
+Task(subagent_type: "agent-extension-wiki:security-auditor", prompt: {all file paths})
 ```
 
 **For `security` mode** — launch only security-auditor:
 
 ```
-Task(subagent_type: "extension-wiki:security-auditor", prompt: {all file paths})
+Task(subagent_type: "agent-extension-wiki:security-auditor", prompt: {all file paths})
 ```
 
 #### Phase 5: Report Assembly (inline markdown)
 
 For `security` mode, `overview` mode, or `analyze` mode with `--format md` — assemble inline markdown report:
 
-Assemble the report using `references/report-template.md` format:
+Assemble the report using `references/platforms/claude-code/report-template.md` format:
 
 - **`overview` mode**: Identity + Component Inventory sections only
 - **`security` mode**: Security-focused report with risk summary, permission matrix, findings
 - **`analyze` mode (--format md)**: Full report with analysis and Plugin Profile
 
-For Plugin Profile, apply criteria from `references/analysis-criteria.md`.
-For risk levels, apply rules from `references/security-rules.md`.
+For Plugin Profile, apply criteria from `references/platforms/claude-code/analysis-criteria.md`.
+For risk levels, apply rules from `references/platforms/claude-code/security-rules.md`.
 
-Output the report in the detected language, using `references/report-template.md` format.
+Output the report in the detected language, using `references/platforms/claude-code/report-template.md` format.
 Translate all section headers, labels, and descriptions to the target language.
 Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, LOW) untranslated.
 
@@ -212,12 +236,12 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 1. **Determine output path**:
    - If `--output <path>` is specified → use that path
-   - If source is a **GitHub URL** (cloned to `/tmp/`) → `{cwd}/extension-wiki-report.html`
-   - Otherwise → `{target-directory}/extension-wiki-report.html`
+   - If source is a **GitHub URL** (cloned to `/tmp/`) → `{cwd}/agent-extension-wiki-report.html`
+   - Otherwise → `{target-directory}/agent-extension-wiki-report.html`
 
 2. **Delegate to report-writer agent**:
    ```
-   Task(subagent_type: "extension-wiki:report-writer", prompt: {
+   Task(subagent_type: "agent-extension-wiki:report-writer", prompt: {
      feature-architect analysis results (full text, including Plugin Summary and Raw Content Excerpts),
      security-auditor analysis results (full text),
      plugin metadata (name, version, author, license, keywords, description),
@@ -228,19 +252,19 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 3. **Report completion**: After the agent writes the HTML file, output the `file:///` URL to the user:
    ```
-   Report generated: file:///{absolute-path}/extension-wiki-report.html
+   Report generated: file:///{absolute-path}/agent-extension-wiki-report.html
    ```
 
 #### Phase 6: Cleanup
 
 If the source was cloned from GitHub:
 ```
-Bash(rm -rf /tmp/extension-wiki-{directory})
+Bash(rm -rf /tmp/agent-extension-wiki-{directory})
 ```
 
 ### Reference Files
 
-- `references/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
-- `references/security-rules.md` — Security patterns and risk classification
-- `references/report-template.md` — Report output format templates (inline markdown)
-- `references/html-report-template.md` — HTML report structure and style guide (report mode)
+- `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
+- `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification
+- `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
+- `references/platforms/claude-code/html-report-template.md` — HTML report structure and style guide (report mode)

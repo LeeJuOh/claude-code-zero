@@ -1,6 +1,6 @@
 # Security Rules
 
-Detection patterns and risk classification for Claude Code plugin security auditing.
+Detection patterns and risk classification for agent plugin security auditing.
 
 ## Risk Levels
 

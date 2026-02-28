@@ -1,6 +1,6 @@
-# Extension Wiki
+# Agent Extension Wiki
 
-Analyze Claude Code extensions (plugins, skills, commands, hooks, agents, MCP servers, rules) and generate self-contained HTML wiki reports with risk assessment and plugin profiles. Also supports inline markdown output.
+Analyze agent extensions (plugins, skills, commands, hooks, agents, MCP servers, rules) and generate self-contained HTML wiki reports with risk assessment and plugin profiles. Currently supports Claude Code plugins. Also supports inline markdown output.
 
 ## Features
 
@@ -10,6 +10,10 @@ Analyze Claude Code extensions (plugins, skills, commands, hooks, agents, MCP se
 - **HTML Wiki Report**: Self-contained HTML file with tabbed components, interactive pan+zoom diagrams, and Plugin Profile
 - **Usage Guide Generation**: Auto-extracted triggers, arguments, prerequisites, install commands
 - **Plugin Profile**: Component inventory, documentation checklist, security risk level, quality checklist
+
+## Currently Supported Platforms
+
+- **Claude Code** — Full analysis support
 
 ## Usage
 
@@ -29,6 +33,12 @@ analyze github.com/owner/repo
 
 ```
 analyze ./plugins/my-plugin --format md
+```
+
+### Specify output language
+
+```
+analyze ./plugins/my-plugin --lang en
 ```
 
 ### Security audit only
@@ -61,7 +71,7 @@ analyze ./plugins/my-plugin --output ~/reports/my-plugin.html
 
 ```mermaid
 graph TD
-    S1["SKILL: extension-wiki<br/>(orchestrator)"] -->|delegates| A1["AGENT: feature-architect"]
+    S1["SKILL: agent-extension-wiki<br/>(orchestrator)"] -->|delegates| A1["AGENT: feature-architect"]
     S1 -->|delegates| A2["AGENT: security-auditor"]
     S1 -->|delegates<br/>report mode| A3["AGENT: report-writer"]
     A1 -->|analysis| S1

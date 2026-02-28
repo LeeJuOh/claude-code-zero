@@ -12,7 +12,14 @@ case "$SKILL_NAME" in
     ;;
 esac
 
-DATA_DIR="$HOME/.claude/claude-code-zero/plugin-bookmarks/data"
+DATA_DIR="$HOME/.claude/plugins/plugin-bookmarks/data"
+OLD_DIR="$HOME/.claude/claude-code-zero/plugin-bookmarks/data"
+
+# Migrate from old path if new path doesn't exist yet
+if [ ! -d "$DATA_DIR" ] && [ -d "$OLD_DIR" ]; then
+  mkdir -p "$DATA_DIR"
+  cp -r "$OLD_DIR"/. "$DATA_DIR"/
+fi
 
 mkdir -p "$DATA_DIR"
 
