@@ -67,6 +67,13 @@ Note: Sub-agents cannot execute CLI commands directly. Delegate validation to th
 claude --plugin-dir ./plugins/<plugin-name>
 ```
 
+**Marketplace conflict**: `--plugin-dir` loads from the local directory, but if the same plugin is also installed from the marketplace, both versions load simultaneously and the cached (marketplace) version may take precedence. Disable the marketplace version before local testing:
+
+```bash
+claude plugin disable <plugin-name>@claude-code-zero   # before testing
+claude plugin enable  <plugin-name>@claude-code-zero   # after testing
+```
+
 Note: Sub-agents cannot execute CLI commands directly. Delegate testing to the main session or ask the user to run it.
 
 ## references/ Folder

@@ -65,6 +65,13 @@ unset CLAUDECODE && claude plugin validate .
 claude --plugin-dir ./plugins/<plugin-name>
 ```
 
+**Marketplace conflict**: `--plugin-dir` loads from the local directory, but if the same plugin is also installed from the marketplace, both versions load simultaneously and the cached (marketplace) version may take precedence. Disable the marketplace version before local testing:
+
+```bash
+claude plugin disable <plugin-name>@claude-code-zero   # before testing
+claude plugin enable  <plugin-name>@claude-code-zero   # after testing
+```
+
 ## references/ Folder
 
 - Git-ignored. External open-source code stored here for local reference only.
