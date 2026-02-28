@@ -1,4 +1,4 @@
-#!/bin/bash
+11#!/bin/bash
 # PreToolUse hook — auto-approve Write operations targeting the plugin's data directory.
 
 INPUT=$(cat)
