@@ -1,6 +1,6 @@
 {
   "name": "extension-wiki",
-  "description": "Analyze Claude Code plugins and generate wiki-style HTML reports with security audit, architecture review, and quality scores",
+  "description": "Analyze Claude Code plugins and generate wiki-style HTML reports with security audit, architecture review, and plugin profiles",
   "author": {
     "name": "LeeJuOh",
     "email": "xop4p@naver.com"

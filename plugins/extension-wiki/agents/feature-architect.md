@@ -132,7 +132,9 @@ Analyze how components interact:
 - **Memory persistence**: Agent `memory` field → persistent data storage patterns
 - **Orchestration pattern**: Is there a coordinator skill that delegates to agents?
 
-Create a Mermaid diagram showing component relationships:
+**Design philosophy extraction**: Identify 1-3 core design principles that define the plugin's approach. Each principle has a named concept and 1-2 sentence explanation. Examples: "Orchestrator Pattern — a single skill coordinates multiple specialized agents", "Progressive Disclosure — simple interface with details available on demand".
+
+Create Mermaid diagrams showing component relationships:
 
 **Component relationship diagram** (always include):
 
@@ -155,6 +157,22 @@ flowchart LR
     A1 -->|result| S1
     A2 -->|result| S1
     S1 -->|output| User
+````
+
+**Workflow sequence diagram** (include only when orchestrator or multi-step pattern exists — 1-2 main user workflows):
+
+````mermaid
+sequenceDiagram
+    actor User
+    participant S as Skill: orchestrator
+    participant A1 as Agent: worker-a
+    participant A2 as Agent: worker-b
+    User->>S: trigger phrase
+    S->>A1: delegate task
+    A1-->>S: result
+    S->>A2: delegate task
+    A2-->>S: result
+    S-->>User: final output
 ````
 
 Adapt node IDs and labels to match actual plugin components. Use `-->` for direct delegation, `-.->` for watch/hook relationships.
@@ -185,7 +203,7 @@ Extract usage information from available sources:
 - **Usage examples**: Extract code blocks from README.md and SKILL.md
 - **Model requirements**: From `model` fields in frontmatter
 
-### 5. Quality Assessment
+### 5. Quality Checklist
 
 Check the following:
 
@@ -269,9 +287,15 @@ Return your analysis in this exact structure:
 
 ## Architecture
 
+### Design Philosophy
+- **{Principle Name}**: {1-2 sentence explanation}
+- **{Principle Name}**: {1-2 sentence explanation}
+
 {Mermaid component relationship diagram}
 
 {Mermaid data flow diagram — if orchestrator pattern exists}
+
+{Mermaid workflow sequence diagram — if orchestrator or multi-step pattern exists}
 
 {Brief data flow description — 3-5 lines max}
 
@@ -316,19 +340,43 @@ Return your analysis in this exact structure:
 ### When NOT to Use
 - {anti-pattern}
 
-## Quality Assessment
+## Quality Checklist
 
 | Check | Status |
 |-------|--------|
 | {check description} | [PASS] / [FAIL] {detail if fail} |
 
-### Scores
-- Identity & Overview: {n}/5
-- Functionality: {n}/5
-- Usage Guide: {n}/5
-- Dependencies: {n}/5
-- Architecture: {n}/5
-- Quality: {n}/5
+## Plugin Profile
+
+### Component Inventory
+| Type | Count |
+|------|-------|
+| Active Skills | {n} |
+| Reference Skills | {n} |
+| Agents | {n} |
+| Commands | {n} |
+| Hooks | {n} |
+| MCP Servers | {n} |
+| LSP Servers | {n} |
+
+### Documentation
+| Item | Status |
+|------|--------|
+| README.md | {checkmark/cross} |
+| LICENSE | {checkmark/cross} |
+| CHANGELOG.md | {checkmark/cross} |
+| tests/ | {checkmark/cross} |
+| Usage examples | {checkmark/cross} |
+
+### Security Risk
+{CRITICAL/HIGH/MEDIUM/LOW} — {n}C / {n}H / {n}M / {n}L
+(from security-auditor)
+
+### Primary Pattern
+{Orchestrator-Agent / Standalone / Library / Hybrid}
+
+### Target Users
+{1-2 sentence description}
 
 ## Raw Content Excerpts
 

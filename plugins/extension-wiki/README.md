@@ -1,15 +1,15 @@
 # Extension Wiki
 
-Analyze Claude Code extensions (plugins, skills, commands, hooks, agents, MCP servers, rules) and generate self-contained HTML wiki reports with risk assessment and quality scores. Also supports inline markdown output.
+Analyze Claude Code extensions (plugins, skills, commands, hooks, agents, MCP servers, rules) and generate self-contained HTML wiki reports with risk assessment and plugin profiles. Also supports inline markdown output.
 
 ## Features
 
-- **Full Analysis**: 7-category evaluation with weighted scoring (A-F grades)
+- **Full Analysis**: Component inventory, architecture, security audit, usage guide, and quality checklist
 - **Security Audit**: Permission model analysis, tool scope audit, hook script security, MCP trust boundaries
-- **Architecture Review**: Component relationships with Mermaid diagrams, data flow, state management
-- **HTML Wiki Report**: Self-contained HTML file with interactive sections, visual score bars, and Mermaid diagram rendering
+- **Architecture Review**: Design philosophy, component relationships with Mermaid diagrams, data flow, workflow sequence diagrams
+- **HTML Wiki Report**: Self-contained HTML file with tabbed components, interactive pan+zoom diagrams, and Plugin Profile
 - **Usage Guide Generation**: Auto-extracted triggers, arguments, prerequisites, install commands
-- **Visual Scoring**: Per-category scores with visual bars
+- **Plugin Profile**: Component inventory, documentation checklist, security risk level, quality checklist
 
 ## Usage
 
@@ -68,18 +68,6 @@ graph TD
     A2 -->|audit| S1
     A3 -->|HTML file| S1
 ```
-
-## Scoring Categories
-
-| Category | Weight |
-|----------|--------|
-| Identity & Overview | 5% |
-| Functionality | 20% |
-| Usage Guide | 10% |
-| Dependencies | 10% |
-| Security & Permissions | 30% |
-| Architecture | 10% |
-| Quality | 15% |
 
 ## License
 

@@ -63,33 +63,36 @@ Generate a single `.html` file with all styles inline. External dependencies are
 </head>
 <body>
   <!-- Header: plugin name, version, author, generation date -->
-  <!-- Nav TOC: section jump links (include Plugin Overview) -->
+  <!-- Nav TOC: section jump links (match section order below) -->
   <!-- Plugin Overview: summary, component stats, pattern, target users -->
-  <!-- Score Overview: 7-category visual bars + overall grade -->
-  <!-- Components: skill/agent/hook/MCP/LSP cards -->
-  <!-- Architecture: Mermaid diagrams -->
-  <!-- Security Audit: risk level, permission matrix, findings -->
+  <!-- Architecture: design philosophy, Mermaid diagrams (component, data flow, sequence) -->
+  <!-- Components: tab UI with skill/agent/command/hook/MCP/LSP panels -->
   <!-- Usage Guide: installation, triggers, examples -->
+  <!-- Security Audit: risk level, permission matrix, findings -->
   <!-- Dependencies: tools, external, env vars, models -->
-  <!-- Quality: checklist -->
+  <!-- Plugin Profile: component inventory, docs, security risk, quality checklist -->
   <!-- Footer: generation info -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-  <script>/* Mermaid init + collapsible sections */</script>
+  <script>/* Mermaid init + tab switching + pan/zoom + TOC highlight */</script>
 </body>
 </html>
 ```
 
 ### Key Design Rules
 
-1. **Score bars**: Use CSS `width: {percentage}%` with colored backgrounds (green >=80%, yellow >=50%, red <50%)
+1. **Plugin Profile**: Render Plugin Profile section (not score bars) with component inventory horizontal bars, documentation grid, security risk badge, pattern/target users, and quality checklist — see `references/html-report-template.md`
 2. **Risk level colors**: CRITICAL = `#dc2626`, HIGH = `#ea580c`, MEDIUM = `#ca8a04`, LOW = `#16a34a`
-3. **Mermaid diagrams**: Place Mermaid code inside `<pre class="mermaid">` tags. Initialize with `mermaid.initialize({ startOnLoad: true, theme: 'neutral' })`
+3. **Mermaid diagrams**: Place Mermaid code inside `<pre class="mermaid">` tags. Initialize with `mermaid.initialize({ startOnLoad: true, theme: 'neutral' })`. Include component relationship, data flow, and workflow sequence diagrams in the Architecture section
 4. **Collapsible sections**: Use `<details><summary>` for findings and detailed component info
 5. **Responsive**: Max-width container (900px), responsive cards with flexbox
 6. **Language**: Translate all section headers and labels to the target language. Keep component names, file paths, and technical terms untranslated
-7. **Plugin Overview**: Always generate a Plugin Overview section (between Header and Score Overview) using the "Plugin Summary" from feature-architect data. Include component count stat boxes, primary pattern, and target users
+7. **Plugin Overview**: Always generate a Plugin Overview section (between Header and Architecture) using the "Plugin Summary" from feature-architect data. Include component count stat boxes, primary pattern, and target users
 8. **Section descriptions**: Each component sub-section (Active Skills, Reference Skills, Commands, Agents, Hooks) MUST include a `.section-desc` paragraph explaining the component type — see `references/html-report-template.md` for required texts
 9. **Commands table**: Use Purpose, Arguments, and Notable columns (not just Type/Target)
 10. **Agent delegation triggers**: Show each agent's `description` field verbatim in an `.agent-delegation-trigger` block below the agent card
 11. **Raw data viewers**: Include collapsible `.raw-data-viewer` panels with frontmatter source for active skills and agents. Use `<details>` pattern from the template
-12. **Mermaid zoom**: Wrap Mermaid diagrams in `.diagram-container` with click handler. Include the fullscreen `.diagram-overlay` with zoom controls at end of body — see `references/html-report-template.md` for JS
+12. **Mermaid pan+zoom**: Wrap Mermaid diagrams in `.diagram-container` with click handler. Include the fullscreen `.diagram-overlay` with pan (mouse drag) and zoom (mouse wheel + buttons) — see `references/html-report-template.md` for JS
+13. **Component tabs**: Group component types into tab panels with `.tab-container` / `.tab-buttons` / `.tab-panel`. Default active tab = type with most components. Omit tabs with 0 components
+14. **Design philosophy**: Render 1-3 design principle items with `.design-philosophy` / `.philosophy-item` blocks at top of Architecture section, before diagrams
+15. **Sequence diagrams**: Include workflow sequence diagrams (Mermaid `sequenceDiagram`) when the plugin uses orchestrator or multi-step patterns. Use the existing `.diagram-container` pattern
+16. **TOC active highlight**: TOC links get `.active` class via Intersection Observer. Section order in TOC must match: Overview, Architecture, Components, Usage, Security, Dependencies, Plugin Profile

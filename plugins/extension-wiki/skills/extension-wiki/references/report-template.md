@@ -21,22 +21,6 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 | Keywords | {keywords} |
 | Risk | {risk_level} ({n}C/{n}H/{n}M/{n}L) |
 
-### Score
-
-Identity    {bar30chars} {n}/5  {grade}
-Function    {bar30chars} {n}/5  {grade}
-Usage       {bar30chars} {n}/5  {grade}
-Deps        {bar30chars} {n}/5  {grade}
-Security    {bar30chars} {n}/5  {grade}
-Architect   {bar30chars} {n}/5  {grade}
-Quality     {bar30chars} {n}/5  {grade}
-────────────────────────────────────────────────
-Overall     {bar30chars} {n}/5  {grade}
-
-Score formula: (identity*0.05)+(function*0.20)+(usage*0.10)+(deps*0.10)+(security*0.30)+(architect*0.10)+(quality*0.15)
-
-Bar: 30-char wide block characters. Example: ██████████████████████████░░░░ = 4.3/5
-
 ---
 
 ## Components ({total})
@@ -96,9 +80,14 @@ Bar: 30-char wide block characters. Example: ███████████�
 
 ## Architecture
 
+### Design Philosophy
+- **{Principle Name}**: {1-2 sentence explanation}
+
 {Mermaid component relationship diagram from feature-architect}
 
 {Mermaid data flow diagram — if orchestrator pattern exists}
+
+{Mermaid workflow sequence diagram — if orchestrator or multi-step pattern exists}
 
 {Brief data flow description — 3-5 lines max}
 
@@ -147,19 +136,60 @@ Bar: 30-char wide block characters. Example: ███████████�
 
 ---
 
-## Detailed Analysis
+## Dependencies
 
-### Functionality
-{Table-based summaries from feature-architect:
- - Skills — Active table (with detail blocks for complex skills)
- - Skills — Reference table (category-grouped, if classification was applied)
- - Agents table
- - Commands table (category-grouped)
- - Hooks table
- - MCP/LSP table}
+### Tool Dependencies
+| Tool | Used By | Purpose |
+|------|---------|---------|
+| {tool} | {component} | {why} |
 
-### Dependencies
-{Tool + external dependency + env var + model tables}
+### External Dependencies
+| Dependency | Type | Required By |
+|------------|------|-------------|
+| {dep} | CLI/MCP/Browser/EnvVar | {component} |
+
+### Environment Variables
+| Variable | Used In | Purpose |
+|----------|---------|---------|
+| {var} | {file} | {purpose} |
+
+### Model Requirements
+| Component | Model | Reason |
+|-----------|-------|--------|
+| {name} | {model} | {why} |
+
+---
+
+## Plugin Profile
+
+### Component Inventory
+| Type | Count |
+|------|-------|
+| Active Skills | {n} |
+| Reference Skills | {n} |
+| Agents | {n} |
+| Commands | {n} |
+| Hooks | {n} |
+| MCP Servers | {n} |
+| LSP Servers | {n} |
+
+### Documentation
+| Item | Status |
+|------|--------|
+| README.md | {checkmark/cross} |
+| LICENSE | {checkmark/cross} |
+| CHANGELOG.md | {checkmark/cross} |
+| tests/ | {checkmark/cross} |
+| Usage examples | {checkmark/cross} |
+
+### Security Risk
+{CRITICAL/HIGH/MEDIUM/LOW} — {n}C / {n}H / {n}M / {n}L
+
+### Primary Pattern
+{Orchestrator-Agent / Standalone / Library / Hybrid}
+
+### Target Users
+{1-2 sentence description}
 
 ### Quality Checklist
 
@@ -179,7 +209,6 @@ Bar: 30-char wide block characters. Example: ███████████�
 
 ## Risk: {LEVEL}
 
-Score    {bar30chars} {n}/5 ({grade})
 Findings {n}C / {n}H / {n}M / {n}L
 
 ---
@@ -218,12 +247,6 @@ Findings {n}C / {n}H / {n}M / {n}L
 | Author | {author} |
 | License | {license} |
 | Description | {description} |
-
-### Score
-
-Identity    {bar30chars} {n}/5  {grade}
-────────────────────────────────────────────────
-Overall     {bar30chars} {n}/5  {grade}
 
 ## Component Inventory
 

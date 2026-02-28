@@ -2,7 +2,7 @@
 name: extension-wiki
 description: >
   Analyze Claude Code extensions and generate self-contained HTML wiki reports
-  with security audit, architecture diagrams, and quality scores.
+  with security audit, architecture diagrams, and plugin profiles.
   Use when asked to analyze, audit, inspect, review, document, or wiki a plugin
   or extension. Default output is an interactive HTML report; use --format md
   for inline markdown. Not for plugin development, installation, or creation.
@@ -19,7 +19,7 @@ allowed-tools:
 
 # Extension Wiki
 
-Analyze Claude Code extensions and generate self-contained HTML wiki reports (or inline markdown) with security audit and quality scores.
+Analyze Claude Code extensions and generate self-contained HTML wiki reports (or inline markdown) with security audit and plugin profiles.
 
 ## Instructions
 
@@ -56,7 +56,7 @@ Determine **what** to analyze:
 
 | Mode | Trigger Keywords | Scope |
 |------|-----------------|-------|
-| `analyze` **(default)** | "analyze", "분석", "inspect", "report", "wiki", "document", "리포트", "문서화" | Full 7-category analysis |
+| `analyze` **(default)** | "analyze", "분석", "inspect", "report", "wiki", "document", "리포트", "문서화" | Full analysis and Plugin Profile |
 | `security` | "security audit", "보안 감사", "권한 분석", "permission" | Security only |
 | `overview` | "overview", "개요", "요약", "summary" | Identity + inventory only |
 
@@ -189,9 +189,9 @@ Assemble the report using `references/report-template.md` format:
 
 - **`overview` mode**: Identity + Component Inventory sections only
 - **`security` mode**: Security-focused report with risk summary, permission matrix, findings
-- **`analyze` mode (--format md)**: Full report with all 7 categories, scores, and visual bars
+- **`analyze` mode (--format md)**: Full report with analysis and Plugin Profile
 
-For scoring, apply criteria from `references/analysis-criteria.md`.
+For Plugin Profile, apply criteria from `references/analysis-criteria.md`.
 For risk levels, apply rules from `references/security-rules.md`.
 
 Output the report in the detected language, using `references/report-template.md` format.
@@ -233,7 +233,7 @@ Bash(rm -rf /tmp/extension-wiki-{directory})
 
 ### Reference Files
 
-- `references/analysis-criteria.md` — 7-category evaluation criteria and weights
+- `references/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
 - `references/security-rules.md` — Security patterns and risk classification
 - `references/report-template.md` — Report output format templates (inline markdown)
 - `references/html-report-template.md` — HTML report structure and style guide (report mode)

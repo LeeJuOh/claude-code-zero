@@ -200,10 +200,6 @@ Findings: {n} Critical, {n} High, {n} Medium, {n} Low
 ---
 {repeat for each finding, ordered by severity}
 
-## Security Score
-
-Score: {n}/5
-Justification: {brief explanation}
 ```
 
 The overall risk level is determined by the HIGHEST severity finding:
