@@ -35,7 +35,7 @@ You receive from the orchestrator skill:
 - **Output file path** (absolute path for the HTML file)
 - **Output language**
 
-The feature-architect results include a "Plugin Summary" section (overview, component counts, pattern, target users) and "Raw Content Excerpts" (frontmatter from active skills and agents).
+The feature-architect results include a "Plugin Summary" section (At-a-Glance, Key Features, What/How/Unique, component counts, pattern, target users), "Security Risk" with Context, and "Raw Content Excerpts" (frontmatter from active skills and agents).
 
 ## Output
 
@@ -66,8 +66,8 @@ Generate a single `.html` file with all styles inline. External dependencies are
   <!-- Nav TOC: section jump links (match section order below) -->
   <!-- Plugin Overview: summary, component stats, pattern, target users -->
   <!-- Architecture: design philosophy, Mermaid diagrams (component, data flow, sequence) -->
-  <!-- Components: tab UI with skill/agent/command/hook/MCP/LSP panels -->
   <!-- Usage Guide: installation, triggers, examples -->
+  <!-- Components: tab UI with skill/agent/command/hook/MCP/LSP panels -->
   <!-- Security Audit: risk level, permission matrix, findings -->
   <!-- Dependencies: tools, external, env vars, models -->
   <!-- Plugin Profile: component inventory, docs, security risk, quality checklist -->
@@ -80,19 +80,18 @@ Generate a single `.html` file with all styles inline. External dependencies are
 
 ### Key Design Rules
 
-1. **Plugin Profile**: Render Plugin Profile section (not score bars) with component inventory horizontal bars, documentation grid, security risk badge, pattern/target users, and quality checklist — see `references/html-report-template.md`
-2. **Risk level colors**: CRITICAL = `#dc2626`, HIGH = `#ea580c`, MEDIUM = `#ca8a04`, LOW = `#16a34a`
-3. **Mermaid diagrams**: Place Mermaid code inside `<pre class="mermaid">` tags. Initialize with `mermaid.initialize({ startOnLoad: true, theme: 'neutral' })`. Include component relationship, data flow, and workflow sequence diagrams in the Architecture section
-4. **Collapsible sections**: Use `<details><summary>` for findings and detailed component info
-5. **Responsive**: Max-width container (900px), responsive cards with flexbox
-6. **Language**: Translate all section headers and labels to the target language. Keep component names, file paths, and technical terms untranslated
-7. **Plugin Overview**: Always generate a Plugin Overview section (between Header and Architecture) using the "Plugin Summary" from feature-architect data. Include component count stat boxes, primary pattern, and target users
-8. **Section descriptions**: Each component sub-section (Active Skills, Reference Skills, Commands, Agents, Hooks) MUST include a `.section-desc` paragraph explaining the component type — see `references/html-report-template.md` for required texts
-9. **Commands table**: Use Purpose, Arguments, and Notable columns (not just Type/Target)
-10. **Agent delegation triggers**: Show each agent's `description` field verbatim in an `.agent-delegation-trigger` block below the agent card
-11. **Raw data viewers**: Include collapsible `.raw-data-viewer` panels with frontmatter source for active skills and agents. Use `<details>` pattern from the template
-12. **Mermaid pan+zoom**: Wrap Mermaid diagrams in `.diagram-container` with click handler. Include the fullscreen `.diagram-overlay` with pan (mouse drag) and zoom (mouse wheel + buttons) — see `references/html-report-template.md` for JS
-13. **Component tabs**: Group component types into tab panels with `.tab-container` / `.tab-buttons` / `.tab-panel`. Default active tab = type with most components. Omit tabs with 0 components
-14. **Design philosophy**: Render 1-3 design principle items with `.design-philosophy` / `.philosophy-item` blocks at top of Architecture section, before diagrams
-15. **Sequence diagrams**: Include workflow sequence diagrams (Mermaid `sequenceDiagram`) when the plugin uses orchestrator or multi-step patterns. Use the existing `.diagram-container` pattern
-16. **TOC active highlight**: TOC links get `.active` class via Intersection Observer. Section order in TOC must match: Overview, Architecture, Components, Usage, Security, Dependencies, Plugin Profile
+1. **Plugin Overview with At-a-Glance**: Generate Plugin Overview (between Header and Architecture) with `.at-a-glance` card containing: `.glance-summary` (non-technical sentence), `.glance-features` (3 features), `.summary-bullets` (What/How/Unique — labels in English, descriptions translated). Below: `.overview-stats` stat boxes + `.overview-meta` (pattern + target users)
+2. **Concept term wrapping**: Wrap every occurrence of concept terms (skill, agent, hook, mcp-server, lsp-server, command, context-fork, allowed-tools, permission-mode, max-turns, plugin-profile, orchestrator-pattern) in `<span class="concept-term" data-concept="{id}">`. First-occurrence detection and popover insertion are handled by JS — do NOT add `?` buttons or popovers manually
+3. **Section intros**: Add `.section-intro` paragraph at the top of each major section (Architecture, Usage, Components, Security Audit, Dependencies, Plugin Profile) — see `references/html-report-template.md` for default texts
+4. **Component cards**: Render Agents and notable Active Skills as `.component-card` with `.card-essentials` (badge + name + purpose) visible immediately. Technical details (model, tools, maxTurns) inside collapsible `<details class="card-details">`. Agent delegation triggers and raw data viewers follow as before
+5. **Security context + limitations**: In Security Audit section, use `.security-summary` with `.risk-badge`, `.risk-counts`, and `.risk-context` (1-2 sentence explanation). Add `.report-limitations` box at section bottom with 3 static limitation items
+6. **Risk level colors**: CRITICAL = `#dc2626`, HIGH = `#ea580c`, MEDIUM = `#ca8a04`, LOW = `#16a34a`
+7. **Mermaid diagrams**: Place inside `<pre class="mermaid">`. Init with `mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' })`. Wrap in `.diagram-container` with pan+zoom overlay. Include component, data flow, and sequence diagrams in Architecture
+8. **Collapsible sections**: Use `<details><summary>` for findings, component technical details, and raw data viewers
+9. **Responsive**: Max-width container (900px), responsive cards with flexbox
+10. **Language**: Translate section headers, labels, section intros, and description texts. Keep component names, file paths, tool names, severity levels untranslated. What/How/Unique labels stay in English
+11. **Component sub-sections**: Each type (Active Skills, Reference Skills, Commands, Agents, Hooks) MUST include `.section-desc`. Use `.component-card` pattern for agents/active skills. Commands table: Purpose, Arguments, Notable columns
+12. **Component tabs**: Group types into `.tab-container` / `.tab-buttons` / `.tab-panel`. Default active = type with most components. Omit tabs with 0 count
+13. **Design philosophy**: Render 1-3 principles with `.philosophy-item` at top of Architecture, before diagrams
+14. **Plugin Profile**: Component inventory bars, documentation grid, security risk badge with `.risk-context`, pattern/target users, quality checklist
+15. **TOC + navigation**: TOC links get `.active` via Intersection Observer. Section order: Overview, Architecture, Usage, Components, Security, Dependencies, Plugin Profile

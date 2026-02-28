@@ -23,7 +23,67 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 ---
 
+## Plugin Overview
+
+{at-a-glance sentence — non-technical, what this plugin does for the user}
+
+**Key Features**:
+- {feature 1}
+- {feature 2}
+- {feature 3}
+
+- **What**: {what the plugin does}
+- **How**: {how it works}
+- **Unique**: {what makes it different}
+
+| Skills | Agents | Commands | Hooks |
+|--------|--------|----------|-------|
+| {n} | {n} | {n} | {n} |
+
+**Pattern**: {orchestrator/standalone/library/hybrid} | **Target Users**: {description}
+
+---
+
+## Architecture
+> {section-intro: Shows how this plugin is structured internally.}
+
+### Design Philosophy
+- **{Principle Name}**: {1-2 sentence explanation}
+
+{Mermaid component relationship diagram from feature-architect}
+
+{Mermaid data flow diagram — if orchestrator pattern exists}
+
+{Mermaid workflow sequence diagram — if orchestrator or multi-step pattern exists}
+
+{Brief data flow description — 3-5 lines max}
+
+---
+
+## Usage
+> {section-intro: How to install and use this plugin.}
+
+### Install
+{commands}
+
+### Prerequisites
+| Item | Required | Details |
+|------|----------|---------|
+...
+
+### Key Components
+{For noteworthy components only — 2-3 sentences each. Skip trivial redirect commands.}
+
+### When to Use
+- {bullet}
+
+### When NOT to Use
+- {bullet}
+
+---
+
 ## Components ({total})
+> {section-intro: Lists the skills, agents, commands, hooks, and other components that make up this plugin.}
 
 ### Skills — Active ({n})
 
@@ -78,45 +138,11 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 ---
 
-## Architecture
-
-### Design Philosophy
-- **{Principle Name}**: {1-2 sentence explanation}
-
-{Mermaid component relationship diagram from feature-architect}
-
-{Mermaid data flow diagram — if orchestrator pattern exists}
-
-{Mermaid workflow sequence diagram — if orchestrator or multi-step pattern exists}
-
-{Brief data flow description — 3-5 lines max}
-
----
-
-## Usage
-
-### Install
-{commands}
-
-### Prerequisites
-| Item | Required | Details |
-|------|----------|---------|
-...
-
-### Key Components
-{For noteworthy components only — 2-3 sentences each. Skip trivial redirect commands.}
-
-### When to Use
-- {bullet}
-
-### When NOT to Use
-- {bullet}
-
----
-
 ## Security Audit
+> {section-intro: Audit results for permissions, tool usage, and security risks.}
 
 ### Risk: {LEVEL} — {n}C / {n}H / {n}M / {n}L
+**Risk Context**: {1-2 sentence explanation of what this risk level means for the end user}
 
 #### Permission Matrix
 
@@ -134,9 +160,12 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 ---
 {repeat for each finding, separated by horizontal rule}
 
+> **Limitations of this analysis**: Only static analysis is performed. Actual network traffic from MCP servers is not verified, and security vulnerabilities in dependency packages are outside the scope of analysis.
+
 ---
 
 ## Dependencies
+> {section-intro: Lists tools, external services, environment variables, and other dependencies required by this plugin.}
 
 ### Tool Dependencies
 | Tool | Used By | Purpose |
@@ -161,6 +190,7 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 ---
 
 ## Plugin Profile
+> {section-intro: Summarizes the plugin's objective status — components, documentation, security, and quality.}
 
 ### Component Inventory
 | Type | Count |
@@ -184,6 +214,7 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 ### Security Risk
 {CRITICAL/HIGH/MEDIUM/LOW} — {n}C / {n}H / {n}M / {n}L
+**Risk Context**: {1-2 sentence explanation}
 
 ### Primary Pattern
 {Orchestrator-Agent / Standalone / Library / Hybrid}

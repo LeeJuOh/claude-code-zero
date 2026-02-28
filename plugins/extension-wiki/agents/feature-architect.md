@@ -226,12 +226,32 @@ Check the following:
 
 ## Output Format
 
+### Writing Guidelines
+
+**At-a-Glance**: A single sentence a non-developer can understand.
+NO Claude Code terminology (skill, agent, hook, MCP, etc.).
+Focus on end-user benefit: "What does this plugin do for me?"
+
+**Key Features**: 3 main capabilities in plain language.
+Each item answers "What can I do with this?" — not "How does it work?"
+
+**What/How/Unique**: Technical summary for developers.
+May reference skills, agents, and other Claude Code concepts.
+
 Return your analysis in this exact structure:
 
 ```
 ## Plugin Summary
 
-{2-4 sentence summary of what the plugin does — core capabilities, primary use cases, differentiators}
+**At-a-Glance**: {1 sentence — non-technical, what this plugin does for the user, no Claude Code jargon}
+**Key Features**:
+- {feature 1 — plain language, answers "What can I do with this?"}
+- {feature 2}
+- {feature 3}
+
+- **What**: {1 sentence — what the plugin does, core capability (may use technical terms)}
+- **How**: {1 sentence — how it works at a high level}
+- **Unique**: {1 sentence — what makes it different or noteworthy}
 
 **Components**: {n} skills ({n} active, {n} reference), {n} agents, {n} commands, {n} hooks
 **Primary Pattern**: {orchestrator / standalone / library / hybrid}
@@ -371,6 +391,7 @@ Return your analysis in this exact structure:
 ### Security Risk
 {CRITICAL/HIGH/MEDIUM/LOW} — {n}C / {n}H / {n}M / {n}L
 (from security-auditor)
+**Context**: {1-2 sentence explanation of what this risk level means for the end user. Adapt to the specific plugin — mention actual capabilities that cause the risk level.}
 
 ### Primary Pattern
 {Orchestrator-Agent / Standalone / Library / Hybrid}
