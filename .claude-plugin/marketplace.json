@@ -30,7 +30,7 @@
     {
       "name": "extension-wiki",
       "source": "./plugins/extension-wiki",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Analyze Claude Code plugins and generate wiki-style HTML reports with security audit, architecture review, and quality scores"
     },
     {

@@ -9,12 +9,15 @@ description: >
 argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja] [--output <path>]"
 allowed-tools:
   - Read
+  - Write
   - Glob
   - Grep
   - Task
   - AskUserQuestion
   - Bash(gh repo clone *)
   - Bash(rm -rf /tmp/extension-wiki-*)
+  - Bash(find /tmp/extension-wiki-*)
+  - Bash(ls /tmp/extension-wiki-*)
 ---
 
 # Extension Wiki
@@ -92,6 +95,8 @@ If source cannot be found, inform user and stop.
 
 Scan the target directory for all plugin components.
 
+**CRITICAL**: Use ONLY Glob for file discovery. NEVER use Bash `find` or `ls` commands. Glob supports recursive patterns (`**/*.md`) and is always sufficient.
+
 **Step 1**: Run 3 Glob calls in parallel (single message):
 
 | # | Pattern | Captures |
@@ -100,11 +105,12 @@ Scan the target directory for all plugin components.
 | 2 | `**/*.json` | plugin.json, hooks.json, .mcp.json, .lsp.json, settings.json |
 | 3 | `LICENSE*` | License files |
 
-**Step 2**: If Glob results are sparse (< 5 files found), run additional Glob:
+**Step 2**: If Glob results are sparse (< 5 files found), run additional Glob calls (never Bash):
 ```
 Glob("*", path: {target-directory})
+Glob("**/*", path: {target-directory})
 ```
-Then run targeted Glob on discovered directories (e.g., `skills/**/*`, `agents/**/*`).
+Then run targeted Glob on discovered directories (e.g., `skills/**/*`, `agents/**/*`, `commands/**/*`).
 
 **Step 3**: Classify results into component types:
 
@@ -206,6 +212,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 1. **Determine output path**:
    - If `--output <path>` is specified → use that path
+   - If source is a **GitHub URL** (cloned to `/tmp/`) → `{cwd}/extension-wiki-report.html`
    - Otherwise → `{target-directory}/extension-wiki-report.html`
 
 2. **Delegate to report-writer agent**:
