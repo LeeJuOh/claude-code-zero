@@ -7,19 +7,18 @@ description: >
   Use when asked to analyze, audit, inspect, review, document, or wiki a plugin
   or extension. Default output is an interactive HTML report; use --format md
   for inline markdown. Not for plugin development, installation, or creation.
-argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja] [--output <path>]"
+argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
 allowed-tools:
   - Read
-  - Write
+  - Write(~/.claude/plugins/agent-extension-wiki/**)
   - Glob
   - Grep
   - Task
   - AskUserQuestion
   - Bash(gh repo clone *)
-  - Bash(rm -rf /tmp/agent-extension-wiki-*)
-  - Bash(find /tmp/agent-extension-wiki-*)
-  - Bash(ls /tmp/agent-extension-wiki-*)
+  - Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/*)
+  - Bash(rm -rf ~/.claude/plugins/agent-extension-wiki/tmp/*)
 ---
 
 # Agent Extension Wiki
@@ -81,9 +80,10 @@ Determine **how** to present the result (independent of analysis mode):
 
 - **Local path**: Verify directory exists, proceed directly
 - **Installed plugin**: Search `~/.claude/plugins/cache/` for matching directory
-- **GitHub URL**: Clone to `/tmp/agent-extension-wiki-{random}`:
+- **GitHub URL**: Clone to `~/.claude/plugins/agent-extension-wiki/tmp/{random}/`:
   ```
-  Bash(gh repo clone {owner/repo} /tmp/agent-extension-wiki-{random})
+  Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/tmp/)
+  Bash(gh repo clone {owner/repo} ~/.claude/plugins/agent-extension-wiki/tmp/{random})
   ```
   For subpath URLs (`github.com/owner/repo/tree/branch/plugins/foo`):
   1. Extract `owner/repo` for cloning
@@ -235,9 +235,12 @@ Output the report directly to the user (inline markdown).
 For `analyze` mode with HTML format (the default), generate a self-contained HTML file.
 
 1. **Determine output path**:
-   - If `--output <path>` is specified → use that path
-   - If source is a **GitHub URL** (cloned to `/tmp/`) → `{cwd}/agent-extension-wiki-report.html`
-   - Otherwise → `{target-directory}/agent-extension-wiki-report.html`
+   ```
+   Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/reports/)
+   ```
+   Output path: `~/.claude/plugins/agent-extension-wiki/reports/{plugin-name}-report.html`
+
+   Where `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json).
 
 2. **Delegate to report-writer agent**:
    ```
@@ -252,14 +255,14 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 3. **Report completion**: After the agent writes the HTML file, output the `file:///` URL to the user:
    ```
-   Report generated: file:///{absolute-path}/agent-extension-wiki-report.html
+   Report generated: file://{home}/.claude/plugins/agent-extension-wiki/reports/{plugin-name}-report.html
    ```
 
 #### Phase 6: Cleanup
 
 If the source was cloned from GitHub:
 ```
-Bash(rm -rf /tmp/agent-extension-wiki-{directory})
+Bash(rm -rf ~/.claude/plugins/agent-extension-wiki/tmp/{directory})
 ```
 
 ### Reference Files

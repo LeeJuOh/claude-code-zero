@@ -53,10 +53,11 @@ security audit ./plugins/my-plugin
 overview ./plugins/my-plugin
 ```
 
-### Custom output path
+### Report location
 
+Reports are saved to `~/.claude/plugins/agent-extension-wiki/reports/`:
 ```
-analyze ./plugins/my-plugin --output ~/reports/my-plugin.html
+~/.claude/plugins/agent-extension-wiki/reports/{plugin-name}-report.html
 ```
 
 ## Analysis Modes
