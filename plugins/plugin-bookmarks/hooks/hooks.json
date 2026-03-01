@@ -1,16 +1,7 @@
 {
-  "description": "Data initialization",
+  "description": "Data path resolution and auto-approve",
   "hooks": {
     "PreToolUse": [
-      {
-        "matcher": "Skill",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/init-data.sh"
-          }
-        ]
-      },
       {
         "matcher": "Read|Write|Edit",
         "hooks": [

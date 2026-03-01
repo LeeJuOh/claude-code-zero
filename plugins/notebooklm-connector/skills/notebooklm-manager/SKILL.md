@@ -30,6 +30,15 @@ These tools DO NOT EXIST in this skill's allowed tool set.
 All Chrome interaction is delegated to the agent via Task.
 After receiving an agent error, do NOT attempt to use Chrome tools yourself.
 
+### 0. Data Path Resolution (MUST run first)
+
+Read `~/.claude-code-zero/notebooklm-connector/data-path` to obtain `DATA_DIR`.
+The PreToolUse hook automatically detects install scope (project vs user) and writes the correct path.
+
+- The file contains a single line: the absolute path to the data directory.
+- Store this as `{DATA_DIR}` and use it for ALL subsequent file operations.
+- **File read error → Tell user to restart the session (hook may not be loaded).**
+
 ### 1. Query Detection
 
 Extract from user message:
@@ -38,8 +47,8 @@ Extract from user message:
 
 ### 2. Notebook Lookup
 
-Read `~/.claude-code-zero/notebooklm-connector/data/library.json` to find notebook URL.
-- **File not found → Data directory may not be initialized. Tell user to restart the session.**
+Read `{DATA_DIR}/library.json` to find notebook URL.
+- **File not found → Re-run Step 0. If still missing, tell user to restart the session.**
 - Not found → Show "Did you mean?" with similar IDs
 
 ### 3. Chat History
@@ -142,21 +151,27 @@ See `references/commands.md` for full command reference.
 
 ## Storage
 
-Location: `~/.claude-code-zero/notebooklm-connector/data/`
+Data is isolated per install scope. The hook resolves the correct path automatically.
 
 ```
-data/
-├── library.json        # Active notebooks (index)
-├── archive.json        # Archived notebooks
-└── notebooks/{id}.json # Full metadata (on-demand)
+~/.claude-code-zero/notebooklm-connector/
+├── data-path                       # Current session's resolved data directory
+├── global/data/                    # User-level install (shared across projects)
+│   ├── library.json
+│   ├── archive.json
+│   └── notebooks/{id}.json
+└── projects/<md5-hash>/data/       # Project-level install (per-project isolation)
+    ├── library.json
+    ├── archive.json
+    └── notebooks/{id}.json
 ```
 
-Data directory and empty files are automatically created by the init hook on first skill invocation.
+The `data-path` file is written by the PreToolUse hook on each session start.
+Data directory and default files are lazily created on first `data-path` read.
 
 **Migration (one-time)**:
-On first use after updating from an older version, if data exists at `~/.claude/plugins/notebooklm-connector/data/`
-or `~/.claude/claude-code-zero/notebooklm-connector/data/` but NOT at the new location,
-files are automatically copied to `~/.claude-code-zero/notebooklm-connector/data/`.
+- `data/` → `global/data/`: Existing flat data layout is moved to the global subdirectory.
+- Legacy paths (`~/.claude/plugins/...`, `~/.claude/claude-code-zero/...`) are copied to `global/data/`.
 
 ---
 

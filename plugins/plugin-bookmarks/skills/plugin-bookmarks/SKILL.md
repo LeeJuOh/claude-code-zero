@@ -18,9 +18,29 @@ Save and manage bookmarks of third-party Claude Code plugins.
 
 ## Instructions
 
+### 0. Data Path Resolution (MUST run first)
+
+Read `~/.claude-code-zero/plugin-bookmarks/data-path` to obtain `DATA_DIR`.
+The PreToolUse hook automatically detects install scope (project vs user) and writes the correct path.
+
+- The file contains a single line: the absolute path to the data directory.
+- Store this as `{DATA_DIR}` and use it for ALL subsequent file operations.
+- **File read error → Tell user to restart the session (hook may not be loaded).**
+
 ### Storage
 
-Location: `~/.claude-code-zero/plugin-bookmarks/data/wishlist.json`
+Location: `{DATA_DIR}/wishlist.json`
+
+Data is isolated per install scope. The hook resolves the correct path automatically.
+
+```
+~/.claude-code-zero/plugin-bookmarks/
+├── data-path                       # Current session's resolved data directory
+├── global/data/                    # User-level install (shared across projects)
+│   └── wishlist.json
+└── projects/<md5-hash>/data/       # Project-level install (per-project isolation)
+    └── wishlist.json
+```
 
 Schema:
 ```json
@@ -38,12 +58,12 @@ Schema:
 
 `installHint` is optional. If absent or `null`, the install command is unknown.
 
-Data directory and file are automatically created by the init hook on first skill invocation.
+The `data-path` file is written by the PreToolUse hook on each session start.
+Data directory and default file are lazily created on first `data-path` read.
 
 **Migration (one-time)**:
-On first use after updating from an older version, if data exists at `~/.claude/plugins/plugin-bookmarks/data/`
-or `~/.claude/claude-code-zero/plugin-bookmarks/data/` but NOT at the new location,
-files are automatically copied to `~/.claude-code-zero/plugin-bookmarks/data/`.
+- `data/` → `global/data/`: Existing flat data layout is moved to the global subdirectory.
+- Legacy paths (`~/.claude/plugins/...`, `~/.claude/claude-code-zero/...`) are copied to `global/data/`.
 
 ### URL Heuristics
 

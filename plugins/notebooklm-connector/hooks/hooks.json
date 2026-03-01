@@ -1,16 +1,7 @@
 {
-  "description": "Data initialization and follow-up coverage reminder",
+  "description": "Data path resolution, auto-approve, and follow-up reminder",
   "hooks": {
     "PreToolUse": [
-      {
-        "matcher": "Skill",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/init-data.sh"
-          }
-        ]
-      },
       {
         "matcher": "Read|Write|Edit",
         "hooks": [
