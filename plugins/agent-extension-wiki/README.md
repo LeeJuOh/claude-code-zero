@@ -55,9 +55,9 @@ overview ./plugins/my-plugin
 
 ### Report location
 
-Reports are saved to `~/.claude/plugins/agent-extension-wiki/reports/`:
+Reports are saved to `~/.claude-code-zero/agent-extension-wiki/reports/`:
 ```
-~/.claude/plugins/agent-extension-wiki/reports/{plugin-name}-report.html
+~/.claude-code-zero/agent-extension-wiki/reports/{plugin-name}-report.html
 ```
 
 ## Analysis Modes

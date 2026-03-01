@@ -11,7 +11,7 @@ argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
 allowed-tools:
   - Read
-  - Write(~/.claude/plugins/agent-extension-wiki/**)
+  - Write(~/.claude-code-zero/agent-extension-wiki/**)
   - Glob
   - Grep
   - Task
@@ -240,10 +240,8 @@ Output the report directly to the user (inline markdown).
 For `analyze` mode with HTML format (the default), generate a self-contained HTML file.
 
 1. **Determine output path**:
-   ```
-   Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/reports/)
-   ```
-   Output path: `~/.claude/plugins/agent-extension-wiki/reports/{plugin-name}-report.html`
+   Output path: `~/.claude-code-zero/agent-extension-wiki/reports/{plugin-name}-report.html`
+   The Write tool creates parent directories automatically — no `mkdir` needed.
 
    Where `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json).
 
@@ -260,7 +258,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 3. **Report completion**: After the agent writes the HTML file, output the `file:///` URL to the user:
    ```
-   Report generated: file://{home}/.claude/plugins/agent-extension-wiki/reports/{plugin-name}-report.html
+   Report generated: file://{home}/.claude-code-zero/agent-extension-wiki/reports/{plugin-name}-report.html
    ```
 
 #### Phase 6: Cleanup

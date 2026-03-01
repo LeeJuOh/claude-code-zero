@@ -121,6 +121,22 @@ When the user requests a tag on `main`:
 6. **Switch back** — Return to `develop`.
 7. **Confirm push** — Ask the user before pushing `main`, `develop`, and the tag to remote.
 
+## Known Claude Code Permission Issues
+
+`~/.claude/` 하위 경로는 plugin `allowed-tools`로 권한을 부여할 수 없다. 플러그인 데이터 경로로 사용 금지.
+
+- **Write/Edit to `~/.claude/`**: Hardcoded 보호로 `allowed-tools`, `settings.json` 모두 무시됨 ([#21242](https://github.com/anthropics/claude-code/issues/21242))
+- **Skill `allowed-tools` → Bash**: 스킬의 `allowed-tools`에 Bash 패턴이 있어도 실제로 권한이 부여되지 않음 ([#14956](https://github.com/anthropics/claude-code/issues/14956))
+
+### Plugin Data Path Convention
+
+플러그인 데이터는 `~/.claude/` 대신 `~/.claude-code-zero/<plugin-name>/` 에 저장한다.
+
+| 용도 | 경로 |
+|------|------|
+| 영구 데이터 (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
+| 임시 데이터 (clone tmp) | `/tmp/<plugin-name>/` |
+
 ## Coding Style
 
 - **Language**: All plugin deliverables in English (SKILL.md, agent.md, README.md, comments, descriptions, code). All development conversation (plans, discussions, questions) in Korean.
