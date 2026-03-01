@@ -87,7 +87,14 @@ Generate a single `.html` file with all styles inline. External dependencies are
 4. **Component cards**: Render Agents and notable Active Skills as `.component-card` with `.card-essentials` (badge + name + purpose) visible immediately. Technical details (model, tools, maxTurns) inside collapsible `<details class="card-details">`. Agent delegation triggers and raw data viewers follow as before
 5. **Security context + limitations**: In Security Audit section, use `.security-summary` with `.risk-badge`, `.risk-counts`, and `.risk-context` (1-2 sentence explanation). Add `.report-limitations` box at section bottom with 3 static limitation items
 6. **Risk level colors**: CRITICAL = `#dc2626`, HIGH = `#ea580c`, MEDIUM = `#ca8a04`, LOW = `#16a34a`
-7. **Mermaid diagrams**: Place inside `<pre class="mermaid">`. Init with `mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' })`. Wrap in `.diagram-container` with pan+zoom overlay. Include component, data flow, and sequence diagrams in Architecture
+7. **Mermaid diagrams — fullscreen zoom is MANDATORY**:
+   - Each diagram: `<div class="diagram-container" onclick="openDiagramOverlay(this)"><div class="diagram-hint">Click to enlarge</div><pre class="mermaid">...</pre></div>`
+   - CSS: `.diagram-container { cursor: pointer; overflow: hidden; }` `.diagram-hint { position: absolute; top: 8px; right: 12px; font-size: 0.7rem; opacity: 0; }` `.diagram-container:hover .diagram-hint { opacity: 1; }`
+   - Overlay HTML (once, before `</body>`): `<div class="diagram-overlay" id="diagramOverlay"><div class="overlay-controls"><button onclick="zoomDiagram(1.2)">+</button><button onclick="zoomDiagram(0.8)">−</button><button onclick="closeDiagramOverlay(event)">✕</button></div><div class="overlay-content" id="overlayContent"></div></div>`
+   - Overlay CSS: `.diagram-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; }` `.diagram-overlay.active { display:flex; }` `.overlay-content { background:white; border-radius:12px; padding:2rem; max-width:95vw; max-height:90vh; overflow:hidden; cursor:grab; }`
+   - JS functions (MUST include all): `openDiagramOverlay(container)` — clone SVG into overlay, reset transform, add `.active`; `closeDiagramOverlay(e)` — remove `.active`; `zoomDiagram(factor)` — scale 0.3–5x; `applyTransform()` — apply translate+scale; wheel zoom (cursor-relative), mouse drag panning, double-click reset, Escape to close
+   - Init: `mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' })`
+   - Include component, data flow, and sequence diagrams in Architecture
 8. **Collapsible sections**: Use `<details><summary>` for findings, component technical details, and raw data viewers
 9. **Responsive**: Max-width container (900px), responsive cards with flexbox
 10. **Language**: Translate section headers, labels, section intros, and description texts. Keep component names, file paths, tool names, severity levels untranslated. What/How/Unique labels stay in English
