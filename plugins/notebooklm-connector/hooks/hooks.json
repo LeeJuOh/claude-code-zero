@@ -1,5 +1,5 @@
 {
-  "description": "Data initialization, write auto-approval, and follow-up coverage reminder",
+  "description": "Data initialization and follow-up coverage reminder",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,15 +8,6 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/init-data.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/approve-data-write.sh"
           }
         ]
       }

@@ -191,11 +191,10 @@ notebooklm-connector/
 └── hooks/
     ├── hooks.json
     ├── init-data.sh             # Data directory initialization
-    ├── approve-data-write.sh    # Auto-approve writes to data dir
     └── follow-up-reminder.sh    # Coverage analysis reminder
 ```
 
-User data is stored outside the plugin directory at `~/.claude/claude-code-zero/notebooklm-connector/data/` to persist across plugin updates.
+User data is stored outside the plugin directory at `~/.claude/plugins/notebooklm-connector/data/` to persist across plugin updates.
 
 ### Query Flow
 
@@ -206,7 +205,7 @@ User data is stored outside the plugin directory at `~/.claude/claude-code-zero/
 
 ### Data Storage
 
-Location: `~/.claude/claude-code-zero/notebooklm-connector/data/`
+Location: `~/.claude/plugins/notebooklm-connector/data/`
 
 ```
 data/
@@ -219,6 +218,7 @@ data/
 - `library.json` stores minimal entries (id, name, url, topics) for fast loading.
 - `notebooks/{id}.json` stores full metadata (description, tags, use cases, content types) and is loaded only when needed.
 - The init hook automatically creates the data directory and empty files on first skill invocation.
+- Write permissions to the data directory are granted via `allowed-tools` in the skill frontmatter.
 - On first use after updating from an older version, existing data is migrated from the old location automatically.
 
 ## Commands Reference
