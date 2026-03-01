@@ -17,8 +17,8 @@ allowed-tools:
   - Task
   - AskUserQuestion
   - Bash(gh repo clone *)
-  - Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/*)
-  - Bash(rm -rf ~/.claude/plugins/agent-extension-wiki/tmp/*)
+  - Bash(mkdir -p /tmp/agent-extension-wiki*)
+  - Bash(rm -rf /tmp/agent-extension-wiki/*)
 ---
 
 # Agent Extension Wiki
@@ -80,14 +80,14 @@ Determine **how** to present the result (independent of analysis mode):
 
 - **Local path**: Verify directory exists, proceed directly
 - **Installed plugin**: Search `~/.claude/plugins/cache/` for matching directory
-- **GitHub URL**: Clone to `~/.claude/plugins/agent-extension-wiki/tmp/{dirname}/`:
+- **GitHub URL**: Clone to `/tmp/agent-extension-wiki/{dirname}/`:
   1. Generate `{dirname}` — pick any 8-character hex string yourself (e.g., `a1b2c3d4`)
   2. Create the directory, then clone — each as a **separate** Bash call:
      ```
-     Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/tmp/)
+     Bash(mkdir -p /tmp/agent-extension-wiki/)
      ```
      ```
-     Bash(gh repo clone {owner/repo} ~/.claude/plugins/agent-extension-wiki/tmp/{dirname})
+     Bash(gh repo clone {owner/repo} /tmp/agent-extension-wiki/{dirname})
      ```
      These are the only two Bash commands needed. Do not add extra commands for saving state or generating random strings.
   For subpath URLs (`github.com/owner/repo/tree/branch/plugins/foo`):
@@ -267,7 +267,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 If the source was cloned from GitHub:
 ```
-Bash(rm -rf ~/.claude/plugins/agent-extension-wiki/tmp/{directory})
+Bash(rm -rf /tmp/agent-extension-wiki/{directory})
 ```
 
 ### Reference Files
