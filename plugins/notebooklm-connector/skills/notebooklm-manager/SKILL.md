@@ -15,13 +15,7 @@ Trigger phrases: "Query my NotebookLM", "Ask my notebook about X", "query [id] a
   Do NOT use for: general web searches, local file reading, or non-NotebookLM documentation queries.
 
   Requires: claude --chrome with claude-in-chrome MCP.
-allowed-tools:
-  - Read
-  - Write(~/.claude-code-zero/notebooklm-connector/data/**)
-  - Edit(~/.claude-code-zero/notebooklm-connector/data/**)
-  - Update(~/.claude-code-zero/notebooklm-connector/data/**)
-  - Task
-  - AskUserQuestion
+allowed-tools: Read, Write, Edit, Agent, AskUserQuestion
 ---
 
 # NotebookLM Manager

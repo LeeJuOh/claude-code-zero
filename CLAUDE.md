@@ -127,6 +127,10 @@ When the user requests a tag on `main`:
 
 - **Write/Edit to `~/.claude/`**: Hardcoded 보호로 `allowed-tools`, `settings.json` 모두 무시됨 ([#21242](https://github.com/anthropics/claude-code/issues/21242))
 - **Skill `allowed-tools` → Bash**: 스킬의 `allowed-tools`에 Bash 패턴이 있어도 실제로 권한이 부여되지 않음 ([#14956](https://github.com/anthropics/claude-code/issues/14956))
+- **`allowed-tools` YAML list 미지원**: YAML 배열 형식(`- Read`, `- Write(...)`)은 파서가 인식하지 못함. 반드시 comma-separated 문자열 사용: `allowed-tools: Read, Write(...), Edit(...)`
+- **Skill `allowed-tools`는 working directory 밖 파일 접근 프롬프트를 override하지 못함**: `allowed-tools: Read`를 선언해도 `~/.claude-code-zero/` 등 working directory 밖 파일은 여전히 프롬프트 발생. 이는 별도 보안 레이어임 ([#11088](https://github.com/anthropics/claude-code/issues/11088), [#18950](https://github.com/anthropics/claude-code/issues/18950))
+- **Skill `allowed-tools`에서 path-scoped 패턴 미지원**: `Write(~/.claude-code-zero/...)` 형태는 skill 파서가 인식하지 못하고 전체 `allowed-tools` 파싱을 실패시킴. bare tool name만 사용할 것 ([#11088](https://github.com/anthropics/claude-code/issues/11088))
+- **Skills/subagents가 `settings.json`의 `permissions.allow` 상속 안 함** ([#18950](https://github.com/anthropics/claude-code/issues/18950), [#10906](https://github.com/anthropics/claude-code/issues/10906))
 
 ### Plugin Data Path Convention
 
@@ -136,6 +140,35 @@ When the user requests a tag on `main`:
 |------|------|
 | 영구 데이터 (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
 | 임시 데이터 (clone tmp) | `/tmp/<plugin-name>/` |
+
+### Plugin Data Access Auto-Approve Pattern
+
+Working directory 밖 데이터 파일(`~/.claude-code-zero/`)에 대한 Read/Write/Edit 프롬프트를 없애려면 **PreToolUse hook**을 사용한다. `allowed-tools`나 `settings.json`으로는 해결 불가.
+
+```json
+// hooks.json
+{
+  "matcher": "Read|Write|Edit",
+  "hooks": [{
+    "type": "command",
+    "command": "${CLAUDE_PLUGIN_ROOT}/hooks/approve-data-access.sh"
+  }]
+}
+```
+
+```bash
+# approve-data-access.sh
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
+FILE_PATH="${FILE_PATH/#\~/$HOME}"
+case "$FILE_PATH" in
+  "$HOME/.claude-code-zero/<plugin-name>/data"/*)
+    echo '{"decision": "approve"}' ;;
+esac
+exit 0
+```
+
+**주의**: subagent에서의 auto-approve 동작은 미확인 (스킬 직접 호출만 테스트됨).
 
 ## Coding Style
 

@@ -16,8 +16,9 @@ description: |
   </example>
 model: sonnet
 maxTurns: 15
+permissionMode: acceptEdits
 tools:
-  - Write
+  - Write(~/.claude-code-zero/agent-extension-wiki/**)
   - Read
 ---
 

@@ -9,12 +9,7 @@ description: |
   "install command", "how to install", "설치 명령어", "설치 방법".
 
   Do NOT use for: installing plugins, validating plugins, or plugin development.
-allowed-tools:
-  - Read
-  - Write(~/.claude-code-zero/plugin-bookmarks/data/**)
-  - Edit(~/.claude-code-zero/plugin-bookmarks/data/**)
-  - Update(~/.claude-code-zero/plugin-bookmarks/data/**)
-  - AskUserQuestion
+allowed-tools: Read, Write, Edit, AskUserQuestion
 ---
 
 # Plugin Bookmarks

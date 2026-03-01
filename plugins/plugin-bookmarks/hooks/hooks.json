@@ -10,6 +10,15 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/init-data.sh"
           }
         ]
+      },
+      {
+        "matcher": "Read|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/approve-data-access.sh"
+          }
+        ]
       }
     ]
   }

@@ -9,16 +9,7 @@ description: >
   for inline markdown. Not for plugin development, installation, or creation.
 argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
-allowed-tools:
-  - Read
-  - Write(~/.claude-code-zero/agent-extension-wiki/**)
-  - Glob
-  - Grep
-  - Task
-  - AskUserQuestion
-  - Bash(gh repo clone *)
-  - Bash(mkdir -p /tmp/agent-extension-wiki*)
-  - Bash(rm -rf /tmp/agent-extension-wiki/*)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-wiki-*)
 ---
 
 # Agent Extension Wiki
@@ -80,16 +71,13 @@ Determine **how** to present the result (independent of analysis mode):
 
 - **Local path**: Verify directory exists, proceed directly
 - **Installed plugin**: Search `~/.claude/plugins/cache/` for matching directory
-- **GitHub URL**: Clone to `/tmp/agent-extension-wiki/{dirname}/`:
+- **GitHub URL**: Clone to `/tmp/agent-extension-wiki-{dirname}`:
   1. Generate `{dirname}` — pick any 8-character hex string yourself (e.g., `a1b2c3d4`)
-  2. Create the directory, then clone — each as a **separate** Bash call:
+  2. Clone directly (no mkdir needed — git creates the target directory):
      ```
-     Bash(mkdir -p /tmp/agent-extension-wiki/)
+     Bash(gh repo clone {owner/repo} /tmp/agent-extension-wiki-{dirname})
      ```
-     ```
-     Bash(gh repo clone {owner/repo} /tmp/agent-extension-wiki/{dirname})
-     ```
-     These are the only two Bash commands needed. Do not add extra commands for saving state or generating random strings.
+     This is the only Bash command needed for cloning. Do not add extra commands for saving state or generating random strings.
   For subpath URLs (`github.com/owner/repo/tree/branch/plugins/foo`):
   1. Extract `owner/repo` for cloning
   2. Extract the subpath after `/tree/{branch}/` (e.g., `plugins/foo`)
@@ -265,7 +253,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 If the source was cloned from GitHub:
 ```
-Bash(rm -rf /tmp/agent-extension-wiki/{directory})
+Bash(rm -rf /tmp/agent-extension-wiki-{directory})
 ```
 
 ### Reference Files
