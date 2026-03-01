@@ -11,9 +11,9 @@ description: |
   Do NOT use for: installing plugins, validating plugins, or plugin development.
 allowed-tools:
   - Read
-  - Write(~/.claude/plugins/plugin-bookmarks/data/**)
-  - Edit(~/.claude/plugins/plugin-bookmarks/data/**)
-  - Update(~/.claude/plugins/plugin-bookmarks/data/**)
+  - Write(~/.claude-code-zero/plugin-bookmarks/data/**)
+  - Edit(~/.claude-code-zero/plugin-bookmarks/data/**)
+  - Update(~/.claude-code-zero/plugin-bookmarks/data/**)
   - AskUserQuestion
 ---
 
@@ -25,7 +25,7 @@ Save and manage bookmarks of third-party Claude Code plugins.
 
 ### Storage
 
-Location: `~/.claude/plugins/plugin-bookmarks/data/wishlist.json`
+Location: `~/.claude-code-zero/plugin-bookmarks/data/wishlist.json`
 
 Schema:
 ```json
@@ -46,9 +46,9 @@ Schema:
 Data directory and file are automatically created by the init hook on first skill invocation.
 
 **Migration (one-time)**:
-On first use after updating from an older version, if data exists at `~/.claude/claude-code-zero/plugin-bookmarks/data/`
-but NOT at the new location, files are automatically copied
-to `~/.claude/plugins/plugin-bookmarks/data/`.
+On first use after updating from an older version, if data exists at `~/.claude/plugins/plugin-bookmarks/data/`
+or `~/.claude/claude-code-zero/plugin-bookmarks/data/` but NOT at the new location,
+files are automatically copied to `~/.claude-code-zero/plugin-bookmarks/data/`.
 
 ### URL Heuristics
 

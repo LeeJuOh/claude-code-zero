@@ -17,9 +17,9 @@ Trigger phrases: "Query my NotebookLM", "Ask my notebook about X", "query [id] a
   Requires: claude --chrome with claude-in-chrome MCP.
 allowed-tools:
   - Read
-  - Write(~/.claude/plugins/notebooklm-connector/data/**)
-  - Edit(~/.claude/plugins/notebooklm-connector/data/**)
-  - Update(~/.claude/plugins/notebooklm-connector/data/**)
+  - Write(~/.claude-code-zero/notebooklm-connector/data/**)
+  - Edit(~/.claude-code-zero/notebooklm-connector/data/**)
+  - Update(~/.claude-code-zero/notebooklm-connector/data/**)
   - Task
   - AskUserQuestion
 ---
@@ -44,7 +44,7 @@ Extract from user message:
 
 ### 2. Notebook Lookup
 
-Read `~/.claude/plugins/notebooklm-connector/data/library.json` to find notebook URL.
+Read `~/.claude-code-zero/notebooklm-connector/data/library.json` to find notebook URL.
 - **File not found → Data directory may not be initialized. Tell user to restart the session.**
 - Not found → Show "Did you mean?" with similar IDs
 
@@ -148,7 +148,7 @@ See `references/commands.md` for full command reference.
 
 ## Storage
 
-Location: `~/.claude/plugins/notebooklm-connector/data/`
+Location: `~/.claude-code-zero/notebooklm-connector/data/`
 
 ```
 data/
@@ -160,9 +160,9 @@ data/
 Data directory and empty files are automatically created by the init hook on first skill invocation.
 
 **Migration (one-time)**:
-On first use after updating from an older version, if data exists at `~/.claude/claude-code-zero/notebooklm-connector/data/`
-but NOT at the new location, files are automatically copied
-to `~/.claude/plugins/notebooklm-connector/data/`.
+On first use after updating from an older version, if data exists at `~/.claude/plugins/notebooklm-connector/data/`
+or `~/.claude/claude-code-zero/notebooklm-connector/data/` but NOT at the new location,
+files are automatically copied to `~/.claude-code-zero/notebooklm-connector/data/`.
 
 ---
 

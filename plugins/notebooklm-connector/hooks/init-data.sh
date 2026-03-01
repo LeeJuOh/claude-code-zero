@@ -13,13 +13,19 @@ case "$SKILL_NAME" in
     ;;
 esac
 
-DATA_DIR="$HOME/.claude/plugins/notebooklm-connector/data"
-OLD_DIR="$HOME/.claude/claude-code-zero/notebooklm-connector/data"
+DATA_DIR="$HOME/.claude-code-zero/notebooklm-connector/data"
+OLD_DIR_V2="$HOME/.claude/plugins/notebooklm-connector/data"
+OLD_DIR_V1="$HOME/.claude/claude-code-zero/notebooklm-connector/data"
 
 # Migrate from old path if new path doesn't exist yet
-if [ ! -d "$DATA_DIR" ] && [ -d "$OLD_DIR" ]; then
-  mkdir -p "$DATA_DIR"
-  cp -r "$OLD_DIR"/. "$DATA_DIR"/
+if [ ! -d "$DATA_DIR" ]; then
+  if [ -d "$OLD_DIR_V2" ]; then
+    mkdir -p "$DATA_DIR"
+    cp -r "$OLD_DIR_V2"/. "$DATA_DIR"/
+  elif [ -d "$OLD_DIR_V1" ]; then
+    mkdir -p "$DATA_DIR"
+    cp -r "$OLD_DIR_V1"/. "$DATA_DIR"/
+  fi
 fi
 
 mkdir -p "$DATA_DIR/notebooks"
