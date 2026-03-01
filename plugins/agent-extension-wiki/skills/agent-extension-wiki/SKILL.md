@@ -80,11 +80,16 @@ Determine **how** to present the result (independent of analysis mode):
 
 - **Local path**: Verify directory exists, proceed directly
 - **Installed plugin**: Search `~/.claude/plugins/cache/` for matching directory
-- **GitHub URL**: Clone to `~/.claude/plugins/agent-extension-wiki/tmp/{random}/`:
-  ```
-  Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/tmp/)
-  Bash(gh repo clone {owner/repo} ~/.claude/plugins/agent-extension-wiki/tmp/{random})
-  ```
+- **GitHub URL**: Clone to `~/.claude/plugins/agent-extension-wiki/tmp/{dirname}/`:
+  1. Generate `{dirname}` — pick any 8-character hex string yourself (e.g., `a1b2c3d4`)
+  2. Create the directory, then clone — each as a **separate** Bash call:
+     ```
+     Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/tmp/)
+     ```
+     ```
+     Bash(gh repo clone {owner/repo} ~/.claude/plugins/agent-extension-wiki/tmp/{dirname})
+     ```
+     These are the only two Bash commands needed. Do not add extra commands for saving state or generating random strings.
   For subpath URLs (`github.com/owner/repo/tree/branch/plugins/foo`):
   1. Extract `owner/repo` for cloning
   2. Extract the subpath after `/tree/{branch}/` (e.g., `plugins/foo`)
@@ -119,7 +124,7 @@ Set `{platform}` variable for subsequent phases. Currently only `claude-code` is
 
 Scan the target directory for all plugin components.
 
-**CRITICAL**: Use ONLY Glob for file discovery. NEVER use Bash `find` or `ls` commands. Glob supports recursive patterns (`**/*.md`) and is always sufficient.
+**CRITICAL**: Use Glob for all file discovery — it supports recursive patterns (`**/*.md`) and is the only file discovery tool in allowed-tools. `ls` and `find` are not permitted and will trigger permission prompts.
 
 **Step 1**: Run 3 Glob calls in parallel (single message):
 
