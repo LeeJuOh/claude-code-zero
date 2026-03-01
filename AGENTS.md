@@ -85,14 +85,19 @@ When the user requests a tag on `main`:
 
 ## Known Claude Code Permission Issues
 
-`~/.claude/` 하위 경로는 plugin `allowed-tools`로 권한을 부여할 수 없다. 플러그인 데이터 경로로 사용 금지.
+### `~/.claude/` Write/Edit Hardcoded 보호
 
-- **Write/Edit to `~/.claude/`**: Hardcoded 보호로 `allowed-tools`, `settings.json` 모두 무시됨 ([#21242](https://github.com/anthropics/claude-code/issues/21242))
-- **Skill `allowed-tools` → Bash**: 스킬의 `allowed-tools`에 Bash 패턴이 있어도 실제로 권한이 부여되지 않음 ([#14956](https://github.com/anthropics/claude-code/issues/14956))
+`~/.claude/` 하위 경로에 대한 Write/Edit은 hardcoded 보호가 적용되어 우회 불가. 의도된 보안 설계로 추정. ([#21242](https://github.com/anthropics/claude-code/issues/21242))
+
+**대응**: 플러그인 데이터 경로로 `~/.claude/`를 사용하지 않는다.
+
+### Skill/Subagent Permission 미완성
+
+Skill·subagent 컨텍스트에서 `allowed-tools`와 `settings.json` `permissions.allow`가 제대로 작동하지 않는다. ([#14956](https://github.com/anthropics/claude-code/issues/14956), [#11088](https://github.com/anthropics/claude-code/issues/11088), [#18950](https://github.com/anthropics/claude-code/issues/18950), [#10906](https://github.com/anthropics/claude-code/issues/10906))
+
+**대응**: Working directory 밖 파일 접근 권한이 필요하면 **PreToolUse hook**을 사용한다.
 
 ### Plugin Data Path Convention
-
-플러그인 데이터는 `~/.claude/` 대신 `~/.claude-code-zero/<plugin-name>/` 에 저장한다.
 
 | 용도 | 경로 |
 |------|------|

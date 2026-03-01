@@ -123,18 +123,25 @@ When the user requests a tag on `main`:
 
 ## Known Claude Code Permission Issues
 
-`~/.claude/` 하위 경로는 plugin `allowed-tools`로 권한을 부여할 수 없다. 플러그인 데이터 경로로 사용 금지.
+### `~/.claude/` Write/Edit Hardcoded 보호
 
-- **Write/Edit to `~/.claude/`**: Hardcoded 보호로 `allowed-tools`, `settings.json` 모두 무시됨 ([#21242](https://github.com/anthropics/claude-code/issues/21242))
-- **Skill `allowed-tools` → Bash**: 스킬의 `allowed-tools`에 Bash 패턴이 있어도 실제로 권한이 부여되지 않음 ([#14956](https://github.com/anthropics/claude-code/issues/14956))
-- **`allowed-tools` YAML list 미지원**: YAML 배열 형식(`- Read`, `- Write(...)`)은 파서가 인식하지 못함. 반드시 comma-separated 문자열 사용: `allowed-tools: Read, Write(...), Edit(...)`
-- **Skill `allowed-tools`는 working directory 밖 파일 접근 프롬프트를 override하지 못함**: `allowed-tools: Read`를 선언해도 `~/.claude-code-zero/` 등 working directory 밖 파일은 여전히 프롬프트 발생. 이는 별도 보안 레이어임 ([#11088](https://github.com/anthropics/claude-code/issues/11088), [#18950](https://github.com/anthropics/claude-code/issues/18950))
-- **Skill `allowed-tools`에서 path-scoped 패턴 미지원**: `Write(~/.claude-code-zero/...)` 형태는 skill 파서가 인식하지 못하고 전체 `allowed-tools` 파싱을 실패시킴. bare tool name만 사용할 것 ([#11088](https://github.com/anthropics/claude-code/issues/11088))
-- **Skills/subagents가 `settings.json`의 `permissions.allow` 상속 안 함** ([#18950](https://github.com/anthropics/claude-code/issues/18950), [#10906](https://github.com/anthropics/claude-code/issues/10906))
+`~/.claude/` 하위 경로에 대한 Write/Edit은 hardcoded 보호가 적용되어 `allowed-tools`, `settings.json`, hook 모두로 우회 불가. 의도된 보안 설계로 추정. ([#21242](https://github.com/anthropics/claude-code/issues/21242))
+
+**대응**: 플러그인 데이터 경로로 `~/.claude/`를 사용하지 않는다.
+
+### Skill/Subagent Permission 미완성
+
+Skill·subagent 컨텍스트에서 `allowed-tools`와 `settings.json` `permissions.allow`가 제대로 작동하지 않는다. 공식 문서에서는 동작한다고 명시하지만 실제로는 안 됨. Anthropic 공식 응답 없음. ([#14956](https://github.com/anthropics/claude-code/issues/14956), [#11088](https://github.com/anthropics/claude-code/issues/11088), [#18950](https://github.com/anthropics/claude-code/issues/18950), [#10906](https://github.com/anthropics/claude-code/issues/10906))
+
+주요 증상:
+- Skill `allowed-tools`에 Bash 패턴을 선언해도 권한 프롬프트 발생
+- `allowed-tools`에서 path-scoped 패턴(`Write(~/.claude-code-zero/...)`) 사용 시 파싱 실패. bare name만 사용할 것
+- `allowed-tools` YAML 배열 형식 미지원. comma-separated 문자열 사용: `allowed-tools: Read, Write, Edit`
+- Skill/subagent가 `settings.json`의 `permissions.allow`를 상속하지 않음
+
+**대응**: Working directory 밖 파일 접근 권한이 필요하면 **PreToolUse hook**을 사용한다.
 
 ### Plugin Data Path Convention
-
-플러그인 데이터는 `~/.claude/` 대신 `~/.claude-code-zero/<plugin-name>/` 에 저장한다.
 
 | 용도 | 경로 |
 |------|------|
@@ -143,7 +150,7 @@ When the user requests a tag on `main`:
 
 ### Plugin Data Access Auto-Approve Pattern
 
-Working directory 밖 데이터 파일(`~/.claude-code-zero/`)에 대한 Read/Write/Edit 프롬프트를 없애려면 **PreToolUse hook**을 사용한다. `allowed-tools`나 `settings.json`으로는 해결 불가.
+`~/.claude-code-zero/` 등 working directory 밖 파일에 대한 Read/Write/Edit 프롬프트를 없애는 PreToolUse hook 패턴:
 
 ```json
 // hooks.json
