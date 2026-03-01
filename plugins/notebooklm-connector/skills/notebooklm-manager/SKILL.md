@@ -4,7 +4,7 @@ description: |
   This skill should be used when the user wants to interact with NotebookLM notebooks
   via Claude Code's Chrome integration.
 
-  Trigger phrases: "Query my NotebookLM", "Ask my notebook about X", "query [id] about X",
+Trigger phrases: "Query my NotebookLM", "Ask my notebook about X", "query [id] about X",
   "list my notebooks", "add notebook URL", "show notebook details", "search notebooks for X",
   "Check my docs", "what does my [topic] notebook say about",
   "remove notebook", "delete notebook", "disable notebook", "enable notebook".
@@ -19,6 +19,7 @@ allowed-tools:
   - Read
   - Write(~/.claude/plugins/notebooklm-connector/data/**)
   - Edit(~/.claude/plugins/notebooklm-connector/data/**)
+  - Update(~/.claude/plugins/notebooklm-connector/data/**)
   - Task
   - AskUserQuestion
 ---

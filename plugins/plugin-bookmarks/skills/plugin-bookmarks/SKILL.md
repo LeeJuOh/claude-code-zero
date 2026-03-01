@@ -13,6 +13,7 @@ allowed-tools:
   - Read
   - Write(~/.claude/plugins/plugin-bookmarks/data/**)
   - Edit(~/.claude/plugins/plugin-bookmarks/data/**)
+  - Update(~/.claude/plugins/plugin-bookmarks/data/**)
   - AskUserQuestion
 ---
 
