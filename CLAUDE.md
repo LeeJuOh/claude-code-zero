@@ -130,7 +130,35 @@ See `docs/reference/skill-allowed-tools.md` for full details (tested on v2.1.63)
 - Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not
 - `$()` command substitution triggers a separate security prompt regardless of allowed-tools
 - `~/.claude/` hardcoded write protection was not observed in v2.1.63
-- Skills/subagents do not inherit `settings.json` `permissions.allow` ([#18950](https://github.com/anthropics/claude-code/issues/18950), [#10906](https://github.com/anthropics/claude-code/issues/10906))
+- Skills **do** inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow). Tested in v2.1.63; [#18950](https://github.com/anthropics/claude-code/issues/18950) may be outdated
+
+### Agent `tools` / `disallowedTools` Behavior
+
+See `docs/reference/agent-tools.md` for full details (tested on v2.1.63).
+
+Agent `tools` is an **availability filter**, NOT an auto-approve list (unlike Skill `allowed-tools`). The `tools` field does NOT create a fresh permission context — safe CWD commands remain AUTO, risky commands (out-of-CWD, `$()`, `git -C`, rm) remain PROMPT.
+
+`permissionMode` controls approval behavior:
+
+| `permissionMode` | Write/Edit | Bash (safe) | `$()` |
+|---|---|---|---|
+| (default) | PROMPT | AUTO | PROMPT |
+| `acceptEdits` | **AUTO** | PROMPT | PROMPT |
+| `dontAsk` | AUTO | AUTO | **DENY** |
+| `bypassPermissions` | AUTO | AUTO | **AUTO** |
+
+Other findings:
+- `disallowedTools: Write, Edit` → inherits parent permissions, specified tools removed entirely
+- `tools`/`disallowedTools` 둘 다 없음 → `disallowedTools`와 동일하게 부모 상속
+- `dontAsk` + `disallowedTools` → `disallowedTools` 단독과 동일 (전부 AUTO)
+- `Write(path)` path-scoped → 인식 안 됨 (bare `Write`로 파싱)
+- `git -C` flag (경로 무관, `.` 포함) → 항상 PROMPT
+
+Recommended patterns:
+- Fully autonomous: `permissionMode: bypassPermissions` + `tools: Read, Write, Edit, Bash`
+- Autonomous read+shell: `permissionMode: dontAsk` + `tools: Read, Bash`
+- Auto-accept edits: `permissionMode: acceptEdits` + `tools: Read, Write, Edit, Bash`
+- Read-only explorer: `disallowedTools: Write, Edit` (no `tools` field)
 
 ### Plugin Data Path Convention
 

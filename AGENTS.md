@@ -85,17 +85,14 @@ When the user requests a tag on `main`:
 
 ## Known Claude Code Permission Issues
 
-### `~/.claude/` Write/Edit Hardcoded 보호
+See `docs/reference/skill-allowed-tools.md` for full details (tested on v2.1.63).
 
-`~/.claude/` 하위 경로에 대한 Write/Edit은 hardcoded 보호가 적용되어 우회 불가. 의도된 보안 설계로 추정. ([#21242](https://github.com/anthropics/claude-code/issues/21242))
+### Skill `allowed-tools` Behavior
 
-**대응**: 플러그인 데이터 경로로 `~/.claude/`를 사용하지 않는다.
-
-### Skill/Subagent Permission 미완성
-
-Skill·subagent 컨텍스트에서 `allowed-tools`와 `settings.json` `permissions.allow`가 제대로 작동하지 않는다. ([#14956](https://github.com/anthropics/claude-code/issues/14956), [#11088](https://github.com/anthropics/claude-code/issues/11088), [#18950](https://github.com/anthropics/claude-code/issues/18950), [#10906](https://github.com/anthropics/claude-code/issues/10906))
-
-**대응**: Working directory 밖 파일 접근 권한이 필요하면 **PreToolUse hook**을 사용한다.
+- Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not
+- `$()` command substitution triggers a separate security prompt regardless of allowed-tools
+- `~/.claude/` hardcoded write protection was not observed in v2.1.63
+- Skills **do** inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow)
 
 ### Plugin Data Path Convention
 
