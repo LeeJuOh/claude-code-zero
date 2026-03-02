@@ -28,10 +28,10 @@
       "description": "Bookmark third-party Claude Code plugins you want to remember"
     },
     {
-      "name": "agent-extension-wiki",
-      "source": "./plugins/agent-extension-wiki",
-      "version": "1.1.0",
-      "description": "Analyze agent plugins (currently supports Claude Code) and generate wiki-style HTML reports with security audit, architecture review, and plugin profiles"
+      "name": "vision-powers",
+      "source": "./plugins/vision-powers",
+      "version": "2.0.0",
+      "description": "Visual report generation suite: wiki analysis, diff review, and plan review with interactive diagrams and curated design system"
     },
     {
       "name": "macos-notifier",

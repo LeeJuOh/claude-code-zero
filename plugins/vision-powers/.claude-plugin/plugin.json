@@ -1,0 +1,11 @@
+{
+  "name": "vision-powers",
+  "description": "Visual report generation suite: wiki analysis, diff review, and plan review — self-contained HTML reports with interactive diagrams, responsive navigation, and curated design system",
+  "author": {
+    "name": "LeeJuOh",
+    "email": "xop4p@naver.com"
+  },
+  "repository": "https://github.com/LeeJuOh/claude-code-zero",
+  "license": "MIT",
+  "keywords": ["analyzer", "wiki", "report", "html", "security", "audit", "plugin", "diff", "plan", "visualization", "review"]
+}
