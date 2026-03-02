@@ -143,6 +143,7 @@ Agent `tools` is an **availability filter**, NOT an auto-approve list (unlike Sk
 | `permissionMode` | Write/Edit | Bash (safe) | `$()` |
 |---|---|---|---|
 | (default) | PROMPT | AUTO | PROMPT |
+| `plan` | PROMPT | AUTO | PROMPT |
 | `acceptEdits` | **AUTO** | PROMPT | PROMPT |
 | `dontAsk` | AUTO | AUTO | **DENY** |
 | `bypassPermissions` | AUTO | AUTO | **AUTO** |
@@ -174,7 +175,7 @@ Two ways to auto-approve out-of-CWD paths (e.g., `~/.claude-code-zero/`):
 - **Bare `allowed-tools`** (`Read, Write, Edit`): Auto-approves all paths. Simplest approach
 - **PreToolUse hook**: Selectively auto-approves specific paths only. Use when plugin data paths should be allowed while other out-of-CWD paths remain prompted
 
-`notebooklm-connector` and `plugin-bookmarks` use the PreToolUse hook approach (scope detection + lazy init logic is embedded in the hook, so bare allowed-tools cannot replace it).
+`notebooklm-connector` and `plugin-bookmarks` use the PreToolUse hook for scope detection + lazy init (project-level data isolation requires Bash hash computation and atomic initialization that skill instructions alone cannot guarantee). Auto-approve was removed from these hooks — bare `allowed-tools: Read, Write, Edit` in the skills already auto-approves all paths.
 
 ### Sub-agent Output Token Limit
 

@@ -5,7 +5,7 @@ Style and structure guide for the report-writer agent. The agent generates a sel
 ## External Dependencies (CDN only)
 
 ```html
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 ```
 
@@ -17,21 +17,64 @@ Style and structure guide for the report-writer agent. The agent generates a sel
 :root {
   --bg: #ffffff;
   --bg-secondary: #f8fafc;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-recessed: #f1f5f9;
   --text: #1e293b;
   --text-secondary: #64748b;
   --border: #e2e8f0;
-  --accent: #3b82f6;
+  --accent: #0891b2;
+  --accent-dim: rgba(8,145,178,0.08);
+  --accent-text: #0e7490;
   --success: #16a34a;
   --warning: #ca8a04;
   --danger: #dc2626;
   --danger-high: #ea580c;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Azeret Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-hero: 0 12px 32px rgba(0,0,0,0.10);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --bg-secondary: #161b22;
+    --surface: #161b22;
+    --surface-elevated: #1c2333;
+    --surface-recessed: #0d1117;
+    --text: #e6edf3;
+    --text-secondary: #8b949e;
+    --border: #30363d;
+    --accent: #22d3ee;
+    --accent-dim: rgba(34,211,238,0.08);
+    --accent-text: #67e8f9;
+    --success: #3fb950;
+    --warning: #d29922;
+    --danger: #f85149;
+    --danger-high: #f0883e;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
+    --shadow-hero: 0 12px 32px rgba(0,0,0,0.5);
+  }
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-body);
   color: var(--text);
   background: var(--bg-secondary);
+  background-image: radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);
+  background-size: 24px 24px;
   line-height: 1.6;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes fadeUp { from { opacity: 1; transform: none; } to { opacity: 1; transform: none; } }
 }
 .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
 ```
@@ -40,12 +83,27 @@ body {
 
 ```css
 .card {
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  min-width: 0;
+  box-shadow: var(--shadow-sm);
+  animation: fadeUp 0.4s ease both;
+  animation-delay: calc(var(--i, 0) * 0.06s);
+}
+.card--hero {
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-hero);
+}
+.card--elevated {
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-lg);
+}
+.card--recessed {
+  background: var(--surface-recessed);
+  box-shadow: none;
 }
 .card h2 {
   font-size: 1.25rem;
@@ -68,9 +126,19 @@ body {
 ### Tables
 
 ```css
+.table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 1rem; }
 table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-th { background: var(--bg-secondary); font-weight: 600; text-align: left; padding: 0.5rem 0.75rem; }
+th {
+  background: var(--surface-recessed);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
 td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+tr:nth-child(even) { background: var(--accent-dim); }
 tr:hover { background: var(--bg-secondary); }
 ```
 
@@ -80,21 +148,26 @@ tr:hover { background: var(--bg-secondary); }
 .toc {
   position: sticky;
   top: 0;
-  background: var(--bg);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 0.75rem 1rem;
   z-index: 100;
   display: flex;
   gap: 1rem;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   justify-content: center;
 }
+.toc::-webkit-scrollbar { display: none; }
 .toc a {
   color: var(--accent);
   text-decoration: none;
   font-size: 0.8rem;
   font-weight: 500;
   padding-bottom: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .toc a:hover { text-decoration: underline; }
 .toc a.active {
@@ -114,12 +187,12 @@ tr:hover { background: var(--bg-secondary); }
   font-size: 0.75rem;
   font-weight: 600;
 }
-.badge-skill { background: #dbeafe; color: #1e40af; }
-.badge-agent { background: #fef3c7; color: #92400e; }
-.badge-hook { background: #fce7f3; color: #9d174d; }
-.badge-mcp { background: #d1fae5; color: #065f46; }
-.badge-lsp { background: #e0e7ff; color: #3730a3; }
-.badge-command { background: #f3e8ff; color: #6b21a8; }
+.badge-skill { background: rgba(8,145,178,0.12); color: var(--accent-text); }
+.badge-agent { background: rgba(202,138,4,0.12); color: var(--warning); }
+.badge-hook { background: rgba(157,23,77,0.12); color: #ec4899; }
+.badge-mcp { background: rgba(22,163,74,0.12); color: var(--success); }
+.badge-lsp { background: rgba(55,48,163,0.12); color: #818cf8; }
+.badge-command { background: rgba(107,33,168,0.12); color: #a78bfa; }
 ```
 
 ### Concept Terms
@@ -163,7 +236,7 @@ tr:hover { background: var(--bg-secondary); }
   left: 50%;
   transform: translateX(-50%);
   width: 280px;
-  background: var(--bg);
+  background: var(--surface-elevated);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.75rem;
@@ -174,8 +247,8 @@ tr:hover { background: var(--bg-secondary); }
 }
 .concept-popover.visible { display: block; }
 .concept-popover[data-category="platform"] { border-top: 3px solid var(--accent); }
-.concept-popover[data-category="config"] { border-top: 3px solid #64748b; }
-.concept-popover[data-category="report"] { border-top: 3px solid #10b981; }
+.concept-popover[data-category="config"] { border-top: 3px solid var(--text-secondary); }
+.concept-popover[data-category="report"] { border-top: 3px solid var(--success); }
 .concept-popover-category {
   font-size: 0.65rem;
   font-weight: 600;
@@ -184,8 +257,8 @@ tr:hover { background: var(--bg-secondary); }
   margin-bottom: 0.25rem;
 }
 .concept-popover-category.platform { color: var(--accent); }
-.concept-popover-category.config { color: #64748b; }
-.concept-popover-category.report { color: #10b981; }
+.concept-popover-category.config { color: var(--text-secondary); }
+.concept-popover-category.report { color: var(--success); }
 .concept-popover-title {
   font-weight: 700;
   font-size: 0.85rem;
@@ -211,7 +284,7 @@ tr:hover { background: var(--bg-secondary); }
   color: var(--text-secondary);
   margin-bottom: 1rem;
   padding: 0.5rem 0.75rem;
-  background: linear-gradient(135deg, #eff6ff 0%, var(--bg-secondary) 100%);
+  background: linear-gradient(135deg, var(--accent-dim) 0%, var(--bg-secondary) 100%);
   border-radius: 6px;
   border-left: 3px solid var(--accent);
   line-height: 1.6;
@@ -225,7 +298,7 @@ tr:hover { background: var(--bg-secondary); }
   margin-bottom: 1rem;
   padding: 1rem;
   border-left: 3px solid var(--success);
-  background: linear-gradient(135deg, #f0fdf4 0%, var(--bg) 100%);
+  background: linear-gradient(135deg, rgba(22,163,74,0.06) 0%, var(--surface) 100%);
   border-radius: 0 8px 8px 0;
 }
 .glance-summary {
@@ -279,7 +352,8 @@ tr:hover { background: var(--bg-secondary); }
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 0.75rem;
-  background: var(--bg);
+  background: var(--surface);
+  min-width: 0;
 }
 .card-essentials {
   display: flex;
@@ -328,15 +402,15 @@ tr:hover { background: var(--bg-secondary); }
 .report-limitations {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  background: rgba(202,138,4,0.06);
+  border: 1px solid rgba(202,138,4,0.2);
   border-radius: 6px;
   font-size: 0.8rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }
 .report-limitations strong {
-  color: #92400e;
+  color: var(--warning);
   font-size: 0.85rem;
 }
 .report-limitations ul {
@@ -391,9 +465,10 @@ tr:hover { background: var(--bg-secondary); }
   font-weight: 600;
 }
 .tab-btn.active .tab-count {
-  background: #dbeafe;
+  background: var(--accent-dim);
   color: var(--accent);
 }
+.tab-panel { min-width: 0; }
 .tab-panel {
   display: none;
 }
@@ -409,7 +484,7 @@ tr:hover { background: var(--bg-secondary); }
   margin-bottom: 1.5rem;
 }
 .philosophy-item {
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg) 100%);
+  background: linear-gradient(135deg, var(--accent-dim) 0%, var(--surface) 100%);
   border-left: 3px solid var(--accent);
   padding: 0.75rem 1rem;
   margin-bottom: 0.5rem;
@@ -473,14 +548,14 @@ tr:hover { background: var(--bg-secondary); }
   border: 1px solid var(--border);
 }
 .doc-item.pass {
-  background: #dcfce7;
-  color: #166534;
-  border-color: #bbf7d0;
+  background: rgba(22,163,74,0.1);
+  color: var(--success);
+  border-color: rgba(22,163,74,0.2);
 }
 .doc-item.fail {
-  background: #fef2f2;
-  color: #991b1b;
-  border-color: #fecaca;
+  background: rgba(220,38,38,0.06);
+  color: var(--danger);
+  border-color: rgba(220,38,38,0.2);
 }
 .profile-security {
   margin-bottom: 1.5rem;
@@ -492,10 +567,10 @@ tr:hover { background: var(--bg-secondary); }
   font-weight: 700;
   font-size: 0.9rem;
 }
-.risk-badge.critical { background: #fef2f2; color: var(--danger); }
-.risk-badge.high { background: #fff7ed; color: var(--danger-high); }
-.risk-badge.medium { background: #fefce8; color: var(--warning); }
-.risk-badge.low { background: #f0fdf4; color: var(--success); }
+.risk-badge.critical { background: rgba(220,38,38,0.1); color: var(--danger); }
+.risk-badge.high { background: rgba(234,88,12,0.1); color: var(--danger-high); }
+.risk-badge.medium { background: rgba(202,138,4,0.1); color: var(--warning); }
+.risk-badge.low { background: rgba(22,163,74,0.1); color: var(--success); }
 .risk-counts {
   display: inline-block;
   margin-left: 0.75rem;
@@ -525,10 +600,10 @@ tr:hover { background: var(--bg-secondary); }
 ### 1. Header
 
 ```html
-<header class="card" style="text-align:center; border-left: 4px solid var(--accent);">
+<header class="card card--hero" style="text-align:center; border-left: 4px solid var(--accent); --i: 0;">
   <h1>{plugin-name}</h1>
   <p style="color:var(--text-secondary);">v{version} &bull; {author} &bull; {license}</p>
-  <p style="font-size:0.8rem; color:var(--text-secondary);">Generated by Agent Extension Wiki &bull; {date}</p>
+  <p style="font-size:0.8rem; color:var(--text-secondary); font-family: var(--font-mono);">Generated by Agent Extension Wiki &bull; {date}</p>
 </header>
 ```
 
@@ -537,7 +612,7 @@ tr:hover { background: var(--bg-secondary); }
 Between header and architecture. Blue left-border card with At-a-Glance summary, stat boxes, and metadata.
 
 ```html
-<div class="card plugin-overview">
+<div class="card card--hero plugin-overview" style="--i: 1;">
   <h2>Plugin Overview</h2>
 
   <!-- At-a-Glance integrated area (replaces old .plugin-summary) -->
@@ -581,7 +656,7 @@ Between header and architecture. Blue left-border card with At-a-Glance summary,
   flex: 1;
   text-align: center;
   padding: 0.75rem;
-  background: var(--bg-secondary);
+  background: var(--surface-recessed);
   border-radius: 8px;
   border: 1px solid var(--border);
 }
@@ -609,7 +684,7 @@ Between header and architecture. Blue left-border card with At-a-Glance summary,
 Includes section intro, design philosophy, component relationship diagram, data flow diagram, and workflow sequence diagrams.
 
 ```html
-<div class="card">
+<div class="card" style="--i: 2;">
   <h2>Architecture</h2>
   <p class="section-intro">{translated section-intro — see default texts table}</p>
   <!-- design philosophy, diagrams, description follow -->
@@ -631,13 +706,19 @@ Includes section intro, design philosophy, component relationship diagram, data 
 Mermaid diagrams are wrapped in a clickable container with fullscreen overlay support:
 
 ```html
-<div class="card">
+<div class="card" style="--i: 2;">
   <h2>Architecture</h2>
   <div class="design-philosophy">
     <!-- philosophy items -->
   </div>
-  <div class="diagram-container" onclick="openDiagramOverlay(this)">
-    <div class="diagram-hint">Click to enlarge</div>
+  <div class="diagram-container" data-scale="1">
+    <div class="diagram-zoom-controls">
+      <button class="diagram-zoom-btn" onclick="inlineZoom(this.closest('.diagram-container'),1.2)" title="Zoom in">+</button>
+      <button class="diagram-zoom-btn" onclick="inlineZoom(this.closest('.diagram-container'),0.8)" title="Zoom out">&minus;</button>
+      <button class="diagram-zoom-btn" onclick="inlineZoom(this.closest('.diagram-container'),0)" title="Reset">&#x21bb;</button>
+      <button class="diagram-zoom-btn" onclick="openDiagramOverlay(this.closest('.diagram-container'))" title="Fullscreen">&#x26F6;</button>
+    </div>
+    <div class="diagram-hint">Scroll to zoom &middot; Click fullscreen</div>
     <pre class="mermaid">
       graph TD
         S1["SKILL: name"] -->|delegates| A1["AGENT: name"]
@@ -660,18 +741,50 @@ Mermaid diagrams are wrapped in a clickable container with fullscreen overlay su
 
 ```css
 .diagram-container {
-  cursor: pointer;
   position: relative;
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   transition: box-shadow 0.2s;
-  overflow: hidden;
+  overflow: auto;
   margin-bottom: 1rem;
+  cursor: grab;
 }
+.diagram-container:active { cursor: grabbing; }
 .diagram-container:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-md);
 }
+.diagram-zoom-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.diagram-container:hover .diagram-zoom-controls { opacity: 1; }
+.diagram-zoom-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.diagram-zoom-btn:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.mermaid .nodeLabel { font-family: var(--font-body); }
+.mermaid .edgeLabel { font-family: var(--font-mono); font-size: 0.75rem; }
 .diagram-hint {
   position: absolute;
   top: 8px;
@@ -712,16 +825,17 @@ Mermaid diagrams are wrapped in a clickable container with fullscreen overlay su
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: white;
+  background: var(--surface);
+  color: var(--text);
   font-size: 1.1rem;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-md);
 }
 .overlay-controls button:hover {
-  background: #f0f0f0;
+  background: var(--bg-secondary);
 }
 .overlay-content {
-  background: white;
+  background: var(--surface);
   border-radius: 12px;
   padding: 2rem;
   max-width: 95vw;
@@ -739,7 +853,7 @@ Component cards grouped by type with **tab UI**. Each type is a tab panel. Secti
 **Tab structure**:
 
 ```html
-<div class="card">
+<div class="card" style="--i: 4;">
   <h2>Components</h2>
   <p class="section-intro">{translated section-intro — see default texts table}</p>
   <div class="tab-container">
@@ -840,7 +954,7 @@ Required description texts per sub-section (translate to target language):
 .agent-delegation-trigger {
   font-size: 0.8rem;
   padding: 8px 12px;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-left: 3px solid var(--accent);
   border-radius: 4px;
   margin-top: 0.5rem;
@@ -882,31 +996,38 @@ allowed-tools: ...
   cursor: pointer;
 }
 .raw-data-viewer summary:hover {
-  background: #eef2f7;
+  background: var(--accent-dim);
 }
 .raw-data-viewer pre {
   margin: 0;
   padding: 0.75rem;
   font-size: 0.75rem;
-  background: #f1f5f9;
+  font-family: var(--font-mono);
+  background: var(--surface-recessed);
   overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 400px;
+  overflow-y: auto;
   line-height: 1.5;
 }
 ```
 
-**Commands table**: Use Purpose + Arguments + Notable columns:
+**Commands table**: Use Purpose + Arguments + Notable columns. Wrap in `.table-wrapper`:
 
 ```html
-<table>
-  <tr><th>Command</th><th>Purpose</th><th>Arguments</th><th>Notable</th></tr>
-  <tr><td>{name}</td><td>{description}</td><td>{argument-hint}</td><td>{redirect/model/etc.}</td></tr>
-</table>
+<div class="table-wrapper">
+  <table>
+    <thead><tr><th>Command</th><th>Purpose</th><th>Arguments</th><th>Notable</th></tr></thead>
+    <tbody><tr><td>{name}</td><td>{description}</td><td>{argument-hint}</td><td>{redirect/model/etc.}</td></tr></tbody>
+  </table>
+</div>
 ```
 
 ### 5. Usage Guide
 
 ```html
-<div class="card">
+<div class="card" style="--i: 3;">
   <h2>Usage</h2>
   <p class="section-intro">{translated section-intro — see default texts table}</p>
   <!-- Installation commands, prerequisites table, trigger phrases, when to use / not to use -->
@@ -918,7 +1039,7 @@ allowed-tools: ...
 Section intro at top, risk summary with context, permission matrix, findings, and analysis limitations disclaimer.
 
 ```html
-<div class="card">
+<div class="card" style="--i: 5;">
   <h2>Security Audit</h2>
   <p class="section-intro">{translated section-intro — see default texts table}</p>
 
@@ -950,7 +1071,7 @@ Section intro at top, risk summary with context, permission matrix, findings, an
 ### 7. Dependencies
 
 ```html
-<div class="card">
+<div class="card" style="--i: 6;">
   <h2>Dependencies</h2>
   <p class="section-intro">{translated section-intro — see default texts table}</p>
   <!-- Tool dependencies, external dependencies, environment variables, model requirements — all as tables -->
@@ -962,7 +1083,7 @@ Section intro at top, risk summary with context, permission matrix, findings, an
 Replaces the old Score Overview and Quality sections. Shows objective facts about the plugin.
 
 ```html
-<div class="card">
+<div class="card" style="--i: 7;">
   <h2>Plugin Profile</h2>
   <p class="section-intro">{translated section-intro — see default texts table}</p>
 
@@ -1019,7 +1140,33 @@ Replaces the old Score Overview and Quality sections. Shows objective facts abou
 
 ```html
 <script>
-  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+  (function() {
+    var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: isDark ? {
+        primaryColor: '#1c2333',
+        primaryTextColor: '#e6edf3',
+        primaryBorderColor: '#30363d',
+        lineColor: '#8b949e',
+        secondaryColor: '#161b22',
+        tertiaryColor: '#0d1117',
+        fontFamily: 'Plus Jakarta Sans, sans-serif',
+        fontSize: '14px'
+      } : {
+        primaryColor: '#f0fdfa',
+        primaryTextColor: '#1e293b',
+        primaryBorderColor: '#e2e8f0',
+        lineColor: '#64748b',
+        secondaryColor: '#f8fafc',
+        tertiaryColor: '#ffffff',
+        fontFamily: 'Plus Jakarta Sans, sans-serif',
+        fontSize: '14px'
+      }
+    });
+  })();
 </script>
 ```
 
@@ -1195,6 +1342,36 @@ The report-writer only needs to add the `data-concept` wrapper. The JS handles f
 </script>
 ```
 
+### Inline Diagram Zoom
+
+Each `.diagram-container` has `+`/`−`/reset/fullscreen buttons. Scroll-to-zoom is also supported.
+
+```html
+<script>
+  function inlineZoom(container, factor) {
+    var svg = container.querySelector('svg');
+    if (!svg) return;
+    var scale = parseFloat(container.dataset.scale) || 1;
+    if (factor === 0) { scale = 1; } else { scale *= factor; }
+    scale = Math.max(0.3, Math.min(scale, 4));
+    container.dataset.scale = scale;
+    svg.style.transform = 'scale(' + scale + ')';
+    svg.style.transformOrigin = 'top left';
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.diagram-container').forEach(function(container) {
+      container.addEventListener('wheel', function(e) {
+        if (!e.ctrlKey && !e.metaKey) return;
+        e.preventDefault();
+        var factor = e.deltaY < 0 ? 1.1 : 0.9;
+        inlineZoom(container, factor);
+      }, { passive: false });
+    });
+  });
+</script>
+```
+
 ### Diagram Fullscreen Overlay with Pan + Zoom
 
 ```html
@@ -1355,3 +1532,22 @@ Translate these to the target language at generation time.
 | Security Audit | Audit results for permissions, tool usage, and security risks. |
 | Dependencies | Lists tools, external services, environment variables, and other dependencies required by this plugin. |
 | Plugin Profile | Summarizes the plugin's objective status — components, documentation, security, and quality. |
+
+## Anti-Slop Guardrails
+
+### Forbidden
+
+- **Fonts**: Inter, system-ui as primary font. Always use `var(--font-body)` / `var(--font-mono)`.
+- **Colors**: Hardcoded HEX values (`#dbeafe`, `#f0fdf4`, `#fffbeb`, etc.) for backgrounds or borders. Use CSS variables or `rgba()`.
+- **Patterns**: `box-shadow` with literal `rgba(0,0,0,...)` — use `var(--shadow-*)` tokens instead.
+- **Emoji**: No emoji anywhere in the report (headings, badges, labels, section intros).
+- **Gradients**: No multi-color rainbow gradients. Only subtle `linear-gradient` with `var(--accent-dim)` or `rgba()`.
+
+### Required
+
+- All color values must work in both light and dark mode (CSS variables or `rgba()`).
+- Cards must use appropriate depth tier: `card--hero` for header/overview, `card--elevated` for primary content, plain `.card` for standard, `card--recessed` for embedded code.
+- Tables must be wrapped in `.table-wrapper` for overflow protection.
+- Mermaid diagrams must use `theme: 'base'` with dark mode detection and `themeVariables`.
+- Font stacks: `var(--font-body)` for text, `var(--font-mono)` for code/labels/metadata.
+- Stagger animation: cards should include `style="--i: N"` for sequential fade-in.

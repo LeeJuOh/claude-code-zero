@@ -233,9 +233,8 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
    Where `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json).
 
-2. **Read HTML patterns reference**:
-   Read `./references/platforms/claude-code/html-report-template.md`
-   This file contains the complete CSS, JS, and HTML section templates for the report.
+2. **Resolve HTML patterns reference path**:
+   Resolve `./references/platforms/claude-code/html-report-template.md` to its absolute path. Do NOT read the file — the report-writer agent will read it directly.
 
 3. **Delegate to report-writer agent**:
    ```
@@ -245,10 +244,9 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      plugin metadata (name, version, author, license, keywords, description),
      output file path,
      output language,
-     HTML patterns reference content (from step 2)
+     HTML patterns reference path (absolute path from step 2)
    })
    ```
-   Include the full content of html-report-template.md in the delegation prompt so report-writer can copy CSS/JS patterns directly.
 
 4. **Report completion**: Output the `file:///` URL to the user:
    ```
@@ -267,4 +265,4 @@ Bash(rm -rf /tmp/agent-extension-wiki-{directory})
 - `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
 - `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
-- `references/platforms/claude-code/html-report-template.md` — Complete CSS/JS/HTML patterns for report-writer (Phase 5R reads and passes to report-writer)
+- `references/platforms/claude-code/html-report-template.md` — Complete CSS/JS/HTML patterns for report-writer (Phase 5R passes the path; report-writer reads it directly)

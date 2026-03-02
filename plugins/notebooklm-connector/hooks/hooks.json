@@ -1,5 +1,5 @@
 {
-  "description": "Data path resolution, auto-approve, and follow-up reminder",
+  "description": "Data path resolution, lazy init, and follow-up reminder",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/approve-data-access.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/setup-data.sh"
           }
         ]
       }

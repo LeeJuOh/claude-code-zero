@@ -1,5 +1,5 @@
 #!/bin/bash
-# PreToolUse hook — lazy data init with project-level isolation + auto-approve.
+# PreToolUse hook — lazy data init with project-level isolation.
 #
 # When Claude reads the data-path file, this hook:
 #   1. Detects install scope (project vs user) via settings.json
@@ -8,7 +8,8 @@
 #   4. Initializes data files if missing
 #   5. Writes the resolved path to data-path for Claude to read
 #
-# For all other reads/writes under the plugin base dir, auto-approves.
+# Auto-approve is NOT needed here — the skill's bare allowed-tools
+# (Read, Write, Edit) already auto-approves all paths.
 
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
@@ -18,7 +19,7 @@ PLUGIN_NAME="notebooklm-connector"
 BASE_DIR="$HOME/.claude-code-zero/$PLUGIN_NAME"
 DATA_PATH_FILE="$BASE_DIR/data-path"
 
-# 1. data-path read request → lazy init
+# data-path read request → lazy init
 if [ "$FILE_PATH" = "$DATA_PATH_FILE" ]; then
   # Scope detection: project/local settings → project-specific, user-only → global
   PLUGIN_KEY="notebooklm-connector@claude-code-zero"
@@ -58,11 +59,5 @@ if [ "$FILE_PATH" = "$DATA_PATH_FILE" ]; then
   echo '{"decision":"approve"}'
   exit 0
 fi
-
-# 2. Any path under plugin base dir → auto-approve
-case "$FILE_PATH" in
-  "$BASE_DIR/"*)
-    echo '{"decision":"approve"}' ;;
-esac
 
 exit 0
