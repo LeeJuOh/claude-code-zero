@@ -123,59 +123,45 @@ When the user requests a tag on `main`:
 
 ## Known Claude Code Permission Issues
 
-### `~/.claude/` Write/Edit Hardcoded 보호
+### Skill `allowed-tools` Behavior
 
-`~/.claude/` 하위 경로에 대한 Write/Edit은 hardcoded 보호가 적용되어 `allowed-tools`, `settings.json`, hook 모두로 우회 불가. 의도된 보안 설계로 추정. ([#21242](https://github.com/anthropics/claude-code/issues/21242))
+See `docs/reference/skill-allowed-tools.md` for full details (tested on v2.1.63).
 
-**대응**: 플러그인 데이터 경로로 `~/.claude/`를 사용하지 않는다.
-
-### Skill/Subagent Permission 미완성
-
-Skill·subagent 컨텍스트에서 `allowed-tools`와 `settings.json` `permissions.allow`가 제대로 작동하지 않는다. 공식 문서에서는 동작한다고 명시하지만 실제로는 안 됨. Anthropic 공식 응답 없음. ([#14956](https://github.com/anthropics/claude-code/issues/14956), [#11088](https://github.com/anthropics/claude-code/issues/11088), [#18950](https://github.com/anthropics/claude-code/issues/18950), [#10906](https://github.com/anthropics/claude-code/issues/10906))
-
-주요 증상:
-- Skill `allowed-tools`에 Bash 패턴을 선언해도 권한 프롬프트 발생
-- `allowed-tools`에서 path-scoped 패턴(`Write(~/.claude-code-zero/...)`) 사용 시 파싱 실패. bare name만 사용할 것
-- `allowed-tools` YAML 배열 형식 미지원. comma-separated 문자열 사용: `allowed-tools: Read, Write, Edit`
-- Skill/subagent가 `settings.json`의 `permissions.allow`를 상속하지 않음
-
-**대응**: Working directory 밖 파일 접근 권한이 필요하면 **PreToolUse hook**을 사용한다.
+- Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not
+- `$()` command substitution triggers a separate security prompt regardless of allowed-tools
+- `~/.claude/` hardcoded write protection was not observed in v2.1.63
+- Skills/subagents do not inherit `settings.json` `permissions.allow` ([#18950](https://github.com/anthropics/claude-code/issues/18950), [#10906](https://github.com/anthropics/claude-code/issues/10906))
 
 ### Plugin Data Path Convention
 
-| 용도 | 경로 |
-|------|------|
-| 영구 데이터 (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
-| 임시 데이터 (clone tmp) | `/tmp/<plugin-name>/` |
+| Purpose | Path |
+|---------|------|
+| Persistent data (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
+| Temporary data (clone tmp) | `/tmp/<plugin-name>/` |
 
-### Plugin Data Access Auto-Approve Pattern
+### Plugin Data Access Auto-Approve
 
-`~/.claude-code-zero/` 등 working directory 밖 파일에 대한 Read/Write/Edit 프롬프트를 없애는 PreToolUse hook 패턴:
+Two ways to auto-approve out-of-CWD paths (e.g., `~/.claude-code-zero/`):
 
-```json
-// hooks.json
-{
-  "matcher": "Read|Write|Edit",
-  "hooks": [{
-    "type": "command",
-    "command": "${CLAUDE_PLUGIN_ROOT}/hooks/approve-data-access.sh"
-  }]
-}
-```
+- **Bare `allowed-tools`** (`Read, Write, Edit`): Auto-approves all paths. Simplest approach
+- **PreToolUse hook**: Selectively auto-approves specific paths only. Use when plugin data paths should be allowed while other out-of-CWD paths remain prompted
 
+`notebooklm-connector` and `plugin-bookmarks` use the PreToolUse hook approach (scope detection + lazy init logic is embedded in the hook, so bare allowed-tools cannot replace it).
+
+### Sub-agent Output Token Limit
+
+`CLAUDE_CODE_MAX_OUTPUT_TOKENS` defaults to 32,000 tokens (max 64,000). No per-subagent setting in frontmatter. Large HTML report generation may hit this limit.
+
+**Workaround**: Set before launching Claude Code:
 ```bash
-# approve-data-access.sh
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
-FILE_PATH="${FILE_PATH/#\~/$HOME}"
-case "$FILE_PATH" in
-  "$HOME/.claude-code-zero/<plugin-name>/data"/*)
-    echo '{"decision": "approve"}' ;;
-esac
-exit 0
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
 ```
 
-**주의**: subagent에서의 auto-approve 동작은 미확인 (스킬 직접 호출만 테스트됨).
+| Pros | Cons |
+|------|------|
+| Immediate, no code changes | Main conversation auto-compaction triggers slightly earlier (negligible) |
+| Subagents use independent context — no impact | Higher output token cost if usage increases |
+| 64K covers most reports | Very large plugins (>64K) still limited |
 
 ## Coding Style
 
