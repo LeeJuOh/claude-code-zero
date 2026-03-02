@@ -29,6 +29,7 @@ Run `/plugin` and check the **Installed** tab.
 |--------|---------|-------------|---------|
 | notebooklm-connector | v1.0.2 | Manage and query NotebookLM notebooks via Chrome automation | [README](plugins/notebooklm-connector/README.md) |
 | toolbox | v1.1.1 | Personal utility commands and tools | [README](plugins/toolbox/README.md) |
+| worktree-plus | v1.0.0 | Enhanced git worktree: custom branch prefix, selective copy/symlink for gitignored files | [README](plugins/worktree-plus/README.md) |
 
 ## Plugins
 
@@ -67,6 +68,24 @@ Personal utility commands and tools for Claude Code.
 
 [View full documentation](plugins/toolbox/README.md)
 
+### worktree-plus
+
+Enhanced git worktree for Claude Code — adds selective copy/symlink for gitignored files and custom branch prefix.
+
+- **`.worktreeinclude`** — specify which gitignored files (`.env`, configs) to copy into worktrees
+- **`link:` prefix** — symlink heavy directories (`node_modules`, `.venv`) instead of copying
+- **Custom branch prefix** — set `WORKTREE_BRANCH_PREFIX` env var to customize branch naming
+
+**Prerequisites:** jq (`brew install jq`)
+
+```shell
+/plugin install worktree-plus@claude-code-zero
+```
+
+[View full documentation](plugins/worktree-plus/README.md)
+
+---
+
 ## Plugin Management
 
 ```shell
@@ -87,10 +106,12 @@ Personal utility commands and tools for Claude Code.
 │   │   ├── skills/notebooklm-manager/
 │   │   ├── agents/chrome-mcp-query.md
 │   │   └── hooks/hooks.json
-│   └── toolbox/                      # Utility commands plugin
-│       └── commands/
-│           ├── fetch-sitemap.md
-│           └── handoff.md
+│   ├── toolbox/                      # Utility commands plugin
+│   │   └── commands/
+│   │       ├── fetch-sitemap.md
+│   │       └── handoff.md
+│   └── worktree-plus/               # Enhanced git worktree plugin
+│       └── hooks/
 ├── CLAUDE.md                         # Development guidelines
 └── LICENSE
 ```
