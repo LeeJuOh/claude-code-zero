@@ -14,6 +14,7 @@ description: |
   </commentary>
   </example>
 model: sonnet
+permissionMode: plan
 maxTurns: 20
 tools:
   - Read

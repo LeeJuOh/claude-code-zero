@@ -233,18 +233,24 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
    Where `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json).
 
-2. **Delegate to report-writer agent**:
+2. **Read HTML patterns reference**:
+   Read `./references/platforms/claude-code/html-report-template.md`
+   This file contains the complete CSS, JS, and HTML section templates for the report.
+
+3. **Delegate to report-writer agent**:
    ```
    Task(subagent_type: "agent-extension-wiki:report-writer", prompt: {
      feature-architect analysis results (full text, including Plugin Summary and Raw Content Excerpts),
      security-auditor analysis results (full text),
      plugin metadata (name, version, author, license, keywords, description),
      output file path,
-     output language
+     output language,
+     HTML patterns reference content (from step 2)
    })
    ```
+   Include the full content of html-report-template.md in the delegation prompt so report-writer can copy CSS/JS patterns directly.
 
-3. **Report completion**: After the agent writes the HTML file, output the `file:///` URL to the user:
+4. **Report completion**: Output the `file:///` URL to the user:
    ```
    Report generated: file://{home}/.claude-code-zero/agent-extension-wiki/reports/{plugin-name}-report.html
    ```
@@ -261,4 +267,4 @@ Bash(rm -rf /tmp/agent-extension-wiki-{directory})
 - `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
 - `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
-- `references/platforms/claude-code/html-report-template.md` — HTML report structure and style guide (report mode)
+- `references/platforms/claude-code/html-report-template.md` — Complete CSS/JS/HTML patterns for report-writer (Phase 5R reads and passes to report-writer)
