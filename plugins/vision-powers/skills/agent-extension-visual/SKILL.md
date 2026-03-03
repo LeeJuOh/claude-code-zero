@@ -233,18 +233,23 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
    Where `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json).
 
-2. **Resolve design system reference path**:
-   Resolve `../../references/design-system/` to its absolute path. Do NOT read the files — the report-writer agent will read them directly.
+2. **Resolve reference paths**:
+   - Resolve `./references/section-structure.md` to its absolute path (the section structure for this skill's report)
+   - Resolve `../../references/design-system/` to its absolute path (shared design system directory)
+   Do NOT read these files — the visual-report-writer agent will read them directly.
 
-3. **Delegate to report-writer agent**:
+3. **Delegate to visual-report-writer agent**:
    ```
-   Task(subagent_type: "vision-powers:report-writer", prompt: {
+   Task(subagent_type: "vision-powers:visual-report-writer", prompt: {
      feature-architect analysis results (full text, including Plugin Summary and Raw Content Excerpts),
      security-auditor analysis results (full text),
      plugin metadata (name, version, author, license, keywords, description),
      output file path,
      output language,
-     design system directory path (absolute path from step 2, containing: css-patterns.md, font-system.md, mermaid-patterns.md, navigation.md, libraries.md, anti-slop-rules.md)
+     design system directory path (absolute path from step 2, containing: css-patterns.md, font-system.md, mermaid-patterns.md, navigation.md, libraries.md, anti-slop-rules.md),
+     section structure reference path (absolute path from step 2),
+     report title: "Agent Extension Visual: {plugin-name}",
+     aesthetic hint: "Editorial"
    })
    ```
 
@@ -265,4 +270,5 @@ Bash(rm -rf /tmp/agent-extension-visual-{directory})
 - `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
 - `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
-- `../../references/design-system/` — Shared design system (CSS patterns, font system, Mermaid patterns, navigation, libraries, anti-slop rules). Phase 5R passes the directory path; report-writer reads all 6 files directly
+- `./references/section-structure.md` — Section definitions with HTML pattern snippets for the wiki report (9 sections). Phase 5R passes the absolute path; visual-report-writer reads it directly
+- `../../references/design-system/` — Shared design system (CSS patterns, font system, Mermaid patterns, navigation, libraries, anti-slop rules). Phase 5R passes the directory path; visual-report-writer reads all 6 files directly

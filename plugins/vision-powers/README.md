@@ -4,7 +4,7 @@ Visual report generation suite for Claude Code: plugin wiki analysis, git diff v
 
 ## Skills
 
-### vision-wiki
+### agent-extension-visual
 
 Analyze agent extensions (plugins, skills, commands, hooks, agents, MCP servers) and generate HTML wiki reports with security audit and plugin profiles.
 
@@ -16,7 +16,7 @@ security audit ./plugins/my-plugin
 overview ./plugins/my-plugin
 ```
 
-### vision-diff
+### diff-visual
 
 Visualize git diffs as interactive HTML reports with architecture diagrams, KPI dashboards, code review cards, and side-by-side comparisons.
 
@@ -27,7 +27,7 @@ visualize PR #123
 diff review abc1234
 ```
 
-### vision-plan
+### plan-visual
 
 Review implementation plans as interactive HTML reports with architecture diagrams, blast radius analysis, risk assessment, and gap detection.
 
@@ -47,17 +47,17 @@ All reports are saved to:
 
 ```mermaid
 graph TD
-    S1["vision-wiki<br/>(orchestrator)"] -->|delegates| A1["feature-architect"]
+    S1["agent-extension-visual<br/>(orchestrator)"] -->|delegates| A1["feature-architect"]
     S1 -->|delegates| A2["security-auditor"]
-    S1 -->|delegates<br/>HTML mode| A3["report-writer"]
+    S1 -->|delegates<br/>HTML mode| A4["visual-report-writer"]
 
-    S2["vision-diff<br/>(orchestrator)"] -->|delegates<br/>HTML| A4["visual-report-writer"]
-    S3["vision-plan<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
+    S2["diff-visual<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
+    S3["plan-visual<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
 
-    A3 -->|reads| DS["design-system/"]
-    A4 -->|reads| DS
-    A4 -->|reads| SS1["vision-diff<br/>section-structure"]
-    A4 -->|reads| SS2["vision-plan<br/>section-structure"]
+    A4 -->|reads| DS["design-system/"]
+    A4 -->|reads| SS1["agent-extension-visual<br/>section-structure"]
+    A4 -->|reads| SS2["diff-visual<br/>section-structure"]
+    A4 -->|reads| SS3["plan-visual<br/>section-structure"]
 ```
 
 ### Shared Design System
