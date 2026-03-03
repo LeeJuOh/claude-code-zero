@@ -1,5 +1,8 @@
 # Copy docs
 docs/
 
-# Symlink references (heavy)
-link:references/
+# Copy references (link: not supported by Claude Code built-in)
+references/
+
+
+test/
