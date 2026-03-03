@@ -107,3 +107,4 @@ See `docs/reference/skill-allowed-tools.md` for full details (tested on v2.1.63)
 - **Plugin names**: kebab-case (e.g., `notebook-researcher`, `code-reviewer`)
 - **Versioning**: Semantic Versioning (e.g., `1.0.0`). Version is set only in `marketplace.json`, not in individual `plugin.json` files (all plugins use relative-path sources).
 - **Descriptions**: Clear and concise
+- **Line endings**: Always Unix LF (`\n`), never Windows CRLF (`\r\n`). CRLF in shell scripts causes `command\r: not found` errors (e.g., `set -o pipefail\r`). When creating or editing any file — especially `.sh`, `.json`, `.md` — ensure LF-only line endings. If in doubt, verify with `file <path>` or `cat -A <path>` (CRLF shows as `^M$`).

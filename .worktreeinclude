@@ -1,0 +1,5 @@
+# Copy docs
+docs/
+
+# Symlink references (heavy)
+link:references/

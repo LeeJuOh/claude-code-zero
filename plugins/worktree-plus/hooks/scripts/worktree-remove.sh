@@ -17,13 +17,21 @@ fi
 # Get the git dir to find the main repo
 MAIN_REPO=$(git -C "$WORKTREE_PATH" rev-parse --path-format=absolute --git-common-dir 2>/dev/null | sed 's|/\.git$||')
 
-if [ -n "$MAIN_REPO" ]; then
-  git -C "$MAIN_REPO" worktree remove --force "$WORKTREE_PATH" >&2 || {
-    echo "git worktree remove failed, falling back to rm" >&2
-    rm -rf "$WORKTREE_PATH"
-  }
-else
-  rm -rf "$WORKTREE_PATH"
+if [ -z "$MAIN_REPO" ]; then
+  echo "Error: could not determine main repo for: $WORKTREE_PATH" >&2
+  exit 1
 fi
+
+# Safety: refuse to remove paths outside the project root
+REAL_PATH=$(cd "$WORKTREE_PATH" && pwd -P)
+if [[ "$REAL_PATH" != "$MAIN_REPO"* ]]; then
+  echo "Error: refusing to remove path outside project root: $WORKTREE_PATH" >&2
+  exit 1
+fi
+
+git -C "$MAIN_REPO" worktree remove --force "$WORKTREE_PATH" >&2 || {
+  echo "git worktree remove failed, falling back to rm" >&2
+  rm -rf "$WORKTREE_PATH"
+}
 
 exit 0

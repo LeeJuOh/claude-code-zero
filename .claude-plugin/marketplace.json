@@ -42,8 +42,8 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "1.0.0",
-      "description": "Enhanced git worktree: custom branch prefix, selective copy/symlink for gitignored files"
+      "version": "1.1.0",
+      "description": "Enhanced git worktree: custom branch prefix, remote branch tracking, selective copy/symlink for gitignored files"
     }
   ]
 }
