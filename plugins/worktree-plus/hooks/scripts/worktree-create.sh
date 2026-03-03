@@ -1,7 +1,10 @@
-#!/bin/bash
-set -euo pipefail
+#!/usr/bin/env bash
+set -eu
 
-# Read JSON input from stdin
+# WorktreeCreate hook — custom worktree with remote tracking and .worktreeinclude
+# Input (stdin JSON): { "name": "...", "cwd": "..." }
+# Output (stdout): absolute worktree path
+
 INPUT=$(cat)
 NAME=$(echo "$INPUT" | jq -r '.name')
 CWD=$(echo "$INPUT" | jq -r '.cwd')
@@ -16,13 +19,12 @@ if [ -z "$CWD" ] || [ "$CWD" = "null" ]; then
   exit 1
 fi
 
-# Determine the project root (top-level of the git repo)
 PROJECT_ROOT=$(git -C "$CWD" rev-parse --show-toplevel)
 
-# Determine branch name based on WORKTREE_BRANCH_PREFIX
-# - unset/not set → "worktree-<name>"
-# - =""           → "<name>" (no prefix)
-# - ="feat"       → "feat-<name>"
+# Branch name: WORKTREE_BRANCH_PREFIX controls prefix
+#   unset      -> "worktree-<name>"
+#   =""        -> "<name>" (no prefix)
+#   ="feat"    -> "feat-<name>"
 if [ -z "${WORKTREE_BRANCH_PREFIX+x}" ]; then
   BRANCH="worktree-${NAME}"
 elif [ -z "$WORKTREE_BRANCH_PREFIX" ]; then
@@ -31,158 +33,88 @@ else
   BRANCH="${WORKTREE_BRANCH_PREFIX}-${NAME}"
 fi
 
-# Worktree directory under .claude/worktrees/
 WORKTREE_DIR="${PROJECT_ROOT}/.claude/worktrees/${NAME}"
-LOG_FILE="${WORKTREE_DIR}/.worktree-create.log"
 
-# Create the worktree (directory must exist before writing log file)
+# Read guessRemote config (default: true)
+GUESS_REMOTE=$(git -C "$PROJECT_ROOT" config --get worktree.guessRemote 2>/dev/null || echo "true")
+
+# --- Branch resolution ---
 echo "Creating worktree: ${WORKTREE_DIR} (branch: ${BRANCH})" >&2
+
 if git -C "$PROJECT_ROOT" show-ref --verify --quiet "refs/heads/${BRANCH}" 2>/dev/null; then
-  # Local branch exists — reuse it
-  echo "Branch '${BRANCH}' already exists, reusing" >&2
+  # 1. Local branch exists -> reuse
+  echo "Reusing local branch '${BRANCH}'" >&2
   git -C "$PROJECT_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH" >&2
 else
-  # Check if remote branch exists (fetch only the target branch to minimize latency)
-  git -C "$PROJECT_ROOT" fetch origin "$BRANCH" 2>/dev/null || true
-  if git -C "$PROJECT_ROOT" show-ref --verify --quiet "refs/remotes/origin/${BRANCH}" 2>/dev/null; then
-    # Remote branch exists — create tracking branch
-    echo "Tracking remote branch 'origin/${BRANCH}'" >&2
-    git -C "$PROJECT_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" --track "origin/${BRANCH}" >&2
-  else
-    # No branch found anywhere — create new from HEAD
+  TRACKED=false
+  if [ "$GUESS_REMOTE" = "true" ]; then
+    # Try fetch to ensure up-to-date remote refs
+    git -C "$PROJECT_ROOT" fetch origin "$BRANCH" 2>/dev/null || true
+    if git -C "$PROJECT_ROOT" show-ref --verify --quiet "refs/remotes/origin/${BRANCH}" 2>/dev/null; then
+      # 2. Remote branch exists -> create tracking branch
+      echo "Tracking remote branch 'origin/${BRANCH}'" >&2
+      git -C "$PROJECT_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" --track "origin/${BRANCH}" >&2
+      TRACKED=true
+    fi
+  fi
+  if [ "$TRACKED" = false ]; then
+    # 3. No branch found -> new from HEAD
+    echo "Creating new branch '${BRANCH}' from HEAD" >&2
     git -C "$PROJECT_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" HEAD >&2
   fi
 fi
 
-# Log to both stderr and log file
+# --- Logging ---
+LOG_FILE="${WORKTREE_DIR}/.worktree-create.log"
 log() { echo "$1" >&2; echo "$1" >> "$LOG_FILE"; }
 
-# Process .worktreeinclude if it exists
+{
+  echo "Created: $(date '+%Y-%m-%d %H:%M:%S')"
+  echo "Name:    $NAME"
+  echo "Branch:  $BRANCH"
+  echo "Source:  $PROJECT_ROOT"
+  echo "---"
+} > "$LOG_FILE"
+
+# --- .worktreeinclude (copy only) ---
 INCLUDE_FILE="${PROJECT_ROOT}/.worktreeinclude"
 if [ -f "$INCLUDE_FILE" ]; then
   log "Processing .worktreeinclude..."
 
-  # Get list of gitignored files (existing but ignored)
-  IGNORED_FILES=$(cd "$PROJECT_ROOT" && git ls-files --others --ignored --exclude-standard 2>/dev/null || true)
-
   while IFS= read -r line || [ -n "$line" ]; do
-    # Skip empty lines and comments
-    line=$(echo "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    # CRLF defense + trim whitespace
+    line=$(printf '%s' "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     [ -z "$line" ] && continue
     [[ "$line" == \#* ]] && continue
 
-    # Determine mode: link or copy
-    MODE="copy"
-    PATTERN="$line"
-    if [[ "$line" == link:* ]]; then
-      MODE="link"
-      PATTERN="${line#link:}"
-    fi
+    # Strip trailing slash for uniform path handling
+    PATTERN="${line%/}"
+    SRC="${PROJECT_ROOT}/${PATTERN}"
+    DEST="${WORKTREE_DIR}/${PATTERN}"
 
-    # Remove trailing slash for matching, but remember if it was a directory pattern
-    IS_DIR_PATTERN=false
-    if [[ "$PATTERN" == */ ]]; then
-      IS_DIR_PATTERN=true
-      PATTERN_CLEAN="${PATTERN%/}"
+    if [ -d "$SRC" ]; then
+      if [ ! -e "$DEST" ]; then
+        mkdir -p "$(dirname "$DEST")"
+        if cp -R "$SRC" "$DEST"; then
+          log "  copied: ${PATTERN}/"
+        else
+          log "  FAILED: ${PATTERN}/"
+        fi
+      fi
+    elif [ -f "$SRC" ]; then
+      if [ ! -e "$DEST" ]; then
+        mkdir -p "$(dirname "$DEST")"
+        if cp "$SRC" "$DEST"; then
+          log "  copied: ${PATTERN}"
+        else
+          log "  FAILED: ${PATTERN}"
+        fi
+      fi
     else
-      PATTERN_CLEAN="$PATTERN"
+      log "  skipped (not found): ${PATTERN}"
     fi
-
-    # Find matching gitignored files/directories
-    MATCHED=false
-    while IFS= read -r ignored_file; do
-      [ -z "$ignored_file" ] && continue
-
-      # Check if this ignored file matches the pattern
-      MATCH=false
-      if [ "$IS_DIR_PATTERN" = true ]; then
-        # Directory pattern: match files under this directory
-        if [[ "$ignored_file" == "${PATTERN_CLEAN}/"* ]] || [[ "$ignored_file" == "$PATTERN_CLEAN" ]]; then
-          MATCH=true
-        fi
-      else
-        # File pattern: exact match or glob-style match
-        if [[ "$ignored_file" == "$PATTERN_CLEAN" ]]; then
-          MATCH=true
-        fi
-        # Support simple glob patterns (e.g., .env*)
-        if [ "$MATCH" = false ]; then
-          # Use bash pattern matching
-          case "$ignored_file" in
-            $PATTERN_CLEAN) MATCH=true ;;
-          esac
-        fi
-      fi
-
-      if [ "$MATCH" = true ]; then
-        MATCHED=true
-        SRC="${PROJECT_ROOT}/${ignored_file}"
-        DEST="${WORKTREE_DIR}/${ignored_file}"
-
-        if [ "$IS_DIR_PATTERN" = true ] && [ "$MODE" = "link" ]; then
-          # For directory link patterns, we link the top-level directory once
-          SRC_DIR="${PROJECT_ROOT}/${PATTERN_CLEAN}"
-          DEST_DIR="${WORKTREE_DIR}/${PATTERN_CLEAN}"
-          if [ ! -e "$DEST_DIR" ] && [ -e "$SRC_DIR" ]; then
-            mkdir -p "$(dirname "$DEST_DIR")"
-            ln -s "$SRC_DIR" "$DEST_DIR"
-            log "  linked: ${PATTERN_CLEAN}/"
-          fi
-          # Break since we only need to link once for directory patterns
-          break
-        elif [ "$MODE" = "link" ]; then
-          if [ ! -e "$DEST" ] && [ -e "$SRC" ]; then
-            mkdir -p "$(dirname "$DEST")"
-            ln -s "$SRC" "$DEST"
-            log "  linked: ${ignored_file}"
-          fi
-        else
-          if [ ! -e "$DEST" ] && [ -e "$SRC" ]; then
-            mkdir -p "$(dirname "$DEST")"
-            cp -a "$SRC" "$DEST"
-            log "  copied: ${ignored_file}"
-          fi
-        fi
-      fi
-    done <<< "$IGNORED_FILES"
-
-    # Handle directory link/copy when the directory itself isn't listed in git ls-files
-    if [ "$MATCHED" = false ] && [ "$IS_DIR_PATTERN" = true ]; then
-      SRC_DIR="${PROJECT_ROOT}/${PATTERN_CLEAN}"
-      DEST_DIR="${WORKTREE_DIR}/${PATTERN_CLEAN}"
-      if [ -d "$SRC_DIR" ] && [ ! -e "$DEST_DIR" ]; then
-        mkdir -p "$(dirname "$DEST_DIR")"
-        if [ "$MODE" = "link" ]; then
-          ln -s "$SRC_DIR" "$DEST_DIR"
-          log "  linked: ${PATTERN_CLEAN}/"
-        else
-          cp -a "$SRC_DIR" "$DEST_DIR"
-          log "  copied: ${PATTERN_CLEAN}/"
-        fi
-      fi
-    fi
-
-    # Handle direct file match when not found in git ls-files output
-    if [ "$MATCHED" = false ] && [ "$IS_DIR_PATTERN" = false ]; then
-      SRC="${PROJECT_ROOT}/${PATTERN_CLEAN}"
-      DEST="${WORKTREE_DIR}/${PATTERN_CLEAN}"
-      if [ -f "$SRC" ] && [ ! -e "$DEST" ]; then
-        # Verify the file is actually gitignored
-        if git -C "$PROJECT_ROOT" check-ignore -q "$SRC" 2>/dev/null; then
-          mkdir -p "$(dirname "$DEST")"
-          if [ "$MODE" = "link" ]; then
-            ln -s "$SRC" "$DEST"
-            log "  linked: ${PATTERN_CLEAN}"
-          else
-            cp -a "$SRC" "$DEST"
-            log "  copied: ${PATTERN_CLEAN}"
-          fi
-        fi
-      fi
-    fi
-
   done < "$INCLUDE_FILE"
 fi
 
-# Output the worktree path (this is what Claude Code reads)
+# Output worktree path (required by Claude Code)
 echo "$WORKTREE_DIR"
