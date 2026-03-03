@@ -57,6 +57,18 @@ verify this report
 validate the last report
 ```
 
+### report-manager
+
+Manage vision-powers reports: list, open in browser, delete, and search by name or content.
+
+```
+list reports
+open the latest report
+delete reports --type diff-visual
+delete reports --before 30d
+search reports auth
+```
+
 ## Report Location
 
 All reports are saved to:
@@ -77,6 +89,7 @@ graph TD
     S4["project-recap<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
 
     S5["fact-check<br/>(standalone)"]
+    S6["report-manager<br/>(standalone)"] -->|reads| R["reports/"]
 
     A4 -->|reads| DS["design-system/"]
     A4 -->|reads| SS1["agent-extension-visual<br/>section-structure"]

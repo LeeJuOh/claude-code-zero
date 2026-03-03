@@ -7,5 +7,5 @@
   },
   "repository": "https://github.com/LeeJuOh/claude-code-zero",
   "license": "MIT",
-  "keywords": ["analyzer", "wiki", "report", "html", "security", "audit", "plugin", "diff", "plan", "visualization", "review", "recap", "fact-check", "verification"]
+  "keywords": ["analyzer", "wiki", "report", "html", "security", "audit", "plugin", "diff", "plan", "visualization", "review", "recap", "fact-check", "verification", "manager"]
 }

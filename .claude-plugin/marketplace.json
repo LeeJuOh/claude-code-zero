@@ -30,8 +30,8 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "2.1.0",
-      "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, and fact-checking with interactive diagrams and curated design system"
+      "version": "2.2.0",
+      "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, and report management with interactive diagrams and curated design system"
     },
     {
       "name": "macos-notifier",
