@@ -1,6 +1,6 @@
 # Vision Powers
 
-Visual report generation suite for Claude Code: plugin wiki analysis, git diff visualization, and implementation plan review. All outputs are self-contained interactive HTML reports with responsive navigation, Mermaid diagrams, Chart.js dashboards, and a curated design system.
+Visual report generation suite for Claude Code: plugin wiki analysis, git diff visualization, implementation plan review, project recap, and fact-checking. All outputs are self-contained interactive HTML reports with responsive navigation, Mermaid diagrams, Chart.js dashboards, and a curated design system.
 
 ## Skills
 
@@ -36,6 +36,27 @@ review plan ~/.claude/plans/my-plan.md
 evaluate plan ./docs/auth-redesign.md
 ```
 
+### project-recap
+
+Generate a visual project recap — rebuild mental model of a project's current state, recent activity, key decisions, and cognitive debt hotspots.
+
+```
+recap this project
+project recap 30d
+project snapshot 3m --lang ko
+catch me up on this project
+```
+
+### fact-check
+
+Verify factual accuracy of a document against the actual codebase and git history. Corrects inaccuracies in place and adds a verification summary.
+
+```
+fact-check ~/.claude-code-zero/vision-powers/reports/my-report.html
+verify this report
+validate the last report
+```
+
 ## Report Location
 
 All reports are saved to:
@@ -53,11 +74,15 @@ graph TD
 
     S2["diff-visual<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
     S3["plan-visual<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
+    S4["project-recap<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
+
+    S5["fact-check<br/>(standalone)"]
 
     A4 -->|reads| DS["design-system/"]
     A4 -->|reads| SS1["agent-extension-visual<br/>section-structure"]
     A4 -->|reads| SS2["diff-visual<br/>section-structure"]
     A4 -->|reads| SS3["plan-visual<br/>section-structure"]
+    A4 -->|reads| SS4["project-recap<br/>section-structure"]
 ```
 
 ### Shared Design System
