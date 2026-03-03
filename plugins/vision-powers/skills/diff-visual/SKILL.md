@@ -1,0 +1,132 @@
+---
+name: diff-visual
+description: >
+  Visualize git diffs as interactive HTML reports with architecture diagrams,
+  KPI dashboards, code review cards, and side-by-side comparisons.
+  Use when asked to visualize, review, explain, or summarize a diff, branch,
+  commit, PR, or set of changes. Accepts branch names, commit hashes, HEAD,
+  PR numbers, or commit ranges. Not for making changes or resolving conflicts.
+argument-hint: "<branch|commit|HEAD|#PR|range> [--lang ko|en|ja]"
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *)
+---
+
+# Diff Visual
+
+Visualize git diffs as self-contained interactive HTML reports with architecture diagrams, KPI dashboards, code review assessments, and side-by-side comparisons.
+
+## Instructions
+
+### Scope Detection
+
+Parse the user's argument to determine the diff scope:
+
+| Input | Interpretation | Git command |
+|-------|---------------|-------------|
+| `HEAD` or nothing | Uncommitted changes | `git diff HEAD` |
+| `branch-name` | Branch vs main/master | `git diff main...branch-name` |
+| `#123` or PR URL | Pull request diff | `gh pr diff 123` |
+| `abc1234` | Single commit | `git show abc1234` |
+| `abc..def` | Commit range | `git diff abc..def` |
+| `abc...def` | Three-dot range | `git diff abc...def` |
+
+**Default base**: If the scope implies comparison against a base branch, detect the default branch:
+```
+git rev-parse --verify main 2>/dev/null || git rev-parse --verify master
+```
+
+**Scope validation**: Verify the ref/range exists before proceeding. If invalid, inform the user and stop.
+
+### Language Detection
+
+Determine the output language:
+
+1. **Explicit argument**: `--lang ko`, `--lang en`, `--lang ja` → use that language
+2. **User message text**: If the message (excluding ref/path) contains non-English text, use that language
+   - Korean: 한글 텍스트, "한국어", "한글로", "변경사항 분석"
+   - Japanese: 日本語テキスト, "日本語で"
+   - English: English text, "in English"
+3. **Ref-only with no other text**: Default to English
+
+### Data Gathering
+
+Collect comprehensive data about the diff. Run git commands in parallel where possible.
+
+**Step 1 — Stats and metadata** (parallel):
+```
+git diff {scope} --stat
+git diff {scope} --name-status
+git log {scope-log-range} --oneline --format="%h %s"
+git log {scope-log-range} --format="%h|%an|%s|%ai" (for decision log)
+```
+
+Where `{scope-log-range}` is:
+- For branch: `main..branch-name`
+- For range: `abc..def`
+- For single commit: `-1 abc1234`
+- For HEAD: `-1 HEAD` (or recent commits if uncommitted)
+
+**Step 2 — Quantitative metrics** (parallel):
+- Total lines added/removed: parse `--stat` summary or use `git diff {scope} --numstat`
+- Files changed count, new files, deleted files (from `--name-status`)
+- New modules/directories introduced
+- Test file changes (files matching `*test*`, `*spec*`, `*.test.*`)
+
+**Step 3 — Content analysis**:
+Read the full diff content and changed files to understand:
+- **Architecture changes**: New modules, changed imports/exports, dependency shifts
+- **Feature inventory**: What features were added/modified/removed
+- **API surface changes**: New/changed public functions, types, endpoints
+- **Test coverage**: New/modified tests, what they cover
+- **Decision rationale**: Commit messages, PR description (if PR), CHANGELOG entries, README changes
+
+Use Glob + Grep to find related files (tests, configs, docs) that provide context.
+
+**CRITICAL**: Read actual changed file contents — do not rely solely on diff hunks. Understanding the full file context is essential for accurate architecture diagrams and code review.
+
+### Verification Checkpoint
+
+Before generating the report, verify factual accuracy:
+
+1. **Quantitative check**: Lines +/−, file counts, module counts — all must match git output exactly
+2. **Name check**: Every function name, type name, file path mentioned must exist in the actual diff
+3. **Behavior check**: Every behavioral description must be traceable to specific code changes
+4. **Source citation**: For each claim in the analysis, identify the source (commit hash, file:line, diff hunk)
+
+If any claim cannot be sourced, remove it or mark it as uncertain.
+
+### Report Generation
+
+Delegate HTML report generation to the visual-report-writer agent.
+
+1. **Determine output path**:
+   ```
+   ~/.claude-code-zero/vision-powers/reports/{scope}-diff-visual.html
+   ```
+   Where `{scope}` is a sanitized version of the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`).
+
+2. **Resolve reference paths**:
+   - Section structure: resolve `./references/section-structure.md` to absolute path
+   - Design system: resolve `../../references/design-system/` to absolute path
+
+3. **Delegate to visual-report-writer**:
+   ```
+   Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
+     Analysis data: {all gathered data — stats, metrics, architecture, features, code review, decisions},
+     Section structure reference path: {absolute path to section-structure.md},
+     Design system directory path: {absolute path to design-system/},
+     Output file path: {absolute output path},
+     Output language: {detected language},
+     Report title: "Diff Visual: {scope description}",
+     Aesthetic hint: "Editorial" (or "Blueprint" for infrastructure-heavy diffs)
+   })
+   ```
+
+4. **Report completion**: Output the `file:///` URL to the user:
+   ```
+   Report generated: file://{absolute-path-to-report}
+   ```
+
+### Reference Files
+
+- `./references/section-structure.md` — 10-section structure with HTML pattern snippets for diff visualization
+- `../../references/design-system/` — Shared design system (CSS patterns, fonts, Mermaid, navigation, libraries, anti-slop rules). Passed as path to visual-report-writer; the agent reads files directly

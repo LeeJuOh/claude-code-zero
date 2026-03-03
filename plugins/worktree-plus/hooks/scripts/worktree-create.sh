@@ -33,29 +33,41 @@ fi
 
 # Worktree directory under .claude/worktrees/
 WORKTREE_DIR="${PROJECT_ROOT}/.claude/worktrees/${NAME}"
+LOG_FILE="${WORKTREE_DIR}/.worktree-create.log"
 
-# Create the worktree
+# Create the worktree (directory must exist before writing log file)
 echo "Creating worktree: ${WORKTREE_DIR} (branch: ${BRANCH})" >&2
 if git -C "$PROJECT_ROOT" show-ref --verify --quiet "refs/heads/${BRANCH}" 2>/dev/null; then
-  # Branch already exists — reuse it
+  # Local branch exists — reuse it
   echo "Branch '${BRANCH}' already exists, reusing" >&2
   git -C "$PROJECT_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH" >&2
 else
-  # Create new branch from HEAD
-  git -C "$PROJECT_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" HEAD >&2
+  # Check if remote branch exists (fetch only the target branch to minimize latency)
+  git -C "$PROJECT_ROOT" fetch origin "$BRANCH" 2>/dev/null || true
+  if git -C "$PROJECT_ROOT" show-ref --verify --quiet "refs/remotes/origin/${BRANCH}" 2>/dev/null; then
+    # Remote branch exists — create tracking branch
+    echo "Tracking remote branch 'origin/${BRANCH}'" >&2
+    git -C "$PROJECT_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" --track "origin/${BRANCH}" >&2
+  else
+    # No branch found anywhere — create new from HEAD
+    git -C "$PROJECT_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" HEAD >&2
+  fi
 fi
+
+# Log to both stderr and log file
+log() { echo "$1" >&2; echo "$1" >> "$LOG_FILE"; }
 
 # Process .worktreeinclude if it exists
 INCLUDE_FILE="${PROJECT_ROOT}/.worktreeinclude"
 if [ -f "$INCLUDE_FILE" ]; then
-  echo "Processing .worktreeinclude..." >&2
+  log "Processing .worktreeinclude..."
 
   # Get list of gitignored files (existing but ignored)
   IGNORED_FILES=$(cd "$PROJECT_ROOT" && git ls-files --others --ignored --exclude-standard 2>/dev/null || true)
 
   while IFS= read -r line || [ -n "$line" ]; do
     # Skip empty lines and comments
-    line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    line=$(echo "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     [ -z "$line" ] && continue
     [[ "$line" == \#* ]] && continue
 
@@ -114,7 +126,7 @@ if [ -f "$INCLUDE_FILE" ]; then
           if [ ! -e "$DEST_DIR" ] && [ -e "$SRC_DIR" ]; then
             mkdir -p "$(dirname "$DEST_DIR")"
             ln -s "$SRC_DIR" "$DEST_DIR"
-            echo "  linked: ${PATTERN_CLEAN}/" >&2
+            log "  linked: ${PATTERN_CLEAN}/"
           fi
           # Break since we only need to link once for directory patterns
           break
@@ -122,13 +134,13 @@ if [ -f "$INCLUDE_FILE" ]; then
           if [ ! -e "$DEST" ] && [ -e "$SRC" ]; then
             mkdir -p "$(dirname "$DEST")"
             ln -s "$SRC" "$DEST"
-            echo "  linked: ${ignored_file}" >&2
+            log "  linked: ${ignored_file}"
           fi
         else
           if [ ! -e "$DEST" ] && [ -e "$SRC" ]; then
             mkdir -p "$(dirname "$DEST")"
             cp -a "$SRC" "$DEST"
-            echo "  copied: ${ignored_file}" >&2
+            log "  copied: ${ignored_file}"
           fi
         fi
       fi
@@ -142,10 +154,10 @@ if [ -f "$INCLUDE_FILE" ]; then
         mkdir -p "$(dirname "$DEST_DIR")"
         if [ "$MODE" = "link" ]; then
           ln -s "$SRC_DIR" "$DEST_DIR"
-          echo "  linked: ${PATTERN_CLEAN}/" >&2
+          log "  linked: ${PATTERN_CLEAN}/"
         else
           cp -a "$SRC_DIR" "$DEST_DIR"
-          echo "  copied: ${PATTERN_CLEAN}/" >&2
+          log "  copied: ${PATTERN_CLEAN}/"
         fi
       fi
     fi
@@ -160,10 +172,10 @@ if [ -f "$INCLUDE_FILE" ]; then
           mkdir -p "$(dirname "$DEST")"
           if [ "$MODE" = "link" ]; then
             ln -s "$SRC" "$DEST"
-            echo "  linked: ${PATTERN_CLEAN}" >&2
+            log "  linked: ${PATTERN_CLEAN}"
           else
             cp -a "$SRC" "$DEST"
-            echo "  copied: ${PATTERN_CLEAN}" >&2
+            log "  copied: ${PATTERN_CLEAN}"
           fi
         fi
       fi

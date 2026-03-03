@@ -1,6 +1,6 @@
 # JSON Schemas
 
-Storage: `~/.claude/plugins/notebooklm-connector/data/`
+Storage: `~/.claude-code-zero/notebooklm-connector/data/`
 
 ## library.json
 

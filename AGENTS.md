@@ -83,9 +83,28 @@ When the user requests a tag on `main`:
 6. **Switch back** — Return to `develop`.
 7. **Confirm push** — Ask the user before pushing `main`, `develop`, and the tag to remote.
 
+## Known Claude Code Permission Issues
+
+See `docs/reference/skill-allowed-tools.md` for full details (tested on v2.1.63).
+
+### Skill `allowed-tools` Behavior
+
+- Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not
+- `$()` command substitution triggers a separate security prompt regardless of allowed-tools
+- `~/.claude/` hardcoded write protection was not observed in v2.1.63
+- Skills **do** inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow)
+
+### Plugin Data Path Convention
+
+| 용도 | 경로 |
+|------|------|
+| 영구 데이터 (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
+| 임시 데이터 (clone tmp) | `/tmp/<plugin-name>/` |
+
 ## Coding Style
 
 - **Language**: All plugin deliverables in English (SKILL.md, agent.md, README.md, comments, descriptions, code).
 - **Plugin names**: kebab-case (e.g., `notebook-researcher`, `code-reviewer`)
 - **Versioning**: Semantic Versioning (e.g., `1.0.0`). Version is set only in `marketplace.json`, not in individual `plugin.json` files (all plugins use relative-path sources).
 - **Descriptions**: Clear and concise
+- **Line endings**: Always Unix LF (`\n`), never Windows CRLF (`\r\n`). CRLF in shell scripts causes `command\r: not found` errors (e.g., `set -o pipefail\r`). When creating or editing any file — especially `.sh`, `.json`, `.md` — ensure LF-only line endings. If in doubt, verify with `file <path>` or `cat -A <path>` (CRLF shows as `^M$`).

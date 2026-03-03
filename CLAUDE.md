@@ -121,9 +121,81 @@ When the user requests a tag on `main`:
 6. **Switch back** — Return to `develop`.
 7. **Confirm push** — Ask the user before pushing `main`, `develop`, and the tag to remote.
 
+## Known Claude Code Permission Issues
+
+### Skill `allowed-tools` Behavior
+
+See `docs/reference/skill-allowed-tools.md` for full details (tested on v2.1.63).
+
+- Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not
+- `$()` command substitution triggers a separate security prompt regardless of allowed-tools
+- `~/.claude/` hardcoded write protection was not observed in v2.1.63
+- Skills **do** inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow). Tested in v2.1.63; [#18950](https://github.com/anthropics/claude-code/issues/18950) may be outdated
+
+### Agent `tools` / `disallowedTools` Behavior
+
+See `docs/reference/agent-tools.md` for full details (tested on v2.1.63).
+
+Agent `tools` is an **availability filter**, NOT an auto-approve list (unlike Skill `allowed-tools`). The `tools` field does NOT create a fresh permission context — safe CWD commands remain AUTO, risky commands (out-of-CWD, `$()`, `git -C`, rm) remain PROMPT.
+
+`permissionMode` controls approval behavior:
+
+| `permissionMode` | Write/Edit | Bash (safe) | `$()` |
+|---|---|---|---|
+| (default) | PROMPT | AUTO | PROMPT |
+| `plan` | PROMPT | AUTO | PROMPT |
+| `acceptEdits` | **AUTO** | PROMPT | PROMPT |
+| `dontAsk` | AUTO | AUTO | **DENY** |
+| `bypassPermissions` | AUTO | AUTO | **AUTO** |
+
+Other findings:
+- `disallowedTools: Write, Edit` → inherits parent permissions, specified tools removed entirely
+- `tools`/`disallowedTools` 둘 다 없음 → `disallowedTools`와 동일하게 부모 상속
+- `dontAsk` + `disallowedTools` → `disallowedTools` 단독과 동일 (전부 AUTO)
+- `Write(path)` path-scoped → 인식 안 됨 (bare `Write`로 파싱)
+- `git -C` flag (경로 무관, `.` 포함) → 항상 PROMPT
+
+Recommended patterns:
+- Fully autonomous: `permissionMode: bypassPermissions` + `tools: Read, Write, Edit, Bash`
+- Autonomous read+shell: `permissionMode: dontAsk` + `tools: Read, Bash`
+- Auto-accept edits: `permissionMode: acceptEdits` + `tools: Read, Write, Edit, Bash`
+- Read-only explorer: `disallowedTools: Write, Edit` (no `tools` field)
+
+### Plugin Data Path Convention
+
+| Purpose | Path |
+|---------|------|
+| Persistent data (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
+| Temporary data (clone tmp) | `/tmp/<plugin-name>/` |
+
+### Plugin Data Access Auto-Approve
+
+Two ways to auto-approve out-of-CWD paths (e.g., `~/.claude-code-zero/`):
+
+- **Bare `allowed-tools`** (`Read, Write, Edit`): Auto-approves all paths. Simplest approach
+- **PreToolUse hook**: Selectively auto-approves specific paths only. Use when plugin data paths should be allowed while other out-of-CWD paths remain prompted
+
+`notebooklm-connector` and `plugin-bookmarks` use the PreToolUse hook for scope detection + lazy init (project-level data isolation requires Bash hash computation and atomic initialization that skill instructions alone cannot guarantee). Auto-approve was removed from these hooks — bare `allowed-tools: Read, Write, Edit` in the skills already auto-approves all paths.
+
+### Sub-agent Output Token Limit
+
+`CLAUDE_CODE_MAX_OUTPUT_TOKENS` defaults to 32,000 tokens (max 64,000). No per-subagent setting in frontmatter. Large HTML report generation may hit this limit.
+
+**Workaround**: Set before launching Claude Code:
+```bash
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
+```
+
+| Pros | Cons |
+|------|------|
+| Immediate, no code changes | Main conversation auto-compaction triggers slightly earlier (negligible) |
+| Subagents use independent context — no impact | Higher output token cost if usage increases |
+| 64K covers most reports | Very large plugins (>64K) still limited |
+
 ## Coding Style
 
 - **Language**: All plugin deliverables in English (SKILL.md, agent.md, README.md, comments, descriptions, code). All development conversation (plans, discussions, questions) in Korean.
 - **Plugin names**: kebab-case (e.g., `notebook-researcher`, `code-reviewer`)
 - **Versioning**: Semantic Versioning (e.g., `1.0.0`). Version is set only in `marketplace.json`, not in individual `plugin.json` files (all plugins use relative-path sources).
 - **Descriptions**: Clear and concise
+- **Line endings**: Always Unix LF (`\n`), never Windows CRLF (`\r\n`). CRLF in shell scripts causes `command\r: not found` errors (e.g., `set -o pipefail\r`). When creating or editing any file — especially `.sh`, `.json`, `.md` — ensure LF-only line endings. If in doubt, verify with `file <path>` or `cat -A <path>` (CRLF shows as `^M$`).

@@ -1,13 +1,13 @@
 {
-  "description": "Data initialization",
+  "description": "Data path resolution and lazy init",
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Skill",
+        "matcher": "Read|Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/init-data.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/setup-data.sh"
           }
         ]
       }

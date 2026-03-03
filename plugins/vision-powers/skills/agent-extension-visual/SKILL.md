@@ -1,5 +1,5 @@
 ---
-name: agent-extension-wiki
+name: agent-extension-visual
 description: >
   Analyze agent extensions and generate self-contained HTML wiki reports
   with security audit, architecture diagrams, and plugin profiles.
@@ -9,19 +9,10 @@ description: >
   for inline markdown. Not for plugin development, installation, or creation.
 argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
-allowed-tools:
-  - Read
-  - Write(~/.claude/plugins/agent-extension-wiki/**)
-  - Glob
-  - Grep
-  - Task
-  - AskUserQuestion
-  - Bash(gh repo clone *)
-  - Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/*)
-  - Bash(rm -rf ~/.claude/plugins/agent-extension-wiki/tmp/*)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*)
 ---
 
-# Agent Extension Wiki
+# Agent Extension Visual
 
 Analyze agent extensions and generate self-contained HTML wiki reports (or inline markdown) with security audit and plugin profiles. Currently supports Claude Code plugins.
 
@@ -80,11 +71,13 @@ Determine **how** to present the result (independent of analysis mode):
 
 - **Local path**: Verify directory exists, proceed directly
 - **Installed plugin**: Search `~/.claude/plugins/cache/` for matching directory
-- **GitHub URL**: Clone to `~/.claude/plugins/agent-extension-wiki/tmp/{random}/`:
-  ```
-  Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/tmp/)
-  Bash(gh repo clone {owner/repo} ~/.claude/plugins/agent-extension-wiki/tmp/{random})
-  ```
+- **GitHub URL**: Clone to `/tmp/agent-extension-visual-{dirname}`:
+  1. Generate `{dirname}` — pick any 8-character hex string yourself (e.g., `a1b2c3d4`)
+  2. Clone directly (no mkdir needed — git creates the target directory):
+     ```
+     Bash(gh repo clone {owner/repo} /tmp/agent-extension-visual-{dirname})
+     ```
+     This is the only Bash command needed for cloning. Do not add extra commands for saving state or generating random strings.
   For subpath URLs (`github.com/owner/repo/tree/branch/plugins/foo`):
   1. Extract `owner/repo` for cloning
   2. Extract the subpath after `/tree/{branch}/` (e.g., `plugins/foo`)
@@ -119,7 +112,7 @@ Set `{platform}` variable for subsequent phases. Currently only `claude-code` is
 
 Scan the target directory for all plugin components.
 
-**CRITICAL**: Use ONLY Glob for file discovery. NEVER use Bash `find` or `ls` commands. Glob supports recursive patterns (`**/*.md`) and is always sufficient.
+**CRITICAL**: Use Glob for all file discovery — it supports recursive patterns (`**/*.md`) and is the only file discovery tool in allowed-tools. `ls` and `find` are not permitted and will trigger permission prompts.
 
 **Step 1**: Run 3 Glob calls in parallel (single message):
 
@@ -186,13 +179,13 @@ Count total = skills + agents + commands. Split each type in half:
 ```
 S = number of skills, A = number of agents, C = number of commands
 
-Task(subagent_type: "agent-extension-wiki:feature-architect", prompt: {
+Task(subagent_type: "vision-powers:feature-architect", prompt: {
   skills 1..ceil(S/2) + agents 1..ceil(A/2) + commands 1..ceil(C/2)
 })
-Task(subagent_type: "agent-extension-wiki:feature-architect", prompt: {
+Task(subagent_type: "vision-powers:feature-architect", prompt: {
   skills ceil(S/2)+1..S + agents ceil(A/2)+1..A + commands ceil(C/2)+1..C + MCP + LSP
 })
-Task(subagent_type: "agent-extension-wiki:security-auditor", prompt: {all file paths})
+Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 ```
 
 MCP, LSP, hooks, and rules are lightweight — keep them in Batch 2 only.
@@ -201,14 +194,14 @@ All three tasks run in parallel. Merge feature-architect batch results before Ph
 **For `analyze` mode with standard plugins (total components <= 15)**:
 
 ```
-Task(subagent_type: "agent-extension-wiki:feature-architect", prompt: {all file paths})
-Task(subagent_type: "agent-extension-wiki:security-auditor", prompt: {all file paths})
+Task(subagent_type: "vision-powers:feature-architect", prompt: {all file paths})
+Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 ```
 
 **For `security` mode** — launch only security-auditor:
 
 ```
-Task(subagent_type: "agent-extension-wiki:security-auditor", prompt: {all file paths})
+Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 ```
 
 #### Phase 5: Report Assembly (inline markdown)
@@ -235,34 +228,41 @@ Output the report directly to the user (inline markdown).
 For `analyze` mode with HTML format (the default), generate a self-contained HTML file.
 
 1. **Determine output path**:
-   ```
-   Bash(mkdir -p ~/.claude/plugins/agent-extension-wiki/reports/)
-   ```
-   Output path: `~/.claude/plugins/agent-extension-wiki/reports/{plugin-name}-report.html`
+   Output path: `~/.claude-code-zero/vision-powers/reports/{plugin-name}-report.html`
+   The Write tool creates parent directories automatically — no `mkdir` needed.
 
    Where `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json).
 
-2. **Delegate to report-writer agent**:
+2. **Resolve reference paths**:
+   - Resolve `./references/section-structure.md` to its absolute path (the section structure for this skill's report)
+   - Resolve `../../references/design-system/` to its absolute path (shared design system directory)
+   Do NOT read these files — the visual-report-writer agent will read them directly.
+
+3. **Delegate to visual-report-writer agent**:
    ```
-   Task(subagent_type: "agent-extension-wiki:report-writer", prompt: {
+   Task(subagent_type: "vision-powers:visual-report-writer", prompt: {
      feature-architect analysis results (full text, including Plugin Summary and Raw Content Excerpts),
      security-auditor analysis results (full text),
      plugin metadata (name, version, author, license, keywords, description),
      output file path,
-     output language
+     output language,
+     design system directory path (absolute path from step 2, containing: css-patterns.md, font-system.md, mermaid-patterns.md, navigation.md, libraries.md, anti-slop-rules.md),
+     section structure reference path (absolute path from step 2),
+     report title: "Agent Extension Visual: {plugin-name}",
+     aesthetic hint: "Editorial"
    })
    ```
 
-3. **Report completion**: After the agent writes the HTML file, output the `file:///` URL to the user:
+4. **Report completion**: Output the `file:///` URL to the user:
    ```
-   Report generated: file://{home}/.claude/plugins/agent-extension-wiki/reports/{plugin-name}-report.html
+   Report generated: file://{home}/.claude-code-zero/vision-powers/reports/{plugin-name}-report.html
    ```
 
 #### Phase 6: Cleanup
 
 If the source was cloned from GitHub:
 ```
-Bash(rm -rf ~/.claude/plugins/agent-extension-wiki/tmp/{directory})
+Bash(rm -rf /tmp/agent-extension-visual-{directory})
 ```
 
 ### Reference Files
@@ -270,4 +270,5 @@ Bash(rm -rf ~/.claude/plugins/agent-extension-wiki/tmp/{directory})
 - `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
 - `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
-- `references/platforms/claude-code/html-report-template.md` — HTML report structure and style guide (report mode)
+- `./references/section-structure.md` — Section definitions with HTML pattern snippets for the wiki report (9 sections). Phase 5R passes the absolute path; visual-report-writer reads it directly
+- `../../references/design-system/` — Shared design system (CSS patterns, font system, Mermaid patterns, navigation, libraries, anti-slop rules). Phase 5R passes the directory path; visual-report-writer reads all 6 files directly

@@ -1,13 +1,13 @@
 {
-  "description": "Data initialization and follow-up coverage reminder",
+  "description": "Data path resolution, lazy init, and follow-up reminder",
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Skill",
+        "matcher": "Read|Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/init-data.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/setup-data.sh"
           }
         ]
       }

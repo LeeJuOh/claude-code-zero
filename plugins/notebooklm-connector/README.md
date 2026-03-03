@@ -194,7 +194,7 @@ notebooklm-connector/
     └── follow-up-reminder.sh    # Coverage analysis reminder
 ```
 
-User data is stored outside the plugin directory at `~/.claude/plugins/notebooklm-connector/data/` to persist across plugin updates.
+User data is stored outside the plugin directory at `~/.claude-code-zero/notebooklm-connector/data/` to persist across plugin updates.
 
 ### Query Flow
 
@@ -205,7 +205,7 @@ User data is stored outside the plugin directory at `~/.claude/plugins/notebookl
 
 ### Data Storage
 
-Location: `~/.claude/plugins/notebooklm-connector/data/`
+Location: `~/.claude-code-zero/notebooklm-connector/data/`
 
 ```
 data/
