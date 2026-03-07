@@ -1,19 +1,17 @@
 ---
 name: notebooklm-manager
 description: |
-  This skill should be used when the user wants to interact with NotebookLM notebooks
-  via Claude Code's Chrome integration.
+  Manages NotebookLM notebooks — query, add, list, search, enable/disable, remove.
+  ALWAYS use this skill when a notebooklm.google.com URL appears in the user's message
+  or the user mentions NotebookLM in any context. This skill handles NotebookLM URLs
+  through its own Chrome agent — do not navigate to NotebookLM URLs directly with
+  Chrome tools when this skill is available.
 
-Trigger phrases: "Query my NotebookLM", "Ask my notebook about X", "query [id] about X",
-  "list my notebooks", "add notebook URL", "show notebook details", "search notebooks for X",
-  "Check my docs", "what does my [topic] notebook say about",
-  "remove notebook", "delete notebook", "disable notebook", "enable notebook".
+  Trigger phrases: "add notebook" + URL, "query [id] about X", "list my notebooks",
+  "show notebook details", "search notebooks", "check my docs",
+  "what does my notebook say about", "remove/delete/disable/enable notebook".
 
-  Also triggers when user: (1) mentions NotebookLM explicitly, (2) shares NotebookLM URL
-  (https://notebooklm.google.com/notebook/...).
-
-  Do NOT use for: general web searches, local file reading, or non-NotebookLM documentation queries.
-
+  Do NOT use for: general web searches, local file reading, or non-NotebookLM queries.
   Requires: claude --chrome with claude-in-chrome MCP.
 allowed-tools: Read, Write, Edit, Agent, AskUserQuestion
 ---
