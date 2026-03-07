@@ -12,7 +12,7 @@
     {
       "name": "notebooklm-connector",
       "source": "./plugins/notebooklm-connector",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
     },
     {
@@ -30,7 +30,7 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, and report management with interactive diagrams and curated design system"
     },
     {
@@ -42,7 +42,7 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "description": "Enhanced git worktree: custom branch prefix, remote branch tracking, selective copy for gitignored files"
     },
     {
