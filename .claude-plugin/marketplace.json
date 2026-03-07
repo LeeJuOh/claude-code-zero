@@ -48,7 +48,7 @@
     {
       "name": "permission-test",
       "source": "./plugins/permission-test",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "Test plugin for verifying allowed-tools permission behavior across project vs plugin contexts"
     }
   ]
