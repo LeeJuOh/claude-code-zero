@@ -1,5 +1,5 @@
 {
-  "description": "Custom worktree creation/removal with remote tracking and .worktreeinclude support",
+  "description": "Custom worktree creation/removal with remote tracking, .worktreeinclude support, and work state protection",
   "hooks": {
     "WorktreeCreate": [
       {
@@ -17,6 +17,16 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/worktree-remove.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/worktree-stop-check.sh"
           }
         ]
       }

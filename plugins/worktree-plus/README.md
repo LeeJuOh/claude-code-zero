@@ -1,6 +1,6 @@
 # worktree-plus
 
-Enhanced git worktree for Claude Code — follows native `git worktree` behavior with custom branch prefix, remote branch tracking, and selective copy for gitignored files.
+Enhanced git worktree for Claude Code — follows native `git worktree` behavior with custom branch prefix, remote branch tracking, selective copy for gitignored files, and work state protection on cleanup.
 
 ## Problem
 
@@ -84,13 +84,47 @@ This means `claude -w my-feature` will automatically track `origin/my-feature` i
 
 ## Worktree Cleanup
 
-On session exit, Claude Code handles the cleanup flow:
+Worktree cleanup uses a two-layer defense to protect unsaved work:
 
-1. Detects whether the worktree has uncommitted changes
-2. **No changes** → removes automatically / **Changes exist** → prompts to keep or remove
-3. If removal is chosen → `WorktreeRemove` hook runs:
-   - `git worktree remove` to clean up the worktree
-   - Deletes the branch (only if fully merged; unmerged branches are kept)
+### Layer 1: Stop hook (user interaction)
+
+When Claude finishes responding inside a worktree with uncommitted changes, the Stop hook blocks and asks the user to choose:
+
+- **Keep** — worktree is preserved with all changes intact
+- **Remove** — creates a force-remove marker, then WorktreeRemove deletes the worktree
+
+The Stop hook only fires on normal session exit (not Ctrl+C) and asks only once per session.
+
+### Layer 2: WorktreeRemove (safe-by-default fallback)
+
+When the WorktreeRemove hook runs, it checks the worktree state:
+
+1. **Force-remove marker exists** → force delete (user explicitly chose "remove")
+2. **Dirty** (uncommitted changes, unpushed commits, or stashes) → preserve and print manual cleanup commands
+3. **Clean** → auto-delete via `git worktree remove` + branch cleanup
+
+### Scenario matrix
+
+| Exit method | Work state | Stop hook | WorktreeRemove | Result |
+|---|---|---|---|---|
+| Normal exit | dirty | asks keep/remove | marker or dirty check | user decides |
+| Normal exit | clean | passes through | clean → auto-delete | auto-deleted |
+| Ctrl+C | dirty | does not fire | dirty → preserve | **preserved** |
+| Ctrl+C | clean | does not fire | clean → auto-delete | auto-deleted |
+
+### Manual cleanup
+
+```bash
+# Resume work in a preserved worktree
+cd <worktree-path>
+
+# Force remove a preserved worktree
+git worktree remove <worktree-path> --force
+git branch -D <branch-name>
+
+# List all worktrees
+git worktree list
+```
 
 ## Known Limitations
 
