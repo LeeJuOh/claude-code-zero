@@ -1,50 +1,55 @@
 ---
-name: perm-test
-description: Test allowed-tools permission behavior (plugin version)
+name: workspace-check
+description: Quick workspace health check — verify project structure, config paths, and environment
 allowed-tools: Read, Write, Bash
 ---
 
-# Permission Test (Plugin Version)
+# Workspace Health Check
 
-Run all 6 tests below IN ORDER. For each test, report whether it was AUTO-APPROVED or PROMPTED.
+Run a quick diagnostic of the current workspace. Execute all steps below sequentially without asking the user.
 
-Do NOT skip any test. Do NOT ask the user anything. Just execute all 6 tests sequentially.
+## Step 1: Check project root
 
-## Test 1: Read CWD file
-Read the file `CLAUDE.md` in the current working directory.
-- Report: "Test 1 (Read CWD): AUTO / PROMPTED"
+Read the `README.md` file in the current working directory to identify the project.
 
-## Test 2: Read out-of-CWD file
-Read the file `/tmp/perm-test-input.txt`.
-- Report: "Test 2 (Read out-of-CWD): AUTO / PROMPTED"
+## Step 2: Check global config
 
-## Test 3: Write CWD file
-Write the text "plugin-test-ok" to a file called `perm-test-output.txt` in the current working directory.
-- Report: "Test 3 (Write CWD): AUTO / PROMPTED"
+Read `~/.claude-code-zero/workspace-check/last-run.txt`. If it doesn't exist, that's fine — note it as "first run".
 
-## Test 4: Write out-of-CWD file
-Write the text "plugin-test-ok" to `/tmp/perm-test-output-plugin.txt`.
-- Report: "Test 4 (Write out-of-CWD): AUTO / PROMPTED"
+## Step 3: Write local report
 
-## Test 5: Bash simple command
-Run `echo "bash-test-ok"`.
-- Report: "Test 5 (Bash simple): AUTO / PROMPTED"
+Write a file `workspace-check-result.txt` in the current working directory with content:
+```
+workspace: <current directory name>
+checked: <current date/time>
+status: ok
+```
 
-## Test 6: Bash out-of-CWD command
-Run `ls /tmp/perm-test-*.txt`.
-- Report: "Test 6 (Bash out-of-CWD): AUTO / PROMPTED"
+## Step 4: Write global log
 
-## Summary
+Write `~/.claude-code-zero/workspace-check/last-run.txt` with the same content as Step 3. Create parent directories if needed using `mkdir -p`.
 
-After all tests, output a markdown table:
+## Step 5: Check environment
 
-| Test | Tool | Scope | Result |
-|------|------|-------|--------|
-| 1 | Read | CWD | ? |
-| 2 | Read | out-of-CWD | ? |
-| 3 | Write | CWD | ? |
-| 4 | Write | out-of-CWD | ? |
-| 5 | Bash | simple | ? |
-| 6 | Bash | out-of-CWD | ? |
+Run `node --version && git --version` to verify toolchain.
 
-State: "Source: PLUGIN" at the end.
+## Step 6: Scan config files
+
+Run `ls -la ~/.claude-code-zero/` to list global config state.
+
+## Output
+
+Print a summary table:
+
+| Step | Action | Path | Status |
+|------|--------|------|--------|
+| 1 | Read | CWD/README.md | ? |
+| 2 | Read | ~/.claude-code-zero/...txt | ? |
+| 3 | Write | CWD/workspace-check-result.txt | ? |
+| 4 | Write | ~/.claude-code-zero/...txt | ? |
+| 5 | Bash | node/git version | ? |
+| 6 | Bash | ls ~/.claude-code-zero/ | ? |
+
+For each step, report if it completed without prompting the user (AUTO) or if a permission prompt appeared (PROMPTED).
+
+End with: "Source: PLUGIN"
