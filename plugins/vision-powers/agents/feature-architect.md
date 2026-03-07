@@ -3,14 +3,14 @@ name: feature-architect
 color: blue
 description: |
   Analyze functionality, architecture, dependencies, and quality
-  of agent plugin components (Claude Code). Delegated by the agent-extension-wiki skill.
+  of agent plugin components (Claude Code). Delegated by the agent-extension-visual skill.
 
   <example>
   Context: Skill delegates feature analysis with metadata and file paths
   user: "Analyze features for plugin at ./plugins/my-plugin with components: [SKILL] my-skill, [AGENT] my-agent"
   assistant: "I'll analyze functionality, architecture, dependencies, and quality of each component."
   <commentary>
-  The agent-extension-wiki skill provides metadata and file paths. This agent reads the actual files and performs feature/architecture analysis.
+  The agent-extension-visual skill provides metadata and file paths. This agent reads the actual files and performs feature/architecture analysis.
   </commentary>
   </example>
 model: sonnet
@@ -184,6 +184,30 @@ Adapt node IDs and labels to match actual plugin components. Use `-->` for direc
 - Avoid naming custom classes `.node` — conflicts with Mermaid's internal class
 - Keep diagrams to ~15 nodes max per diagram. Split into multiple diagrams if needed
 
+### 2.5 Mechanism Analysis
+
+Select 3-5 core mechanisms — features where multiple components collaborate. Skip single-file utilities.
+
+**Selection criteria**:
+- Multi-component collaboration (not single-file-complete)
+- Unique implementation patterns of the plugin
+- Patterns reusable in other plugins
+
+**For each mechanism**:
+
+| Field | Content |
+|-------|---------|
+| Name | Mechanism name (e.g., "Parallel Agent Orchestration") |
+| Enables | User-facing capability this enables |
+| Steps | Implementation steps (3-7 steps) |
+| Key Files | Relative file paths involved |
+| Code Pattern | Core code/config snippet |
+| Reuse | How to adapt this pattern for other plugins |
+
+**Primary Workflow Walkthrough**:
+- Trace from user trigger → final output, step by step
+- Each step: which component does what, where data flows
+
 ### 3. Dependencies & Constraints
 
 **Tool Dependencies**: List all tools required across all components.
@@ -268,9 +292,9 @@ Return your analysis in this exact structure:
 
 ### Skills — Active ({n})
 
-| Skill | Purpose | Trigger | Tools | Notable |
-|-------|---------|---------|-------|---------|
-| {name} | {1-line} | {key phrase} | {tools} | {fork/hooks/aux files/etc.} |
+| Skill | Purpose | Trigger | Tools | Source | Notable |
+|-------|---------|---------|-------|--------|---------|
+| {name} | {1-line} | {key phrase} | {tools} | {relative path} | {fork/hooks/aux files/etc.} |
 
 {Only for skills with special behavior (context:fork, inline hooks,
  rich auxiliary files, complex cross-references) — add 2-3 line detail block.
@@ -287,18 +311,18 @@ Return your analysis in this exact structure:
 
 ### Agents
 
-| Agent | Purpose | Model | Tools | Constraints |
-|-------|---------|-------|-------|-------------|
-| {name} | {1-line} | {model} | {tools or "unrestricted"} | {maxTurns/memory/etc.} |
+| Agent | Purpose | Model | Tools | Source | Constraints |
+|-------|---------|-------|-------|--------|-------------|
+| {name} | {1-line} | {model} | {tools or "unrestricted"} | {relative path} | {maxTurns/memory/etc.} |
 
 **{agent-name}** delegation trigger:
 > {frontmatter description field verbatim, first 3 sentences}
 
 ### Commands
 
-| Command | Purpose | Arguments | Notable |
-|---------|---------|-----------|---------|
-| {name} | {1-line description} | {argument-hint or "none"} | {redirect/model/etc.} |
+| Command | Purpose | Arguments | Source | Notable |
+|---------|---------|-----------|--------|---------|
+| {name} | {1-line description} | {argument-hint or "none"} | {relative path} | {redirect/model/etc.} |
 
 ### Hooks
 
@@ -325,6 +349,29 @@ Return your analysis in this exact structure:
 {Mermaid workflow sequence diagram — if orchestrator or multi-step pattern exists}
 
 {Brief data flow description — 3-5 lines max}
+
+## Feature Deep Dive
+
+### Core Mechanisms
+
+#### 01. {Mechanism Name}
+**Enables**: {user-facing capability}
+**How it works**:
+1. {step}
+2. {step}
+**Key Files**: `{relative/path}`, `{relative/path}`
+**Code Pattern**:
+\`\`\`yaml
+{core code/config snippet}
+\`\`\`
+**Reuse**: {how to adapt this pattern for other plugins}
+
+#### 02. {Mechanism Name}
+{same structure}
+
+### Primary Workflow Walkthrough
+1. **{Step title}** ({component}) — {description} → `{relative/path}`
+2. **{Step title}** ({component}) — {description} → `{relative/path}`
 
 ## Dependencies & Constraints
 

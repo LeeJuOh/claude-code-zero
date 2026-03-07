@@ -86,6 +86,14 @@ Determine **how** to present the result (independent of analysis mode):
 
 If source cannot be found, inform user and stop.
 
+**Source context** — save for later phases (source links in report):
+
+| Source type | `source_type` | `source_base` | `github_url` |
+|-------------|--------------|---------------|-------------|
+| Local path | `local` | `{absolute-path}` | — |
+| Installed plugin | `local` | `{cache-path}` | — |
+| GitHub URL | `github` | `/tmp/agent-extension-visual-{dirname}` | `https://github.com/{owner}/{repo}/blob/{branch}` |
+
 #### Phase 1.5: Platform Detection
 
 Detect which agent platform the target directory belongs to.
@@ -171,6 +179,7 @@ For `analyze` and `security` modes, delegate to agents in parallel.
 - Component file paths grouped by type (from Phase 2 Glob)
 - Output language
 - Analysis mode
+- Source context: `source_type`, `source_base`, `github_url` (if applicable) — so feature-architect can include relative paths that the orchestrator will later combine with source_base for links
 
 **For `analyze` mode with large plugins (total components > 15)** — split feature-architect into batches.
 
@@ -249,7 +258,8 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      design system directory path (absolute path from step 2, containing: css-patterns.md, font-system.md, mermaid-patterns.md, navigation.md, libraries.md, anti-slop-rules.md),
      section structure reference path (absolute path from step 2),
      report title: "Agent Extension Visual: {plugin-name}",
-     aesthetic hint: "Editorial"
+     aesthetic hint: "Editorial",
+     source context: { source_type, source_base, github_url (if applicable) }
    })
    ```
 
@@ -258,17 +268,30 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    Report generated: file://{home}/.claude-code-zero/vision-powers/reports/{plugin-name}-report.html
    ```
 
-#### Phase 6: Cleanup
+#### Phase 6: Feedback Loop
+
+After report generation, allow the user to review and request changes before cleanup:
+
+1. Output the report path as a `file://` URL
+2. Ask the user: "리포트를 확인해주세요. 수정할 부분이 있나요? 아니면 임시 파일을 정리할까요?" (translate to output language)
+3. If the user requests changes → apply modifications to the HTML file, then repeat from step 2
+4. If the user confirms completion → proceed to Phase 7
+
+Use `AskUserQuestion` for the feedback prompt. Do NOT skip this phase — always give the user a chance to review.
+
+#### Phase 7: Cleanup
 
 If the source was cloned from GitHub:
 ```
 Bash(rm -rf /tmp/agent-extension-visual-{directory})
 ```
 
+For local or installed plugin sources, no cleanup needed.
+
 ### Reference Files
 
 - `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
 - `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
-- `./references/section-structure.md` — Section definitions with HTML pattern snippets for the wiki report (9 sections). Phase 5R passes the absolute path; visual-report-writer reads it directly
+- `./references/section-structure.md` — Section definitions with HTML pattern snippets for the wiki report (10 sections). Phase 5R passes the absolute path; visual-report-writer reads it directly
 - `../../references/design-system/` — Shared design system (CSS patterns, font system, Mermaid patterns, navigation, libraries, anti-slop rules). Phase 5R passes the directory path; visual-report-writer reads all 6 files directly

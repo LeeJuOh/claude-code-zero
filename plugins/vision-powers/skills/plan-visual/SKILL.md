@@ -89,7 +89,7 @@ Classify each affected file:
 
 ### Verification Checkpoint
 
-Before generating the report, cross-validate:
+Before generating the report, **produce a structured fact sheet** listing every claim you will present:
 
 1. **File existence**: Every file the plan mentions — does it exist (for modifications) or not exist (for creations)?
 2. **Import accuracy**: Do the import relationships match what the plan assumes?
@@ -100,6 +100,8 @@ Before generating the report, cross-validate:
 Document discrepancies as "Understanding Gaps" for Section 9.
 
 ### Report Generation
+
+Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
 
 Delegate HTML report generation to the visual-report-writer agent.
 

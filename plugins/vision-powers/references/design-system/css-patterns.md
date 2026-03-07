@@ -73,6 +73,25 @@ Define both light and dark palettes via custom properties. Pick colors from the 
 
 These are **default values** — each report may override `--font-body`, `--font-mono`, `--accent`, and `--node-*` for its chosen font pairing and palette. See `font-system.md` for pairing options.
 
+## Typography Base
+
+Global typography settings for consistent text rendering across all reports.
+
+```css
+html {
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1 { font-size: 2rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.4rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.1rem; letter-spacing: -0.01em; }
+h4 { font-size: 0.95rem; letter-spacing: -0.01em; }
+```
+
 ## Background Atmosphere
 
 Flat backgrounds feel dead. Use ONE subtle pattern per report:
@@ -479,4 +498,122 @@ Never rely on browser default link colors. The default blue has poor contrast on
 ```css
 a { color: var(--accent); text-decoration: underline; }
 a:hover { color: var(--text); }
+```
+
+## Prose Page Elements
+
+텍스트 강조 컴포넌트. 시각적 페이지 내에서 핵심 포인트를 강조하거나 맥락을 제공할 때 사용.
+
+### Lead Paragraph
+섹션 도입부에 사용. 일반 텍스트보다 크고 눈에 띄게:
+
+```css
+.lead {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--text);
+  opacity: 0.9;
+  max-width: 720px;
+}
+```
+
+### Pull Quote
+핵심 인사이트를 크게 인용. 페이지당 최대 1개:
+
+```css
+.pull-quote {
+  font-size: 1.5rem;
+  font-style: italic;
+  line-height: 1.4;
+  border-left: 4px solid var(--accent);
+  padding: 1rem 0 1rem 1.5rem;
+  margin: 2rem 0;
+  color: var(--text);
+  opacity: 0.85;
+}
+```
+
+### Callout Box
+경고, 팁, 중요 참고사항:
+
+```css
+.callout {
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+  margin: 1rem 0;
+}
+.callout--info { border-color: var(--accent); background: var(--accent-dim); }
+.callout--warning { border-color: var(--warning); background: color-mix(in srgb, var(--warning) 8%, var(--surface)); }
+.callout--danger { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
+.callout__title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+```
+
+## SVG Connectors
+
+CSS Grid 아키텍처 레이아웃에서 카드 사이 화살표. 텍스트가 풍부한 카드(설명, 코드, 도구 목록)를 연결할 때 Mermaid 대신 사용.
+
+**언제 쓰는가**: 카드 내용이 중요하고 풍부할 때 (CSS Grid + SVG Connector). 연결 토폴로지가 중요할 때는 Mermaid.
+
+### Vertical Arrow
+
+```html
+<div class="connector-v">
+  <svg viewBox="0 0 2 40" preserveAspectRatio="none">
+    <line x1="1" y1="0" x2="1" y2="35" stroke="var(--border-bright)" stroke-width="2"/>
+    <polygon points="0,35 1,40 2,35" fill="var(--accent)"/>
+  </svg>
+</div>
+```
+
+```css
+.connector-v {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+.connector-v svg {
+  width: 2px;
+  height: 40px;
+}
+```
+
+### Horizontal Arrow
+
+```css
+.connector-h {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+.connector-h svg {
+  width: 40px;
+  height: 2px;
+}
+```
+
+### Labeled Connector
+
+```html
+<div class="connector-v connector-v--labeled">
+  <span class="connector-label">delegates</span>
+  <svg viewBox="0 0 2 40" preserveAspectRatio="none">
+    <line x1="1" y1="0" x2="1" y2="35" stroke="var(--border-bright)" stroke-width="2"/>
+    <polygon points="0,35 1,40 2,35" fill="var(--accent)"/>
+  </svg>
+</div>
+```
+
+```css
+.connector-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
 ```

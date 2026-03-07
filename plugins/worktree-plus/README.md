@@ -1,22 +1,26 @@
 # worktree-plus
 
-Enhanced git worktree for Claude Code with custom branch prefix, remote branch tracking, and selective copy for gitignored files.
+Enhanced git worktree for Claude Code — follows native `git worktree` behavior with custom branch prefix, remote branch tracking, and selective copy for gitignored files.
 
 ## Problem
 
-Claude Code's built-in worktree (`claude -w`) has three limitations:
+Claude Code's built-in worktree (`claude -w`) differs from native `git worktree`:
 
-1. **Gitignored files are missing** - `.env`, config files, etc. are not copied to the worktree
-2. **Fixed branch prefix** - Branch names always start with `worktree`
-3. **No remote branch tracking** - Always creates a new branch from HEAD, ignoring existing remote branches
+| | Default `claude -w` | worktree-plus (native git) |
+|---|---|---|
+| **Branch base** | Default remote branch (origin/main) | HEAD (current commit) |
+| **Remote tracking** | None | `--guess-remote` support |
+| **Branch prefix** | `worktree-` (fixed) | Configurable |
+| **Gitignored files** | Not copied | `.worktreeinclude` selective copy |
 
 ## Solution
 
-This plugin replaces the default `WorktreeCreate` hook to add:
+This plugin replaces the `WorktreeCreate` and `WorktreeRemove` hooks to provide native `git worktree` behavior:
 
 - **`.worktreeinclude`** file for specifying which gitignored files/directories to copy
 - **`WORKTREE_BRANCH_PREFIX`** env var for custom branch naming
 - **Remote branch tracking** — controlled by `git config worktree.guessRemote` (default: `true`)
+- **Worktree cleanup** — `git worktree remove` + branch deletion on session exit
 
 ## Installation
 
@@ -77,6 +81,54 @@ When creating a worktree, branches are resolved in order:
 3. **No branch found** → create a new branch from HEAD
 
 This means `claude -w my-feature` will automatically track `origin/my-feature` if it exists remotely, even if there's no local branch yet.
+
+## Worktree Cleanup
+
+On session exit, Claude Code handles the cleanup flow:
+
+1. Detects whether the worktree has uncommitted changes
+2. **No changes** → removes automatically / **Changes exist** → prompts to keep or remove
+3. If removal is chosen → `WorktreeRemove` hook runs:
+   - `git worktree remove` to clean up the worktree
+   - Deletes the branch (only if fully merged; unmerged branches are kept)
+
+## Known Limitations
+
+### Plugin hook recognition
+
+Worktree hooks (`WorktreeCreate`, `WorktreeRemove`) defined in a plugin's `hooks/hooks.json` may not be recognized automatically. If the hooks don't fire, add them manually to your `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<plugin-cache-path>/hooks/scripts/worktree-create.sh"
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<plugin-cache-path>/hooks/scripts/worktree-remove.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Find your plugin cache path with:
+```bash
+ls ~/.claude/plugins/cache/
+```
 
 ## Dependencies
 

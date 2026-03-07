@@ -91,6 +91,8 @@ If any claim cannot be sourced, mark it as uncertain rather than stating it as f
 
 ### Report Generation
 
+Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
+
 Delegate HTML report generation to the visual-report-writer agent.
 
 1. **Determine output path**:

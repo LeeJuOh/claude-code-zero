@@ -38,6 +38,10 @@ You receive from the orchestrator skill:
 - **Output language** (e.g., "ko", "en", "ja")
 - **Report title** (e.g., "Diff Visual: feature/auth..main", "Plan Visual: auth-redesign")
 - **Aesthetic hint** (optional — one of: Blueprint, Editorial, Paper-ink, Monochrome)
+- **Source context** (optional — for generating source links on component cards):
+  - `source_type`: `local` or `github`
+  - `source_base`: absolute path to plugin root (local path or clone path)
+  - `github_url`: GitHub web URL base (e.g., `https://github.com/owner/repo/blob/main`) — only when `source_type: github`
 
 ## First Step
 
@@ -61,6 +65,18 @@ Content-type recommendations:
 - **diff-visual**: Editorial or Blueprint pairings work well (technical, precise feel)
 - **plan-visual**: Blueprint or Paper-ink pairings work well (architectural, structured feel)
 - When no hint is given, vary freely for visual diversity
+
+### CJK Font Auto-Loading
+
+When the output language is non-Latin (ko, ja, zh), include the corresponding CJK font from Google Fonts in the `<link>` tag (see `font-system.md` → Multilingual Font Support for details):
+
+| Language | Add to `<link>` | Add to `--font-body` stack |
+|----------|-----------------|---------------------------|
+| ko | `&family=Noto+Sans+KR:wght@400;500;700` | `'Noto Sans KR'` after body font |
+| ja | `&family=Noto+Sans+JP:wght@400;500;700` | `'Noto Sans JP'` after body font |
+| zh | `&family=Noto+Sans+SC:wght@400;500;700` | `'Noto Sans SC'` after body font |
+
+Example font stack for Korean: `--font-body: 'Plus Jakarta Sans', 'Noto Sans KR', system-ui, sans-serif;`
 
 ## Output
 
@@ -114,6 +130,19 @@ Follow the section structure from the `section-structure.md` reference exactly:
 3. Apply the visual language (color coding) specified in the section structure
 4. Map the analysis data to the appropriate sections
 
+### Source Link Generation
+
+When source context is provided, generate clickable source links on component cards and mechanism key files:
+
+| `source_type` | URL format | Example |
+|---------------|-----------|---------|
+| `local` | `file://{source_base}/{relative_path}` | `file:///Users/me/plugins/foo/skills/bar/SKILL.md` |
+| `github` | `{github_url}/{relative_path}` | `https://github.com/owner/repo/blob/main/skills/bar/SKILL.md` |
+
+Use `<a href="{url}" class="source-link" target="_blank">{relative_path}</a>`. GitHub links open in new tabs. Local `file://` links may be blocked by browser security — this is expected behavior.
+
+If no source context is provided, omit source links entirely.
+
 If the analysis data lacks content for a section, include the section with a brief note (e.g., "No test coverage data available") rather than omitting it entirely — unless the section-structure explicitly marks it as optional.
 
 ### KPI Dashboard
@@ -150,6 +179,7 @@ For sections that include architecture or flow diagrams:
 10. Tables must be wrapped in `<div class="table-wrapper">` with `<thead>` for sticky headers
 11. Background atmosphere: pick ONE subtle pattern from `css-patterns.md` (not flat background)
 12. Collapsible sections: use `<details><summary>` for long content blocks marked as collapsible in section-structure
+13. **Visual hierarchy narrative**: Sections 1-4 should dominate the viewport on load (hero depth or elevated, larger type, more padding). Sections toward the end are reference material — flat or recessed depth, compact layout, collapsible where marked. The page should feel like a story with a strong opening that tapers into detailed appendices.
 
 ### Anti-Slop Checklist
 

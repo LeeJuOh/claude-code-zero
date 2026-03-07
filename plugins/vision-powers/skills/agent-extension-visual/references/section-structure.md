@@ -1,6 +1,6 @@
 # Agent Extension Visual — Section Structure
 
-This document defines the 9-section structure for agent-extension-visual HTML reports. The visual-report-writer agent reads this file and renders each section using the HTML pattern snippets below.
+This document defines the 10-section structure for agent-extension-visual HTML reports. The visual-report-writer agent reads this file and renders each section using the HTML pattern snippets below.
 
 All CSS classes (`.ve-card`, `.ve-card--hero`, `.ve-card--elevated`, `.ve-card--recessed`, depth tiers, status indicators) are defined in the shared `design-system/css-patterns.md`.
 
@@ -191,14 +191,97 @@ Use `classDef` with semi-transparent fills only. Never use `color:` in classDef.
 
 ---
 
-## Section 4: Usage Guide
+## Section 4: Feature Deep Dive
+
+**Depth tier**: `.ve-card--elevated`
+
+Core mechanisms analysis — how the plugin's key features work internally, with reusable patterns and a primary workflow walkthrough.
+
+```html
+<section id="feature-deep-dive" class="ve-card ve-card--elevated" style="--i: 3">
+  <h2>Feature Deep Dive</h2>
+  <p class="lead">Core implementation mechanisms — reusable patterns for plugin development</p>
+
+  <div class="mechanism-grid">
+    <div class="mechanism-card">
+      <div class="mechanism-header">
+        <span class="mechanism-number">01</span>
+        <h3>{mechanism name}</h3>
+      </div>
+      <p class="mechanism-enables"><strong>Enables:</strong> {user-facing capability}</p>
+      <h4>How it works</h4>
+      <ol class="mechanism-steps">
+        <li>{step 1}</li>
+        <li>{step 2}</li>
+        <!-- more steps -->
+      </ol>
+      <h4>Key Files</h4>
+      <ul><li><a href="{source-url}" class="source-link">{relative/path}</a></li></ul>
+      <details>
+        <summary>Code Pattern</summary>
+        <pre><code>{core code/config pattern}</code></pre>
+      </details>
+      <p class="mechanism-reuse"><strong>Reuse:</strong> {how to adapt for other plugins}</p>
+    </div>
+    <!-- more mechanism cards -->
+  </div>
+
+  <h3>Primary Workflow Walkthrough</h3>
+  <div class="workflow-trace">
+    <div class="trace-step">
+      <span class="trace-number">1</span>
+      <div class="trace-content">
+        <strong>{step title}</strong>
+        <p>{description}</p>
+        <a href="{source-url}" class="source-link">{file}</a>
+      </div>
+    </div>
+    <!-- more trace steps -->
+  </div>
+
+  <!-- Annotated workflow sequence diagram -->
+  <div class="mermaid-wrap">
+    <div class="zoom-controls"><!-- zoom buttons --></div>
+    <pre class="mermaid">
+sequenceDiagram
+    %% annotated workflow sequence based on analysis data
+    </pre>
+  </div>
+</section>
+```
+
+**Mechanism CSS** (add to inline styles):
+```css
+.mechanism-grid { display: flex; flex-direction: column; gap: 1.5rem; margin: 1.5rem 0; }
+.mechanism-card { padding: 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.mechanism-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.mechanism-number { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 700; color: var(--accent); opacity: 0.6; }
+.mechanism-enables { font-size: 0.95rem; color: var(--text-dim); margin-bottom: 1rem; }
+.mechanism-steps { padding-left: 1.5rem; margin: 0.5rem 0 1rem; }
+.mechanism-steps li { margin-bottom: 0.4rem; }
+.mechanism-reuse { font-size: 0.9rem; padding: 0.75rem; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); border-radius: 6px; margin-top: 0.75rem; }
+.workflow-trace { display: flex; flex-direction: column; gap: 0; margin: 1.5rem 0; }
+.trace-step { display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+.trace-step:last-child { border-bottom: none; }
+.trace-number { font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700; color: var(--accent); min-width: 2rem; text-align: center; }
+.trace-content { flex: 1; }
+.trace-content strong { display: block; margin-bottom: 0.25rem; }
+.trace-content p { font-size: 0.9rem; color: var(--text-dim); margin: 0 0 0.25rem; }
+.source-link { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); text-decoration: none; }
+.source-link:hover { text-decoration: underline; }
+.source-link::after { content: ' \2197'; font-size: 0.7em; }
+```
+
+---
+
+## Section 5: Usage Guide
 
 **Depth tier**: `.ve-card` (default)
 
 Installation command, prerequisites table, key components summary, and when to use / when NOT to use guidance.
 
 ```html
-<section id="usage-guide" class="ve-card" style="--i: 3">
+<section id="usage-guide" class="ve-card" style="--i: 4">
   <h2>Usage Guide</h2>
 
   <h3>Installation</h3>
@@ -253,7 +336,7 @@ Installation command, prerequisites table, key components summary, and when to u
 
 ---
 
-## Section 5: Components
+## Section 6: Components
 
 **Depth tier**: `.ve-card` (default)
 
@@ -261,10 +344,12 @@ Tab UI switching between component types: Skills, Agents, Commands, Hooks, MCP, 
 
 Each component has a `.card-essentials` summary visible by default, with raw content excerpts in a collapsible `<details>`.
 
+Each component card includes a `.source-link` element linking to the original file — `file://` for local/installed sources, GitHub web URL for GitHub sources. The orchestrator provides `source_type`, `source_base`, and `github_url` (if applicable) in the analysis data.
+
 Concept terms are wrapped with `<span class="concept-term" data-concept="{id}">` for JS-driven tooltip display.
 
 ```html
-<section id="components" class="ve-card" style="--i: 4">
+<section id="components" class="ve-card" style="--i: 5">
   <h2>Components</h2>
 
   <div class="tab-bar">
@@ -282,6 +367,7 @@ Concept terms are wrapped with `<span class="concept-term" data-concept="{id}">`
     <div class="component-card">
       <div class="card-essentials">
         <h4>{skill-name}</h4>
+        <a href="{source-url}" class="source-link" target="_blank">{relative/path}</a>
         <p>{brief description}</p>
         <div class="table-wrapper">
           <table>
@@ -307,6 +393,7 @@ Concept terms are wrapped with `<span class="concept-term" data-concept="{id}">`
     <div class="component-card">
       <div class="card-essentials">
         <h4>{agent-name}</h4>
+        <a href="{source-url}" class="source-link" target="_blank">{relative/path}</a>
         <p>{purpose}</p>
         <div class="table-wrapper">
           <table>
@@ -401,14 +488,14 @@ document.querySelectorAll('.concept-term').forEach(el => {
 
 ---
 
-## Section 6: Security Audit
+## Section 7: Security Audit
 
 **Depth tier**: `.ve-card` (default)
 
 Risk level hero badge, permission matrix table, and security findings cards with severity indicators.
 
 ```html
-<section id="security-audit" class="ve-card" style="--i: 5">
+<section id="security-audit" class="ve-card" style="--i: 6">
   <h2>Security Audit</h2>
 
   <div class="risk-hero">
@@ -471,14 +558,14 @@ Risk level hero badge, permission matrix table, and security findings cards with
 
 ---
 
-## Section 7: Dependencies
+## Section 8: Dependencies
 
 **Depth tier**: `.ve-card` (default)
 
 Four sub-tables: Tool dependencies, External dependencies, Environment variables, Model requirements. Use `<details>` for collapsing long sections.
 
 ```html
-<section id="dependencies" class="ve-card" style="--i: 6">
+<section id="dependencies" class="ve-card" style="--i: 7">
   <h2>Dependencies</h2>
 
   <details open>
@@ -541,14 +628,14 @@ Four sub-tables: Tool dependencies, External dependencies, Environment variables
 
 ---
 
-## Section 8: Plugin Profile
+## Section 9: Plugin Profile
 
 **Depth tier**: `.ve-card--elevated`
 
 Comprehensive quality assessment: component inventory table, documentation checklist (PASS/FAIL badges), security risk summary, primary pattern, target users, and quality checklist.
 
 ```html
-<section id="plugin-profile" class="ve-card ve-card--elevated" style="--i: 7">
+<section id="plugin-profile" class="ve-card ve-card--elevated" style="--i: 8">
   <h2>Plugin Profile</h2>
 
   <h3>Component Inventory</h3>
@@ -630,14 +717,14 @@ Comprehensive quality assessment: component inventory table, documentation check
 
 ---
 
-## Section 9: Footer
+## Section 10: Footer
 
 **Depth tier**: `.ve-card--recessed`
 
 Generation metadata: tool name, date, version.
 
 ```html
-<section id="footer" class="ve-card ve-card--recessed" style="--i: 8">
+<section id="footer" class="ve-card ve-card--recessed" style="--i: 9">
   <div class="footer-content">
     <p>Generated by <strong>Agent Extension Visual</strong></p>
     <p>{generation-date} &middot; v{version}</p>
