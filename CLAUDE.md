@@ -121,7 +121,7 @@ When the user requests a tag on `main`:
 6. **Switch back** — Return to `develop`.
 7. **Confirm push** — Ask the user before pushing `main`, `develop`, and the tag to remote.
 
-## Known Claude Code Permission Issues
+## Known Claude Code Behaviors
 
 ### Skill `allowed-tools` Behavior
 
@@ -176,6 +176,16 @@ Two ways to auto-approve out-of-CWD paths (e.g., `~/.claude-code-zero/`):
 - **PreToolUse hook**: Selectively auto-approves specific paths only. Use when plugin data paths should be allowed while other out-of-CWD paths remain prompted
 
 `notebooklm-connector` and `plugin-bookmarks` use the PreToolUse hook for scope detection + lazy init (project-level data isolation requires Bash hash computation and atomic initialization that skill instructions alone cannot guarantee). Auto-approve was removed from these hooks — bare `allowed-tools: Read, Write, Edit` in the skills already auto-approves all paths.
+
+### Skill Supporting Files
+
+See `docs/reference/skill-supporting-files.md` for full details.
+
+- Skills reference companion files via markdown links: `[reference.md](reference.md)`
+- `${CLAUDE_SKILL_DIR}` resolves to the skill's directory (not plugin root)
+- Supporting files are **not auto-loaded** — Claude reads them on demand
+- Keep SKILL.md under 500 lines; move large reference material to separate files
+- `@filename.md` syntax force-loads and burns context — prefer markdown links
 
 ### Sub-agent Output Token Limit
 

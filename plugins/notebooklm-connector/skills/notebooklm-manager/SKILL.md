@@ -136,7 +136,7 @@ Max 3 follow-ups. After limit: AskUserQuestion to confirm whether to continue.
 
 ## Commands
 
-See `references/commands.md` for full command reference.
+See [references/commands.md](references/commands.md) for full command reference.
 
 | Command | Description |
 |---------|-------------|
@@ -182,5 +182,5 @@ Data directory and default files are lazily created on first `data-path` read.
 
 ## References
 
-- `references/commands.md` - Full command reference
-- `references/schemas.md` - JSON schemas
+- [references/commands.md](references/commands.md) - Full command reference
+- [references/schemas.md](references/schemas.md) - JSON schemas
