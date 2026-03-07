@@ -1,6 +1,16 @@
 {
-  "description": "Data path resolution, lazy init, and follow-up reminder",
+  "description": "Data path resolution, lazy init, skill reload reminder, and follow-up reminder",
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ensure-skill-loaded.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Read|Write|Edit",
