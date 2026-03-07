@@ -1,0 +1,8 @@
+{
+  "name": "permission-test",
+  "description": "Test plugin for verifying allowed-tools behavior",
+  "author": {
+    "name": "LeeJuOh"
+  },
+  "license": "MIT"
+}

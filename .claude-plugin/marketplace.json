@@ -44,6 +44,12 @@
       "source": "./plugins/worktree-plus",
       "version": "2.0.0",
       "description": "Enhanced git worktree: custom branch prefix, remote branch tracking, selective copy for gitignored files"
+    },
+    {
+      "name": "permission-test",
+      "source": "./plugins/permission-test",
+      "version": "0.1.0",
+      "description": "Test plugin for verifying allowed-tools permission behavior across project vs plugin contexts"
     }
   ]
 }
