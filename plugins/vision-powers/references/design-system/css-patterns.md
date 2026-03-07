@@ -73,6 +73,25 @@ Define both light and dark palettes via custom properties. Pick colors from the 
 
 These are **default values** — each report may override `--font-body`, `--font-mono`, `--accent`, and `--node-*` for its chosen font pairing and palette. See `font-system.md` for pairing options.
 
+## Typography Base
+
+Global typography settings for consistent text rendering across all reports.
+
+```css
+html {
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1 { font-size: 2rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.4rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.1rem; letter-spacing: -0.01em; }
+h4 { font-size: 0.95rem; letter-spacing: -0.01em; }
+```
+
 ## Background Atmosphere
 
 Flat backgrounds feel dead. Use ONE subtle pattern per report:

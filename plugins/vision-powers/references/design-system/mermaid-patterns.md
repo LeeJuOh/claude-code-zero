@@ -64,7 +64,7 @@ mermaid.initialize({
     tertiaryBorderColor: isDark ? '#d97706' : '#f59e0b',
     tertiaryTextColor: isDark ? '#fef3c7' : '#27201a',
     lineColor: isDark ? '#64748b' : '#94a3b8',
-    fontSize: '16px',
+    fontSize: '20px',
     fontFamily: 'var(--font-body)',
     noteBkgColor: isDark ? '#1e293b' : '#fefce8',
     noteTextColor: isDark ? '#f1f5f9' : '#1e293b',
@@ -112,7 +112,8 @@ Force node/edge text to follow the page's color scheme. Without these, `classDef
 .mermaid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .mermaid-wrap .mermaid {
-  zoom: 1.4;  /* Prevent complex diagrams from rendering too small */
+  transform: scale(1.4);
+  transform-origin: 0 0;
 }
 
 /* CRITICAL: Force text colors to follow page scheme */
@@ -129,11 +130,11 @@ Force node/edge text to follow the page's color scheme. Without these, `classDef
 
 | 방법 | 코드 | 장점 | 단점 |
 |---|---|---|---|
-| `zoom` (기본) | `.mermaid { zoom: 1.4; }` | 간단, 줌 컨트롤과 연동 | 비표준 CSS |
-| `transform: scale()` | `.mermaid svg { transform: scale(1.3); transform-origin: top center; }` | 표준 CSS | 컨테이너 크기 변경 안 됨, `overflow: visible` 필요 |
-| `fontSize` | `themeVariables: { fontSize: '18px' }` | 텍스트만 커짐, 레이아웃 자연스러움 | 노드 크기도 같이 커져 전체 다이어그램이 넓어질 수 있음 |
+| `transform: scale()` (기본) | `.mermaid { transform: scale(1.4); transform-origin: 0 0; }` | 표준 CSS, SVG 벡터 품질 무한 유지, 줌 컨트롤과 연동 | JS로 컨테이너 스크롤 영역 업데이트 필요 |
+| `zoom` | `.mermaid { zoom: 1.4; }` | 간단, 컨테이너 크기 자동 조정 | 비표준 CSS, 고배율에서 품질 저하 |
+| `fontSize` | `themeVariables: { fontSize: '20px' }` | 텍스트만 커짐, 레이아웃 자연스러움 | 노드 크기도 같이 커져 전체 다이어그램이 넓어질 수 있음 |
 
-기본값 `zoom: 1.4`를 우선 사용. `zoom`이 의도대로 작동하지 않는 환경에서는 `transform: scale()` 사용.
+기본값 `transform: scale()`를 우선 사용. SVG 벡터 특성상 어떤 배율에서도 선명도가 유지됨.
 
 ### Size Variants
 
@@ -151,9 +152,11 @@ Add to every `.mermaid-wrap` container.
 ```html
 <div class="mermaid-wrap">
   <div class="zoom-controls">
-    <button onclick="zoomDiagram(this, 1.2)" title="Zoom in">+</button>
-    <button onclick="zoomDiagram(this, 0.8)" title="Zoom out">&minus;</button>
+    <button onclick="zoomDiagram(this, 1.3)" title="Zoom in">+</button>
+    <button onclick="zoomDiagram(this, 1/1.3)" title="Zoom out">&minus;</button>
     <button onclick="resetZoom(this)" title="Reset zoom">&#8634;</button>
+    <span class="zoom-level">140%</span>
+    <button onclick="toggleFullscreen(this)" title="Fullscreen">&#x26F6;</button>
   </div>
   <pre class="mermaid">
     graph TD
@@ -170,6 +173,7 @@ Add to every `.mermaid-wrap` container.
   top: 8px;
   right: 8px;
   display: flex;
+  align-items: center;
   gap: 2px;
   z-index: 10;
   background: var(--surface);
@@ -196,6 +200,14 @@ Add to every `.mermaid-wrap` container.
   background: var(--border);
   color: var(--text);
 }
+.zoom-level {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  min-width: 40px;
+  text-align: center;
+  user-select: none;
+}
 
 .mermaid-wrap { cursor: grab; }
 .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
@@ -208,20 +220,33 @@ Place before `</body>`, after Mermaid import:
 ```javascript
 var INITIAL_ZOOM = 1.4;
 
+function applyZoom(wrap, level) {
+  var target = wrap.querySelector('.mermaid');
+  target.dataset.zoom = level;
+  target.style.transform = 'scale(' + level + ')';
+  // Update scroll area to match scaled SVG size
+  var svg = target.querySelector('svg');
+  if (svg) {
+    var rect = svg.getBoundingClientRect();
+    target.style.width = (rect.width / level * level) + 'px';
+    target.style.height = (rect.height / level * level) + 'px';
+  }
+  // Update zoom level indicator
+  var indicator = wrap.querySelector('.zoom-level');
+  if (indicator) indicator.textContent = Math.round(level * 100) + '%';
+}
+
 function zoomDiagram(btn, factor) {
   var wrap = btn.closest('.mermaid-wrap');
   var target = wrap.querySelector('.mermaid');
   var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM);
-  var next = Math.min(Math.max(current * factor, 0.5), 5);
-  target.dataset.zoom = next;
-  target.style.zoom = next;
+  var next = Math.min(Math.max(current * factor, 0.3), 30);
+  applyZoom(wrap, next);
 }
 
 function resetZoom(btn) {
   var wrap = btn.closest('.mermaid-wrap');
-  var target = wrap.querySelector('.mermaid');
-  target.dataset.zoom = INITIAL_ZOOM;
-  target.style.zoom = INITIAL_ZOOM;
+  applyZoom(wrap, INITIAL_ZOOM);
 }
 
 document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
@@ -231,10 +256,9 @@ document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
     e.preventDefault();
     var target = wrap.querySelector('.mermaid');
     var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM);
-    var factor = e.deltaY < 0 ? 1.1 : 0.9;
-    var next = Math.min(Math.max(current * factor, 0.5), 5);
-    target.dataset.zoom = next;
-    target.style.zoom = next;
+    var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    var next = Math.min(Math.max(current * factor, 0.3), 30);
+    applyZoom(wrap, next);
   }, { passive: false });
 
   // Click-and-drag panning
@@ -257,6 +281,24 @@ document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
     wrap.classList.remove('is-panning');
   });
 });
+
+// Keyboard zoom: + / - keys when a mermaid-wrap is hovered
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  var wrap = document.querySelector('.mermaid-wrap:hover');
+  if (!wrap) return;
+  if (e.key === '+' || e.key === '=') {
+    e.preventDefault();
+    var target = wrap.querySelector('.mermaid');
+    var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM);
+    applyZoom(wrap, Math.min(current * 1.3, 30));
+  } else if (e.key === '-') {
+    e.preventDefault();
+    var target = wrap.querySelector('.mermaid');
+    var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM);
+    applyZoom(wrap, Math.max(current / 1.3, 0.3));
+  }
+});
 ```
 
 ## Fullscreen Overlay
@@ -269,6 +311,17 @@ function toggleFullscreen(btn) {
   wrap.classList.toggle('is-fullscreen');
   document.body.style.overflow = wrap.classList.contains('is-fullscreen') ? 'hidden' : '';
 }
+
+// ESC key closes fullscreen
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var fs = document.querySelector('.mermaid-wrap.is-fullscreen');
+    if (fs) {
+      fs.classList.remove('is-fullscreen');
+      document.body.style.overflow = '';
+    }
+  }
+});
 ```
 
 ```css

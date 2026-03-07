@@ -70,3 +70,42 @@ After loading the font, override the CSS variables:
   --font-mono: '{Mono Font}', 'SF Mono', Consolas, monospace;
 }
 ```
+
+## Multilingual Font Support
+
+For reports containing non-Latin text (Korean, Japanese, Chinese), load the appropriate Noto Sans CJK variant from Google Fonts. Google Fonts applies `unicode-range` subsetting automatically — no manual configuration needed, and English-only reports incur zero download cost.
+
+### Recommended CJK Fonts
+
+| Language | Font | Google Fonts Family |
+|----------|------|---------------------|
+| Korean (ko) | Noto Sans KR | `Noto+Sans+KR` |
+| Japanese (ja) | Noto Sans JP | `Noto+Sans+JP` |
+| Chinese Simplified (zh) | Noto Sans SC | `Noto+Sans+SC` |
+
+### CDN Pattern with CJK
+
+Add the CJK font to the existing Google Fonts `<link>`:
+
+```html
+<link href="https://fonts.googleapis.com/css2?family={Body}:wght@400;500;600;700&family={Mono}:wght@400;500&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+```
+
+Replace `Noto+Sans+KR` with the appropriate CJK font for the output language. Multiple CJK fonts can be loaded simultaneously if needed.
+
+### Font Stack with CJK
+
+Insert the CJK font between the body font and system fallback:
+
+```css
+:root {
+  --font-body: '{Body Font}', 'Noto Sans KR', system-ui, sans-serif;
+}
+```
+
+### Inclusion Rules
+
+| Condition | Include CJK Font? |
+|-----------|-------------------|
+| Non-Latin output language (ko, ja, zh) | **Required** — ensures consistent glyph rendering |
+| English-only output | Optional (unicode-range ensures zero download cost for unused glyphs) |
