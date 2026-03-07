@@ -71,6 +71,11 @@ Quantitative overview with stat cards and a Chart.js visualization.
     </div>
     <!-- additional cards as needed -->
   </div>
+  <!-- Housekeeping badges -->
+  <div class="kpi-badges">
+    <span class="badge badge--{success|danger}">CHANGELOG {Updated|Missing}</span>
+    <span class="badge badge--{success|warning|danger}">Docs {OK|Needs Update|Missing}</span>
+  </div>
   <div class="chart-container">
     <canvas id="change-breakdown-chart"></canvas>
   </div>
@@ -88,6 +93,12 @@ Quantitative overview with stat cards and a Chart.js visualization.
 .kpi-card--info { background: color-mix(in srgb, var(--info) 12%, var(--surface-1)); color: var(--info); }
 .kpi-card--warning { background: color-mix(in srgb, var(--warning) 12%, var(--surface-1)); color: var(--warning); }
 .chart-container { max-width: 400px; margin: 1.5rem auto; }
+
+.kpi-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+.badge { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.badge--success { background: color-mix(in srgb, var(--success) 15%, var(--surface-1)); color: var(--success); }
+.badge--warning { background: color-mix(in srgb, var(--warning) 15%, var(--surface-1)); color: var(--warning); }
+.badge--danger { background: color-mix(in srgb, var(--danger) 15%, var(--surface-1)); color: var(--danger); }
 ```
 
 ---

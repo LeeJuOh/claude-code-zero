@@ -57,6 +57,7 @@ git diff {scope} --stat
 git diff {scope} --name-status
 git log {scope-log-range} --oneline --format="%h %s"
 git log {scope-log-range} --format="%h|%an|%s|%ai" (for decision log)
+git log {scope-log-range} -- CHANGELOG.md (CHANGELOG update check)
 ```
 
 Where `{scope-log-range}` is:
@@ -70,6 +71,8 @@ Where `{scope-log-range}` is:
 - Files changed count, new files, deleted files (from `--name-status`)
 - New modules/directories introduced
 - Test file changes (files matching `*test*`, `*spec*`, `*.test.*`)
+- Housekeeping ratio: classify each changed file as feature/refactor/test/docs/config,
+  calculate percentage breakdown for KPI chart
 
 **Step 3 — Content analysis**:
 Read the full diff content and changed files to understand:
@@ -77,7 +80,18 @@ Read the full diff content and changed files to understand:
 - **Feature inventory**: What features were added/modified/removed
 - **API surface changes**: New/changed public functions, types, endpoints
 - **Test coverage**: New/modified tests, what they cover
-- **Decision rationale**: Commit messages, PR description (if PR), CHANGELOG entries, README changes
+- **Decision rationale**: Reconstruct why decisions were made, not just what changed:
+  - Commit messages and PR descriptions (if PR scope)
+  - Plan files in the project (Glob for **/plan*, **/RFC*, **/ADR*)
+  - CLAUDE.md or project convention docs
+  - For each significant design choice, classify confidence:
+    - Confirmed: explicitly documented in commit/PR/plan
+    - Inferred: reasonable inference from code patterns
+    - Uncertain: rationale not recoverable — flag for documentation
+- **Housekeeping check**:
+  - CHANGELOG.md: Does it have an entry for these changes? (yes/no)
+  - README.md / docs/*.md: Do they need updates given new/changed features? (yes/no/not-applicable)
+  - Record results for KPI dashboard badges
 
 Use Glob + Grep to find related files (tests, configs, docs) that provide context.
 
@@ -85,7 +99,7 @@ Use Glob + Grep to find related files (tests, configs, docs) that provide contex
 
 ### Verification Checkpoint
 
-Before generating the report, verify factual accuracy:
+Before generating the report, **produce a structured fact sheet** listing every claim you will present:
 
 1. **Quantitative check**: Lines +/−, file counts, module counts — all must match git output exactly
 2. **Name check**: Every function name, type name, file path mentioned must exist in the actual diff
@@ -95,6 +109,8 @@ Before generating the report, verify factual accuracy:
 If any claim cannot be sourced, remove it or mark it as uncertain.
 
 ### Report Generation
+
+Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
 
 Delegate HTML report generation to the visual-report-writer agent.
 

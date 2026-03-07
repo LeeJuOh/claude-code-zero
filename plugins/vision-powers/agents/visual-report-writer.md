@@ -150,6 +150,7 @@ For sections that include architecture or flow diagrams:
 10. Tables must be wrapped in `<div class="table-wrapper">` with `<thead>` for sticky headers
 11. Background atmosphere: pick ONE subtle pattern from `css-patterns.md` (not flat background)
 12. Collapsible sections: use `<details><summary>` for long content blocks marked as collapsible in section-structure
+13. **Visual hierarchy narrative**: Sections 1-3 should dominate the viewport on load (hero depth, larger type, more padding). Sections toward the end are reference material — flat or recessed depth, compact layout, collapsible where marked. The page should feel like a story with a strong opening that tapers into detailed appendices.
 
 ### Anti-Slop Checklist
 

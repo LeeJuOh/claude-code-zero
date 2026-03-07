@@ -123,6 +123,18 @@ Force node/edge text to follow the page's color scheme. Without these, `classDef
 .mermaid .edge-pattern-solid { stroke-width: 1.5px; }
 ```
 
+### Scaling Options
+
+복잡한 다이어그램(10+ 노드)이 너무 작게 렌더링될 때 3가지 접근법:
+
+| 방법 | 코드 | 장점 | 단점 |
+|---|---|---|---|
+| `zoom` (기본) | `.mermaid { zoom: 1.4; }` | 간단, 줌 컨트롤과 연동 | 비표준 CSS |
+| `transform: scale()` | `.mermaid svg { transform: scale(1.3); transform-origin: top center; }` | 표준 CSS | 컨테이너 크기 변경 안 됨, `overflow: visible` 필요 |
+| `fontSize` | `themeVariables: { fontSize: '18px' }` | 텍스트만 커짐, 레이아웃 자연스러움 | 노드 크기도 같이 커져 전체 다이어그램이 넓어질 수 있음 |
+
+기본값 `zoom: 1.4`를 우선 사용. `zoom`이 의도대로 작동하지 않는 환경에서는 `transform: scale()` 사용.
+
 ### Size Variants
 
 ```css
