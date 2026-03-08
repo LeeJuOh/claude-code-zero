@@ -1,5 +1,6 @@
 ---
-description: "Analyze agent extensions and generate HTML wiki reports with security audit, architecture diagrams, and plugin profiles. Use when asked to analyze, audit, inspect, wiki, or understand a Claude Code plugin or extension."
+description: "Analyze agent extensions and generate self-contained HTML wiki reports with security audit, architecture diagrams, and plugin profiles. Currently supports Claude Code plugins. Use when asked to analyze, audit, inspect, review, document, or wiki a plugin or extension. Default output is an interactive HTML report; use --format md for inline markdown. Not for plugin development, installation, or creation."
+argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
 disable-model-invocation: true
 ---
 
