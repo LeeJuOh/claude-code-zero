@@ -1,6 +1,6 @@
 # worktree-plus
 
-Enhanced git worktree for Claude Code — follows native `git worktree` behavior with custom branch prefix, remote branch tracking, selective copy for gitignored files, and work state protection on cleanup.
+Enhanced git worktree for Claude Code — follows native `git worktree` behavior with custom branch prefix, remote branch tracking, selective copy/symlink for gitignored files, and work state protection on cleanup.
 
 ## Problem
 
@@ -11,13 +11,14 @@ Claude Code's built-in worktree (`claude -w`) differs from native `git worktree`
 | **Branch base** | Default remote branch (origin/main) | HEAD (current commit) |
 | **Remote tracking** | None | `--guess-remote` support |
 | **Branch prefix** | `worktree-` (fixed) | Configurable |
-| **Gitignored files** | Not copied | `.worktreeinclude` selective copy |
+| **Gitignored files** | Not copied | `.worktreeinclude` copy / `.worktreelink` symlink |
 
 ## Solution
 
 This plugin replaces the `WorktreeCreate` and `WorktreeRemove` hooks to provide native `git worktree` behavior:
 
 - **`.worktreeinclude`** file for specifying which gitignored files/directories to copy
+- **`.worktreelink`** file for specifying which gitignored files/directories to symlink (for large/heavy content)
 - **`WORKTREE_BRANCH_PREFIX`** env var for custom branch naming
 - **Remote branch tracking** — controlled by `git config worktree.guessRemote` (default: `true`)
 - **Worktree cleanup** — `git worktree remove` + branch deletion on session exit
@@ -30,24 +31,36 @@ claude plugin add ./plugins/worktree-plus
 
 ## Setup
 
-### 1. Create `.worktreeinclude` in your project root
+### 1. Create `.worktreeinclude` and/or `.worktreelink` in your project root
 
+**`.worktreeinclude`** — files/directories to **copy** (independent copy per worktree):
 ```gitignore
 # Copy these files to worktrees
 .env
 .env.local
 config/secrets.yaml
-
-# Copy directories
-docs/
-references/
 ```
 
-**Rules:**
-- Default behavior: copy with directory structure preserved
-- Trailing `/`: directory pattern
+**`.worktreelink`** — files/directories to **symlink** (shared with original, no disk overhead):
+```gitignore
+# Symlink heavy/read-only content
+references/
+node_modules/
+data/models/
+```
+
+**Rules (both files):**
+- One path per line, relative to project root
 - `#` comments and empty lines are ignored
 - CRLF line endings are handled automatically
+- If the same path appears in both files, whichever is processed first wins (`.worktreeinclude` runs first)
+
+**When to use which:**
+| | `.worktreeinclude` (copy) | `.worktreelink` (symlink) |
+|---|---|---|
+| **Best for** | Config files, secrets, small files | Large directories, read-only references |
+| **Isolation** | Changes stay in worktree | Changes affect original project |
+| **Disk usage** | Full copy | Zero (just a pointer) |
 
 ### 2. (Optional) Set branch prefix
 
