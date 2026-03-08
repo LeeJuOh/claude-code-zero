@@ -12,6 +12,11 @@ plugins/<plugin-name>/            # Plugin source code (git-committed)
 references/                       # External reference materials (git-ignored)
 ```
 
+## Reference Materials
+
+- `docs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf` — Anthropic's official skill development guide.
+- `docs/reference/official-plugin-tools.md` — Comparison of Anthropic's official **plugin-dev** (plugin scaffolding, hooks, MCP, agents) and **skill-creator** (skill quality measurement, description optimization). Consult when deciding which tool to use for plugin work.
+
 ## Plugin Development
 
 ### Plugin Component Structure

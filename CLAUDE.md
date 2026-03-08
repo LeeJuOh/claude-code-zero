@@ -24,6 +24,8 @@ See **Workflow step 1 (Docs)** for when consultation is required.
 
 `docs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf` — Anthropic's official guide covering skill fundamentals, YAML frontmatter, progressive disclosure, testing, distribution, and patterns.
 
+`docs/reference/official-plugin-tools.md` — Comparison of Anthropic's official **plugin-dev** (full plugin scaffolding) and **skill-creator** (skill quality measurement/optimization). Use plugin-dev for structure/hooks/MCP/agents, skill-creator for skill testing and description optimization.
+
 Required reference for structural plugin work. See **Workflow step 1 (Docs)**.
 
 ## Plugin Development

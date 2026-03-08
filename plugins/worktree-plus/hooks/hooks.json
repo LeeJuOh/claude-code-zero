@@ -1,6 +1,17 @@
 {
-  "description": "Custom worktree creation/removal with remote tracking, .worktreeinclude support, and work state protection",
+  "description": "Custom worktree creation/removal with remote tracking, .worktreeinclude support, work state protection, and auto-setup check",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/setup-check.sh"
+          }
+        ]
+      }
+    ],
     "WorktreeCreate": [
       {
         "hooks": [
