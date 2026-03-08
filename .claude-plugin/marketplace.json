@@ -42,7 +42,7 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "Enhanced git worktree: custom branch prefix, remote branch tracking, selective copy for gitignored files, work state protection on cleanup"
     },
     {
