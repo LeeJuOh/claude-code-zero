@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 
-# WorktreeCreate hook — custom worktree with remote tracking and .worktreeinclude
+# WorktreeCreate hook — custom worktree with remote tracking, .worktreeinclude, and .worktreelink
 # Input (stdin JSON): { "name": "...", "cwd": "..." }
 # Output (stdout): absolute worktree path
 
@@ -136,6 +136,37 @@ if [ -f "$INCLUDE_FILE" ]; then
       log "  skipped (not found): ${PATTERN}"
     fi
   done < "$INCLUDE_FILE"
+fi
+
+# --- .worktreelink (symlink) ---
+LINK_FILE="${PROJECT_ROOT}/.worktreelink"
+if [ -f "$LINK_FILE" ]; then
+  log "Processing .worktreelink..."
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    # CRLF defense + trim whitespace
+    line=$(printf '%s' "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ -z "$line" ] && continue
+    [[ "$line" == \#* ]] && continue
+
+    # Strip trailing slash for uniform path handling
+    PATTERN="${line%/}"
+    SRC="${PROJECT_ROOT}/${PATTERN}"
+    DEST="${WORKTREE_DIR}/${PATTERN}"
+
+    if [ -e "$SRC" ]; then
+      if [ ! -e "$DEST" ]; then
+        mkdir -p "$(dirname "$DEST")"
+        if ln -s "$SRC" "$DEST"; then
+          log "  linked: ${PATTERN} -> ${SRC}"
+        else
+          log "  FAILED: ${PATTERN}"
+        fi
+      fi
+    else
+      log "  skipped (not found): ${PATTERN}"
+    fi
+  done < "$LINK_FILE"
 fi
 
 # Output worktree path (required by Claude Code)
