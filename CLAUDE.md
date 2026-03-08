@@ -179,6 +179,15 @@ Two ways to auto-approve out-of-CWD paths (e.g., `~/.claude-code-zero/`):
 
 `notebooklm-connector` and `plugin-bookmarks` use the PreToolUse hook for scope detection + lazy init (project-level data isolation requires Bash hash computation and atomic initialization that skill instructions alone cannot guarantee). Auto-approve was removed from these hooks — bare `allowed-tools: Read, Write, Edit` in the skills already auto-approves all paths.
 
+### Command Proxy Pattern for Large Skills
+
+See `docs/reference/command-proxy-pattern.md` for full details (discovered from superpowers plugin v4.3.1).
+
+- Slash commands load full SKILL.md content as raw prompt text — large skills (1k+ tokens) lose execution fidelity
+- Split into thin `commands/{name}.md` (~50 tokens, `disable-model-invocation: true`) + full `skills/{name-variant}/SKILL.md`
+- Command body: `Invoke the {plugin}:{skill-name} skill and follow it exactly as presented to you`
+- Command and skill must have **different names** (same name → skill takes precedence). Use verb→gerund pattern (e.g., `brainstorm`→`brainstorming`)
+
 ### Skill Supporting Files
 
 See `docs/reference/skill-supporting-files.md` for full details.
