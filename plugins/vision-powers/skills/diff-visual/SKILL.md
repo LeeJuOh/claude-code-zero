@@ -121,15 +121,17 @@ Delegate HTML report generation to the visual-report-writer agent.
    Where `{scope}` is a sanitized version of the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`).
 
 2. **Resolve reference paths**:
-   - Section structure: resolve `./references/section-structure.md` to absolute path
-   - Design system: resolve `../../references/design-system/` to absolute path
+   - Template: resolve `../../templates/diff-visual.html` to absolute path
+   - Font system: resolve `../../references/design-system/font-system.md` to absolute path
+   - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
 
 3. **Delegate to visual-report-writer**:
    ```
    Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
      Analysis data: {all gathered data — stats, metrics, architecture, features, code review, decisions},
-     Section structure reference path: {absolute path to section-structure.md},
-     Design system directory path: {absolute path to design-system/},
+     template path (absolute path from step 2),
+     font system path (absolute path from step 2),
+     anti-slop rules path (absolute path from step 2),
      Output file path: {absolute output path},
      Output language: {detected language},
      Report title: "Diff Visual: {scope description}",
@@ -144,5 +146,6 @@ Delegate HTML report generation to the visual-report-writer agent.
 
 ### Reference Files
 
-- `./references/section-structure.md` — 10-section structure with HTML pattern snippets for diff visualization
-- `../../references/design-system/` — Shared design system (CSS patterns, fonts, Mermaid, navigation, libraries, anti-slop rules). Passed as path to visual-report-writer; the agent reads files directly
+- `../../templates/diff-visual.html` — HTML template with all CSS/JS baked in. Passed as path to visual-report-writer; the agent copies it to output and fills placeholders via Edit
+- `../../references/design-system/font-system.md` — Font pairing selection guide. Passed as path to visual-report-writer; the agent reads it directly
+- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Passed as path to visual-report-writer; the agent reads it directly
