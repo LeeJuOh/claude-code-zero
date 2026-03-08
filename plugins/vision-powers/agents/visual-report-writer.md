@@ -16,7 +16,7 @@ description: |
   </example>
 model: sonnet
 maxTurns: 20
-permissionMode: acceptEdits
+permissionMode: bypassPermissions
 tools:
   - Write
   - Read
