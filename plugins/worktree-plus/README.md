@@ -126,11 +126,19 @@ git branch -D <branch-name>
 git worktree list
 ```
 
-## Known Limitations
+## Setup: Hook Registration
 
-### Plugin hook recognition
+Worktree hooks (`WorktreeCreate`, `WorktreeRemove`) must be registered in `settings.json` to work. The plugin handles this automatically:
 
-Worktree hooks (`WorktreeCreate`, `WorktreeRemove`) defined in a plugin's `hooks/hooks.json` may not be recognized automatically. If the hooks don't fire, add them manually to your `~/.claude/settings.json`:
+1. **Auto-detection** — On session start, the plugin checks if hooks are registered. If not, Claude suggests running `/worktree-plus:setup`.
+2. **One-command setup** — Run `/worktree-plus:setup` to auto-configure. The plugin detects the correct scope:
+   - Marketplace install → `~/.claude/settings.json` (user scope)
+   - `--plugin-dir` → `.claude/settings.local.json` (project scope)
+3. **Restart required** — Restart Claude Code after setup for changes to take effect.
+
+### Manual setup (fallback)
+
+If automatic setup doesn't work, add hooks manually to `~/.claude/settings.json`:
 
 ```json
 {
@@ -159,7 +167,7 @@ Worktree hooks (`WorktreeCreate`, `WorktreeRemove`) defined in a plugin's `hooks
 }
 ```
 
-Find your plugin cache path with:
+Find your plugin cache path:
 ```bash
 ls ~/.claude/plugins/cache/
 ```
