@@ -1,5 +1,5 @@
 ---
-name: agent-extension-visual
+name: agent-extension-visualizing
 description: >
   Analyze agent extensions and generate self-contained HTML wiki reports
   with security audit, architecture diagrams, and plugin profiles.
