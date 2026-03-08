@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="<!-- LANG -->">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><!-- TITLE --></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- FONT_LINK -->
+  <style>
+    /* ===== BASE: Variables ===== */
+    :root {
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: #f8f9fa; --surface: #ffffff; --surface-elevated: #ffffff;
+      --border: rgba(0,0,0,0.08); --border-bright: rgba(0,0,0,0.15);
+      --text: #1a1a2e; --text-dim: #6b7280; --text-muted: #6b7280;
+      --accent: #0891b2; --accent-dim: rgba(8,145,178,0.1);
+      --node-a: #0891b2; --node-a-dim: rgba(8,145,178,0.1);
+      --node-b: #059669; --node-b-dim: rgba(5,150,105,0.1);
+      --node-c: #d97706; --node-c-dim: rgba(217,119,6,0.1);
+      --success: #16a34a; --warning: #d97706; --danger: #dc2626; --danger-high: #ef4444;
+      --info: #0891b2;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-lg: 0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+      --shadow-hero: 0 8px 32px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.06);
+      <!-- CSS_VARIABLES -->
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117; --surface: #161b22; --surface-elevated: #1c2333;
+        --border: rgba(255,255,255,0.06); --border-bright: rgba(255,255,255,0.12);
+        --text: #e6edf3; --text-dim: #8b949e; --text-muted: #8b949e;
+        --accent: #22d3ee; --accent-dim: rgba(34,211,238,0.12);
+        --node-a: #22d3ee; --node-a-dim: rgba(34,211,238,0.12);
+        --node-b: #34d399; --node-b-dim: rgba(52,211,153,0.12);
+        --node-c: #fbbf24; --node-c-dim: rgba(251,191,36,0.12);
+        --success: #34d399; --warning: #fbbf24; --danger: #f87171; --danger-high: #ef4444;
+        --info: #22d3ee;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+        --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+        --shadow-lg: 0 4px 20px rgba(0,0,0,0.3);
+        --shadow-hero: 0 8px 32px rgba(0,0,0,0.4);
+        <!-- CSS_VARIABLES_DARK -->
+      }
+    }
+
+    /* ===== BASE: Typography & Body ===== */
+    html { font-size: 15px; line-height: 1.7; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+    body { margin: 0; padding: 2rem 40px; font-family: var(--font-body); color: var(--text); background: var(--bg); background-image: radial-gradient(ellipse at 50% 0%, var(--accent-dim) 0%, transparent 60%); overflow-wrap: break-word; }
+    h1 { font-size: 2rem; letter-spacing: -0.01em; } h2 { font-size: 1.4rem; letter-spacing: -0.01em; } h3 { font-size: 1.1rem; letter-spacing: -0.01em; } h4 { font-size: 0.95rem; letter-spacing: -0.01em; }
+    a { color: var(--accent); text-decoration: underline; } a:hover { color: var(--text); }
+
+    /* ===== LAYOUT: Navigation ===== */
+    .wrap { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 170px 1fr; gap: 0 40px; }
+    .main { min-width: 0; }
+    .toc { position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1; max-height: calc(100dvh - 48px); overflow-y: auto; }
+    .toc::-webkit-scrollbar { width: 3px; } .toc::-webkit-scrollbar-thumb { background: var(--surface-elevated); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--accent-dim); }
+    .toc a.active { color: var(--text); border-left-color: var(--accent); }
+
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; } body { padding-top: 0; }
+      .toc { position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0; margin: 0 -40px; padding-left: 40px; padding-right: 40px; grid-row: auto; }
+      .toc::-webkit-scrollbar { display: none; } .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--accent); background: var(--surface); }
+      .main { padding-top: 20px; }
+      section[id] { scroll-margin-top: 52px; }
+    }
+
+    /* ===== COMPONENTS: Cards ===== */
+    .ve-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; position: relative; margin-bottom: 1.5rem; }
+    .ve-card--hero { background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%); box-shadow: var(--shadow-hero); border-color: color-mix(in srgb, var(--border) 50%, var(--accent) 50%); }
+    .ve-card--elevated { background: var(--surface-elevated); box-shadow: var(--shadow-md); }
+    .ve-card--recessed { background: color-mix(in srgb, var(--bg) 70%, var(--surface) 30%); box-shadow: inset 0 1px 3px rgba(0,0,0,0.06); border-color: var(--border); }
+    .ve-card__label { font-family: var(--font-mono); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--node-a); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .ve-card__label::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+    /* ===== COMPONENTS: Code Blocks ===== */
+    .code-block { font-family: var(--font-mono); font-size: 13px; line-height: 1.5; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+    .code-block--scroll { max-height: 400px; overflow-y: auto; }
+
+    /* ===== COMPONENTS: Tables ===== */
+    .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead { position: sticky; top: 0; z-index: 1; }
+    th { background: var(--surface-elevated); font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border-bright); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) td { background: color-mix(in srgb, var(--surface) 97%, var(--bg) 3%); }
+    tr:hover td { background: var(--accent-dim); }
+
+    /* ===== COMPONENTS: Status & Collapsible ===== */
+    .status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+    .status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .status--success::before { background: var(--success); } .status--warning::before { background: var(--warning); } .status--danger::before { background: var(--danger); } .status--info::before { background: var(--accent); }
+    details.collapsible { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    details.collapsible summary { padding: 12px 16px; cursor: pointer; font-weight: 500; background: var(--surface); border-bottom: 1px solid transparent; transition: background 0.15s; }
+    details.collapsible[open] summary { border-bottom-color: var(--border); }
+    details.collapsible summary:hover { background: var(--accent-dim); }
+    details.collapsible > :not(summary) { padding: 16px; }
+
+    /* ===== COMPONENTS: Prose ===== */
+    .lead { font-size: 1.25rem; line-height: 1.6; color: var(--text); opacity: 0.9; max-width: 720px; }
+    .callout { padding: 1rem 1.25rem; border-radius: 8px; border-left: 4px solid; margin: 1rem 0; }
+    .callout--info { border-color: var(--accent); background: var(--accent-dim); }
+    .callout--warning { border-color: var(--warning); background: color-mix(in srgb, var(--warning) 8%, var(--surface)); }
+
+    /* ===== OVERFLOW & ANIMATION ===== */
+    .ve-card > *, .comparison-grid > *, [class*="grid"] > * { min-width: 0; }
+    li { padding-left: 14px; position: relative; } li::before { content: '\203A'; position: absolute; left: 0; }
+    ol li { padding-left: 0; } ol li::before { content: none; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeScale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .ve-card, .kpi-card { opacity: 0; animation: fadeUp 0.5s ease-out forwards; animation-delay: calc(var(--i, 0) * 60ms + 100ms); }
+    .kpi-card { animation-name: fadeScale; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+
+    /* ===== MERMAID ===== */
+    .mermaid-wrap { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px 24px; overflow: auto; display: flex; justify-content: center; align-items: center; min-height: 400px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; cursor: grab; }
+    .mermaid-wrap::-webkit-scrollbar { width: 6px; height: 6px; } .mermaid-wrap::-webkit-scrollbar-track { background: transparent; } .mermaid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .mermaid-wrap .mermaid { transform: scale(1.4); transform-origin: 0 0; }
+    .mermaid .nodeLabel { color: var(--text) !important; font-family: var(--font-body) !important; font-size: 16px !important; }
+    .mermaid .edgeLabel { color: var(--text-dim) !important; background-color: var(--bg) !important; font-family: var(--font-mono) !important; font-size: 13px !important; }
+    .mermaid .edgeLabel rect { fill: var(--bg) !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { stroke-width: 1.5px; }
+    .mermaid .edge-pattern-solid { stroke-width: 1.5px; }
+    .mermaid-wrap--compact { min-height: 200px; } .mermaid-wrap--tall { min-height: 600px; }
+    .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
+    .mermaid-wrap.is-fullscreen { position: fixed; inset: 0; z-index: 1000; border-radius: 0; min-height: 100dvh; }
+    .zoom-controls { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 2px; z-index: 10; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px; }
+    .zoom-controls button { width: 28px; height: 28px; border: none; background: transparent; color: var(--text-dim); font-family: var(--font-mono); font-size: 14px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: background 0.15s ease, color 0.15s ease; }
+    .zoom-controls button:hover { background: var(--border); color: var(--text); }
+    .zoom-level { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); min-width: 40px; text-align: center; user-select: none; }
+
+    /* ===== CHART ===== */
+    .chart-container { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; position: relative; max-width: 400px; margin: 1.5rem auto; }
+    .chart-container canvas { max-height: 300px; }
+
+    /* ===== REPORT: Scope & Hero ===== */
+    .scope-summary { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .scope-badge { padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); }
+    .scope-badge--critical { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger); }
+    .scope-badge--high { background: color-mix(in srgb, var(--danger-high) 12%, var(--surface)); color: var(--danger-high); }
+    .scope-badge--medium { background: color-mix(in srgb, var(--warning) 12%, var(--surface)); color: var(--warning); }
+    .scope-badge--low { background: color-mix(in srgb, var(--success) 12%, var(--surface)); color: var(--success); }
+    .hero-insight { font-size: 1.25rem; line-height: 1.6; opacity: 0.9; max-width: 720px; }
+
+    /* ===== REPORT: Section 2 — Impact Dashboard ===== */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .kpi-card { padding: 1.25rem; border-radius: 12px; text-align: center; }
+    .kpi-value { display: block; font-size: 2rem; font-weight: 700; font-family: var(--font-mono); }
+    .kpi-label { display: block; font-size: 0.85rem; opacity: 0.7; margin-top: 0.25rem; }
+    .kpi-card--success { background: color-mix(in srgb, var(--success) 12%, var(--surface)); color: var(--success); }
+    .kpi-card--danger { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger); }
+    .kpi-card--info { background: color-mix(in srgb, var(--info) 12%, var(--surface)); color: var(--info); }
+    .kpi-card--warning { background: color-mix(in srgb, var(--warning) 12%, var(--surface)); color: var(--warning); }
+    .kpi-card--completeness { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); }
+
+    /* ===== REPORT: Section 5 — Change Breakdown ===== */
+    .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 768px) { .comparison-grid { grid-template-columns: 1fr; } }
+    .comparison-panel { padding: 1rem; border-radius: 8px; border: 1px solid var(--border); }
+    .comparison-panel--current { background: color-mix(in srgb, var(--info) 5%, var(--surface)); border-left: 3px solid var(--info); }
+    .comparison-panel--planned { background: color-mix(in srgb, var(--success) 5%, var(--surface)); border-left: 3px solid var(--success); }
+    .comparison-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .comparison-panel--current .comparison-label { color: var(--info); }
+    .comparison-panel--planned .comparison-label { color: var(--success); }
+    .change-type { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px; }
+    .change-type--create { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+    .change-type--modify { background: color-mix(in srgb, var(--info) 15%, transparent); color: var(--info); }
+    .change-type--delete { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+    .change-rationale { margin-top: 0.75rem; padding: 0.75rem; background: color-mix(in srgb, var(--surface) 50%, var(--bg) 50%); border-radius: 6px; font-size: 0.9rem; }
+    .change-item { margin-bottom: 1.5rem; }
+    .phase-group { margin-bottom: 2rem; }
+
+    /* ===== REPORT: Section 6 — Ripple Analysis ===== */
+    .ripple-summary { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .ripple-badge { padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .ripple-badge--covered { background: color-mix(in srgb, var(--success) 15%, var(--surface)); color: var(--success); }
+    .ripple-badge--missed { background: color-mix(in srgb, var(--warning) 15%, var(--surface)); color: var(--warning); }
+    .ripple-badge--gap { background: color-mix(in srgb, var(--danger) 15%, var(--surface)); color: var(--danger); }
+    .ripple-list { list-style: none; padding: 0; }
+    .ripple-list li { padding-left: 0; } .ripple-list li::before { content: none; }
+    .ripple-item { padding: 0.5rem 0.75rem; margin: 0.25rem 0; border-left: 3px solid; border-radius: 0 6px 6px 0; }
+    .ripple-item--covered { border-color: var(--success); background: color-mix(in srgb, var(--success) 3%, transparent); }
+    .ripple-item--missed { border-color: var(--warning); background: color-mix(in srgb, var(--warning) 3%, transparent); }
+    .ripple-item--gap { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 3%, transparent); }
+
+    /* ===== REPORT: Section 7 — Risk Assessment ===== */
+    .risk-grid { display: flex; flex-direction: column; gap: 1rem; }
+    .risk-card { padding: 1rem 1.25rem; border-radius: 8px; border-left: 4px solid; background: color-mix(in srgb, var(--surface) 50%, var(--bg) 50%); }
+    .risk-card--low { border-color: var(--success); } .risk-card--medium { border-color: var(--warning); } .risk-card--high { border-color: var(--danger); }
+    .risk-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .risk-dimension { font-weight: 600; }
+    .risk-level { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px; }
+    .risk-level--low { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+    .risk-level--medium { background: color-mix(in srgb, var(--warning) 15%, transparent); color: var(--warning); }
+    .risk-level--high { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+    .risk-items { margin: 0.5rem 0 0 1.25rem; font-size: 0.9rem; }
+
+    /* ===== REPORT: Section 8 — Plan Review ===== */
+    .review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .review-category-title { font-size: 1rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid; }
+    .review-category-title--good { border-color: var(--success); color: var(--success); }
+    .review-category-title--bad { border-color: var(--danger); color: var(--danger); }
+    .review-category-title--ugly { border-color: var(--warning); color: var(--warning); }
+    .review-category-title--questions { border-color: var(--info); color: var(--info); }
+    .review-card { margin-bottom: 0.75rem; }
+    .review-card h4 { margin: 0 0 0.5rem 0; font-size: 0.95rem; }
+
+    /* ===== REPORT: Section 9 — Understanding Gaps ===== */
+    .gap-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .gap-card { padding: 1rem; border-radius: 8px; background: color-mix(in srgb, var(--warning) 5%, var(--surface)); border-left: 3px solid var(--warning); }
+    .gap-card h4 { margin: 0 0 0.4rem 0; font-size: 0.95rem; }
+    .gap-reference { display: block; font-size: 0.75rem; opacity: 0.6; margin-top: 0.5rem; }
+    .complexity-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px; }
+    .complexity-badge--low { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+    .complexity-badge--medium { background: color-mix(in srgb, var(--warning) 15%, transparent); color: var(--warning); }
+    .complexity-badge--high { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">Contents</div>
+    <!-- TOC_CONTENT -->
+  </nav>
+  <div class="main">
+    <!-- SECTION_1: Plan Summary — hero insight about the plan's goal, scope badges, risk level -->
+    <!-- SECTION_2: Impact Dashboard — stat cards (files to modify/create/delete), change category chart -->
+    <!-- SECTION_3: Current Architecture — Mermaid diagram of current state with blue fills -->
+    <!-- SECTION_4: Planned Architecture — Mermaid diagram of planned state with green/purple fills -->
+    <!-- SECTION_5: Change-by-Change Breakdown — current/planned comparison panels grouped by phase -->
+    <!-- SECTION_6: Dependency & Ripple Analysis — covered/missed/gap status with badges -->
+    <!-- SECTION_7: Risk Assessment — dimension cards (edge cases, assumptions, ordering, rollback, complexity) -->
+    <!-- SECTION_8: Plan Review — Good/Bad/Ugly/Questions assessment cards -->
+    <!-- SECTION_9: Understanding Gaps — rationale gaps cards, cognitive complexity table -->
+  </div>
+</div>
+<!-- CHART_DATA -->
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true, theme: 'base', look: 'classic',
+    themeVariables: {
+      primaryColor: isDark ? '#134e4a' : '#ccfbf1',
+      primaryBorderColor: isDark ? '#14b8a6' : '#0d9488',
+      primaryTextColor: isDark ? '#f0fdfa' : '#134e4a',
+      secondaryColor: isDark ? '#1e293b' : '#f0fdf4',
+      secondaryBorderColor: isDark ? '#059669' : '#16a34a',
+      secondaryTextColor: isDark ? '#f1f5f9' : '#1e293b',
+      tertiaryColor: isDark ? '#27201a' : '#fef3c7',
+      tertiaryBorderColor: isDark ? '#d97706' : '#f59e0b',
+      tertiaryTextColor: isDark ? '#fef3c7' : '#27201a',
+      lineColor: isDark ? '#64748b' : '#94a3b8',
+      fontSize: '20px',
+      fontFamily: 'var(--font-body)',
+      noteBkgColor: isDark ? '#1e293b' : '#fefce8',
+      noteTextColor: isDark ? '#f1f5f9' : '#1e293b',
+      noteBorderColor: isDark ? '#fbbf24' : '#d97706',
+      <!-- MERMAID_THEME -->
+    }
+  });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+/* ===== Zoom Controls ===== */
+var INITIAL_ZOOM = 1.4;
+function applyZoom(wrap, level) {
+  var target = wrap.querySelector('.mermaid');
+  target.dataset.zoom = level;
+  target.style.transform = 'scale(' + level + ')';
+  var svg = target.querySelector('svg');
+  if (svg) { var rect = svg.getBoundingClientRect(); target.style.width = (rect.width / level * level) + 'px'; target.style.height = (rect.height / level * level) + 'px'; }
+  var indicator = wrap.querySelector('.zoom-level');
+  if (indicator) indicator.textContent = Math.round(level * 100) + '%';
+}
+function zoomDiagram(btn, factor) { var wrap = btn.closest('.mermaid-wrap'); var target = wrap.querySelector('.mermaid'); var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM); applyZoom(wrap, Math.min(Math.max(current * factor, 0.3), 30)); }
+function resetZoom(btn) { applyZoom(btn.closest('.mermaid-wrap'), INITIAL_ZOOM); }
+function toggleFullscreen(btn) { var wrap = btn.closest('.mermaid-wrap'); wrap.classList.toggle('is-fullscreen'); document.body.style.overflow = wrap.classList.contains('is-fullscreen') ? 'hidden' : ''; }
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { var fs = document.querySelector('.mermaid-wrap.is-fullscreen'); if (fs) { fs.classList.remove('is-fullscreen'); document.body.style.overflow = ''; } } });
+
+document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+  wrap.addEventListener('wheel', function(e) { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); var target = wrap.querySelector('.mermaid'); var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM); var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15; applyZoom(wrap, Math.min(Math.max(current * factor, 0.3), 30)); }, { passive: false });
+  var startX, startY, scrollLeft, scrollTop;
+  wrap.addEventListener('mousedown', function(e) { if (e.target.closest('.zoom-controls')) return; wrap.classList.add('is-panning'); startX = e.pageX - wrap.offsetLeft; startY = e.pageY - wrap.offsetTop; scrollLeft = wrap.scrollLeft; scrollTop = wrap.scrollTop; });
+  wrap.addEventListener('mousemove', function(e) { if (!wrap.classList.contains('is-panning')) return; e.preventDefault(); wrap.scrollLeft = scrollLeft - (e.pageX - wrap.offsetLeft - startX); wrap.scrollTop = scrollTop - (e.pageY - wrap.offsetTop - startY); });
+  document.addEventListener('mouseup', function() { wrap.classList.remove('is-panning'); });
+});
+document.addEventListener('keydown', function(e) { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; var wrap = document.querySelector('.mermaid-wrap:hover'); if (!wrap) return; if (e.key === '+' || e.key === '=') { e.preventDefault(); var t = wrap.querySelector('.mermaid'); applyZoom(wrap, Math.min(parseFloat(t.dataset.zoom || INITIAL_ZOOM) * 1.3, 30)); } else if (e.key === '-') { e.preventDefault(); var t = wrap.querySelector('.mermaid'); applyZoom(wrap, Math.max(parseFloat(t.dataset.zoom || INITIAL_ZOOM) / 1.3, 0.3)); } });
+
+/* ===== Scroll Spy ===== */
+(function() {
+  var toc = document.getElementById('toc'); var links = toc.querySelectorAll('a'); var sections = [];
+  links.forEach(function(link) { var id = link.getAttribute('href').slice(1); var el = document.getElementById(id); if (el) sections.push({ id: id, el: el, link: link }); });
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) { links.forEach(function(l) { l.classList.remove('active'); }); var match = sections.find(function(s) { return s.el === entry.target; }); if (match) { match.link.classList.add('active'); if (window.innerWidth <= 1000) match.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  links.forEach(function(link) { link.addEventListener('click', function(e) { e.preventDefault(); var id = link.getAttribute('href').slice(1); var el = document.getElementById(id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', '#' + id); } }); });
+})();
+</script>
+</body>
+</html>

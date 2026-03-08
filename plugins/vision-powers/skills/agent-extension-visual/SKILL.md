@@ -243,8 +243,9 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    Where `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json).
 
 2. **Resolve reference paths**:
-   - Resolve `./references/section-structure.md` to its absolute path (the section structure for this skill's report)
-   - Resolve `../../references/design-system/` to its absolute path (shared design system directory)
+   - Template: resolve `../../templates/agent-extension-visual.html` to absolute path
+   - Font system: resolve `../../references/design-system/font-system.md` to absolute path
+   - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
    Do NOT read these files — the visual-report-writer agent will read them directly.
 
 3. **Delegate to visual-report-writer agent**:
@@ -255,8 +256,9 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      plugin metadata (name, version, author, license, keywords, description),
      output file path,
      output language,
-     design system directory path (absolute path from step 2, containing: css-patterns.md, font-system.md, mermaid-patterns.md, navigation.md, libraries.md, anti-slop-rules.md),
-     section structure reference path (absolute path from step 2),
+     template path (absolute path from step 2),
+     font system path (absolute path from step 2),
+     anti-slop rules path (absolute path from step 2),
      report title: "Agent Extension Visual: {plugin-name}",
      aesthetic hint: "Editorial",
      source context: { source_type, source_base, github_url (if applicable) }
@@ -293,5 +295,6 @@ For local or installed plugin sources, no cleanup needed.
 - `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
 - `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
-- `./references/section-structure.md` — Section definitions with HTML pattern snippets for the wiki report (10 sections). Phase 5R passes the absolute path; visual-report-writer reads it directly
-- `../../references/design-system/` — Shared design system (CSS patterns, font system, Mermaid patterns, navigation, libraries, anti-slop rules). Phase 5R passes the directory path; visual-report-writer reads all 6 files directly
+- `../../templates/agent-extension-visual.html` — HTML template with all CSS/JS baked in. Phase 5R passes the absolute path; visual-report-writer copies it to output and fills placeholders via Edit
+- `../../references/design-system/font-system.md` — Font pairing selection guide. Phase 5R passes the absolute path; visual-report-writer reads it directly
+- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Phase 5R passes the absolute path; visual-report-writer reads it directly
