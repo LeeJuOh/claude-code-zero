@@ -42,8 +42,8 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "2.3.0",
-      "description": "Enhanced git worktree: custom branch prefix, remote branch tracking, selective copy for gitignored files, work state protection on cleanup"
+      "version": "2.4.0",
+      "description": "Enhanced git worktree: custom branch prefix, remote branch tracking, selective copy/symlink for gitignored files, work state protection on cleanup"
     },
     {
       "name": "permission-test",
