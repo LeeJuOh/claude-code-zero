@@ -47,8 +47,15 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 ## Architecture
 > {section-intro: Shows how this plugin is structured internally.}
 
+### Plugin Narrative
+**Problem**: {user pain point}
+**Core Insight**: {non-obvious understanding}
+**Design Thesis**: {2-3 sentence fundamental approach}
+**Deliberate Constraints**: {intentional refusals + why}
+
 ### Design Philosophy
-- **{Principle Name}**: {1-2 sentence explanation}
+- **{Principle Name}**: {2-3 sentence explanation — what, why, how it manifests}
+  *Example*: {concrete file/config reference}
 
 {Mermaid component relationship diagram from feature-architect}
 
@@ -57,6 +64,42 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 {Mermaid workflow sequence diagram — if orchestrator or multi-step pattern exists}
 
 {Brief data flow description — 3-5 lines max}
+
+---
+
+## Feature Deep Dive
+> {section-intro: How this plugin's design principles are enforced in code.}
+
+### Philosophy in Action
+
+#### 01. {Principle}: {How It's Enforced}
+**Why This Matters**: {problem without this}
+**Implementation Chain**:
+1. {component} does {what} → `{file}`
+2. ...
+**Key Files**: `{relative/path}`, `{relative/path}`
+**Code Pattern**:
+\`\`\`yaml
+{snippet}
+\`\`\`
+**In Practice**: {usage scenario}
+**Best Practice**: {tip}
+
+#### 02. {Principle}: {How It's Enforced}
+{same structure}
+
+### Primary Workflow Walkthrough
+1. **{Step title}** ({component}) — {description} → `{relative/path}`
+2. **{Step title}** ({component}) — {description} → `{relative/path}`
+
+### Practical Guide
+
+#### Scenario: {title}
+1. **{Step}** — {what user does}
+   → Under the hood: {internal behavior}
+2. ...
+**Tips**:
+- {best practice}
 
 ---
 
