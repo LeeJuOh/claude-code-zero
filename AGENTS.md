@@ -25,7 +25,7 @@ Standard plugin layout inside `plugins/<plugin-name>/`:
 
 ```
 .claude-plugin/plugin.json   # Plugin manifest (no version — version lives in marketplace.json)
-commands/                     # Slash commands — legacy; use skills/ for new skills
+commands/                     # Slash commands (user-only entry points for skills, see Command Proxy Pattern)
 skills/                       # Skills with SKILL.md
 agents/                       # Sub-agents (*.md)
 hooks/                        # Hooks (hooks.json + scripts)

@@ -36,7 +36,7 @@ Standard plugin layout inside `plugins/<plugin-name>/`:
 
 ```
 .claude-plugin/plugin.json   # Plugin manifest (no version — version lives in marketplace.json)
-commands/                     # Slash commands — legacy; use skills/ for new skills
+commands/                     # Slash commands (user-only entry points for skills, see Command Proxy Pattern)
 skills/                       # Skills with SKILL.md
 agents/                       # Sub-agents (*.md)
 hooks/                        # Hooks (hooks.json + scripts)
@@ -179,14 +179,15 @@ Two ways to auto-approve out-of-CWD paths (e.g., `~/.claude-code-zero/`):
 
 `notebooklm-connector` and `plugin-bookmarks` use the PreToolUse hook for scope detection + lazy init (project-level data isolation requires Bash hash computation and atomic initialization that skill instructions alone cannot guarantee). Auto-approve was removed from these hooks — bare `allowed-tools: Read, Write, Edit` in the skills already auto-approves all paths.
 
-### Command Proxy Pattern for Large Skills
+### Command Proxy Pattern
 
 See `docs/reference/command-proxy-pattern.md` for full details (discovered from superpowers plugin v4.3.1).
 
-- Slash commands load full SKILL.md content as raw prompt text — large skills (1k+ tokens) lose execution fidelity
+- **Purpose**: Discoverability (사용자가 `/brainstorm`으로 직접 호출) + user-only 진입점 (`disable-model-invocation: true`로 모델 자동 호출 차단)
 - Split into thin `commands/{name}.md` (~50 tokens, `disable-model-invocation: true`) + full `skills/{name-variant}/SKILL.md`
 - Command body: `Invoke the {plugin}:{skill-name} skill and follow it exactly as presented to you`
 - Command and skill must have **different names** (same name → skill takes precedence). Use verb→gerund pattern (e.g., `brainstorm`→`brainstorming`)
+- Not all skills need commands — only user-initiated entry points (superpowers: 14 skills, 3 commands)
 
 ### Skill Supporting Files
 
