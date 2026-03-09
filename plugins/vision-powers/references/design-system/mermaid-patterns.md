@@ -65,7 +65,7 @@ mermaid.initialize({
     tertiaryTextColor: isDark ? '#fef3c7' : '#27201a',
     lineColor: isDark ? '#64748b' : '#94a3b8',
     fontSize: '20px',
-    fontFamily: 'var(--font-body)',
+    fontFamily: getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim() || 'system-ui, sans-serif',
     noteBkgColor: isDark ? '#1e293b' : '#fefce8',
     noteTextColor: isDark ? '#f1f5f9' : '#1e293b',
     noteBorderColor: isDark ? '#fbbf24' : '#d97706',
@@ -282,6 +282,17 @@ document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
   });
 });
 
+// Initial zoom: apply scroll area sizing after Mermaid renders SVGs
+document.querySelectorAll('.mermaid').forEach(function(el) {
+  new MutationObserver(function(mutations, obs) {
+    if (el.querySelector('svg')) {
+      var wrap = el.closest('.mermaid-wrap');
+      if (wrap) applyZoom(wrap, INITIAL_ZOOM);
+      obs.disconnect();
+    }
+  }).observe(el, { childList: true });
+});
+
 // Keyboard zoom: + / - keys when a mermaid-wrap is hovered
 document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -340,14 +351,26 @@ document.addEventListener('keydown', function(e) {
 
 1. **NEVER set `color:` in classDef** — hardcodes text color that breaks in opposite scheme. Let CSS overrides handle text via `var(--text)`.
 
-2. **Use semi-transparent fills (8-digit hex)** for node backgrounds. They layer over Mermaid's base theme, producing a tint that works in both modes:
+2. **NEVER use `rgba()` or `rgb()` in classDef** — Mermaid's parser uses commas as property separators, so `fill:rgba(8,145,178,0.15)` gets split into `fill:rgba(8` / `145` / `178` / `0.15)` causing the entire diagram to fail. This is the single most common cause of broken Mermaid diagrams.
+
+3. **Use 8-digit hex (`#RRGGBBAA`) for semi-transparent fills.** They layer over Mermaid's base theme, producing a tint that works in both modes:
 
 ```
 classDef highlight fill:#b5761433,stroke:#b57614,stroke-width:2px
 classDef muted fill:#7c6f6411,stroke:#7c6f6444,stroke-width:1px
 ```
 
-Use `20`-`44` alpha for subtle, `55`-`77` for prominent.
+Common alpha values: `11` (~7%), `22` (~13%), `33` (~20%), `44` (~27%), `55` (~33%), `77` (~47%).
+
+**Quick conversion reference:**
+
+| rgba alpha | 8-digit hex suffix |
+|---|---|
+| 0.07 | `11` |
+| 0.13 | `22` |
+| 0.15 | `26` |
+| 0.20 | `33` |
+| 0.27 | `44` |
 
 ## Diagram Authoring Rules
 

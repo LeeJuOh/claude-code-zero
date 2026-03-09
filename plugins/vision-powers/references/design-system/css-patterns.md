@@ -8,6 +8,7 @@ Define both light and dark palettes via custom properties. Pick colors from the 
 
 ```css
 :root {
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
 
@@ -71,7 +72,7 @@ Define both light and dark palettes via custom properties. Pick colors from the 
 }
 ```
 
-These are **default values** — each report may override `--font-body`, `--font-mono`, `--accent`, and `--node-*` for its chosen font pairing and palette. See `font-system.md` for pairing options.
+These are **default values** — each report may override `--font-heading`, `--font-body`, `--font-mono`, `--accent`, and `--node-*` for its chosen font pairing and palette. See `font-system.md` for pairing options.
 
 ## Typography Base
 
@@ -86,6 +87,7 @@ html {
   text-rendering: optimizeLegibility;
 }
 
+h1, h2, h3, h4 { font-family: var(--font-heading); }
 h1 { font-size: 2rem; letter-spacing: -0.01em; }
 h2 { font-size: 1.4rem; letter-spacing: -0.01em; }
 h3 { font-size: 1.1rem; letter-spacing: -0.01em; }

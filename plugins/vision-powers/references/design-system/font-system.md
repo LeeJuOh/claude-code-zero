@@ -1,25 +1,31 @@
 # Font System
 
-Typography is the primary design signal. Every report uses a distinct font pairing rotated to prevent visual monotony. Never use the same pairing for consecutive reports.
+Typography is the primary design signal. Every report uses a distinct font triple (heading / body / mono) rotated to prevent visual monotony. Never use the same pairing for consecutive reports.
 
 ## Font Pairings
 
-12 curated pairings. Load via Google Fonts CDN with `display=swap`.
+12 curated triples. Load via Google Fonts CDN with `display=swap`.
 
-| # | Body / Headings | Mono / Labels | Feel | Recommended For |
-|---|---|---|---|---|
-| 1 | DM Sans | Fira Code | Friendly, developer | Blueprint, technical docs |
-| 2 | Instrument Serif | JetBrains Mono | Editorial, refined | Plan reviews, decision logs |
-| 3 | IBM Plex Sans | IBM Plex Mono | Reliable, readable | Architecture diagrams |
-| 4 | Bricolage Grotesque | Fragment Mono | Bold, characterful | Data tables, dashboards |
-| 5 | Plus Jakarta Sans | Azeret Mono | Rounded, approachable | Wiki reports, audits |
-| 6 | Outfit | Space Mono | Clean geometric, modern | Flowcharts, pipelines |
-| 7 | Sora | IBM Plex Mono | Technical, precise | ER diagrams, schemas |
-| 8 | Crimson Pro | Noto Sans Mono | Scholarly, serious | RFC reviews, specs |
-| 9 | Fraunces | Source Code Pro | Warm, distinctive | Project recaps |
-| 10 | Geist | Geist Mono | Vercel-inspired, sharp | Modern API docs |
-| 11 | Red Hat Display | Red Hat Mono | Cohesive family | System overviews |
-| 12 | Libre Franklin | Inconsolata | Classic, reliable | Data-dense tables |
+- **Heading** (`--font-heading`): Used for h1–h4 and pull-quotes. Display/serif fonts OK here.
+- **Body** (`--font-body`): Used for paragraphs, tables, lists — ALL running text. **Must be a readable sans-serif** for English legibility at 15px.
+- **Mono** (`--font-mono`): Used for code, labels, badges.
+
+| # | Heading | Body | Mono | Feel | Recommended For |
+|---|---|---|---|---|---|
+| 1 | DM Sans | DM Sans | Fira Code | Friendly, developer | Blueprint, technical docs |
+| 2 | Instrument Serif | DM Sans | JetBrains Mono | Editorial, refined | Plan reviews, decision logs |
+| 3 | IBM Plex Sans | IBM Plex Sans | IBM Plex Mono | Reliable, readable | Architecture diagrams |
+| 4 | Bricolage Grotesque | Bricolage Grotesque | Fragment Mono | Bold, characterful | Data tables, dashboards |
+| 5 | Plus Jakarta Sans | Plus Jakarta Sans | Azeret Mono | Rounded, approachable | Wiki reports, audits |
+| 6 | Outfit | Outfit | Space Mono | Clean geometric, modern | Flowcharts, pipelines |
+| 7 | Sora | Sora | IBM Plex Mono | Technical, precise | ER diagrams, schemas |
+| 8 | Crimson Pro | Libre Franklin | Noto Sans Mono | Scholarly, serious | RFC reviews, specs |
+| 9 | Fraunces | DM Sans | Source Code Pro | Warm, distinctive | Project recaps |
+| 10 | Geist | Geist | Geist Mono | Vercel-inspired, sharp | Modern API docs |
+| 11 | Red Hat Display | Red Hat Text | Red Hat Mono | Cohesive family | System overviews |
+| 12 | Libre Franklin | Libre Franklin | Inconsolata | Classic, reliable | Data-dense tables |
+
+When heading = body (pairings 1, 3–7, 10, 12), set `--font-heading` to the same value as `--font-body`. When heading ≠ body (pairings 2, 8, 9, 11), load both fonts via Google Fonts.
 
 Pairings 1-5 are the primary rotation set. Use 6-12 for variety when the primary set has been recently used.
 
@@ -28,14 +34,16 @@ Pairings 1-5 are the primary rotation set. Use 6-12 for variety when the primary
 | Report Type | Recommended Pairings | Aesthetic |
 |---|---|---|
 | Wiki (vision-wiki) | #5 (Plus Jakarta Sans), #1 (DM Sans), #3 (IBM Plex Sans) | Approachable, reliable |
-| Diff Review (vision-diff) | #2 (Instrument Serif), #6 (Outfit), #4 (Bricolage Grotesque) | Editorial, bold |
+| Diff Review (vision-diff) | #2 (Instrument Serif + DM Sans), #6 (Outfit), #4 (Bricolage Grotesque) | Editorial, bold |
 | Plan Review (vision-plan) | #1 (DM Sans), #3 (IBM Plex Sans), #7 (Sora) | Blueprint, technical |
+| Project Recap | #9 (Fraunces + DM Sans), #2 (Instrument Serif + DM Sans), #8 (Crimson Pro + Libre Franklin) | Warm, editorial |
 
 ## Rotation Rules
 
 1. **Never use the same pairing consecutively** — if the last report used DM Sans + Fira Code, pick a different one
-2. **Match pairing to content voice** — editorial content gets serif or refined sans, technical content gets geometric sans
+2. **Match pairing to content voice** — editorial content gets serif headings with readable sans body, technical content gets geometric sans
 3. **The agent chooses** — the report-writer agent selects from this table based on the content type and previous usage
+4. **Body must always be sans-serif** — serif and display fonts go to `--font-heading` only, never to `--font-body`
 
 ## Forbidden Fonts
 
@@ -62,12 +70,23 @@ Replace `{Body}` and `{Mono}` with the chosen pairing. Use `+` for spaces in fon
 
 ### CSS Variable Override
 
-After loading the font, override the CSS variables:
+After loading the font, override all three CSS variables:
 
 ```css
 :root {
+  --font-heading: '{Heading Font}', system-ui, sans-serif;
   --font-body: '{Body Font}', system-ui, sans-serif;
   --font-mono: '{Mono Font}', 'SF Mono', Consolas, monospace;
+}
+```
+
+When heading = body (most pairings), set both to the same value. When heading ≠ body (serif pairings like #2, #8, #9), the heading font gets a serif fallback:
+
+```css
+:root {
+  --font-heading: 'Instrument Serif', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 }
 ```
 
@@ -95,10 +114,11 @@ Replace `Noto+Sans+KR` with the appropriate CJK font for the output language. Mu
 
 ### Font Stack with CJK
 
-Insert the CJK font between the body font and system fallback:
+Insert the CJK font between each font and its system fallback:
 
 ```css
 :root {
+  --font-heading: '{Heading Font}', 'Noto Sans KR', system-ui, sans-serif;
   --font-body: '{Body Font}', 'Noto Sans KR', system-ui, sans-serif;
 }
 ```
