@@ -65,8 +65,8 @@ Read the output file you just wrote (required before Edit calls). While reading,
 Edit the output file to replace these placeholders in a single Edit call per placeholder:
 - `<!-- LANG -->` → language code (e.g., "en", "ko", "ja")
 - `<!-- TITLE -->` → report title
-- `<!-- FONT_LINK -->` → Google Fonts `<link>` tag for the selected font pairing
-- `<!-- CSS_VARIABLES -->` → CSS variable overrides (--font-body, --font-mono, --accent, etc.)
+- `<!-- FONT_LINK -->` → Google Fonts `<link>` tag for the selected font pairing (load both heading and body fonts when they differ)
+- `<!-- CSS_VARIABLES -->` → CSS variable overrides (--font-heading, --font-body, --font-mono, --accent, etc.)
 - `<!-- CSS_VARIABLES_DARK -->` → dark mode accent overrides
 - `<!-- MERMAID_THEME -->` → additional themeVariables if needed (or remove placeholder)
 
@@ -86,6 +86,8 @@ Each section replacement contains the full section HTML (section element, headin
 
 Select a font pairing from `font-system.md`. Choose based on the aesthetic hint if provided, or pick freely from the 12 pairings. Follow the rotation rule: never use the same pairing consecutively.
 
+Each pairing defines three fonts: **Heading** (`--font-heading`), **Body** (`--font-body`), **Mono** (`--font-mono`). When heading ≠ body (serif pairings like #2, #8, #9), load both fonts via Google Fonts and set them as separate CSS variables. The body font must always be a readable sans-serif — serif/display fonts go to `--font-heading` only.
+
 Content-type recommendations:
 - **diff-visual**: Editorial or Blueprint pairings (technical, precise feel)
 - **plan-visual**: Blueprint or Paper-ink pairings (architectural, structured feel)
@@ -96,11 +98,11 @@ Content-type recommendations:
 
 When the output language is non-Latin (ko, ja, zh), include the corresponding CJK font:
 
-| Language | Add to `<link>` | Add to `--font-body` stack |
-|----------|-----------------|---------------------------|
-| ko | `&family=Noto+Sans+KR:wght@400;500;700` | `'Noto Sans KR'` after body font |
-| ja | `&family=Noto+Sans+JP:wght@400;500;700` | `'Noto Sans JP'` after body font |
-| zh | `&family=Noto+Sans+SC:wght@400;500;700` | `'Noto Sans SC'` after body font |
+| Language | Add to `<link>` | Add to font stacks |
+|----------|-----------------|---------------------|
+| ko | `&family=Noto+Sans+KR:wght@400;500;700` | `'Noto Sans KR'` after heading and body fonts |
+| ja | `&family=Noto+Sans+JP:wght@400;500;700` | `'Noto Sans JP'` after heading and body fonts |
+| zh | `&family=Noto+Sans+SC:wght@400;500;700` | `'Noto Sans SC'` after heading and body fonts |
 
 ## Template Placeholders Reference
 
@@ -127,7 +129,7 @@ When filling section placeholders:
 
 1. **Use only CSS classes defined in the template** — the template already includes all design system CSS and section-specific CSS. Do not add `<style>` blocks or inline styles except `style="--i: N"` for animation stagger.
 
-2. **Mermaid diagrams**: Use `classDef` with semi-transparent fills (never `color:` property). Wrap in `.mermaid-wrap` with `.zoom-controls`.
+2. **Mermaid diagrams**: Always use `<pre class="mermaid">` (never `<div>`). In `classDef`, use 8-digit hex for fills (`fill:#0891b226`) — NEVER `rgba()` because commas break Mermaid's parser. Never set `color:` in classDef. Wrap in `.mermaid-wrap` with `.zoom-controls`.
 
 3. **Chart.js**: Place chart configurations in `<!-- CHART_DATA -->` as a `<script>` block. Use `isDark` detection for colors.
 
@@ -151,7 +153,7 @@ Use `<a href="{url}" class="source-link" target="_blank">{relative_path}</a>`.
 ## Anti-Slop Checklist
 
 Before completing, verify:
-1. **Font**: Selected pairing as `--font-body` and `--font-mono`. No Inter, Roboto, or system-ui as primary.
+1. **Font**: Selected pairing as `--font-heading`, `--font-body`, and `--font-mono`. Body font must be sans-serif. No Inter, Roboto, or system-ui as primary.
 2. **Colors**: CSS variable overrides use approved palettes from anti-slop rules. No violet/indigo.
 3. **No emoji**: Zero emoji anywhere in the report.
 4. **Section completeness**: All section placeholders replaced with content.

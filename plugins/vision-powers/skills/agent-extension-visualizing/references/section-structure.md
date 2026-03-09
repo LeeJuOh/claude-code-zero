@@ -137,18 +137,40 @@ At-a-glance summary with key features, what/how/unique breakdown, KPI stat cards
 
 **Depth tier**: `.ve-card` (default)
 
-Design philosophy list, followed by Mermaid diagrams: component relationship graph, data flow, and workflow sequence.
+Plugin narrative block, design philosophy cards with examples, followed by Mermaid diagrams: component relationship graph, data flow, and workflow sequence.
 
 ```html
 <section id="architecture" class="ve-card" style="--i: 2">
   <h2>Architecture</h2>
 
+  <div class="narrative-block">
+    <div class="narrative-item">
+      <h4>Problem</h4>
+      <p>{user pain point}</p>
+    </div>
+    <div class="narrative-item">
+      <h4>Core Insight</h4>
+      <p>{non-obvious understanding}</p>
+    </div>
+    <div class="narrative-item narrative-item--thesis">
+      <h4>Design Thesis</h4>
+      <p>{fundamental approach}</p>
+    </div>
+    <div class="narrative-item">
+      <h4>Deliberate Constraints</h4>
+      <p>{intentional refusals}</p>
+    </div>
+  </div>
+
   <h3>Design Philosophy</h3>
-  <ul class="philosophy-list">
-    <li>{principle 1}</li>
-    <li>{principle 2}</li>
-    <!-- more principles -->
-  </ul>
+  <div class="philosophy-grid">
+    <div class="philosophy-card">
+      <h4>{Principle Name}</h4>
+      <p>{2-3 sentence explanation}</p>
+      <p class="philosophy-example"><em>Example:</em> {concrete codebase reference}</p>
+    </div>
+    <!-- more philosophy cards -->
+  </div>
 
   <h3>Component Relationships</h3>
   <div class="mermaid-wrap">
@@ -195,33 +217,40 @@ Use `classDef` with semi-transparent fills only. Never use `color:` in classDef.
 
 **Depth tier**: `.ve-card--elevated`
 
-Core mechanisms analysis — how the plugin's key features work internally, with reusable patterns and a primary workflow walkthrough.
+Philosophy enforcement analysis — how the plugin's design principles are made concrete in code, with implementation chains, practical scenarios, and a tutorial guide.
 
 ```html
 <section id="feature-deep-dive" class="ve-card ve-card--elevated" style="--i: 3">
   <h2>Feature Deep Dive</h2>
-  <p class="lead">Core implementation mechanisms — reusable patterns for plugin development</p>
+  <p class="lead">How this plugin's design principles are enforced in code — each point traces from philosophy to implementation</p>
 
   <div class="mechanism-grid">
     <div class="mechanism-card">
       <div class="mechanism-header">
         <span class="mechanism-number">01</span>
-        <h3>{mechanism name}</h3>
+        <h3>{Principle}: {How It's Enforced}</h3>
       </div>
-      <p class="mechanism-enables"><strong>Enables:</strong> {user-facing capability}</p>
-      <h4>How it works</h4>
+      <div class="why-matters">
+        <strong>Why This Matters</strong>
+        <p>{problem without this}</p>
+      </div>
+      <h4>Implementation Chain</h4>
       <ol class="mechanism-steps">
-        <li>{step 1}</li>
-        <li>{step 2}</li>
+        <li>{step} → <a href="{url}" class="source-link">{file}</a></li>
         <!-- more steps -->
       </ol>
-      <h4>Key Files</h4>
-      <ul><li><a href="{source-url}" class="source-link">{relative/path}</a></li></ul>
       <details>
         <summary>Code Pattern</summary>
-        <pre><code>{core code/config pattern}</code></pre>
+        <pre><code>{snippet}</code></pre>
       </details>
-      <p class="mechanism-reuse"><strong>Reuse:</strong> {how to adapt for other plugins}</p>
+      <div class="in-practice">
+        <strong>In Practice</strong>
+        <p>{real usage scenario}</p>
+      </div>
+      <div class="best-practice">
+        <strong>Best Practice</strong>
+        <p>{tip}</p>
+      </div>
     </div>
     <!-- more mechanism cards -->
   </div>
@@ -247,7 +276,49 @@ sequenceDiagram
     %% annotated workflow sequence based on analysis data
     </pre>
   </div>
+
+  <h3>Practical Guide</h3>
+  <div class="tutorial-scenarios">
+    <div class="tutorial-scenario">
+      <h4>{Scenario Title}</h4>
+      <div class="tutorial-steps">
+        <div class="tutorial-step">
+          <div class="step-user">
+            <span class="step-number">1</span>
+            <p>{what user does}</p>
+          </div>
+          <div class="step-hood">
+            → {what happens inside the plugin}
+          </div>
+        </div>
+        <!-- more tutorial steps -->
+      </div>
+      <div class="tutorial-tips">
+        <strong>Tips</strong>
+        <ul><li>{best practice}</li></ul>
+      </div>
+    </div>
+    <!-- more scenarios -->
+  </div>
 </section>
+```
+
+**Narrative block CSS** (add to inline styles):
+```css
+.narrative-block { display: flex; flex-direction: column; gap: 1rem; margin: 1.5rem 0; padding: 1.5rem; background: color-mix(in srgb, var(--accent) 4%, var(--surface)); border-radius: 12px; border-left: 3px solid var(--accent); }
+.narrative-item h4 { margin: 0 0 0.25rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.narrative-item p { margin: 0; }
+.narrative-item--thesis { padding-top: 0.5rem; border-top: 1px solid var(--border); }
+.narrative-item--thesis p { font-size: 1.05rem; font-weight: 500; }
+```
+
+**Philosophy grid CSS** (add to inline styles):
+```css
+.philosophy-grid { display: flex; flex-direction: column; gap: 1rem; margin: 1rem 0; }
+.philosophy-card { padding: 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.philosophy-card h4 { margin: 0 0 0.5rem; color: var(--accent); }
+.philosophy-card p { margin: 0 0 0.5rem; }
+.philosophy-example { font-size: 0.85rem; color: var(--text-dim); padding: 0.5rem 0.75rem; background: var(--surface-1); border-radius: 4px; }
 ```
 
 **Mechanism CSS** (add to inline styles):
@@ -256,10 +327,14 @@ sequenceDiagram
 .mechanism-card { padding: 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .mechanism-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
 .mechanism-number { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 700; color: var(--accent); opacity: 0.6; }
-.mechanism-enables { font-size: 0.95rem; color: var(--text-dim); margin-bottom: 1rem; }
 .mechanism-steps { padding-left: 1.5rem; margin: 0.5rem 0 1rem; }
 .mechanism-steps li { margin-bottom: 0.4rem; }
-.mechanism-reuse { font-size: 0.9rem; padding: 0.75rem; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); border-radius: 6px; margin-top: 0.75rem; }
+.why-matters { padding: 0.75rem; background: color-mix(in srgb, var(--warning) 6%, var(--surface)); border-left: 2px solid var(--warning); border-radius: 0 6px 6px 0; margin-bottom: 1rem; }
+.why-matters strong { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--warning); margin-bottom: 0.25rem; }
+.in-practice { padding: 0.75rem; background: color-mix(in srgb, var(--info) 6%, var(--surface)); border-left: 2px solid var(--info); border-radius: 0 6px 6px 0; margin-top: 0.75rem; }
+.in-practice strong { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--info); margin-bottom: 0.25rem; }
+.best-practice { padding: 0.75rem; background: color-mix(in srgb, var(--success) 6%, var(--surface)); border-left: 2px solid var(--success); border-radius: 0 6px 6px 0; margin-top: 0.75rem; }
+.best-practice strong { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--success); margin-bottom: 0.25rem; }
 .workflow-trace { display: flex; flex-direction: column; gap: 0; margin: 1.5rem 0; }
 .trace-step { display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
 .trace-step:last-child { border-bottom: none; }
@@ -270,6 +345,19 @@ sequenceDiagram
 .source-link { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); text-decoration: none; }
 .source-link:hover { text-decoration: underline; }
 .source-link::after { content: ' \2197'; font-size: 0.7em; }
+```
+
+**Tutorial CSS** (add to inline styles):
+```css
+.tutorial-scenario { margin-bottom: 2rem; }
+.tutorial-steps { display: flex; flex-direction: column; gap: 0; margin: 1rem 0; }
+.tutorial-step { padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+.tutorial-step:last-child { border-bottom: none; }
+.step-user { display: flex; align-items: flex-start; gap: 0.75rem; }
+.step-number { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--accent); min-width: 1.5rem; }
+.step-hood { margin-left: 2.25rem; font-size: 0.85rem; color: var(--text-dim); padding: 0.4rem 0.75rem; background: var(--surface-1); border-radius: 4px; margin-top: 0.25rem; }
+.tutorial-tips { margin-top: 1rem; padding: 0.75rem; background: color-mix(in srgb, var(--success) 5%, var(--surface-1)); border-radius: 6px; }
+.tutorial-tips strong { display: block; margin-bottom: 0.5rem; color: var(--success); }
 ```
 
 ---

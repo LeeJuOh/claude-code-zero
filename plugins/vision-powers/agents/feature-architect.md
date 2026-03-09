@@ -43,7 +43,33 @@ Read the actual component files (SKILL.md, agent.md, command.md, hooks.json, etc
 
 ## Analysis Procedure
 
-### 0. Skill Classification (large plugins only)
+### 0. Plugin Narrative Extraction
+
+Before analyzing individual components, understand the plugin as a whole.
+
+**Read** (in parallel, whichever exist): README.md, plugin.json description, main SKILL.md descriptions (frontmatter), CLAUDE.md or project docs.
+
+**Extract**:
+
+| Field | Content |
+|-------|---------|
+| Problem | User pain point. Not "provides X" but "users struggle with Y because Z" |
+| Core Insight | The non-obvious understanding behind the design — the "aha" that explains every decision |
+| Design Thesis | 2-3 sentences: the fundamental approach connecting problem to mechanisms |
+| Deliberate Constraints | What the plugin intentionally refuses to do, and why |
+
+**Where to look**:
+- Pain points in descriptions ("when X happens", "to avoid Y", "instead of Z")
+- Repeated patterns across components (consistent choice = principle)
+- Anti-patterns / "NOT for" sections (refusals reveal philosophy)
+- How it differs from the naive approach to the same problem
+
+**Scale by complexity**:
+- Simple (< 3 components): 1-sentence thesis only, skip other fields
+- Standard (3-10 components): all fields, 1-2 sentences each
+- Complex (10+ components, orchestrator pattern): deep narrative — this frames the entire report
+
+### 0.5 Skill Classification (large plugins only)
 
 When the batch contains more than 8 skills, classify each skill before detailed analysis.
 
@@ -133,7 +159,16 @@ Analyze how components interact:
 - **Memory persistence**: Agent `memory` field → persistent data storage patterns
 - **Orchestration pattern**: Is there a coordinator skill that delegates to agents?
 
-**Design philosophy extraction**: Identify 1-3 core design principles that define the plugin's approach. Each principle has a named concept and 1-2 sentence explanation. Examples: "Orchestrator Pattern — a single skill coordinates multiple specialized agents", "Progressive Disclosure — simple interface with details available on demand".
+**Design philosophy extraction**: Identify 3-5 core design principles (1-2 for simple plugins). Each principle needs:
+- Named concept
+- 2-3 sentence explanation: what it means, why it matters, how it manifests
+- Concrete example: cite an actual file/config/setting from the plugin
+
+The principles should connect to the Plugin Narrative — show how each serves the core insight. Look for principles in:
+- Permission model choices (why bypassPermissions vs plan?)
+- Component separation patterns (why this agent can't write code?)
+- Tool restrictions (what's deliberately excluded?)
+- Workflow ordering (why discuss before plan before execute?)
 
 Create Mermaid diagrams showing component relationships:
 
@@ -184,25 +219,26 @@ Adapt node IDs and labels to match actual plugin components. Use `-->` for direc
 - Avoid naming custom classes `.node` — conflicts with Mermaid's internal class
 - Keep diagrams to ~15 nodes max per diagram. Split into multiple diagrams if needed
 
-### 2.5 Mechanism Analysis
+### 2.5 Philosophy in Action
 
-Select 3-5 core mechanisms — features where multiple components collaborate. Skip single-file utilities.
+Select 3-5 philosophy enforcement points — places where the plugin's design thesis is made concrete in code/config. Each point starts from a principle and traces the full implementation chain.
 
 **Selection criteria**:
-- Multi-component collaboration (not single-file-complete)
-- Unique implementation patterns of the plugin
-- Patterns reusable in other plugins
+- Directly enforces a design principle from the narrative
+- Multi-component implementation (not single-file-complete)
+- Would break the plugin's philosophy if removed
 
-**For each mechanism**:
+**For each enforcement point**:
 
 | Field | Content |
 |-------|---------|
-| Name | Mechanism name (e.g., "Parallel Agent Orchestration") |
-| Enables | User-facing capability this enables |
-| Steps | Implementation steps (3-7 steps) |
+| Principle | Which design principle this enforces |
+| Why It Matters | What goes wrong without this — the problem it prevents |
+| Implementation Chain | How the plugin technically enforces this: which component does what, with file paths (3-7 steps) |
 | Key Files | Relative file paths involved |
-| Code Pattern | Core code/config snippet |
-| Reuse | How to adapt this pattern for other plugins |
+| Code Pattern | Core code/config snippet showing the enforcement |
+| In Practice | Real usage scenario: "User does X → plugin responds with Y → result Z" |
+| Best Practice | Tip for getting the most out of this |
 
 **Primary Workflow Walkthrough**:
 - Trace from user trigger → final output, step by step
@@ -233,6 +269,22 @@ Extract usage information from available sources:
 - **Prerequisites**: Detect from MCP dependencies, env vars, CLI tools
 - **Usage examples**: Extract code blocks from README.md and SKILL.md
 - **Model requirements**: From `model` fields in frontmatter
+
+### 4.5 Practical Guide
+
+Extract 2-3 real-world usage scenarios from README, SKILL.md descriptions, and examples.
+
+**For each scenario**:
+
+| Field | Content |
+|-------|---------|
+| Title | Scenario name (e.g., "First project setup to deployment") |
+| Steps | What the user actually does: commands, inputs, choices (3-7 steps) |
+| Under the Hood | What happens inside the plugin at each step |
+| Tips | Best practices for this scenario |
+
+If README lacks explicit scenarios, infer from plugin structure and trigger phrases.
+Simple plugins (< 3 components): 1 scenario is sufficient.
 
 ### 5. Quality Checklist
 
@@ -338,9 +390,15 @@ Return your analysis in this exact structure:
 
 ## Architecture
 
+### Plugin Narrative
+**Problem**: {user pain point}
+**Core Insight**: {non-obvious understanding}
+**Design Thesis**: {2-3 sentence fundamental approach}
+**Deliberate Constraints**: {intentional refusals + why}
+
 ### Design Philosophy
-- **{Principle Name}**: {1-2 sentence explanation}
-- **{Principle Name}**: {1-2 sentence explanation}
+- **{Principle Name}**: {2-3 sentence explanation — what, why, how it manifests}
+  *Example*: {concrete file/config reference from codebase}
 
 {Mermaid component relationship diagram}
 
@@ -352,26 +410,36 @@ Return your analysis in this exact structure:
 
 ## Feature Deep Dive
 
-### Core Mechanisms
+### Philosophy in Action
 
-#### 01. {Mechanism Name}
-**Enables**: {user-facing capability}
-**How it works**:
-1. {step}
-2. {step}
+#### 01. {Principle}: {How It's Enforced}
+**Why This Matters**: {problem without this}
+**Implementation Chain**:
+1. {component} does {what} → `{file}`
+2. ...
 **Key Files**: `{relative/path}`, `{relative/path}`
 **Code Pattern**:
 \`\`\`yaml
-{core code/config snippet}
+{snippet}
 \`\`\`
-**Reuse**: {how to adapt this pattern for other plugins}
+**In Practice**: {usage scenario}
+**Best Practice**: {tip}
 
-#### 02. {Mechanism Name}
+#### 02. {Principle}: {How It's Enforced}
 {same structure}
 
 ### Primary Workflow Walkthrough
 1. **{Step title}** ({component}) — {description} → `{relative/path}`
 2. **{Step title}** ({component}) — {description} → `{relative/path}`
+
+### Practical Guide
+
+#### Scenario: {title}
+1. **{Step}** — {what user does}
+   → Under the hood: {internal behavior}
+2. ...
+**Tips**:
+- {best practice}
 
 ## Dependencies & Constraints
 

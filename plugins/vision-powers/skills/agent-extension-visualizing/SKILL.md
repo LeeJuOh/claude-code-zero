@@ -265,21 +265,18 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    })
    ```
 
-4. **Report completion**: Output the `file:///` URL to the user:
+4. **Report completion + Feedback Loop**:
+
+   Use `AskUserQuestion` with the `file://` URL embedded in the question text itself:
    ```
    Report generated: file://{home}/.claude-code-zero/vision-powers/reports/{plugin-name}-report.html
+
+   Please review the report. Any changes needed, or should I clean up temporary files?
    ```
+   (Translate to output language. The `file://` URL must always be included — it is how the user opens the report.)
 
-#### Phase 6: Feedback Loop
-
-After report generation, allow the user to review and request changes before cleanup:
-
-1. Output the report path as a `file://` URL
-2. Ask the user: "리포트를 확인해주세요. 수정할 부분이 있나요? 아니면 임시 파일을 정리할까요?" (translate to output language)
-3. If the user requests changes → apply modifications to the HTML file, then repeat from step 2
-4. If the user confirms completion → proceed to Phase 7
-
-Use `AskUserQuestion` for the feedback prompt. Do NOT skip this phase — always give the user a chance to review.
+   - If the user requests changes → apply modifications to the HTML file, then ask again with the same URL
+   - If the user confirms completion → proceed to Phase 7
 
 #### Phase 7: Cleanup
 
