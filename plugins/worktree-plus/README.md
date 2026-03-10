@@ -95,6 +95,32 @@ When creating a worktree, branches are resolved in order:
 
 This means `claude -w my-feature` will automatically track `origin/my-feature` if it exists remotely, even if there's no local branch yet.
 
+## Creation Log
+
+Each worktree creation generates a `.worktree-create.log` file inside the worktree directory (`<worktree-path>/.worktree-create.log`). The log contains:
+
+- **Creation metadata** — timestamp, worktree name, branch name, source project root
+- **`.worktreeinclude` results** — which files/directories were copied, skipped, or failed
+- **`.worktreelink` results** — which files/directories were symlinked, skipped, or failed
+
+Example log:
+
+```
+Created: 2026-03-10 14:32:01
+Name:    my-feature
+Branch:  worktree-my-feature
+Source:  /home/user/my-project
+---
+Processing .worktreeinclude...
+  copied: .env
+  copied: config/secrets.yaml
+Processing .worktreelink...
+  linked: references/ -> /home/user/my-project/references
+  linked: node_modules/ -> /home/user/my-project/node_modules
+```
+
+This log is useful for verifying which gitignored files were included and for debugging setup issues. The log is created inside the worktree, so it is automatically cleaned up when the worktree is removed.
+
 ## Worktree Cleanup
 
 Worktree cleanup uses a two-layer defense to protect unsaved work:
