@@ -4,7 +4,7 @@ Reusable CSS patterns for self-contained HTML reports. All reports use CSS custo
 
 ## Theme Setup
 
-Define both light and dark palettes via custom properties. Pick colors from the approved palette in `anti-slop-rules.md` — never use violet/indigo defaults.
+Define both light and dark palettes via custom properties. Pick colors from the approved palette in `anti-slop-rules.md` — never use violet/indigo defaults. See `color-palette.md` for the semantic meaning of each color variable across report types.
 
 ```css
 :root {

@@ -265,7 +265,17 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    })
    ```
 
-4. **Report completion + Feedback Loop**:
+4. **Report validation** — after the agent completes, Read the output HTML file and verify:
+   - No unreplaced placeholders (`<!-- SECTION_`, `<!-- LANG -->`, `<!-- TITLE -->`, `<!-- TOC_CONTENT -->`, `<!-- CHART_DATA -->`)
+   - Every `<section>` has meaningful content beyond just a heading
+   - Mermaid `<pre class="mermaid">` blocks contain diagram syntax, not just placeholder comments
+   - Chart.js data is populated (not empty object/array)
+
+   If issues found, fix via Edit on the output file.
+
+   If `mcp__claude-in-chrome__*` tools are available, also open `file://{output-path}` in Chrome via `tabs_create_mcp` + `navigate`, then use `javascript_tool` to check for Mermaid render errors and empty sections. Fix any issues found.
+
+5. **Report completion + Feedback Loop**:
 
    Use `AskUserQuestion` with the `file://` URL embedded in the question text itself:
    ```

@@ -15,6 +15,21 @@ All CSS classes (`.ve-card`, `.ve-card--hero`, `.ve-card--elevated`, `.ve-card--
 
 Use these consistently across all sections — status cards, architecture nodes, severity indicators, and Mermaid diagram elements.
 
+## Zoom Levels
+
+Reports follow a three-level information hierarchy. Depth tiers map to zoom levels:
+
+| Level | Scan Time | Purpose |
+|-------|-----------|---------|
+| **L1 — Glance** | 30 seconds | What is this project + is it healthy? Enough to re-orient after time away |
+| **L2 — Structure** | 2 minutes | Architecture, recent themes, key decisions — rebuild the mental model |
+| **L3 — Detail** | As needed | Debt hotspots, next steps, supporting data — reference material |
+
+Section mapping:
+- **L1**: Section 1 (Project Identity), Section 5 (State of Things)
+- **L2**: Section 2 (Architecture), Section 3 (Activity), Section 4 (Decisions)
+- **L3**: Section 6 (Mental Model), Section 7 (Cognitive Debt), Section 8 (Next Steps)
+
 ---
 
 ## Section 1: Project Identity (Hero)

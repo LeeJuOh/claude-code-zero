@@ -16,6 +16,21 @@ All CSS classes (`.ve-card`, `.ve-card--hero`, `.ve-card--elevated`, `.ve-card--
 
 Use these consistently across all sections — risk badges, status indicators, severity markers, and Mermaid diagram nodes.
 
+## Zoom Levels
+
+Reports follow a three-level information hierarchy. Depth tiers map to zoom levels:
+
+| Level | Scan Time | Purpose |
+|-------|-----------|---------|
+| **L1 — Glance** | 30 seconds | What is this plugin + is it safe? Enough to decide if it's worth installing |
+| **L2 — Structure** | 2 minutes | Architecture, security posture, quality profile — evaluate the plugin |
+| **L3 — Detail** | As needed | Per-component analysis, dependencies, implementation details — reference material |
+
+Section mapping:
+- **L1**: Section 1 (Header), Section 2 (Plugin Overview)
+- **L2**: Section 3 (Architecture), Section 7 (Security Audit), Section 9 (Plugin Profile)
+- **L3**: Section 4 (Feature Deep Dive), Sections 5-6 (Usage, Components), Section 8 (Dependencies), Section 10 (Footer)
+
 ---
 
 ## Section 1: Header (Hero)
