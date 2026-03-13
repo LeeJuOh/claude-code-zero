@@ -33,10 +33,12 @@ Write or update a handoff document so the next agent with fresh context can cont
 2. If the base directory does not exist, create it
 3. Check if the target file already exists
 4. If it exists, read it first to understand prior context before updating
-5. Create or update the document with:
+5. Create or update the document with the following sections, ordered for resumption — reading top to bottom should let a fresh agent start immediately:
    - **Goal**: What we're trying to accomplish
+   - **First Action**: The single most immediate thing to do when resuming — one specific action, not a list. Should be actionable without reading anything else.
+   - **Context**: Mental state when pausing — what were you thinking, what was the plan, what "vibe" to carry into the next session
    - **Current Progress**: What's been done so far
    - **What Worked**: Approaches that succeeded
    - **What Didn't Work**: Approaches that failed (so they're not repeated)
-   - **Next Steps**: Clear action items for continuing
+   - **Next Steps**: Remaining action items after the first action
 6. Save to the determined path and tell the user the file path so they can start a fresh conversation with just that path
