@@ -7,7 +7,7 @@ description: >
   status, progress, or recent activity. Accepts a time window (2w, 30d, 3m).
   Not for generating changelogs, release notes, or commit-level diffs.
 argument-hint: "[time-window: 2w|30d|3m] [--lang ko|en|ja]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git log *), Bash(git shortlog *), Bash(git status *), Bash(git branch *), Bash(git rev-parse *), Bash(git diff *), Bash(wc -l *)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git log *), Bash(git shortlog *), Bash(git status *), Bash(git branch *), Bash(git rev-parse *), Bash(git diff *), Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/project-recap-*)
 ---
 
 # Project Recap
@@ -103,40 +103,65 @@ Delegate HTML report generation to the visual-report-writer agent.
 
 2. **Resolve reference paths**:
    - Template: resolve `../../templates/project-recap.html` to absolute path
+   - Section structure: resolve `references/section-structure.md` to absolute path
    - Font system: resolve `../../references/design-system/font-system.md` to absolute path
    - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
+   - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
+   Do NOT read these files — they are passed as paths to the agent and assembler.
 
-3. **Delegate to visual-report-writer**:
+3. **Create sections temp directory**:
+   The sections directory path: `/tmp/project-recap-{dirname}-sections/`
+   Pick any 8-character hex string for `{dirname}` (e.g., `a1b2c3d4`).
+   No mkdir needed — the visual-report-writer creates files via Write, which auto-creates directories.
+
+4. **Delegate to visual-report-writer**:
    ```
    Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
      Analysis data: {all gathered data — identity, activity, state, decisions, architecture, cognitive debt},
-     template path (absolute path from step 2),
+     sections output directory (absolute path from step 3),
+     section structure path (absolute path from step 2),
      font system path (absolute path from step 2),
      anti-slop rules path (absolute path from step 2),
-     Output file path: {absolute output path},
      Output language: {detected language},
      Report title: "Project Recap: {project-name} ({time-window})",
      Aesthetic hint: "Paper-ink"
    })
    ```
+   The agent writes section files and `metadata.json` to the sections directory.
 
-4. **Report validation** — after the agent completes, Read the output HTML file and verify:
-   - No unreplaced placeholders (`<!-- SECTION_`, `<!-- LANG -->`, `<!-- TITLE -->`, `<!-- TOC_CONTENT -->`, `<!-- CHART_DATA -->`)
+5. **Assemble report** — run the assembler script to combine template + sections:
+   ```
+   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --output {output-path})
+   ```
+
+6. **Report validation** — after assembly, Read the output HTML file and verify:
+   - No unreplaced section placeholders (`<!-- SECTION_`)
    - Every `<section>` has meaningful content beyond just a heading
    - Mermaid `<pre class="mermaid">` blocks contain diagram syntax, not just placeholder comments
    - Chart.js data is populated (not empty object/array)
 
    If issues found, fix via Edit on the output file.
 
-   If `mcp__claude-in-chrome__*` tools are available, also open `file://{output-path}` in Chrome via `tabs_create_mcp` + `navigate`, then use `javascript_tool` to check for Mermaid render errors and empty sections. Fix any issues found.
+   If `mcp__claude-in-chrome__*` tools are available, validate in Chrome:
+   1. Open the report via `Bash(open {output-path})` — Chrome extensions cannot navigate to `file://` URLs directly, so let the system browser open it first
+   2. Call `tabs_context_mcp` to discover the newly opened tab (match by `file://` URL or report filename in the tab title)
+   3. Use `javascript_tool` on the discovered tab to check for Mermaid render errors and empty sections
+   4. Fix any issues found via Edit on the output file
 
-5. **Report completion**: Output the `file:///` URL to the user:
+7. **Report completion**: Output the `file:///` URL to the user:
    ```
    Report generated: file://{absolute-path-to-report}
    ```
 
+8. **Cleanup** — remove temporary sections directory:
+   ```
+   Bash(rm -rf /tmp/project-recap-{dirname}-sections)
+   ```
+
 ### Reference Files
 
-- `../../templates/project-recap.html` — HTML template with all CSS/JS baked in. Passed as path to visual-report-writer; the agent copies it to output and fills placeholders via Edit
-- `../../references/design-system/font-system.md` — Font pairing selection guide. Passed as path to visual-report-writer; the agent reads it directly
-- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Passed as path to visual-report-writer; the agent reads it directly
+- `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
+- `../../templates/project-recap.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
+- `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
+- `../../references/design-system/font-system.md` — Font pairing selection guide. Visual-report-writer reads it directly
+- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Visual-report-writer reads it directly

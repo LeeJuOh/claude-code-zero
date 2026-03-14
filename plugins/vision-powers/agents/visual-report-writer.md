@@ -3,7 +3,7 @@ name: visual-report-writer
 color: purple
 description: |
   Generate self-contained HTML reports from structured analysis data with dynamic section structure.
-  Report generator for all vision-powers visual report skills (agent-extension-visualizing, diff-visual, plan-visual).
+  Report generator for all vision-powers visual report skills (agent-extension-visualizing, diff-visual, plan-visual, project-recap).
 
   <example>
   Context: Skill delegates HTML report generation with analysis results and section structure
