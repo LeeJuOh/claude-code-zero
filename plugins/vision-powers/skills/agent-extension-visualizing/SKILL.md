@@ -9,7 +9,7 @@ description: >
   for inline markdown. Not for plugin development, installation, or creation.
 argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(ls *), Bash(find *), Bash(git branch *), Bash(git log *), Bash(git rev-parse *)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *)
 ---
 
 # Agent Extension Visual
@@ -119,8 +119,6 @@ Set `{platform}` variable for subsequent phases. Currently only `claude-code` is
 #### Phase 2: Discovery
 
 Scan the target directory for all plugin components.
-
-**CRITICAL**: Use Glob for all file discovery — it supports recursive patterns (`**/*.md`) and is the only file discovery tool in allowed-tools. `ls` and `find` are not permitted and will trigger permission prompts.
 
 **Step 1**: Run 3 Glob calls in parallel (single message):
 
