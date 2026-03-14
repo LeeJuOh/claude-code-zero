@@ -54,6 +54,29 @@ Determine the output language for the verification summary:
 3. **Document language**: Match the language of the document being verified
 4. **Default**: English
 
+### Feedback File Detection
+
+After determining the target file, check for a companion `feedback.json`:
+
+1. **Explicit argument**: `--feedback path/to/feedback.json`
+2. **Auto-detect**: Check `~/Downloads/feedback.json` (macOS default download location) — verify `report_path` matches the target file. If multiple `feedback*.json` exist (e.g., `feedback (1).json`), use the most recent one.
+3. **No feedback**: Proceed with standard full verification
+
+When feedback.json is present, adjust verification strategy:
+
+- **Sections with status "issue" + feedback text**: These are the user's primary concerns. Verify these sections FIRST and with extra scrutiny. The feedback text describes the specific problem — use it to guide what to check.
+- **Sections with status "ok"**: User reviewed and approved. Still verify, but at lower priority — only check quantitative claims and names.
+- **Sections with status "not-reviewed"**: Standard verification.
+
+In the Phase 5 Report, include feedback-driven summary:
+
+```
+Feedback-guided verification:
+  {N} sections flagged by user
+  {N} issues confirmed and corrected
+  {N} issues not reproduced (user concern was unfounded)
+```
+
 ### Phase 1: Extract Claims
 
 Read the target file. Extract every verifiable factual claim into 5 categories:
