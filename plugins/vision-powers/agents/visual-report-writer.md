@@ -150,6 +150,19 @@ When source context is provided, generate clickable source links:
 
 Use `<a href="{url}" class="source-link" target="_blank">{relative_path}</a>`.
 
+## Feedback System
+
+All templates include a built-in per-section feedback system (CSS + JS). This system is entirely client-side — you do not need to fill any feedback-related placeholders or content.
+
+**What not to touch:**
+- `.ve-feedback-*` CSS classes (defined in the template `<style>`)
+- The `#feedbackBar` element and its children
+- The feedback JS block at the end of `<script>` (starts with `/* ===== Section Feedback System ===== */`)
+
+The feedback system depends on `<section id="...">` elements — ensure every content section has a unique `id` attribute. The feedback JS automatically attaches to all `section[id]` elements.
+
+**When updating templates:** Feedback CSS, HTML bar, and JS are duplicated across all 4 templates. If modifying the feedback system, update all templates simultaneously to avoid drift.
+
 ## Anti-Slop Checklist
 
 Before completing, verify:
