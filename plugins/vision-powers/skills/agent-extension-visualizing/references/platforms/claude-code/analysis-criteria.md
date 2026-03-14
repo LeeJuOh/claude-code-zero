@@ -73,3 +73,22 @@ PASS/FAIL items — objective checks only:
 | Homepage or repository URL | Present in plugin.json |
 | Skill auxiliary files organized | Templates, refs in subdirectories |
 | Error handling documented | Error scenarios addressed in descriptions or code |
+
+## Environment Compatibility
+
+Cross-reference the plugin's external requirements against the user's current environment.
+
+| Requirement Type | Source | Check Method |
+|-----------------|--------|-------------|
+| CLI tools | `allowed-tools` Bash patterns, agent analysis | `which {tool}` |
+| MCP servers | Plugin's `.mcp.json` | User's `~/.claude/.mcp.json` or project `.mcp.json` |
+| Environment variables | Hook scripts, MCP configs | Check if variable is set |
+| Plugin dependencies | Skill/agent references to other plugins | `~/.claude/plugins/cache/` scan |
+
+Verdict:
+
+| Level | Condition |
+|-------|-----------|
+| READY | All required dependencies available |
+| PARTIAL | Optional dependencies missing; core functionality works |
+| ACTION_NEEDED | Required dependencies missing; plugin cannot function properly |

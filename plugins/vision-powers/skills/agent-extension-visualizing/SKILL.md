@@ -9,7 +9,7 @@ description: >
   for inline markdown. Not for plugin development, installation, or creation.
 argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *)
 ---
 
 # Agent Extension Visual
@@ -204,6 +204,37 @@ Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 ```
 
+#### Phase 4.5: Environment Compatibility Scan (analyze mode only)
+
+Assess whether the plugin's external requirements are satisfied in the user's environment. No new sub-agent — the orchestrator performs a lightweight cross-reference using data already collected in Phase 2-4.
+
+**Step 1**: Extract external requirements from Phase 2-4 results:
+- **CLI tools**: From `allowed-tools` Bash patterns (e.g., `gh` from `Bash(gh *)`) and agent `tools` fields
+- **MCP servers**: From plugin's `.mcp.json` (discovered in Phase 2)
+- **Environment variables**: From hooks or MCP configs mentioned in Phase 4 analysis
+- **Plugin dependencies**: If skills/agents reference other plugins by name
+
+If no external requirements found → set verdict to READY, skip to Phase 5/5R.
+
+**Step 2**: Check requirements in parallel (single message):
+- `Bash(which {tool})` for each required CLI tool
+- `Read` `~/.claude/.mcp.json` — user's global MCP configuration (skip if no MCP requirements)
+- `Glob("*", path: "~/.claude/plugins/cache/")` — installed plugins (skip if no plugin dependencies)
+
+**Step 3**: Produce compatibility verdict:
+
+| Verdict | Condition |
+|---------|-----------|
+| READY | All required dependencies available |
+| PARTIAL | Optional dependencies missing; core works |
+| ACTION_NEEDED | Required dependencies missing |
+
+Build a requirements table: `[{name, type (CLI/MCP/ENV/Plugin), status (AVAILABLE/MISSING/SET/UNSET), details}]`
+
+Apply criteria from `references/platforms/claude-code/analysis-criteria.md` (Environment Compatibility section).
+
+Save verdict + table for Phase 5/5R.
+
 #### Phase 5: Report Assembly (inline markdown)
 
 For `security` mode, `overview` mode, or `analyze` mode with `--format md` — assemble inline markdown report:
@@ -216,6 +247,7 @@ Assemble the report using `references/platforms/claude-code/report-template.md` 
 
 For Plugin Profile, apply criteria from `references/platforms/claude-code/analysis-criteria.md`.
 For risk levels, apply rules from `references/platforms/claude-code/security-rules.md`.
+For Environment Compatibility, include the verdict and requirements table from Phase 4.5 (if available).
 
 Output the report in the detected language, using `references/platforms/claude-code/report-template.md` format.
 Translate all section headers, labels, and descriptions to the target language.
@@ -278,7 +310,8 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      anti-slop rules path (absolute path from step 2),
      report title: "Agent Extension Visual: {plugin-name}",
      aesthetic hint: "Editorial",
-     source context: { source_type, source_base, github_url (if applicable) }
+     source context: { source_type, source_base, github_url (if applicable) },
+     environment compatibility: { verdict, requirements table } (from Phase 4.5; omit if READY with no requirements)
    })
    ```
    The agent writes `section-1.html` through `section-10.html` and `metadata.json` to the sections directory.

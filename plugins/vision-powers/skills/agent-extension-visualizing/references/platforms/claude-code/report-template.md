@@ -274,6 +274,17 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 [FAIL] {check description} — {detail}
 [PASS] {check description}
 ...
+
+### Environment Compatibility
+**Verdict**: {READY|PARTIAL|ACTION_NEEDED}
+
+| Requirement | Type | Status | Details |
+|-------------|------|--------|---------|
+| {name} | CLI / MCP / ENV / Plugin | {AVAILABLE/MISSING/SET/UNSET} | {path or install hint} |
+
+{if verdict is ACTION_NEEDED or PARTIAL:}
+**Setup Steps**:
+1. {installation or configuration instruction}
 ````
 
 ## Security-Only Report (security mode)
