@@ -49,6 +49,11 @@ Before analyzing individual components, understand the plugin as a whole.
 
 **Read** (in parallel, whichever exist): README.md, plugin.json description, main SKILL.md descriptions (frontmatter), CLAUDE.md or project docs.
 
+**README as primary source**: A well-written README is the most direct expression of the author's intent. When the README has structured sections (overview, architecture, usage, design rationale), prioritize it as the primary source for narrative extraction — it encodes philosophy and intended usage more explicitly than scattered frontmatter. Assess README quality first:
+- **High quality** (architecture diagrams, usage examples, design rationale sections): Build narrative primarily from README, validate against component files
+- **Minimal** (just installation/basic usage): Build narrative from component analysis, supplement with README
+- **Absent**: Build narrative entirely from plugin.json + component patterns
+
 **Extract**:
 
 | Field | Content |
@@ -59,6 +64,7 @@ Before analyzing individual components, understand the plugin as a whole.
 | Deliberate Constraints | What the plugin intentionally refuses to do, and why |
 
 **Where to look**:
+- **README.md first** — stated goals, architecture description, design decisions, "Why" sections
 - Pain points in descriptions ("when X happens", "to avoid Y", "instead of Z")
 - Repeated patterns across components (consistent choice = principle)
 - Anti-patterns / "NOT for" sections (refusals reveal philosophy)
@@ -210,6 +216,33 @@ sequenceDiagram
     A2-->>S: result
     S-->>User: final output
 ````
+
+**Agent dispatch map** (always include — shows how the plugin interacts with the platform's built-in dispatch mechanisms):
+
+Skills and agents don't call each other directly — they go through the platform's built-in tools. Show these intermediaries to make the actual dispatch chain visible:
+
+````mermaid
+graph TD
+    classDef builtin fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,stroke-dasharray:5 5
+    classDef skill fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    classDef agent fill:#d1fae5,stroke:#10b981,stroke-width:2px
+
+    User -->|"trigger"| S1["SKILL: orchestrator"]
+    S1 -->|"Task(subagent_type:...)"| BT["Built-in: Agent Tool"]:::builtin
+    BT -->|"dispatch"| A1["AGENT: worker-a"]:::agent
+    BT -->|"dispatch"| A2["AGENT: worker-b"]:::agent
+    A1 -->|"result"| BT
+    A2 -->|"result"| BT
+    BT -->|"result"| S1
+    S1 -->|"output"| User
+````
+
+When analyzing a plugin, trace the actual dispatch chain:
+- Which built-in tool does the skill use to launch agents? (Agent tool with `subagent_type`, `Task` tool, direct `Bash(claude -p ...)`)
+- Does the agent delegate further? (nested Agent calls, MCP tool calls)
+- Are there hooks that intercept tool calls in the chain?
+
+Include Claude Code built-in features when the plugin relies on them: Agent tool dispatch, Task scheduling, AskUserQuestion for user interaction, etc. Mark built-in nodes with dashed borders to distinguish them from plugin components.
 
 Adapt node IDs and labels to match actual plugin components. Use `-->` for direct delegation, `-.->` for watch/hook relationships.
 
@@ -405,6 +438,8 @@ Return your analysis in this exact structure:
 {Mermaid data flow diagram — if orchestrator pattern exists}
 
 {Mermaid workflow sequence diagram — if orchestrator or multi-step pattern exists}
+
+{Mermaid agent dispatch map — always include. Shows how the plugin uses built-in platform features (Agent tool, Task, AskUserQuestion) to dispatch work. Built-in nodes use dashed borders with classDef builtin.}
 
 {Brief data flow description — 3-5 lines max}
 

@@ -63,6 +63,8 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 {Mermaid workflow sequence diagram — if orchestrator or multi-step pattern exists}
 
+{Mermaid agent dispatch map — shows how the plugin uses built-in platform features (Agent tool, Task, AskUserQuestion) to dispatch work. Built-in nodes use dashed borders.}
+
 {Brief data flow description — 3-5 lines max}
 
 ---

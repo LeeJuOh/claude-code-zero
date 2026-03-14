@@ -9,7 +9,7 @@ description: >
   for inline markdown. Not for plugin development, installation, or creation.
 argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *)
 ---
 
 # Agent Extension Visual
@@ -94,28 +94,6 @@ If source cannot be found, inform user and stop.
 | Installed plugin | `local` | `{cache-path}` | — |
 | GitHub URL | `github` | `/tmp/agent-extension-visual-{dirname}` | `https://github.com/{owner}/{repo}/blob/{branch}` |
 
-#### Phase 1.5: Platform Detection
-
-Detect which agent platform the target directory belongs to.
-Use Glob to check for platform-unique files. Both platforms share the SKILL.md format (agentskills.io open standard), so detection relies on platform-specific infrastructure files.
-
-| Platform | Unique signals (any match → detected) |
-|----------|---------------------------------------|
-| **Claude Code** | `.claude/` directory, `.claude-plugin/plugin.json`, `CLAUDE.md`, `agents/*.md` (markdown agents), `hooks/hooks.json`, `.mcp.json`, `.lsp.json` |
-| **Codex** *(not yet supported)* | `.codex/` directory, `.codex/config.toml`, `AGENTS.md`, `agents/*.toml`, `agents/openai.yaml` |
-
-**Shared** (not usable for detection): `SKILL.md`, `skills/`, `scripts/`, `references/`, `assets/` — both platforms follow the agentskills.io open standard.
-
-Detection priority: Check unique signals first. `.claude/` vs `.codex/` directory is the strongest differentiator. If both platforms match (unlikely), prefer the one with more matches.
-
-If no known platform is detected, inform the user:
-"Could not detect the agent platform. Currently supported: Claude Code. Is this a Claude Code plugin?"
-
-If Codex is detected, inform the user:
-"Detected Codex plugin structure. Codex analysis is not yet supported — only Claude Code is currently available."
-
-Set `{platform}` variable for subsequent phases. Currently only `claude-code` is implemented.
-
 #### Phase 2: Discovery
 
 Scan the target directory for all plugin components.
@@ -150,18 +128,33 @@ Then run targeted Glob on discovered directories (e.g., `skills/**/*`, `agents/*
 
 Build a component inventory with counts and file lists.
 
+**Step 4**: Determine platform from Glob results (no additional Glob calls needed).
+
+Check the file list from Step 1 for platform-unique signals:
+
+| Platform | Unique signals (any match → detected) |
+|----------|---------------------------------------|
+| **Claude Code** | `.claude-plugin/plugin.json`, `CLAUDE.md`, `.claude/` directory, `agents/*.md`, `hooks/hooks.json`, `.mcp.json` |
+| **Codex** *(not yet supported)* | `.codex/` directory, `AGENTS.md`, `agents/*.toml` |
+
+If no known platform is detected, ask the user:
+"Could not detect the agent platform. Currently supported: Claude Code. Is this a Claude Code plugin?"
+
+If Codex is detected, inform the user that Codex analysis is not yet supported.
+
+Set `{platform}` variable for subsequent phases. Currently only `claude-code` is implemented.
+
 #### Phase 3: Metadata Collection
 
 Read identity files in a single message with parallel Read calls:
 
 - `plugin.json` (or `.claude-plugin/plugin.json` — whichever Phase 2 found)
-- `README.md` (only if found in Phase 2)
 - `hooks/hooks.json` (only if found in Phase 2)
 
 Existence of LICENSE, CHANGELOG.md, tests/ is already known from Phase 2.
 
-Do NOT read SKILL.md, agent.md, command.md, or hook script files.
-Sub-agents read component files directly — avoids duplicate reads.
+Do NOT read README.md, SKILL.md, agent.md, command.md, or hook script files.
+Sub-agents read these files directly — the feature-architect reads README.md in its own analysis procedure. Reading them here wastes tokens through duplication.
 
 Output for Phase 4: plugin identity + file path inventory + existence flags + language.
 
@@ -235,26 +228,52 @@ Output the report directly to the user (inline markdown).
 For `analyze` mode with HTML format (the default), generate a self-contained HTML file.
 
 1. **Determine output path**:
-   Output path: `~/.claude-code-zero/vision-powers/reports/{plugin-name}-report.html`
+
+   Default output path: `~/.claude-code-zero/vision-powers/reports/{YYYY-MM-DD}-{plugin-name}-report.html`
+
+   Where:
+   - `{YYYY-MM-DD}` is today's date (e.g., `2026-03-14`)
+   - `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json)
+
    The Write tool creates parent directories automatically — no `mkdir` needed.
 
-   Where `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json).
+   **Existing report check**: Before generating, use Glob to search for `*-{plugin-name}-report.html` in `~/.claude-code-zero/vision-powers/reports/`. If any exist, use AskUserQuestion:
+
+   > Found existing report(s) for {plugin-name}:
+   > - {filename1}
+   > - {filename2}
+   >
+   > 1. Create new report ({today's date})
+   > 2. Update {most-recent-filename}
+
+   (Translate to output language.)
+
+   - If user chooses "create new" → use the default dated path
+   - If user chooses "update" → use the existing file path as output
+   - If no existing reports found → proceed with default dated path without asking
 
 2. **Resolve reference paths**:
    - Template: resolve `../../templates/agent-extension-visual.html` to absolute path
+   - Section structure: resolve `references/section-structure.md` to absolute path
    - Font system: resolve `../../references/design-system/font-system.md` to absolute path
    - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
-   Do NOT read these files — the visual-report-writer agent will read them directly.
+   - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
+   Do NOT read these files — they are passed as paths to the agent and assembler.
 
-3. **Delegate to visual-report-writer agent**:
+3. **Create sections temp directory**:
+   The sections directory path: `/tmp/agent-extension-visual-{dirname}-sections/`
+   (reuse the same `{dirname}` from Phase 1 if GitHub clone, or generate one for local sources)
+   No mkdir needed — the visual-report-writer creates files via Write, which auto-creates directories.
+
+4. **Delegate to visual-report-writer agent**:
    ```
    Task(subagent_type: "vision-powers:visual-report-writer", prompt: {
      feature-architect analysis results (full text, including Plugin Summary and Raw Content Excerpts),
      security-auditor analysis results (full text),
      plugin metadata (name, version, author, license, keywords, description),
-     output file path,
+     sections output directory (absolute path from step 3),
      output language,
-     template path (absolute path from step 2),
+     section structure path (absolute path from step 2),
      font system path (absolute path from step 2),
      anti-slop rules path (absolute path from step 2),
      report title: "Agent Extension Visual: {plugin-name}",
@@ -262,44 +281,59 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      source context: { source_type, source_base, github_url (if applicable) }
    })
    ```
+   The agent writes `section-1.html` through `section-10.html` and `metadata.json` to the sections directory.
 
-4. **Report validation** — after the agent completes, Read the output HTML file and verify:
-   - No unreplaced placeholders (`<!-- SECTION_`, `<!-- LANG -->`, `<!-- TITLE -->`, `<!-- TOC_CONTENT -->`, `<!-- CHART_DATA -->`)
+5. **Assemble report** — run the assembler script to combine template + sections:
+   ```
+   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --output {output-path})
+   ```
+
+6. **Report validation** — after assembly, Read the output HTML file and verify:
+   - No unreplaced section placeholders (`<!-- SECTION_`)
    - Every `<section>` has meaningful content beyond just a heading
    - Mermaid `<pre class="mermaid">` blocks contain diagram syntax, not just placeholder comments
    - Chart.js data is populated (not empty object/array)
 
    If issues found, fix via Edit on the output file.
 
-   If `mcp__claude-in-chrome__*` tools are available, also open `file://{output-path}` in Chrome via `tabs_create_mcp` + `navigate`, then use `javascript_tool` to check for Mermaid render errors and empty sections. Fix any issues found.
+   If `mcp__claude-in-chrome__*` tools are available, validate in Chrome:
+   1. Open the report via `Bash(open {output-path})` — Chrome extensions cannot navigate to `file://` URLs directly, so let the system browser open it first
+   2. Call `tabs_context_mcp` to discover the newly opened tab (match by `file://` URL or report filename in the tab title)
+   3. Use `javascript_tool` on the discovered tab to check for Mermaid render errors and empty sections
+   4. Fix any issues found via Edit on the output file
 
-5. **Report completion + Feedback Loop**:
+7. **Report completion + Feedback Loop**:
 
    Use `AskUserQuestion` with the `file://` URL embedded in the question text itself:
    ```
-   Report generated: file://{home}/.claude-code-zero/vision-powers/reports/{plugin-name}-report.html
+   Report generated: file://{output-path}
 
    Please review the report. Any changes needed, or should I clean up temporary files?
    ```
-   (Translate to output language. The `file://` URL must always be included — it is how the user opens the report.)
+   (Translate to output language. `{output-path}` is the actual path determined in step 1. The `file://` URL must always be included — it is how the user opens the report.)
 
    - If the user requests changes → apply modifications to the HTML file, then ask again with the same URL
    - If the user confirms completion → proceed to Phase 7
 
 #### Phase 7: Cleanup
 
-If the source was cloned from GitHub:
+Clean up temporary files:
 ```
-Bash(rm -rf /tmp/agent-extension-visual-{directory})
+Bash(rm -rf /tmp/agent-extension-visual-{dirname}-sections)
 ```
 
-For local or installed plugin sources, no cleanup needed.
+If the source was also cloned from GitHub:
+```
+Bash(rm -rf /tmp/agent-extension-visual-{dirname})
+```
 
 ### Reference Files
 
 - `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
 - `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
-- `../../templates/agent-extension-visual.html` — HTML template with all CSS/JS baked in. Phase 5R passes the absolute path; visual-report-writer copies it to output and fills placeholders via Edit
-- `../../references/design-system/font-system.md` — Font pairing selection guide. Phase 5R passes the absolute path; visual-report-writer reads it directly
-- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Phase 5R passes the absolute path; visual-report-writer reads it directly
+- `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
+- `../../templates/agent-extension-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
+- `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
+- `../../references/design-system/font-system.md` — Font pairing selection guide. Visual-report-writer reads it directly
+- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Visual-report-writer reads it directly
