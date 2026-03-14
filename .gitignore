@@ -57,3 +57,5 @@ plugins/*/.venv/
 plugins/notebooklm-connector/docs/
 .claude/worktrees
 .claude/settings.local.json
+
+/video/
