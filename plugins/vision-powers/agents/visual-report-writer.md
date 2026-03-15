@@ -43,11 +43,15 @@ You receive from the orchestrator skill:
   - `source_type`: `local` or `github`
   - `source_base`: absolute path to plugin root (local path or clone path)
   - `github_url`: GitHub web URL base (e.g., `https://github.com/owner/repo/blob/main`) — only when `source_type: github`
-- **Environment fit diagnosis** (optional — for Section 9 Environment Fit subsection):
+- **Environment fit diagnosis** (optional — for Section 5 Environment Fit Diagnosis, standalone section):
   - `verdict`: RECOMMENDED, CONDITIONAL, REDUNDANT, or CONFLICTING
   - `verdict_summary`: 1-2 sentence diagnosis
-  - `installation_status`, `dependency_check`, `overlap_findings`, `trigger_collisions`, `hook_impact`, `context_impact`, `recommendations`
-  - Omitted when verdict is RECOMMENDED with no findings
+  - `installation_status`, `dependency_check`, `overlap_findings`, `trigger_collisions`
+  - `hook_impact`: `{ current, adding, projected, types: {command, prompt, agent}, event_collisions[], severity }`
+  - `context_budget`: `{ skill_desc, mcp_tools, hook_injection, zero_cost_skills }`
+  - `component_deps`: `[{ source, target, dep_type, status }]`
+  - `recommendations`
+  - When RECOMMENDED with no findings, generate a minimal verdict-only card (no empty subsections)
 
 ## Workflow
 
@@ -77,7 +81,7 @@ Write `metadata.json` to the sections output directory. This file contains all n
 
 ### Turns 3-5: Write section files
 
-Write each section as an individual HTML file in the sections output directory: `section-1.html` through `section-10.html` (or however many sections the report has).
+Write each section as an individual HTML file in the sections output directory: `section-1.html` through `section-11.html` (or however many sections the report has).
 
 Each file contains a single `<section>` element following the HTML patterns in `section-structure.md`. Write 3-4 section files per turn using parallel Write calls.
 
