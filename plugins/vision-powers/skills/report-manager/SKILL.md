@@ -51,14 +51,17 @@ Display all reports in a table sorted by most recent first.
 | `*-report.html` | agent-extension-visual |
 | Other `.html` | unknown |
 
-3. Output a numbered table:
+3. Resolve the absolute path of the reports directory (expand `~` to the actual home directory)
+4. Output a numbered table with clickable report links:
 
 ```
 | # | Report | Type | Size | Date |
 |---|--------|------|------|------|
-| 1 | feature-auth-diff-visual.html | diff-visual | 145KB | 2026-03-03 |
-| 2 | my-project-project-recap.html | project-recap | 230KB | 2026-03-02 |
+| 1 | [feature-auth-diff-visual.html](file:///home/user/.claude-code-zero/vision-powers/reports/feature-auth-diff-visual.html) | diff-visual | 145KB | 2026-03-03 |
+| 2 | [my-project-project-recap.html](file:///home/user/.claude-code-zero/vision-powers/reports/my-project-project-recap.html) | project-recap | 230KB | 2026-03-02 |
 ```
+
+Build each Report cell as a markdown link: `[filename](file://{absolute-path})`. This lets the user click to open the report directly in their browser.
 
 ### Operation: open
 
@@ -96,4 +99,4 @@ Search reports by filename pattern or content.
 2. **Content search**: Use Grep to search inside HTML files for the query
    - Focus on meaningful content: `<title>`, `<h1>`-`<h3>`, text nodes
    - Show matching filename and the matched context
-3. Display results as a numbered list with report type and date
+3. Display results as a numbered list with report type and date, using clickable markdown links: `[filename](file://{absolute-path})`
