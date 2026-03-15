@@ -248,7 +248,7 @@ Adapt node IDs and labels to match actual plugin components. Use `-->` for direc
 
 **Mermaid best practices**:
 - Prefer `graph TD` for diagrams with 5+ nodes (top-down is easier to read)
-- Use semi-transparent fill with `classDef` — never set `color:` inside `classDef` (breaks dark mode). Example: `classDef skill fill:rgba(8,145,178,0.15),stroke:#0891b2`
+- Use semi-transparent fill with `classDef` — never set `color:` inside `classDef` (breaks dark mode). Never use `rgba()` because commas break Mermaid's parser — use 8-digit hex instead. Example: `classDef skill fill:#0891b226,stroke:#0891b2`
 - Avoid naming custom classes `.node` — conflicts with Mermaid's internal class
 - Keep diagrams to ~15 nodes max per diagram. Split into multiple diagrams if needed
 
