@@ -482,11 +482,11 @@ Assemble the report using `references/platforms/claude-code/report-template.md` 
 
 - **`overview` mode**: Identity + Component Inventory sections only
 - **`security` mode**: Security-focused report with risk summary, permission matrix, findings
-- **`analyze` mode (--format md)**: Full report with analysis and Plugin Profile
+- **`analyze` mode (--format md)**: Full report with analysis, Environment Fit Diagnosis, and Plugin Profile
 
 For Plugin Profile, apply criteria from `references/platforms/claude-code/analysis-criteria.md`.
 For risk levels, apply rules from `references/platforms/claude-code/security-rules.md`.
-For Environment Fit Diagnosis, include the full diagnosis from Phase 4.5 (if available): verdict, installation status, dependency check, overlap findings, hook/context impact, and recommendations.
+Environment Fit Diagnosis is a standalone section between Feature Deep Dive and Usage (not part of Plugin Profile). Include the full diagnosis from Phase 4.5: verdict, context budget (200K/1M scenarios), installation status, dependency check, overlap/trigger findings, hook impact, component dependencies, and recommendations.
 
 Output the report in the detected language, using `references/platforms/claude-code/report-template.md` format.
 Translate all section headers, labels, and descriptions to the target language.
@@ -551,10 +551,15 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      report title: "Agent Extension Visual: {plugin-name}",
      aesthetic hint: "Editorial",
      source context: { source_type, source_base, github_url (if applicable) },
-     environment fit diagnosis: { verdict, verdict_summary, installation_status, dependency_check, overlap_findings, trigger_collisions, hook_impact, context_impact, recommendations } (from Phase 4.5; omit if RECOMMENDED with no findings)
+     environment fit diagnosis: { verdict, verdict_summary, installation_status,
+       context_budget: { skill_desc, mcp_tools, hook_injection, zero_cost_skills },
+       dependency_check, overlap_findings, trigger_collisions,
+       hook_impact: { current, adding, projected, types, event_collisions, severity },
+       component_deps,
+       recommendations } (from Phase 4.5; when RECOMMENDED with no findings, pass minimal verdict-only data)
    })
    ```
-   The agent writes `section-1.html` through `section-10.html` and `metadata.json` to the sections directory.
+   The agent writes `section-1.html` through `section-11.html` and `metadata.json` to the sections directory.
 
 5. **Assemble report** — run the assembler script to combine template + sections:
    ```
