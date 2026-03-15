@@ -6,7 +6,7 @@ description: >
   Use when asked to visualize, review, explain, or summarize a diff, branch,
   commit, PR, or set of changes. Accepts branch names, commit hashes, HEAD,
   PR numbers, or commit ranges. Not for making changes or resolving conflicts.
-argument-hint: "<branch|commit|HEAD|#PR|range> [--lang ko|en|ja]"
+argument-hint: "<branch|commit|HEAD|#PR|range> [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
 
@@ -40,11 +40,9 @@ git rev-parse --verify main 2>/dev/null || git rev-parse --verify master
 
 Determine the output language:
 
-1. **Explicit argument**: `--lang ko`, `--lang en`, `--lang ja` → use that language
-2. **User message text**: If the message (excluding ref/path) contains non-English text, use that language
-   - Korean: 한글 텍스트, "한국어", "한글로", "변경사항 분석"
-   - Japanese: 日本語テキスト, "日本語で"
-   - English: English text, "in English"
+1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
+2. **User message text**: Detect the language of the message (excluding ref/path) and match it
+   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Ref-only with no other text**: Default to English
 
 ### Data Gathering

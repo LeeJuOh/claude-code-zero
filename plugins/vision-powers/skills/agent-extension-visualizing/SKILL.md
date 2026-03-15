@@ -7,7 +7,7 @@ description: >
   Use when asked to analyze, audit, inspect, review, document, or wiki a plugin
   or extension. Default output is an interactive HTML report; use --format md
   for inline markdown. Not for plugin development, installation, or creation.
-argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
+argument-hint: "<path-or-url> [--format html|md] [--lang <code>]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
 ---
@@ -35,13 +35,10 @@ For GitHub URLs, support subpath patterns:
 
 Determine the output language:
 
-1. **Explicit language argument**: `--lang ko`, `--lang en`, `--lang ja` etc. → use that language
-2. **User message text**: If the message (excluding URL/path) contains non-English text, use that language
-   - Korean: 한글 텍스트, "한국어", "한글로", "플러그인 분석", "보안 감사"
-   - Japanese: 日本語テキスト, "日本語で"
-   - English: English text, "in English"
-3. **URL only with no other text**: Use AskUserQuestion to ask the user's preferred language:
-   "Which language should the report be in?" → Korean / English / Other
+1. **Explicit language argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
+2. **User message text**: Detect the language of the message (excluding URL/path) and match it
+   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
+3. **URL only with no other text**: Use AskUserQuestion to ask the user's preferred language
 
 Pass the detected language to sub-agents and use it for Phase 5 report assembly.
 

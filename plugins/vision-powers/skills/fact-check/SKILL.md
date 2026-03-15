@@ -7,7 +7,7 @@ description: >
   Use when asked to verify, fact-check, validate, or audit claims in a
   report, plan, or document. Accepts a file path or auto-detects the most
   recent HTML report. Not for re-reviewing analysis or changing document structure.
-argument-hint: "[file-path] [--lang ko|en|ja]"
+argument-hint: "[file-path] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(git shortlog *), Bash(wc -l *), Bash(ls -t *)
 ---
 
@@ -46,11 +46,9 @@ Determine what to verify from `$1`:
 
 Determine the output language for the verification summary:
 
-1. **Explicit argument**: `--lang ko`, `--lang en`, `--lang ja` → use that language
-2. **User message text**: If the message (excluding path) contains non-English text, use that language
-   - Korean: 한글 텍스트, "한국어", "한글로", "검증해줘"
-   - Japanese: 日本語テキスト, "日本語で"
-   - English: English text, "in English"
+1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
+2. **User message text**: Detect the language of the message (excluding path) and match it
+   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Document language**: Match the language of the document being verified
 4. **Default**: English
 

@@ -6,7 +6,7 @@ description: >
   Use when asked to recap, summarize, snapshot, or catch up on a project's
   status, progress, or recent activity. Accepts a time window (2w, 30d, 3m).
   Not for generating changelogs, release notes, or commit-level diffs.
-argument-hint: "[time-window: 2w|30d|3m] [--lang ko|en|ja]"
+argument-hint: "[time-window: 2w|30d|3m] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git log *), Bash(git shortlog *), Bash(git status *), Bash(git branch *), Bash(git rev-parse *), Bash(git diff *), Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/project-recap-*)
 ---
 
@@ -32,11 +32,9 @@ Parse the time window from `$1`:
 
 Determine the output language:
 
-1. **Explicit argument**: `--lang ko`, `--lang en`, `--lang ja` → use that language
-2. **User message text**: If the message (excluding ref/path) contains non-English text, use that language
-   - Korean: 한글 텍스트, "한국어", "한글로", "프로젝트 요약"
-   - Japanese: 日本語テキスト, "日本語で"
-   - English: English text, "in English"
+1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
+2. **User message text**: Detect the language of the message (excluding ref/path) and match it
+   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **No other text**: Default to English
 
 ### Data Gathering

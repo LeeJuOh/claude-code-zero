@@ -6,7 +6,7 @@ description: >
   Use when asked to review, visualize, evaluate, assess, or critique an
   implementation plan. Accepts plan file paths or reads from the current
   Claude Code plan. Not for creating or executing plans.
-argument-hint: "<plan-file-path> [codebase-path] [--lang ko|en|ja]"
+argument-hint: "<plan-file-path> [codebase-path] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/plan-visual-*)
 ---
 
@@ -34,11 +34,9 @@ Determine the plan source and codebase path from the user's message:
 
 Determine the output language:
 
-1. **Explicit argument**: `--lang ko`, `--lang en`, `--lang ja` → use that language
-2. **User message text**: If the message (excluding path) contains non-English text, use that language
-   - Korean: 한글 텍스트, "한국어", "한글로", "플랜 리뷰", "계획 검토"
-   - Japanese: 日本語テキスト, "日本語で"
-   - English: English text, "in English"
+1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
+2. **User message text**: Detect the language of the message (excluding path) and match it
+   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Path-only with no other text**: Default to English
 
 ### Plan Extraction
