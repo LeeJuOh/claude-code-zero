@@ -2,7 +2,7 @@
   "$schema": "https://claude.ai/schemas/plugin-marketplace/v1",
   "name": "claude-code-zero",
   "metadata": {
-    "description": "personal collection of Claude Code plugins and tools"
+    "description": "Claude Code plugins, curated and shareable"
   },
   "owner": {
     "name": "LeeJuOh",

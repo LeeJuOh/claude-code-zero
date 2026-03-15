@@ -1,5 +1,11 @@
 # CLAUDE.md
 
+> **Quick Index**
+> [Overview](#repository-overview) · [Directory Structure](#directory-structure) · [Official Docs](#official-documentation) · [Reference Materials](#reference-materials)
+> [Plugin Development](#plugin-development): [Component Structure](#plugin-component-structure) · [Workflow](#workflow) · [Validation](#validation) · [Local Testing](#local-testing)
+> [references/ Folder](#references-folder) · [Git Workflow](#git-workflow): [Branching](#branching-strategy) · [Commits](#commit-rules) · [Versioning](#tagging--versioning) · [Rename](#plugin-rename-handling) · [Release](#release-workflow-tagging-on-main)
+> [Data Paths](#plugin-data-paths) · [Permission Gotchas](#permission-gotchas) · [Coding Style](#coding-style)
+
 ## Repository Overview
 
 Personal marketplace for Claude Code plugins. Plugins are developed under `plugins/` and deployments are managed through `marketplace.json`.
@@ -22,9 +28,9 @@ See **Workflow step 1 (Docs)** for when consultation is required.
 
 ## Reference Materials
 
-`docs/reference/skill-building-guide.md` — Skill design spec: YAML frontmatter field reference, description writing formula, instruction best practices, 5 design patterns, testing approach, troubleshooting, and quick checklist. Extracted from Anthropic's official PDF guide.
+> **Note:** The `docs/` directory is gitignored — these files exist locally only and are not tracked in git.
 
-`docs/reference/official-plugin-tools.md` — Comparison of Anthropic's official **plugin-dev** (full plugin scaffolding) and **skill-creator** (skill quality measurement/optimization). Use plugin-dev for structure/hooks/MCP/agents, skill-creator for skill testing and description optimization.
+`docs/reference/skill-building-guide.md` — Skill design spec: YAML frontmatter field reference, description writing formula, instruction best practices, 5 design patterns, testing approach, troubleshooting, and quick checklist. Extracted from Anthropic's official PDF guide.
 
 Required reference for structural plugin work. See **Workflow step 1 (Docs)**.
 
@@ -125,9 +131,21 @@ When the user requests a tag on `main`:
 6. **Switch back** — Return to `develop`.
 7. **Confirm push** — Ask the user before pushing `main`, `develop`, and the tag to remote.
 
-## Known Claude Code Behaviors
+## Plugin Data Paths
 
-Internal research on allowed-tools, permissionMode, plugin data paths, skill supporting files, and sub-agent token limits is documented in `.claude/rules/internal-behaviors.md` (auto-loaded every session).
+| Purpose | Path |
+|---------|------|
+| Persistent data (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
+| Temporary data (clone tmp) | `/tmp/<plugin-name>/` |
+
+
+## Permission Gotchas
+
+Skill `allowed-tools` behavior (tested on Claude Code v2.1.63):
+
+- Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not.
+- `$()` command substitution triggers a separate security prompt regardless of allowed-tools.
+- Skills **do** inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow).
 
 ## Coding Style
 

@@ -54,7 +54,6 @@ plugins/**/data/
 plugins/*/.venv/
 
 /docs/
-plugins/notebooklm-connector/docs/
 .claude/worktrees
 .claude/settings.local.json
 
