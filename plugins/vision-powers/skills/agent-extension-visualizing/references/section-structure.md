@@ -367,7 +367,7 @@ Four sub-tables in collapsible `<details>` blocks.
 
 **Depth**: `.ve-card--elevated` | **Index**: `--i: 8`
 
-Component inventory, documentation checklist, security risk summary, pattern, target users, quality checklist.
+Component inventory, documentation checklist, security risk summary, pattern, target users, quality checklist, environment fit diagnosis.
 
 ```html
 <section id="plugin-profile" class="ve-card ve-card--elevated" style="--i: 8">
@@ -415,27 +415,90 @@ Component inventory, documentation checklist, security risk summary, pattern, ta
       </tbody>
     </table>
   </div>
-  <h3>Environment Compatibility</h3>
-  <div class="compatibility-summary">
-    <span class="risk-badge risk-badge--{low|medium|high}">{READY|PARTIAL|ACTION_NEEDED}</span>
-    <p>{1-sentence verdict summary}</p>
+  <h3>Environment Fit Diagnosis</h3>
+  <div class="env-fit-verdict">
+    <span class="risk-badge risk-badge--{low|medium|high|critical}">{RECOMMENDED|CONDITIONAL|REDUNDANT|CONFLICTING}</span>
+    <p>{1-2 sentence verdict summary}</p>
   </div>
-  <div class="table-wrapper">
-    <table>
-      <thead><tr><th>Requirement</th><th>Type</th><th>Required</th><th>Status</th><th>Help</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>{name}</td>
-          <td>{CLI / MCP / ENV / Plugin}</td>
-          <td>{Required|Optional}</td>
-          <td><span class="check-badge check-badge--{pass|fail}">{AVAILABLE|MISSING}</span></td>
-          <td>{actionable help text}</td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- Installation Status -->
+  <div class="env-fit-item">
+    <h4>Installation Status</h4>
+    <p><span class="check-badge check-badge--{pass|fail}">{NEW|ALREADY_INSTALLED}</span> {detail if already installed}</p>
   </div>
-  <!-- If PARTIAL or ACTION_NEEDED: -->
-  <!-- <div class="setup-steps"><h4>Setup Steps</h4><ol><li>{instruction}</li></ol></div> -->
+  <!-- Dependency Check (only if requirements exist) -->
+  <div class="env-fit-item">
+    <h4>Dependency Check — <span class="risk-badge risk-badge--{low|medium|high}">{READY|PARTIAL|ACTION_NEEDED}</span></h4>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Requirement</th><th>Type</th><th>Required</th><th>Status</th><th>Help</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>{name}</td>
+            <td>{CLI / MCP / ENV / Plugin}</td>
+            <td>{Required|Optional}</td>
+            <td><span class="check-badge check-badge--{pass|fail}">{AVAILABLE|MISSING}</span></td>
+            <td>{actionable help text}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Functional Overlap (only if findings exist) -->
+  <div class="env-fit-item">
+    <h4>Functional Overlap</h4>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>This Plugin</th><th>Existing Skill</th><th>Classification</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>{analyzed-skill}</td>
+            <td>{plugin:skill}</td>
+            <!-- Badge mapping: DUPLICATE→high, OVERLAP→medium, COMPLEMENT→low, UPGRADE→low -->
+            <td><span class="scope-badge scope-badge--{high|medium|low}">{DUPLICATE|OVERLAP|COMPLEMENT|UPGRADE}</span></td>
+            <td>{explanation}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Trigger Collisions (only if HIGH or MEDIUM collisions exist) -->
+  <div class="env-fit-item">
+    <h4>Trigger Collisions</h4>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Severity</th><th>This Skill</th><th>Existing Skill</th><th>Collision</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="risk-badge risk-badge--{high|medium}">{HIGH|MEDIUM}</span></td>
+            <td>{analyzed-skill}</td>
+            <td>{plugin:skill}</td>
+            <td>{collision description — which trigger phrases would activate both}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Hook & Context Impact -->
+  <div class="env-fit-item">
+    <h4>Environment Impact</h4>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Metric</th><th>Current</th><th>Adding</th><th>Projected</th><th>Severity</th></tr></thead>
+        <tbody>
+          <tr><td>Hooks</td><td>{n}</td><td>+{n}</td><td>{n}</td><td><span class="risk-badge risk-badge--{low|medium}">{severity}</span></td></tr>
+          <tr><td>Skills</td><td>{n}</td><td>+{n}</td><td>{n}</td><td><span class="risk-badge risk-badge--{low|medium}">{severity}</span></td></tr>
+          <tr><td>MCP Servers</td><td>{n}</td><td>+{n}</td><td>{n}</td><td><span class="risk-badge risk-badge--{low|medium}">{severity}</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Recommendations (only if not RECOMMENDED) -->
+  <div class="env-fit-recommendations">
+    <h4>Recommendations</h4>
+    <ul>
+      <li>{actionable recommendation}</li>
+    </ul>
+  </div>
 </section>
 ```
 

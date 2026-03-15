@@ -74,10 +74,31 @@ PASS/FAIL items — objective checks only:
 | Skill auxiliary files organized | Templates, refs in subdirectories |
 | Error handling documented | Error scenarios addressed in descriptions or code |
 
-## Environment Compatibility
+## Environment Fit
 
-Cross-reference the plugin's external requirements against the user's current environment.
-Requirements source: feature-architect's External Requirements block (structured pipe-delimited list).
+Comprehensive assessment of whether a plugin should be installed in the user's current environment. Builds on dependency checking with functional overlap analysis, trigger collision detection, and context impact evaluation.
+
+### Overall Verdict
+
+| Verdict | Badge | Condition |
+|---------|-------|-----------|
+| RECOMMENDED | `risk-badge--low` | Dependencies met, no significant overlap, no trigger collisions, acceptable context impact |
+| CONDITIONAL | `risk-badge--medium` | Useful but has caveats: minor overlap with existing skills, missing optional dependencies, or moderate context impact. Include specific recommendations |
+| REDUNDANT | `risk-badge--high` | Core functionality already covered by installed plugins. At least one DUPLICATE overlap found, or multiple OVERLAP findings covering the plugin's main purpose |
+| CONFLICTING | `risk-badge--critical` | Would cause problems: HIGH trigger collisions with existing skills, required dependencies missing, or context budget would be exceeded |
+
+### Verdict Priority (highest severity wins)
+
+1. Any required dependency MISSING/UNSET → at least CONDITIONAL
+2. Required dependency MISSING + DUPLICATE overlap → CONFLICTING
+3. DUPLICATE skill with HIGH trigger collision → at least REDUNDANT
+4. Multiple OVERLAP findings covering > 50% of plugin's skills → at least REDUNDANT
+5. Projected hooks > 15 or context impact HIGH → at least CONDITIONAL
+6. All clear → RECOMMENDED
+
+### Dependency Check
+
+Cross-reference external requirements against the user's environment:
 
 | Requirement Type | Check Method |
 |-----------------|-------------|
@@ -88,10 +109,38 @@ Requirements source: feature-architect's External Requirements block (structured
 
 All checks run in a single bash block. Each requirement has a required/optional classification and actionable help text from feature-architect.
 
-Verdict:
+Dependency verdict:
 
 | Level | Condition |
 |-------|-----------|
 | READY | All requirements (required + optional) available |
 | PARTIAL | All required available, some optional missing |
 | ACTION_NEEDED | Any required dependency missing |
+
+### Functional Overlap Classification
+
+| Classification | Meaning | Impact on Verdict |
+|----------------|---------|-------------------|
+| DUPLICATE | Same purpose AND same triggers as existing skill | → REDUNDANT or CONFLICTING |
+| OVERLAP | Similar purpose, partially overlapping triggers | → CONDITIONAL if minor; REDUNDANT if covers main purpose |
+| COMPLEMENT | Related domain, different purpose | → no negative impact (note as informational) |
+| UPGRADE | Same purpose but analyzed plugin does it better | → RECOMMENDED (with note to consider replacing existing) |
+
+### Trigger Collision Severity
+
+| Severity | Description | Impact |
+|----------|-------------|--------|
+| HIGH | Near-identical descriptions — Claude cannot reliably distinguish | → CONFLICTING |
+| MEDIUM | Shared keywords but distinguishable context/scope | → CONDITIONAL |
+| LOW | Thematically related but clearly different triggers | → informational only |
+
+### Hook & Context Impact
+
+| Metric | Threshold | Severity |
+|--------|-----------|----------|
+| Projected total hooks | > 15 | HIGH |
+| Projected total hooks | 10-15 | MEDIUM |
+| Same-event collisions | Any | Note (not inherently bad) |
+| Context tokens added | > 5,000 (est.) | HIGH |
+| Context tokens added | 2,000-5,000 | MEDIUM |
+| Total plugin skills in env | > 50 | Note context pressure |

@@ -43,6 +43,11 @@ You receive from the orchestrator skill:
   - `source_type`: `local` or `github`
   - `source_base`: absolute path to plugin root (local path or clone path)
   - `github_url`: GitHub web URL base (e.g., `https://github.com/owner/repo/blob/main`) — only when `source_type: github`
+- **Environment fit diagnosis** (optional — for Section 9 Environment Fit subsection):
+  - `verdict`: RECOMMENDED, CONDITIONAL, REDUNDANT, or CONFLICTING
+  - `verdict_summary`: 1-2 sentence diagnosis
+  - `installation_status`, `dependency_check`, `overlap_findings`, `trigger_collisions`, `hook_impact`, `context_impact`, `recommendations`
+  - Omitted when verdict is RECOMMENDED with no findings
 
 ## Workflow
 

@@ -508,7 +508,7 @@ Return your analysis in this exact structure:
 
 ### External Requirements
 
-Machine-parseable list for automated environment compatibility checking.
+Machine-parseable list for automated environment fit diagnosis.
 
 \`\`\`requirements
 name|type|required|help

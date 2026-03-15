@@ -201,19 +201,21 @@ Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 ```
 
-#### Phase 4.5: Environment Compatibility Scan (analyze mode only)
+#### Phase 4.5: Environment Fit Diagnosis (analyze mode only)
 
-Assess whether the plugin's external requirements are satisfied in the user's environment.
-Uses the structured External Requirements block from feature-architect output.
+Diagnose whether this plugin is a good fit for the user's current environment — not just "can it run?" but "should it be installed here?" Like a doctor assessing whether a new medication is appropriate given the patient's existing prescriptions, evaluate installation status, functional overlap with existing plugins, trigger collisions, and context impact.
 
-**Step 1**: Extract the `requirements` fenced code block from feature-architect output.
-Parse each non-header line as pipe-delimited: `name|type|required|help`.
+**Step 1**: Extract analyzed plugin characteristics from feature-architect output:
+- Plugin name and at-a-glance description (from Plugin Summary)
+- Skill names and trigger descriptions (from Functionality Analysis → Skills table)
+- Hook events and count (from Hooks table; 0 if no hooks)
+- External requirements (`requirements` code block; empty if none)
 
-If no `requirements` block found or empty → set verdict to READY, skip to Phase 5/5R.
+**Step 2**: Construct and run a single bash block combining dependency checks and environment scan.
 
-**Step 2**: Construct and run a single bash block. Build dynamically from the requirements list.
+**Section A** — Dependency checks (include only if `requirements` block exists):
 
-Each requirement type uses a specific check pattern:
+Build dynamically from the requirements list. Each type:
 
 | Type | Check pattern | Status values |
 |------|--------------|---------------|
@@ -222,37 +224,185 @@ Each requirement type uses a specific check pattern:
 | ENV | `[ -n "${name}" ]` | SET / UNSET |
 | Plugin | `ls ~/.claude/plugins/cache/ 2>/dev/null \| grep -q "{name}"` | AVAILABLE / MISSING |
 
-**Concrete example** — for a plugin requiring `gh` CLI, `github` MCP server, `GITHUB_TOKEN` env var, and `code-reviewer` plugin:
+**Section B** — Environment scan (always include):
 
 ```bash
-echo "=== ENV_COMPAT ==="
-echo -n "gh|CLI|required|" ; which gh >/dev/null 2>&1 && echo "AVAILABLE" || echo "MISSING"
-echo -n "github|MCP|optional|" ; grep -q '"github"' ~/.claude/.mcp.json 2>/dev/null && echo "AVAILABLE" || echo "MISSING"
-echo -n "GITHUB_TOKEN|ENV|required|" ; [ -n "$GITHUB_TOKEN" ] && echo "SET" || echo "UNSET"
-echo -n "code-reviewer|Plugin|optional|" ; ls ~/.claude/plugins/cache/ 2>/dev/null | grep -q "code-reviewer" && echo "AVAILABLE" || echo "MISSING"
+echo "=== ENV_FIT ==="
+
+# B1: Is this exact plugin already installed?
+echo "=== INSTALL_STATUS ==="
+ls ~/.claude/plugins/cache/ 2>/dev/null | grep -i "{plugin-name}" || echo "(not-installed)"
+
+# B2: Installed plugins with descriptions
+echo "=== INSTALLED_PLUGINS ==="
+python3 -c "
+import json, os, glob
+for pjson in sorted(glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/.claude-plugin/plugin.json'))):
+    try:
+        d = json.load(open(pjson))
+        pname = os.path.basename(os.path.dirname(os.path.dirname(pjson)))
+        print('PLUGIN|' + pname + '|' + d.get('description', ''))
+    except: pass
+" 2>/dev/null
+
+# B3: Installed skill names + trigger descriptions
+echo "=== INSTALLED_SKILLS ==="
+python3 -c "
+import os, re, glob
+for smd in sorted(glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/skills/*/SKILL.md'))):
+    try:
+        parts = smd.split('/')
+        ci = parts.index('cache')
+        plugin, skill = parts[ci+1], parts[parts.index('skills')+1]
+        with open(smd) as f: content = f.read(2000)
+        m = re.match(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
+        if not m: continue
+        fm = m.group(1)
+        dm = re.search(r'description:\s*[>|]?\s*\n((?:[ \t]+.+\n?)+)', fm)
+        desc = ' '.join(dm.group(1).split())[:300] if dm else ''
+        if not desc:
+            dm2 = re.search(r'description:\s*(.+)', fm)
+            desc = dm2.group(1).strip()[:300] if dm2 else ''
+        print('SKILL|' + plugin + '|' + skill + '|' + desc)
+    except: pass
+" 2>/dev/null
+
+# B4: Project-local and user-global skills
+echo "=== LOCAL_SKILLS ==="
+python3 -c "
+import os, re, glob
+for base in ['.claude/skills', os.path.expanduser('~/.claude/skills')]:
+    for smd in sorted(glob.glob(os.path.join(base, '*/SKILL.md'))):
+        try:
+            skill = os.path.basename(os.path.dirname(smd))
+            with open(smd) as f: content = f.read(2000)
+            m = re.match(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
+            if not m: continue
+            fm = m.group(1)
+            dm = re.search(r'description:\s*[>|]?\s*\n((?:[ \t]+.+\n?)+)', fm)
+            desc = ' '.join(dm.group(1).split())[:300] if dm else ''
+            if not desc:
+                dm2 = re.search(r'description:\s*(.+)', fm)
+                desc = dm2.group(1).strip()[:300] if dm2 else ''
+            print('LOCAL|' + skill + '|' + desc)
+        except: pass
+" 2>/dev/null
+
+# B5: Hook inventory across environment
+echo "=== HOOK_INVENTORY ==="
+python3 -c "
+import json, glob, os
+total = 0
+try:
+    d = json.load(open('.claude/settings.local.json'))
+    for ev, entries in d.get('hooks', {}).items():
+        n = len(entries) if isinstance(entries, list) else 1
+        total += n
+        print('PROJECT|' + ev + '|' + str(n))
+except: pass
+for hf in glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/hooks/hooks.json')):
+    plugin = hf.split('/cache/')[1].split('/')[0]
+    try:
+        d = json.load(open(hf))
+        for ev, entries in d.items():
+            n = len(entries) if isinstance(entries, list) else 1
+            total += n
+            print('PLUGIN|' + plugin + '|' + ev + '|' + str(n))
+    except: pass
+print('TOTAL|' + str(total))
+" 2>/dev/null
+
+# B6: Context metrics
+echo "=== CONTEXT_METRICS ==="
+echo -n "plugin_skills: " ; ls ~/.claude/plugins/cache/*/skills/*/SKILL.md 2>/dev/null | wc -l | tr -d ' '
+echo ""
+echo -n "local_skills: " ; { ls .claude/skills/*/SKILL.md "$HOME"/.claude/skills/*/SKILL.md; } 2>/dev/null | wc -l | tr -d ' '
+echo ""
+python3 -c "
+import json
+try:
+    d = json.load(open('.claude/settings.local.json'))
+    s = d.get('mcpServers', d.get('enabledMcpjsonServers', {}))
+    print('mcp_servers: ' + str(len(s) if isinstance(s, dict) else len(list(s))))
+except: print('mcp_servers: 0')
+" 2>/dev/null
+
 echo "=== END ==="
 ```
 
-**Quoting rules**: If a requirement name contains special characters, wrap it in single quotes in the `grep` pattern (e.g., `grep -q '"my-tool"'`). Names in `which` and `[ -n ]` checks are safe without extra quoting since they come from the structured requirements block.
+Replace `{plugin-name}` with the actual plugin name from Phase 3. Do NOT use `$()` command substitution — triggers separate security prompt.
 
-Do NOT use `$()` command substitution — triggers separate security prompt.
+**Step 3**: Parse bash output and perform five diagnostic analyses.
 
-**Step 3**: Parse output. Each line: `name|type|required|status`.
-Combine with feature-architect's help text to build the final table.
+**3A: Dependency Check** (from Section A output, if present)
 
-Determine verdict:
+Build requirements table: `[{name, type, required, status, help}]`.
+Determine: READY (all met) / PARTIAL (required met, optional missing) / ACTION_NEEDED (required missing).
+If no requirements block existed → READY.
 
-| Verdict | Condition |
-|---------|-----------|
-| READY | All requirements AVAILABLE/SET |
-| PARTIAL | All required AVAILABLE/SET, some optional MISSING/UNSET |
-| ACTION_NEEDED | Any required MISSING/UNSET |
+**3B: Installation Status** (from B1 output)
 
-Build requirements table: `[{name, type, required, status, help}]`
+- Plugin name found in cache → `ALREADY_INSTALLED` — note in diagnosis; user may want to update, compare versions, or skip
+- Not found → `NEW`
 
-Apply criteria from `references/platforms/claude-code/analysis-criteria.md` (Environment Compatibility section).
+**3C: Functional Overlap Analysis** (compare Step 1 skills vs B3/B4 output)
 
-Save verdict + table for Phase 5/5R.
+Compare the analyzed plugin's skills against all installed/local skill descriptions.
+For each skill in the analyzed plugin, scan installed skill descriptions for semantic overlap — considering purpose, trigger phrases, and approach (tools/methods).
+
+Classify each meaningful overlap:
+
+| Classification | Condition | Example |
+|----------------|-----------|---------|
+| DUPLICATE | Same purpose AND same triggers | Two "commit message generator" skills |
+| OVERLAP | Similar purpose, partial trigger overlap | Both handle "code review" but different scope |
+| COMPLEMENT | Related domain, different purpose | One analyzes PRs, other generates changelogs |
+| UPGRADE | Same purpose but analyzed plugin is superior | More features, better design, broader coverage |
+
+For each finding, note which `plugin:skill` the overlap is with and why.
+
+**3D: Trigger Collision Risk** (from 3C findings with DUPLICATE/OVERLAP)
+
+Identify specific trigger phrases that would activate both skills and assess severity:
+- **HIGH**: Near-identical descriptions → Claude will unpredictably choose between them
+- **MEDIUM**: Shared keywords but distinguishable intent/scope
+- **LOW**: Thematically related but clearly different triggers
+
+**3E: Hook & Context Impact** (from B5/B6 output)
+
+- Current environment state: N total hooks, N skills, N MCP servers
+- What this plugin would add: N hooks (from Phase 3 hooks.json), N skills (from Step 1)
+- Flag concerns:
+  - Projected total hooks 10-15: MEDIUM concern; > 15: HIGH concern
+  - Same-event hook collisions with existing plugins
+  - Context estimate: ~100-150 tokens per skill description in `available_skills` list
+
+**Step 4**: Determine overall verdict using `references/platforms/claude-code/analysis-criteria.md` (Environment Fit section).
+
+| Verdict | Meaning |
+|---------|---------|
+| RECOMMENDED | Clean fit — unique value, no conflicts, dependencies met |
+| CONDITIONAL | Useful but has caveats — minor overlap, optional deps missing, or context concern |
+| REDUNDANT | Core functionality already covered by installed plugins |
+| CONFLICTING | Would cause problems — trigger collisions, required deps missing, or context overload |
+
+**Step 5**: Build diagnosis data for Phase 5/5R:
+
+```
+environment_fit: {
+  verdict: RECOMMENDED | CONDITIONAL | REDUNDANT | CONFLICTING,
+  verdict_summary: "1-2 sentence diagnosis in output language",
+  installation_status: NEW | ALREADY_INSTALLED,
+  dependency_check: { verdict, requirements[] },
+  overlap_findings: [{ analyzed_skill, existing_skill, classification, detail }],
+  trigger_collisions: [{ skills, severity, collision_phrases }],
+  hook_impact: { current, adding, projected, event_collisions[], severity },
+  context_impact: { skills_adding, current_total, estimated_tokens, severity },
+  recommendations: ["actionable 1-line recommendation"]
+}
+```
+
+Omit empty categories. Save for Phase 5/5R.
 
 #### Phase 5: Report Assembly (inline markdown)
 
@@ -266,7 +416,7 @@ Assemble the report using `references/platforms/claude-code/report-template.md` 
 
 For Plugin Profile, apply criteria from `references/platforms/claude-code/analysis-criteria.md`.
 For risk levels, apply rules from `references/platforms/claude-code/security-rules.md`.
-For Environment Compatibility, include the verdict and requirements table from Phase 4.5 (if available).
+For Environment Fit Diagnosis, include the full diagnosis from Phase 4.5 (if available): verdict, installation status, dependency check, overlap findings, hook/context impact, and recommendations.
 
 Output the report in the detected language, using `references/platforms/claude-code/report-template.md` format.
 Translate all section headers, labels, and descriptions to the target language.
@@ -331,7 +481,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      report title: "Agent Extension Visual: {plugin-name}",
      aesthetic hint: "Editorial",
      source context: { source_type, source_base, github_url (if applicable) },
-     environment compatibility: { verdict, requirements table } (from Phase 4.5; omit if READY with no requirements)
+     environment fit diagnosis: { verdict, verdict_summary, installation_status, dependency_check, overlap_findings, trigger_collisions, hook_impact, context_impact, recommendations } (from Phase 4.5; omit if RECOMMENDED with no findings)
    })
    ```
    The agent writes `section-1.html` through `section-10.html` and `metadata.json` to the sections directory.

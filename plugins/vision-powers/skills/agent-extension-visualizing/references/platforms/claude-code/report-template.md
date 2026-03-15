@@ -275,16 +275,42 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 [PASS] {check description}
 ...
 
-### Environment Compatibility
-**Verdict**: {READY|PARTIAL|ACTION_NEEDED}
+### Environment Fit Diagnosis
+
+**Verdict**: {RECOMMENDED|CONDITIONAL|REDUNDANT|CONFLICTING}
+{1-2 sentence verdict summary}
+
+**Installation Status**: {NEW|ALREADY_INSTALLED} — {detail}
+
+{if dependencies exist:}
+**Dependency Check**: {READY|PARTIAL|ACTION_NEEDED}
 
 | Requirement | Type | Required | Status | Help |
 |-------------|------|----------|--------|------|
-| {name} | CLI / MCP / ENV / Plugin | Required / Optional | {AVAILABLE/MISSING/SET/UNSET} | {설치/설정 안내} |
+| {name} | {type} | {required} | {status} | {help} |
 
-{if verdict is ACTION_NEEDED or PARTIAL:}
-**Setup Steps**:
-1. {help 텍스트 기반 설치 지침}
+{if overlap findings exist:}
+**Functional Overlap**:
+
+| This Plugin | Existing Skill | Classification | Detail |
+|-------------|----------------|----------------|--------|
+| {skill} | {plugin:skill} | {DUPLICATE/OVERLAP/COMPLEMENT/UPGRADE} | {explanation} |
+
+{if trigger collisions exist:}
+**Trigger Collisions**:
+- [{severity}] {analyzed-skill} ↔ {existing-skill}: {collision description}
+
+**Environment Impact**:
+
+| Metric | Current | Adding | Projected | Note |
+|--------|---------|--------|-----------|------|
+| Hooks | {n} | +{n} | {n} | {note} |
+| Skills | {n} | +{n} | {n} | {note} |
+| MCP Servers | {n} | +{n} | {n} | {note} |
+
+{if recommendations exist:}
+**Recommendations**:
+1. {actionable recommendation}
 ````
 
 ## Security-Only Report (security mode)
