@@ -278,13 +278,13 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 ### Environment Compatibility
 **Verdict**: {READY|PARTIAL|ACTION_NEEDED}
 
-| Requirement | Type | Status | Details |
-|-------------|------|--------|---------|
-| {name} | CLI / MCP / ENV / Plugin | {AVAILABLE/MISSING/SET/UNSET} | {path or install hint} |
+| Requirement | Type | Required | Status | Help |
+|-------------|------|----------|--------|------|
+| {name} | CLI / MCP / ENV / Plugin | Required / Optional | {AVAILABLE/MISSING/SET/UNSET} | {설치/설정 안내} |
 
 {if verdict is ACTION_NEEDED or PARTIAL:}
 **Setup Steps**:
-1. {installation or configuration instruction}
+1. {help 텍스트 기반 설치 지침}
 ````
 
 ## Security-Only Report (security mode)

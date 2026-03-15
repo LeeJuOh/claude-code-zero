@@ -9,7 +9,7 @@ description: >
   for inline markdown. Not for plugin development, installation, or creation.
 argument-hint: "<path-or-url> [--format html|md] [--lang ko|en|ja]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
 ---
 
 # Agent Extension Visual
@@ -206,30 +206,44 @@ Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 
 #### Phase 4.5: Environment Compatibility Scan (analyze mode only)
 
-Assess whether the plugin's external requirements are satisfied in the user's environment. No new sub-agent — the orchestrator performs a lightweight cross-reference using data already collected in Phase 2-4.
+Assess whether the plugin's external requirements are satisfied in the user's environment.
+Uses the structured External Requirements block from feature-architect output.
 
-**Step 1**: Extract external requirements from Phase 2-4 results:
-- **CLI tools**: From `allowed-tools` Bash patterns (e.g., `gh` from `Bash(gh *)`) and agent `tools` fields
-- **MCP servers**: From plugin's `.mcp.json` (discovered in Phase 2)
-- **Environment variables**: From hooks or MCP configs mentioned in Phase 4 analysis
-- **Plugin dependencies**: If skills/agents reference other plugins by name
+**Step 1**: Extract the `requirements` fenced code block from feature-architect output.
+Parse each non-header line as pipe-delimited: `name|type|required|help`.
 
-If no external requirements found → set verdict to READY, skip to Phase 5/5R.
+If no `requirements` block found or empty → set verdict to READY, skip to Phase 5/5R.
 
-**Step 2**: Check requirements in parallel (single message):
-- `Bash(which {tool})` for each required CLI tool
-- `Read` `~/.claude/.mcp.json` — user's global MCP configuration (skip if no MCP requirements)
-- `Glob("*", path: "~/.claude/plugins/cache/")` — installed plugins (skip if no plugin dependencies)
+**Step 2**: Construct and run a single bash block. Build dynamically from the requirements list:
 
-**Step 3**: Produce compatibility verdict:
+```bash
+echo "=== ENV_COMPAT ==="
+# Per CLI requirement:
+echo -n "{name}|CLI|{required}|" ; which {name} >/dev/null 2>&1 && echo "AVAILABLE" || echo "MISSING"
+# Per MCP requirement:
+echo -n "{name}|MCP|{required}|" ; grep -q '"{name}"' ~/.claude/.mcp.json 2>/dev/null && echo "AVAILABLE" || echo "MISSING"
+# Per ENV requirement (substitute {name} with actual variable name):
+# e.g., GITHUB_TOKEN → [ -n "$GITHUB_TOKEN" ]
+echo -n "{name}|ENV|{required}|" ; [ -n "${name}" ] && echo "SET" || echo "UNSET"
+# Per Plugin requirement:
+echo -n "{name}|Plugin|{required}|" ; ls ~/.claude/plugins/cache/ 2>/dev/null | grep -q "{name}" && echo "AVAILABLE" || echo "MISSING"
+echo "=== END ==="
+```
+
+Do NOT use `$()` command substitution — triggers separate security prompt.
+
+**Step 3**: Parse output. Each line: `name|type|required|status`.
+Combine with feature-architect's help text to build the final table.
+
+Determine verdict:
 
 | Verdict | Condition |
 |---------|-----------|
-| READY | All required dependencies available |
-| PARTIAL | Optional dependencies missing; core works |
-| ACTION_NEEDED | Required dependencies missing |
+| READY | All requirements AVAILABLE/SET |
+| PARTIAL | All required AVAILABLE/SET, some optional MISSING/UNSET |
+| ACTION_NEEDED | Any required MISSING/UNSET |
 
-Build a requirements table: `[{name, type (CLI/MCP/ENV/Plugin), status (AVAILABLE/MISSING/SET/UNSET), details}]`
+Build requirements table: `[{name, type, required, status, help}]`
 
 Apply criteria from `references/platforms/claude-code/analysis-criteria.md` (Environment Compatibility section).
 

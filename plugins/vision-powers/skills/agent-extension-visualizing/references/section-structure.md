@@ -422,19 +422,19 @@ Component inventory, documentation checklist, security risk summary, pattern, ta
   </div>
   <div class="table-wrapper">
     <table>
-      <thead><tr><th>Requirement</th><th>Type</th><th>Status</th><th>Details</th></tr></thead>
+      <thead><tr><th>Requirement</th><th>Type</th><th>Required</th><th>Status</th><th>Help</th></tr></thead>
       <tbody>
         <tr>
           <td>{name}</td>
           <td>{CLI / MCP / ENV / Plugin}</td>
+          <td>{Required|Optional}</td>
           <td><span class="check-badge check-badge--{pass|fail}">{AVAILABLE|MISSING}</span></td>
-          <td>{path or install hint}</td>
+          <td>{actionable help text}</td>
         </tr>
-        <!-- more requirement rows -->
       </tbody>
     </table>
   </div>
-  <!-- If PARTIAL or ACTION_NEEDED, include setup steps: -->
+  <!-- If PARTIAL or ACTION_NEEDED: -->
   <!-- <div class="setup-steps"><h4>Setup Steps</h4><ol><li>{instruction}</li></ol></div> -->
 </section>
 ```

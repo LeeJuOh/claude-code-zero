@@ -77,18 +77,21 @@ PASS/FAIL items — objective checks only:
 ## Environment Compatibility
 
 Cross-reference the plugin's external requirements against the user's current environment.
+Requirements source: feature-architect's External Requirements block (structured pipe-delimited list).
 
-| Requirement Type | Source | Check Method |
-|-----------------|--------|-------------|
-| CLI tools | `allowed-tools` Bash patterns, agent analysis | `which {tool}` |
-| MCP servers | Plugin's `.mcp.json` | User's `~/.claude/.mcp.json` or project `.mcp.json` |
-| Environment variables | Hook scripts, MCP configs | Check if variable is set |
-| Plugin dependencies | Skill/agent references to other plugins | `~/.claude/plugins/cache/` scan |
+| Requirement Type | Check Method |
+|-----------------|-------------|
+| CLI tools | `which {tool}` |
+| MCP servers | `grep` in `~/.claude/.mcp.json` |
+| Environment variables | `test -n` |
+| Plugin dependencies | `ls ~/.claude/plugins/cache/` |
+
+All checks run in a single bash block. Each requirement has a required/optional classification and actionable help text from feature-architect.
 
 Verdict:
 
 | Level | Condition |
 |-------|-----------|
-| READY | All required dependencies available |
-| PARTIAL | Optional dependencies missing; core functionality works |
-| ACTION_NEEDED | Required dependencies missing; plugin cannot function properly |
+| READY | All requirements (required + optional) available |
+| PARTIAL | All required available, some optional missing |
+| ACTION_NEEDED | Any required dependency missing |

@@ -291,6 +291,14 @@ Select 3-5 philosophy enforcement points — places where the plugin's design th
 
 **Model Requirements**: Which components specify a model? (sonnet, opus, haiku)
 
+**External dependency classification**:
+
+Classify each external dependency:
+- **required**: Plugin's core functionality fails without it
+- **optional**: Only enhancement/secondary features depend on it
+
+For each dependency, compose a one-line actionable help text for installation/configuration.
+
 ### 4. Usage Guide Extraction
 
 Extract usage information from available sources:
@@ -497,6 +505,25 @@ Return your analysis in this exact structure:
 | Component | Model | Reason |
 |-----------|-------|--------|
 | {name} | {model} | {why} |
+
+### External Requirements
+
+Machine-parseable list for automated environment compatibility checking.
+
+\`\`\`requirements
+name|type|required|help
+gh|CLI|required|Install: brew install gh
+claude-in-chrome|MCP|optional|Configure in ~/.claude/.mcp.json
+GITHUB_TOKEN|ENV|optional|export GITHUB_TOKEN=<your-token>
+some-plugin|Plugin|optional|claude plugin add some-plugin
+\`\`\`
+
+Rules:
+- `type`: CLI, MCP, ENV, Plugin 중 하나
+- `required`: required 또는 optional
+- `help`: 설치/설정 방법 한 줄 (파이프 문자 `|` 금지)
+- 외부 의존성 없으면 이 섹션 자체를 생략
+- Claude Code 내장 도구(Read, Write, Bash, Agent 등)는 포함하지 않음
 
 ## Usage Guide
 
