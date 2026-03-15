@@ -105,6 +105,62 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 ---
 
+## Environment Fit Diagnosis
+> {section-intro: Assesses whether this plugin is a good fit for the user's current environment.}
+
+**Verdict**: {RECOMMENDED|CONDITIONAL|REDUNDANT|CONFLICTING}
+{1-2 sentence verdict summary}
+
+**Installation Status**: {NEW|ALREADY_INSTALLED} — {detail}
+
+{if context budget data exists:}
+**Context Budget**:
+
+| Resource | Current | Adding | Budget (200K) | Budget (1M) | Severity |
+|----------|---------|--------|---------------|-------------|----------|
+| Skill Descriptions | {n} chars | +{n} chars | {n}/{16K} ({x}%) | {n}/{~80K} ({x}%) | {severity} |
+| MCP Tools | {n} servers | +{n} servers | ~{n}/{~20K} tokens | ~{n}/{~100K} tokens | {severity} |
+
+{notes — e.g. N skills with disable-model-invocation, hook context injection patterns}
+
+{if dependencies exist:}
+**Dependency Check**: {READY|PARTIAL|ACTION_NEEDED}
+
+| Requirement | Type | Required | Status | Help |
+|-------------|------|----------|--------|------|
+| {name} | {type} | {required} | {status} | {help} |
+
+{if overlap findings exist:}
+**Functional Overlap**:
+
+| This Plugin | Existing Skill | Classification | Detail |
+|-------------|----------------|----------------|--------|
+| {skill} | {plugin:skill} | {classification} | {explanation} |
+
+{if trigger collisions exist:}
+**Trigger Collisions**:
+- [{severity}] {analyzed-skill} ↔ {existing-skill}: {collision description}
+
+**Hook Impact**:
+
+| Metric | Current | Adding | Projected | Severity |
+|--------|---------|--------|-----------|----------|
+| Hooks (command) | {n} | +{n} | {n} | {severity} |
+| Hooks (prompt/agent) | {n} | +{n} | {n} | {severity} |
+
+{if component dependencies exist:}
+**Component Dependencies**:
+
+| Component | Depends On | Type | Status |
+|-----------|------------|------|--------|
+| {name} | {target} | {Skill→Skill / Agent→Skill / ...} | {AVAILABLE/MISSING} |
+
+{if recommendations exist:}
+**Recommendations**:
+1. {actionable recommendation}
+
+---
+
 ## Usage
 > {section-intro: How to install and use this plugin.}
 
@@ -274,43 +330,6 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 [FAIL] {check description} — {detail}
 [PASS] {check description}
 ...
-
-### Environment Fit Diagnosis
-
-**Verdict**: {RECOMMENDED|CONDITIONAL|REDUNDANT|CONFLICTING}
-{1-2 sentence verdict summary}
-
-**Installation Status**: {NEW|ALREADY_INSTALLED} — {detail}
-
-{if dependencies exist:}
-**Dependency Check**: {READY|PARTIAL|ACTION_NEEDED}
-
-| Requirement | Type | Required | Status | Help |
-|-------------|------|----------|--------|------|
-| {name} | {type} | {required} | {status} | {help} |
-
-{if overlap findings exist:}
-**Functional Overlap**:
-
-| This Plugin | Existing Skill | Classification | Detail |
-|-------------|----------------|----------------|--------|
-| {skill} | {plugin:skill} | {DUPLICATE/OVERLAP/COMPLEMENT/UPGRADE} | {explanation} |
-
-{if trigger collisions exist:}
-**Trigger Collisions**:
-- [{severity}] {analyzed-skill} ↔ {existing-skill}: {collision description}
-
-**Environment Impact**:
-
-| Metric | Current | Adding | Projected | Note |
-|--------|---------|--------|-----------|------|
-| Hooks | {n} | +{n} | {n} | {note} |
-| Skills | {n} | +{n} | {n} | {note} |
-| MCP Servers | {n} | +{n} | {n} | {note} |
-
-{if recommendations exist:}
-**Recommendations**:
-1. {actionable recommendation}
 ````
 
 ## Security-Only Report (security mode)
