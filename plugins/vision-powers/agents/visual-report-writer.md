@@ -129,16 +129,16 @@ Use `<a href="{url}" class="source-link" target="_blank">{relative_path}</a>`.
 
 ## Feedback System
 
-All templates include a built-in per-section feedback system (CSS + JS). This system is entirely client-side — you do not need to fill any feedback-related placeholders or content.
+All templates include a built-in per-section feedback system. The CSS lives in `shared/feedback.css` and the JS in `shared/shared.js` — the assembler injects them at build time via `<!-- FEEDBACK_CSS -->` and `<!-- SHARED_JS -->` placeholders.
 
 **What not to touch:**
-- `.ve-feedback-*` CSS classes (defined in the template `<style>`)
+- `.ve-feedback-*` CSS classes (injected from shared/feedback.css)
 - The `#feedbackBar` element and its children
-- The feedback JS block at the end of `<script>` (starts with `/* ===== Section Feedback System ===== */`)
+- The feedback JS block (injected from shared/shared.js)
 
 The feedback system depends on `<section id="...">` elements — ensure every content section has a unique `id` attribute. The feedback JS automatically attaches to all `section[id]` elements.
 
-**When updating templates:** Feedback CSS, HTML bar, and JS are duplicated across all 4 templates. If modifying the feedback system, update all templates simultaneously to avoid drift.
+**When updating shared code:** Edit the files in `shared/` directly. Changes apply to all 4 report types automatically through the assembler.
 
 ## Anti-Slop Checklist
 
@@ -150,3 +150,6 @@ Before completing, verify:
 5. **TOC matches sections**: Every section ID in section files has a corresponding link in metadata.json `toc_content`.
 6. **Charts configured**: metadata.json `chart_data` contains proper Chart.js config if the report type uses charts.
 7. **metadata.json valid**: All required fields present (lang, title, font_link, css_variables, css_variables_dark, toc_content, chart_data).
+8. **Section content**: Each section-N.html has meaningful content beyond just `<section id="..."></section>` — at minimum a heading and one content element.
+9. **TOC-section ID match**: Every `href="#..."` in metadata.json `toc_content` has a corresponding `<section id="...">` in the section files. Every section file with an `id` attribute has a matching TOC link.
+10. **Mermaid syntax**: All `<pre class="mermaid">` blocks contain diagram syntax (not placeholder comments). No `rgba()` in any `classDef` rule — use 8-digit hex instead (e.g., `fill:#0891b226`). No `color:` property in `classDef`.

@@ -105,6 +105,7 @@ Delegate HTML report generation to the visual-report-writer agent.
    - Font system: resolve `../../references/design-system/font-system.md` to absolute path
    - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
    - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
+   - Shared directory: resolve `../../shared/` to absolute path
    Do NOT read these files — they are passed as paths to the agent and assembler.
 
 3. **Create sections temp directory**:
@@ -129,7 +130,7 @@ Delegate HTML report generation to the visual-report-writer agent.
 
 5. **Assemble report** — run the assembler script to combine template + sections:
    ```
-   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --output {output-path})
+   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
    ```
 
 6. **Report validation** — after assembly, Read the output HTML file and verify:

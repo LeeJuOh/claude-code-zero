@@ -211,21 +211,29 @@ Parse each non-header line as pipe-delimited: `name|type|required|help`.
 
 If no `requirements` block found or empty → set verdict to READY, skip to Phase 5/5R.
 
-**Step 2**: Construct and run a single bash block. Build dynamically from the requirements list:
+**Step 2**: Construct and run a single bash block. Build dynamically from the requirements list.
+
+Each requirement type uses a specific check pattern:
+
+| Type | Check pattern | Status values |
+|------|--------------|---------------|
+| CLI | `which {name} >/dev/null 2>&1` | AVAILABLE / MISSING |
+| MCP | `grep -q '"{name}"' ~/.claude/.mcp.json 2>/dev/null` | AVAILABLE / MISSING |
+| ENV | `[ -n "${name}" ]` | SET / UNSET |
+| Plugin | `ls ~/.claude/plugins/cache/ 2>/dev/null \| grep -q "{name}"` | AVAILABLE / MISSING |
+
+**Concrete example** — for a plugin requiring `gh` CLI, `github` MCP server, `GITHUB_TOKEN` env var, and `code-reviewer` plugin:
 
 ```bash
 echo "=== ENV_COMPAT ==="
-# Per CLI requirement:
-echo -n "{name}|CLI|{required}|" ; which {name} >/dev/null 2>&1 && echo "AVAILABLE" || echo "MISSING"
-# Per MCP requirement:
-echo -n "{name}|MCP|{required}|" ; grep -q '"{name}"' ~/.claude/.mcp.json 2>/dev/null && echo "AVAILABLE" || echo "MISSING"
-# Per ENV requirement (substitute {name} with actual variable name):
-# e.g., GITHUB_TOKEN → [ -n "$GITHUB_TOKEN" ]
-echo -n "{name}|ENV|{required}|" ; [ -n "${name}" ] && echo "SET" || echo "UNSET"
-# Per Plugin requirement:
-echo -n "{name}|Plugin|{required}|" ; ls ~/.claude/plugins/cache/ 2>/dev/null | grep -q "{name}" && echo "AVAILABLE" || echo "MISSING"
+echo -n "gh|CLI|required|" ; which gh >/dev/null 2>&1 && echo "AVAILABLE" || echo "MISSING"
+echo -n "github|MCP|optional|" ; grep -q '"github"' ~/.claude/.mcp.json 2>/dev/null && echo "AVAILABLE" || echo "MISSING"
+echo -n "GITHUB_TOKEN|ENV|required|" ; [ -n "$GITHUB_TOKEN" ] && echo "SET" || echo "UNSET"
+echo -n "code-reviewer|Plugin|optional|" ; ls ~/.claude/plugins/cache/ 2>/dev/null | grep -q "code-reviewer" && echo "AVAILABLE" || echo "MISSING"
 echo "=== END ==="
 ```
+
+**Quoting rules**: If a requirement name contains special characters, wrap it in single quotes in the `grep` pattern (e.g., `grep -q '"my-tool"'`). Names in `which` and `[ -n ]` checks are safe without extra quoting since they come from the structured requirements block.
 
 Do NOT use `$()` command substitution — triggers separate security prompt.
 
@@ -301,6 +309,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    - Font system: resolve `../../references/design-system/font-system.md` to absolute path
    - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
    - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
+   - Shared directory: resolve `../../shared/` to absolute path
    Do NOT read these files — they are passed as paths to the agent and assembler.
 
 3. **Create sections temp directory**:
@@ -329,7 +338,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 5. **Assemble report** — run the assembler script to combine template + sections:
    ```
-   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --output {output-path})
+   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
    ```
 
 6. **Report validation** — after assembly, Read the output HTML file and verify:

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * Assemble an HTML report from a template, section files, and metadata.
+ * Assemble an HTML report from a template, section files, metadata, and shared partials.
  *
  * Usage:
  *   node assemble-report.js \
  *     --template path/to/template.html \
  *     --sections path/to/sections-dir/ \
  *     --metadata path/to/metadata.json \
+ *     --shared path/to/shared-dir/ \
  *     --output path/to/report.html
  */
 
@@ -17,6 +18,12 @@ const METADATA_KEYS = [
   "lang", "title", "font_link", "css_variables", "css_variables_dark",
   "mermaid_theme", "toc_content", "chart_data",
 ];
+
+// Maps shared filenames to their template placeholders
+const SHARED_PLACEHOLDERS = {
+  "feedback.css": "FEEDBACK_CSS",
+  "shared.js": "SHARED_JS",
+};
 
 function parseArgs(argv) {
   const args = {};
@@ -53,6 +60,18 @@ function main() {
     html = html.split(placeholder).join(metadata[key] || "");
   }
 
+  // Replace shared partial placeholders
+  if (args.shared && fs.existsSync(args.shared)) {
+    for (const [filename, placeholder] of Object.entries(SHARED_PLACEHOLDERS)) {
+      const filePath = path.join(args.shared, filename);
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, "utf-8");
+        const pattern = new RegExp(`<!--\\s*${placeholder}\\s*-->`, "g");
+        html = html.replace(pattern, content);
+      }
+    }
+  }
+
   // Replace section placeholders: <!-- SECTION_N: description -->
   const sectionFiles = fs.readdirSync(args.sections)
     .filter(f => /^section-\d+\.html$/.test(f))
@@ -75,6 +94,9 @@ function main() {
     console.error(`Warning: ${remaining.length} unreplaced section placeholder(s):`);
     remaining.forEach(p => console.error(`  ${p}`));
   }
+
+  // Normalize line endings to LF
+  html = html.replace(/\r\n/g, "\n");
 
   // Write output
   const outputDir = path.dirname(args.output);
