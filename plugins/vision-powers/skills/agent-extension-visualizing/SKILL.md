@@ -203,13 +203,23 @@ Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 
 #### Phase 4.5: Environment Fit Diagnosis (analyze mode only)
 
-Diagnose whether this plugin is a good fit for the user's current environment — not just "can it run?" but "should it be installed here?" Like a doctor assessing whether a new medication is appropriate given the patient's existing prescriptions, evaluate installation status, functional overlap with existing plugins, trigger collisions, and context impact.
+Diagnose whether this plugin is a good fit for the user's current environment — not just "can it run?" but "should it be installed here?" Like a doctor assessing whether a new medication is appropriate given the patient's existing prescriptions, evaluate installation status, context budget impact, functional overlap with existing plugins, trigger collisions, hook impact, and component dependencies.
 
 **Step 1**: Extract analyzed plugin characteristics from feature-architect output:
 - Plugin name and at-a-glance description (from Plugin Summary)
 - Skill names and trigger descriptions (from Functionality Analysis → Skills table)
-- Hook events and count (from Hooks table; 0 if no hooks)
+- Skill description character counts (sum of all description text)
+- Skills with `disable-model-invocation: true` (zero always-on context cost)
+- Hook events, count, and **types** (command / prompt / agent) (from Hooks table; 0 if no hooks)
+- Hooks that return `additionalContext` (if identifiable from hook scripts)
 - External requirements (`requirements` code block; empty if none)
+- MCP server count (from `.mcp.json` if present)
+- Component interaction patterns:
+  - Skills with `allowed-tools` containing `Skill(...)` → Skill→Skill dependency
+  - Skills with `context: fork` + `agent` referencing non-plugin agents → Skill→External Agent
+  - Agent `skills:` field entries not in this plugin → Agent→External Skill
+  - Agent `mcpServers:` string references (not inline) → Agent→External MCP
+  - Skills with `allowed-tools` containing `mcp__*` patterns → Skill→MCP dependency
 
 **Step 2**: Construct and run a single bash block combining dependency checks and environment scan.
 
@@ -222,7 +232,7 @@ Build dynamically from the requirements list. Each type:
 | CLI | `which {name} >/dev/null 2>&1` | AVAILABLE / MISSING |
 | MCP | `grep -q '"{name}"' ~/.claude/.mcp.json 2>/dev/null` | AVAILABLE / MISSING |
 | ENV | `[ -n "${name}" ]` | SET / UNSET |
-| Plugin | `ls ~/.claude/plugins/cache/ 2>/dev/null \| grep -q "{name}"` | AVAILABLE / MISSING |
+| Plugin | `ls -d ~/.claude/plugins/cache/*/{name}/ 2>/dev/null` | AVAILABLE / MISSING |
 
 **Section B** — Environment scan (always include):
 
@@ -231,46 +241,56 @@ echo "=== ENV_FIT ==="
 
 # B1: Is this exact plugin already installed?
 echo "=== INSTALL_STATUS ==="
-ls ~/.claude/plugins/cache/ 2>/dev/null | grep -i "{plugin-name}" || echo "(not-installed)"
+ls -d ~/.claude/plugins/cache/*/{plugin-name}/ 2>/dev/null && echo "INSTALLED" || echo "(not-installed)"
 
 # B2: Installed plugins with descriptions
 echo "=== INSTALLED_PLUGINS ==="
 python3 -c "
 import json, os, glob
-for pjson in sorted(glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/.claude-plugin/plugin.json'))):
+for pjson in sorted(glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/.claude-plugin/plugin.json'))):
     try:
         d = json.load(open(pjson))
-        pname = os.path.basename(os.path.dirname(os.path.dirname(pjson)))
+        parts = pjson.split('/cache/')[1].split('/')
+        pname = parts[1]
         print('PLUGIN|' + pname + '|' + d.get('description', ''))
     except: pass
 " 2>/dev/null
 
-# B3: Installed skill names + trigger descriptions
+# B3: Installed skill names + trigger descriptions + context budget data
 echo "=== INSTALLED_SKILLS ==="
 python3 -c "
 import os, re, glob
-for smd in sorted(glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/skills/*/SKILL.md'))):
+total_chars = 0
+disabled_count = 0
+for smd in sorted(glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/skills/*/SKILL.md'))):
     try:
-        parts = smd.split('/')
-        ci = parts.index('cache')
-        plugin, skill = parts[ci+1], parts[parts.index('skills')+1]
+        parts = smd.split('/cache/')[1].split('/')
+        plugin, skill = parts[1], parts[parts.index('skills')+1]
         with open(smd) as f: content = f.read(2000)
         m = re.match(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
         if not m: continue
         fm = m.group(1)
         dm = re.search(r'description:\s*[>|]?\s*\n((?:[ \t]+.+\n?)+)', fm)
-        desc = ' '.join(dm.group(1).split())[:300] if dm else ''
+        desc = ' '.join(dm.group(1).split()) if dm else ''
         if not desc:
             dm2 = re.search(r'description:\s*(.+)', fm)
-            desc = dm2.group(1).strip()[:300] if dm2 else ''
-        print('SKILL|' + plugin + '|' + skill + '|' + desc)
+            desc = dm2.group(1).strip() if dm2 else ''
+        disabled = 1 if re.search(r'disable-model-invocation:\s*true', fm) else 0
+        if not disabled:
+            total_chars += len(desc)
+        else:
+            disabled_count += 1
+        print('SKILL|' + plugin + '|' + skill + '|' + desc[:300] + '|' + str(len(desc)) + '|' + str(disabled))
     except: pass
+print('DESC_BUDGET_INSTALLED|' + str(total_chars) + '|' + str(disabled_count))
 " 2>/dev/null
 
 # B4: Project-local and user-global skills
 echo "=== LOCAL_SKILLS ==="
 python3 -c "
 import os, re, glob
+total_chars = 0
+disabled_count = 0
 for base in ['.claude/skills', os.path.expanduser('~/.claude/skills')]:
     for smd in sorted(glob.glob(os.path.join(base, '*/SKILL.md'))):
         try:
@@ -280,12 +300,18 @@ for base in ['.claude/skills', os.path.expanduser('~/.claude/skills')]:
             if not m: continue
             fm = m.group(1)
             dm = re.search(r'description:\s*[>|]?\s*\n((?:[ \t]+.+\n?)+)', fm)
-            desc = ' '.join(dm.group(1).split())[:300] if dm else ''
+            desc = ' '.join(dm.group(1).split()) if dm else ''
             if not desc:
                 dm2 = re.search(r'description:\s*(.+)', fm)
-                desc = dm2.group(1).strip()[:300] if dm2 else ''
-            print('LOCAL|' + skill + '|' + desc)
+                desc = dm2.group(1).strip() if dm2 else ''
+            disabled = 1 if re.search(r'disable-model-invocation:\s*true', fm) else 0
+            if not disabled:
+                total_chars += len(desc)
+            else:
+                disabled_count += 1
+            print('LOCAL|' + skill + '|' + desc[:300] + '|' + str(len(desc)) + '|' + str(disabled))
         except: pass
+print('DESC_BUDGET_LOCAL|' + str(total_chars) + '|' + str(disabled_count))
 " 2>/dev/null
 
 # B5: Hook inventory across environment
@@ -293,31 +319,36 @@ echo "=== HOOK_INVENTORY ==="
 python3 -c "
 import json, glob, os
 total = 0
+type_counts = {'command': 0, 'http': 0, 'prompt': 0, 'agent': 0}
 try:
     d = json.load(open('.claude/settings.local.json'))
     for ev, entries in d.get('hooks', {}).items():
-        n = len(entries) if isinstance(entries, list) else 1
-        total += n
-        print('PROJECT|' + ev + '|' + str(n))
+        if not isinstance(entries, list): entries = [entries]
+        for e in entries:
+            total += 1
+            t = e.get('type', 'command') if isinstance(e, dict) else 'command'
+            type_counts[t] = type_counts.get(t, 0) + 1
+        print('PROJECT|' + ev + '|' + str(len(entries)))
 except: pass
-for hf in glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/hooks/hooks.json')):
-    plugin = hf.split('/cache/')[1].split('/')[0]
+for hf in glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/hooks/hooks.json')):
+    parts = hf.split('/cache/')[1].split('/')
+    plugin = parts[1]
     try:
         d = json.load(open(hf))
         for ev, entries in d.items():
-            n = len(entries) if isinstance(entries, list) else 1
-            total += n
-            print('PLUGIN|' + plugin + '|' + ev + '|' + str(n))
+            if not isinstance(entries, list): entries = [entries]
+            for e in entries:
+                total += 1
+                t = e.get('type', 'command') if isinstance(e, dict) else 'command'
+                type_counts[t] = type_counts.get(t, 0) + 1
+            print('PLUGIN|' + plugin + '|' + ev + '|' + str(len(entries)))
     except: pass
 print('TOTAL|' + str(total))
+print('HOOK_TYPES|' + str(type_counts.get('command',0)) + '|' + str(type_counts.get('http',0)) + '|' + str(type_counts.get('prompt',0)) + '|' + str(type_counts.get('agent',0)))
 " 2>/dev/null
 
-# B6: Context metrics
+# B6: MCP server count
 echo "=== CONTEXT_METRICS ==="
-echo -n "plugin_skills: " ; ls ~/.claude/plugins/cache/*/skills/*/SKILL.md 2>/dev/null | wc -l | tr -d ' '
-echo ""
-echo -n "local_skills: " ; { ls .claude/skills/*/SKILL.md "$HOME"/.claude/skills/*/SKILL.md; } 2>/dev/null | wc -l | tr -d ' '
-echo ""
 python3 -c "
 import json
 try:
@@ -332,23 +363,42 @@ echo "=== END ==="
 
 Replace `{plugin-name}` with the actual plugin name from Phase 3. Do NOT use `$()` command substitution — triggers separate security prompt.
 
-**Step 3**: Parse bash output and perform five diagnostic analyses.
+**Step 3**: Parse bash output and perform six diagnostic analyses.
 
-**3A: Dependency Check** (from Section A output, if present)
+**3A: Installation Status** (from B1 output)
 
-Build requirements table: `[{name, type, required, status, help}]`.
-Determine: READY (all met) / PARTIAL (required met, optional missing) / ACTION_NEEDED (required missing).
-If no requirements block existed → READY.
-
-**3B: Installation Status** (from B1 output)
-
-- Plugin name found in cache → `ALREADY_INSTALLED` — note in diagnosis; user may want to update, compare versions, or skip
+- Plugin name found in cache → `ALREADY_INSTALLED`
 - Not found → `NEW`
 
-**3C: Functional Overlap Analysis** (compare Step 1 skills vs B3/B4 output)
+**3B: Dependency Check** (from Section A output, if present)
 
-Compare the analyzed plugin's skills against all installed/local skill descriptions.
-For each skill in the analyzed plugin, scan installed skill descriptions for semantic overlap — considering purpose, trigger phrases, and approach (tools/methods).
+Build requirements table: `[{name, type, required, status, help}]`.
+Determine: READY / PARTIAL / ACTION_NEEDED.
+If no requirements block existed → READY.
+
+**3C: Context Budget Analysis** (from B3/B4 summary lines + B6 mcp_servers output + Step 1 data)
+
+Calculate the plugin's context footprint using dual scenarios.
+
+1. **Skill description chars**: Sum description chars for skills in this plugin that do NOT have `disable-model-invocation: true`. Add to current environment total from B3 `DESC_BUDGET_INSTALLED` + B4 `DESC_BUDGET_LOCAL` summary lines.
+   - 200K scenario: compare against 16,000 char fallback budget
+   - 1M scenario: compare against ~80,000 char budget (2% of 1M)
+
+2. **MCP tool surface**: Count MCP servers this plugin adds (from `.mcp.json`). Estimate tokens using heuristic: servers × 25 tools × 200 tokens/tool.
+   - Current MCP token estimate: `existing_servers (from B6 mcp_servers) × 25 × 200`
+   - Adding: `new_servers × 25 × 200`
+   - 200K scenario: compare projected total against ~20,000 token cap (10% of 200K)
+   - 1M scenario: compare projected total against ~100,000 token cap (10% of 1M)
+
+3. **Hook context injection**: Check if any hooks in this plugin return `additionalContext` or use `type: prompt`/`type: agent`. Note but don't score heavily — these are per-event, not always-on.
+
+4. **Zero-cost skills**: Note how many skills use `disable-model-invocation: true` — these have no always-on context cost and should be highlighted as a positive design choice.
+
+Severity determination: use the **more conservative** (200K) scenario for the overall severity, but present both in the report so users on 1M context can judge for themselves.
+
+**3D: Functional Overlap & Trigger Analysis** (compare Step 1 skills vs B3/B4 output)
+
+Compare the analyzed plugin's skills against all installed/local skill descriptions. For each skill, scan for semantic overlap — considering purpose, trigger phrases, and approach.
 
 Classify each meaningful overlap:
 
@@ -359,32 +409,46 @@ Classify each meaningful overlap:
 | COMPLEMENT | Related domain, different purpose | One analyzes PRs, other generates changelogs |
 | UPGRADE | Same purpose but analyzed plugin is superior | More features, better design, broader coverage |
 
-For each finding, note which `plugin:skill` the overlap is with and why.
-
-**3D: Trigger Collision Risk** (from 3C findings with DUPLICATE/OVERLAP)
-
-Identify specific trigger phrases that would activate both skills and assess severity:
-- **HIGH**: Near-identical descriptions → Claude will unpredictably choose between them
+For DUPLICATE/OVERLAP findings, assess trigger collision severity:
+- **HIGH**: Near-identical descriptions → Claude unpredictably chooses
 - **MEDIUM**: Shared keywords but distinguishable intent/scope
 - **LOW**: Thematically related but clearly different triggers
 
-**3E: Hook & Context Impact** (from B5/B6 output)
+**3E: Hook Impact** (from B5 output + `HOOK_TYPES` summary line)
 
-- Current environment state: N total hooks, N skills, N MCP servers
-- What this plugin would add: N hooks (from Phase 3 hooks.json), N skills (from Step 1)
-- Flag concerns:
-  - Projected total hooks 10-15: MEDIUM concern; > 15: HIGH concern
-  - Same-event hook collisions with existing plugins
-  - Context estimate: ~100-150 tokens per skill description in `available_skills` list
+- Current hook count + adding → projected total
+- Distinguish hook types from B5 summary: command/http (lightweight, zero context) vs prompt/agent (LLM call per event)
+- Flag: projected hooks > 15 (HIGH), 10-15 (MEDIUM)
+- Same-event collisions with existing plugins (informational)
+
+**3F: Component Dependency Analysis** (from Step 1 interaction patterns + B3/B4/B6 output)
+
+For each cross-plugin reference found in Step 1:
+1. Check if the referenced component exists in the user's environment (installed plugins, local skills, MCP servers)
+2. Classify as AVAILABLE or MISSING
+3. Internal references (within the same plugin) → INTERNAL, skip
+
+Types to check:
+- Skill → Skill: `allowed-tools: Skill(plugin:name)` or instruction-based invocation
+- Agent → Skill: `skills:` field with non-plugin skill names
+- Skill/Agent → MCP: `mcp__server__*` in allowed-tools, or `mcpServers:` string references
+- Skill → Agent: `context: fork` + `agent` field referencing external agent
+
+MISSING dependencies → at least CONDITIONAL verdict.
 
 **Step 4**: Determine overall verdict using `references/platforms/claude-code/analysis-criteria.md` (Environment Fit section).
 
-| Verdict | Meaning |
-|---------|---------|
-| RECOMMENDED | Clean fit — unique value, no conflicts, dependencies met |
-| CONDITIONAL | Useful but has caveats — minor overlap, optional deps missing, or context concern |
-| REDUNDANT | Core functionality already covered by installed plugins |
-| CONFLICTING | Would cause problems — trigger collisions, required deps missing, or context overload |
+Verdict priority (highest severity wins):
+
+1. Required dependency MISSING/UNSET → at least CONDITIONAL
+2. Required dependency MISSING + DUPLICATE overlap → CONFLICTING
+3. DUPLICATE skill with HIGH trigger collision → at least REDUNDANT
+4. Multiple OVERLAP findings covering > 50% of plugin's skills → at least REDUNDANT
+5. Skill description budget exceeded in 200K scenario → at least CONDITIONAL; exceeded in both 200K and 1M → CONFLICTING
+6. MCP tool surface would exceed 10% cap in 200K scenario → at least CONDITIONAL; exceeded in both → CONFLICTING
+7. Cross-plugin component dependency MISSING → at least CONDITIONAL
+8. Projected hooks > 15 or hook context injection HIGH → at least CONDITIONAL
+9. All clear → RECOMMENDED
 
 **Step 5**: Build diagnosis data for Phase 5/5R:
 
@@ -393,11 +457,17 @@ environment_fit: {
   verdict: RECOMMENDED | CONDITIONAL | REDUNDANT | CONFLICTING,
   verdict_summary: "1-2 sentence diagnosis in output language",
   installation_status: NEW | ALREADY_INSTALLED,
+  context_budget: {
+    skill_desc: { current_chars, adding_chars, budget_200k, budget_1m, severity },
+    mcp_tools: { current_servers, adding_servers, est_tokens, budget_200k, budget_1m, severity },
+    hook_injection: [{ hook_name, type, impact_note }],
+    zero_cost_skills: N
+  },
   dependency_check: { verdict, requirements[] },
   overlap_findings: [{ analyzed_skill, existing_skill, classification, detail }],
   trigger_collisions: [{ skills, severity, collision_phrases }],
-  hook_impact: { current, adding, projected, event_collisions[], severity },
-  context_impact: { skills_adding, current_total, estimated_tokens, severity },
+  hook_impact: { current, adding, projected, types: {command, prompt, agent}, event_collisions[], severity },
+  component_deps: [{ source, target, dep_type, status }],
   recommendations: ["actionable 1-line recommendation"]
 }
 ```
