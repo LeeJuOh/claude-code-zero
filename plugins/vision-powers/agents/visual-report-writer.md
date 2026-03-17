@@ -62,9 +62,11 @@ Read 3 files in parallel:
 2. **Font system** (`{font-system-path}`) — font pairings and rotation rules
 3. **Anti-slop rules** (`{anti-slop-rules-path}`) — forbidden patterns, quality checklist
 
-### Turn 2: Write metadata
+### Turn 2: Write metadata + sections 1-4
 
-Write `metadata.json` to the sections output directory. This file contains all non-section placeholder values that the assembler script will inject into the HTML template:
+Write all of the following in parallel using simultaneous Write calls:
+- `metadata.json` — template placeholder values (see schema below)
+- `section-1.html` through `section-4.html`
 
 ```json
 {
@@ -79,11 +81,17 @@ Write `metadata.json` to the sections output directory. This file contains all n
 }
 ```
 
-### Turns 3-5: Write section files
+### Turn 3: Write sections 5-8
 
-Write each section as an individual HTML file in the sections output directory: `section-1.html` through `section-11.html` (or however many sections the report has).
+Write `section-5.html` through `section-8.html` in parallel using simultaneous Write calls.
 
-Each file contains a single `<section>` element following the HTML patterns in `section-structure.md`. Write 3-4 section files per turn using parallel Write calls.
+### Turn 4: Write sections 9-11
+
+Write `section-9.html` through `section-11.html` in parallel using simultaneous Write calls.
+
+Each section file contains a single `<section>` element following the HTML patterns in `section-structure.md`.
+
+**Important — no Read before Write**: The sections output directory is always freshly created by the orchestrator. Never Read existing files (metadata.json or section-N.html) before writing — always Write directly. The Write tool automatically creates parent directories, so retry on "directory not found" is also unnecessary.
 
 All CSS classes referenced in section-structure.md are pre-defined in the HTML template — do not add `<style>` blocks or inline styles except `style="--i: N"` for animation stagger.
 
