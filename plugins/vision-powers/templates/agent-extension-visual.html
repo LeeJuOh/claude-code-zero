@@ -218,6 +218,17 @@
     .trace-step:last-child { border-bottom: none; }
     .trace-number { font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700; color: var(--accent); min-width: 2rem; text-align: center; }
     .trace-content { flex: 1; } .trace-content strong { display: block; margin-bottom: 0.25rem; } .trace-content p { font-size: 0.9rem; color: var(--text-dim); margin: 0 0 0.25rem; }
+    .tutorial-scenarios { margin: 1.5rem 0; }
+    .tutorial-scenario { margin-bottom: 1.5rem; }
+    .tutorial-steps { display: flex; flex-direction: column; gap: 0; margin: 1rem 0; }
+    .tutorial-step { padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+    .tutorial-step:last-child { border-bottom: none; }
+    .step-user { display: flex; gap: 0.75rem; align-items: baseline; }
+    .step-number { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--accent); min-width: 1.5rem; flex-shrink: 0; }
+    .step-user p { margin: 0; }
+    .step-hood { font-size: 0.9rem; color: var(--text-dim); padding-left: 2.25rem; margin-top: 0.25rem; }
+    .tutorial-tips { margin-top: 1rem; padding: 0.75rem 1rem; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); border-radius: 6px; }
+    .tutorial-tips strong { display: block; margin-bottom: 0.5rem; }
 
     /* ===== REPORT: Section 6 — Usage Guide ===== */
     .usage-guidance { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
@@ -296,7 +307,6 @@
   <span class="ve-feedback-bar__summary" id="feedbackSummary"></span>
   <button class="ve-feedback-bar__export" onclick="window._veFeedback.export()">Export Feedback</button>
 </div>
-<!-- CHART_DATA -->
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
   var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -323,6 +333,7 @@
   });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<!-- CHART_DATA -->
 <script>
 /* ===== Tab UI ===== */
 document.querySelectorAll('.tab-btn').forEach(function(btn) {
