@@ -2,7 +2,7 @@
   "$schema": "https://claude.ai/schemas/plugin-marketplace/v1",
   "name": "claude-code-zero",
   "metadata": {
-    "description": "personal collection of Claude Code plugins and tools"
+    "description": "Claude Code plugins, curated and shareable"
   },
   "owner": {
     "name": "LeeJuOh",
@@ -18,7 +18,7 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -30,7 +30,7 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, and report management with interactive diagrams and curated design system"
     },
     {

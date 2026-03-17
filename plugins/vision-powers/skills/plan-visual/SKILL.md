@@ -6,8 +6,8 @@ description: >
   Use when asked to review, visualize, evaluate, assess, or critique an
   implementation plan. Accepts plan file paths or reads from the current
   Claude Code plan. Not for creating or executing plans.
-argument-hint: "<plan-file-path> [codebase-path] [--lang ko|en|ja]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(wc -l *)
+argument-hint: "<plan-file-path> [codebase-path] [--lang <code>]"
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/plan-visual-*)
 ---
 
 # Plan Visual
@@ -34,11 +34,9 @@ Determine the plan source and codebase path from the user's message:
 
 Determine the output language:
 
-1. **Explicit argument**: `--lang ko`, `--lang en`, `--lang ja` → use that language
-2. **User message text**: If the message (excluding path) contains non-English text, use that language
-   - Korean: 한글 텍스트, "한국어", "한글로", "플랜 리뷰", "계획 검토"
-   - Japanese: 日本語テキスト, "日本語で"
-   - English: English text, "in English"
+1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
+2. **User message text**: Detect the language of the message (excluding path) and match it
+   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Path-only with no other text**: Default to English
 
 ### Plan Extraction
@@ -113,30 +111,66 @@ Delegate HTML report generation to the visual-report-writer agent.
 
 2. **Resolve reference paths**:
    - Template: resolve `../../templates/plan-visual.html` to absolute path
+   - Section structure: resolve `references/section-structure.md` to absolute path
    - Font system: resolve `../../references/design-system/font-system.md` to absolute path
    - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
+   - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
+   - Shared directory: resolve `../../shared/` to absolute path
+   Do NOT read these files — they are passed as paths to the agent and assembler.
 
-3. **Delegate to visual-report-writer**:
+3. **Create sections temp directory**:
+   The sections directory path: `/tmp/plan-visual-{dirname}-sections/`
+   Pick any 8-character hex string for `{dirname}` (e.g., `a1b2c3d4`).
+   No mkdir needed — the visual-report-writer creates files via Write, which auto-creates directories.
+
+4. **Delegate to visual-report-writer**:
    ```
    Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
      Analysis data: {plan extraction + codebase cross-reference + blast radius + verification results},
-     template path (absolute path from step 2),
+     sections output directory (absolute path from step 3),
+     section structure path (absolute path from step 2),
      font system path (absolute path from step 2),
      anti-slop rules path (absolute path from step 2),
-     Output file path: {absolute output path},
      Output language: {detected language},
      Report title: "Plan Visual: {plan-name}",
      Aesthetic hint: "Blueprint" (or "Paper-ink" for narrative-heavy plans)
    })
    ```
+   The agent writes section files and `metadata.json` to the sections directory.
 
-4. **Report completion**: Output the `file:///` URL to the user:
+5. **Assemble report** — run the assembler script to combine template + sections:
+   ```
+   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
+   ```
+
+6. **Report validation** — after assembly, Read the output HTML file and verify:
+   - No unreplaced section placeholders (`<!-- SECTION_`)
+   - Every `<section>` has meaningful content beyond just a heading
+   - Mermaid `<pre class="mermaid">` blocks contain diagram syntax, not just placeholder comments
+   - Chart.js data is populated (not empty object/array)
+
+   If issues found, fix via Edit on the output file.
+
+   If `mcp__claude-in-chrome__*` tools are available, validate in Chrome:
+   1. Open the report via `Bash(open {output-path})` — Chrome extensions cannot navigate to `file://` URLs directly, so let the system browser open it first
+   2. Call `tabs_context_mcp` to discover the newly opened tab (match by `file://` URL or report filename in the tab title)
+   3. Use `javascript_tool` on the discovered tab to check for Mermaid render errors and empty sections
+   4. Fix any issues found via Edit on the output file
+
+7. **Report completion**: Output the `file:///` URL to the user:
    ```
    Report generated: file://{absolute-path-to-report}
    ```
 
+8. **Cleanup** — remove temporary sections directory:
+   ```
+   Bash(rm -rf /tmp/plan-visual-{dirname}-sections)
+   ```
+
 ### Reference Files
 
-- `../../templates/plan-visual.html` — HTML template with all CSS/JS baked in. Passed as path to visual-report-writer; the agent copies it to output and fills placeholders via Edit
-- `../../references/design-system/font-system.md` — Font pairing selection guide. Passed as path to visual-report-writer; the agent reads it directly
-- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Passed as path to visual-report-writer; the agent reads it directly
+- `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
+- `../../templates/plan-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
+- `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
+- `../../references/design-system/font-system.md` — Font pairing selection guide. Visual-report-writer reads it directly
+- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Visual-report-writer reads it directly

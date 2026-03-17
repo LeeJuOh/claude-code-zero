@@ -14,8 +14,9 @@ references/                       # External reference materials (git-ignored)
 
 ## Reference Materials
 
-- `docs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf` — Anthropic's official skill development guide.
-- `docs/reference/official-plugin-tools.md` — Comparison of Anthropic's official **plugin-dev** (plugin scaffolding, hooks, MCP, agents) and **skill-creator** (skill quality measurement, description optimization). Consult when deciding which tool to use for plugin work.
+> **Note:** The `docs/` directory is gitignored — these files exist locally only and are not tracked in git.
+
+- `docs/reference/skill-building-guide.md` — Skill design spec: YAML frontmatter field reference, description writing formula, instruction best practices, 5 design patterns, testing approach, troubleshooting, and quick checklist. Extracted from Anthropic's official PDF guide.
 
 ## Plugin Development
 
@@ -30,6 +31,8 @@ skills/                       # Skills with SKILL.md
 agents/                       # Sub-agents (*.md)
 hooks/                        # Hooks (hooks.json + scripts)
 .mcp.json                    # MCP server configuration (optional)
+.lsp.json                    # LSP server configuration (optional)
+settings.json                # Default settings, e.g. { "agent": "name" } (optional)
 ```
 
 ### Workflow
@@ -88,23 +91,20 @@ When the user requests a tag on `main`:
 6. **Switch back** — Return to `develop`.
 7. **Confirm push** — Ask the user before pushing `main`, `develop`, and the tag to remote.
 
-## Known Claude Code Permission Issues
+## Permission Gotchas
 
-See `docs/reference/skill-allowed-tools.md` for full details (tested on v2.1.63).
+Skill `allowed-tools` behavior (tested on Claude Code v2.1.63):
 
-### Skill `allowed-tools` Behavior
+- Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not.
+- `$()` command substitution triggers a separate security prompt regardless of allowed-tools.
+- Skills **do** inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow).
 
-- Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not
-- `$()` command substitution triggers a separate security prompt regardless of allowed-tools
-- `~/.claude/` hardcoded write protection was not observed in v2.1.63
-- Skills **do** inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow)
+## Plugin Data Paths
 
-### Plugin Data Path Convention
-
-| 용도 | 경로 |
-|------|------|
-| 영구 데이터 (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
-| 임시 데이터 (clone tmp) | `/tmp/<plugin-name>/` |
+| Purpose | Path |
+|---------|------|
+| Persistent data (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
+| Temporary data (clone tmp) | `/tmp/<plugin-name>/` |
 
 ## Coding Style
 

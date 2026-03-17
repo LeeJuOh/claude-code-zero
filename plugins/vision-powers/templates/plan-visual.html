@@ -224,6 +224,8 @@
     .complexity-badge--low { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
     .complexity-badge--medium { background: color-mix(in srgb, var(--warning) 15%, transparent); color: var(--warning); }
     .complexity-badge--high { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+
+    <!-- FEEDBACK_CSS -->
   </style>
 </head>
 <body>
@@ -243,6 +245,11 @@
     <!-- SECTION_8: Plan Review — Good/Bad/Ugly/Questions assessment cards -->
     <!-- SECTION_9: Understanding Gaps — rationale gaps cards, cognitive complexity table -->
   </div>
+</div>
+<!-- Feedback bar -->
+<div class="ve-feedback-bar" id="feedbackBar">
+  <span class="ve-feedback-bar__summary" id="feedbackSummary"></span>
+  <button class="ve-feedback-bar__export" onclick="window._veFeedback.export()">Export Feedback</button>
 </div>
 <!-- CHART_DATA -->
 <script type="module">
@@ -272,54 +279,7 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
-/* ===== Zoom Controls ===== */
-var INITIAL_ZOOM = 1.4;
-function applyZoom(wrap, level) {
-  var target = wrap.querySelector('.mermaid');
-  target.dataset.zoom = level;
-  target.style.transform = 'scale(' + level + ')';
-  var svg = target.querySelector('svg');
-  if (svg) { var rect = svg.getBoundingClientRect(); target.style.width = (rect.width / level * level) + 'px'; target.style.height = (rect.height / level * level) + 'px'; }
-  var indicator = wrap.querySelector('.zoom-level');
-  if (indicator) indicator.textContent = Math.round(level * 100) + '%';
-}
-function zoomDiagram(btn, factor) { var wrap = btn.closest('.mermaid-wrap'); var target = wrap.querySelector('.mermaid'); var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM); applyZoom(wrap, Math.min(Math.max(current * factor, 0.3), 30)); }
-function resetZoom(btn) { applyZoom(btn.closest('.mermaid-wrap'), INITIAL_ZOOM); }
-function toggleFullscreen(btn) { var wrap = btn.closest('.mermaid-wrap'); wrap.classList.toggle('is-fullscreen'); document.body.style.overflow = wrap.classList.contains('is-fullscreen') ? 'hidden' : ''; }
-document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { var fs = document.querySelector('.mermaid-wrap.is-fullscreen'); if (fs) { fs.classList.remove('is-fullscreen'); document.body.style.overflow = ''; } } });
-
-document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
-  wrap.addEventListener('wheel', function(e) { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); var target = wrap.querySelector('.mermaid'); var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM); var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15; applyZoom(wrap, Math.min(Math.max(current * factor, 0.3), 30)); }, { passive: false });
-  var startX, startY, scrollLeft, scrollTop;
-  wrap.addEventListener('mousedown', function(e) { if (e.target.closest('.zoom-controls')) return; wrap.classList.add('is-panning'); startX = e.pageX - wrap.offsetLeft; startY = e.pageY - wrap.offsetTop; scrollLeft = wrap.scrollLeft; scrollTop = wrap.scrollTop; });
-  wrap.addEventListener('mousemove', function(e) { if (!wrap.classList.contains('is-panning')) return; e.preventDefault(); wrap.scrollLeft = scrollLeft - (e.pageX - wrap.offsetLeft - startX); wrap.scrollTop = scrollTop - (e.pageY - wrap.offsetTop - startY); });
-  document.addEventListener('mouseup', function() { wrap.classList.remove('is-panning'); });
-});
-document.addEventListener('keydown', function(e) { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; var wrap = document.querySelector('.mermaid-wrap:hover'); if (!wrap) return; if (e.key === '+' || e.key === '=') { e.preventDefault(); var t = wrap.querySelector('.mermaid'); applyZoom(wrap, Math.min(parseFloat(t.dataset.zoom || INITIAL_ZOOM) * 1.3, 30)); } else if (e.key === '-') { e.preventDefault(); var t = wrap.querySelector('.mermaid'); applyZoom(wrap, Math.max(parseFloat(t.dataset.zoom || INITIAL_ZOOM) / 1.3, 0.3)); } });
-
-/* ===== Initial Zoom: apply after Mermaid renders SVGs ===== */
-document.querySelectorAll('.mermaid').forEach(function(el) {
-  new MutationObserver(function(mutations, obs) {
-    if (el.querySelector('svg')) {
-      var wrap = el.closest('.mermaid-wrap');
-      if (wrap) applyZoom(wrap, INITIAL_ZOOM);
-      obs.disconnect();
-    }
-  }).observe(el, { childList: true });
-});
-
-/* ===== Scroll Spy ===== */
-(function() {
-  var toc = document.getElementById('toc'); var links = toc.querySelectorAll('a'); var sections = [];
-  links.forEach(function(link) { var id = link.getAttribute('href').slice(1); var el = document.getElementById(id); if (el) sections.push({ id: id, el: el, link: link }); });
-  var observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) { links.forEach(function(l) { l.classList.remove('active'); }); var match = sections.find(function(s) { return s.el === entry.target; }); if (match) { match.link.classList.add('active'); if (window.innerWidth <= 1000) match.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }
-    });
-  }, { rootMargin: '-10% 0px -80% 0px' });
-  sections.forEach(function(s) { observer.observe(s.el); });
-  links.forEach(function(link) { link.addEventListener('click', function(e) { e.preventDefault(); var id = link.getAttribute('href').slice(1); var el = document.getElementById(id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', '#' + id); } }); });
-})();
+<!-- SHARED_JS -->
 </script>
 </body>
 </html>

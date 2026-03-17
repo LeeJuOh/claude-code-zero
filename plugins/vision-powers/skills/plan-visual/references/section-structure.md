@@ -16,6 +16,21 @@ All CSS classes (`.ve-card`, `.ve-card--hero`, `.ve-card--elevated`, `.ve-card--
 
 Use these consistently across all sections — architecture diagrams, status indicators, coverage badges, and Mermaid nodes.
 
+## Zoom Levels
+
+Reports follow a three-level information hierarchy. Depth tiers map to zoom levels:
+
+| Level | Scan Time | Purpose |
+|-------|-----------|---------|
+| **L1 — Glance** | 30 seconds | Core insight + scope metrics — enough to decide if deeper reading is needed |
+| **L2 — Structure** | 2 minutes | Architecture impact, risk landscape, and key findings |
+| **L3 — Detail** | As needed | Per-file breakdowns, edge cases, rationale gaps — reference material |
+
+Section mapping:
+- **L1**: Section 1 (Plan Summary), Section 2 (Impact Dashboard)
+- **L2**: Sections 3-4 (Architecture), Section 6 (Dependencies), Section 7 (Risk)
+- **L3**: Section 5 (Change Breakdown), Section 8 (Plan Review), Section 9 (Understanding Gaps)
+
 ---
 
 ## Section 1: Plan Summary (Hero)

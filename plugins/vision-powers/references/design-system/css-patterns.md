@@ -4,7 +4,7 @@ Reusable CSS patterns for self-contained HTML reports. All reports use CSS custo
 
 ## Theme Setup
 
-Define both light and dark palettes via custom properties. Pick colors from the approved palette in `anti-slop-rules.md` — never use violet/indigo defaults.
+Define both light and dark palettes via custom properties. Pick colors from the approved palette in `anti-slop-rules.md` — never use violet/indigo defaults. See `color-palette.md` for the semantic meaning of each color variable across report types.
 
 ```css
 :root {
@@ -617,5 +617,160 @@ CSS Grid 아키텍처 레이아웃에서 카드 사이 화살표. 텍스트가 �
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+```
+
+## Feedback System
+
+Per-section feedback capture UI for PR review-style inline comments on report sections. Entirely client-side (localStorage + JSON download). Added to all 4 HTML templates.
+
+### Feedback Trigger Button
+
+Appears on section hover (top-right corner). Changes color based on state: yellow for has-feedback, green for marked-ok.
+
+```css
+/* ===== FEEDBACK SYSTEM ===== */
+
+/* Per-section feedback trigger — appears on section hover */
+.ve-feedback-trigger {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  z-index: 5;
+}
+section:hover .ve-feedback-trigger,
+.ve-feedback-trigger.has-feedback {
+  opacity: 1;
+}
+.ve-feedback-trigger:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.ve-feedback-trigger.has-feedback {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+.ve-feedback-trigger.marked-ok {
+  color: var(--success);
+  border-color: var(--success);
+}
+```
+
+### Inline Feedback Form
+
+Expands below section heading when trigger is clicked.
+
+```css
+/* Inline feedback form — expands below section heading */
+.ve-feedback-form {
+  display: none;
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 50%, var(--bg) 50%);
+}
+.ve-feedback-form.is-open { display: block; }
+.ve-feedback-form textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+.ve-feedback-form textarea:focus {
+  border-color: var(--accent);
+}
+.ve-feedback-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  align-items: center;
+}
+.ve-feedback-btn {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ve-feedback-btn:hover { background: var(--accent-dim); color: var(--accent); }
+.ve-feedback-btn--ok { color: var(--success); border-color: var(--success); }
+.ve-feedback-btn--ok:hover { background: color-mix(in srgb, var(--success) 10%, var(--surface)); }
+```
+
+### Export Bar
+
+Fixed bottom bar showing review summary and export button.
+
+```css
+/* Floating export bar — fixed bottom */
+.ve-feedback-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--surface-elevated);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.1);
+  font-size: 0.85rem;
+}
+.ve-feedback-bar.is-visible { display: flex; }
+.ve-feedback-bar__summary {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+.ve-feedback-bar__export {
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.ve-feedback-bar__export:hover { opacity: 0.85; }
+```
+
+### Print
+
+```css
+/* Print: hide feedback UI */
+@media print {
+  .ve-feedback-trigger,
+  .ve-feedback-form,
+  .ve-feedback-bar { display: none !important; }
 }
 ```

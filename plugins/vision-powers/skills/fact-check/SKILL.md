@@ -7,7 +7,7 @@ description: >
   Use when asked to verify, fact-check, validate, or audit claims in a
   report, plan, or document. Accepts a file path or auto-detects the most
   recent HTML report. Not for re-reviewing analysis or changing document structure.
-argument-hint: "[file-path] [--lang ko|en|ja]"
+argument-hint: "[file-path] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(git shortlog *), Bash(wc -l *), Bash(ls -t *)
 ---
 
@@ -46,13 +46,34 @@ Determine what to verify from `$1`:
 
 Determine the output language for the verification summary:
 
-1. **Explicit argument**: `--lang ko`, `--lang en`, `--lang ja` → use that language
-2. **User message text**: If the message (excluding path) contains non-English text, use that language
-   - Korean: 한글 텍스트, "한국어", "한글로", "검증해줘"
-   - Japanese: 日本語テキスト, "日本語で"
-   - English: English text, "in English"
+1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
+2. **User message text**: Detect the language of the message (excluding path) and match it
+   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Document language**: Match the language of the document being verified
 4. **Default**: English
+
+### Feedback File Detection
+
+After determining the target file, check for a companion `feedback.json`:
+
+1. **Explicit argument**: `--feedback path/to/feedback.json`
+2. **Auto-detect**: Check `~/Downloads/feedback.json` (macOS default download location) — verify `report_path` matches the target file. If multiple `feedback*.json` exist (e.g., `feedback (1).json`), use the most recent one.
+3. **No feedback**: Proceed with standard full verification
+
+When feedback.json is present, adjust verification strategy:
+
+- **Sections with status "issue" + feedback text**: These are the user's primary concerns. Verify these sections FIRST and with extra scrutiny. The feedback text describes the specific problem — use it to guide what to check.
+- **Sections with status "ok"**: User reviewed and approved. Still verify, but at lower priority — only check quantitative claims and names.
+- **Sections with status "not-reviewed"**: Standard verification.
+
+In the Phase 5 Report, include feedback-driven summary:
+
+```
+Feedback-guided verification:
+  {N} sections flagged by user
+  {N} issues confirmed and corrected
+  {N} issues not reproduced (user concern was unfounded)
+```
 
 ### Phase 1: Extract Claims
 
