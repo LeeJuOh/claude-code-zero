@@ -7,7 +7,7 @@
 
 <div align="center">
 
-https://github.com/LeeJuOh/claude-code-zero/raw/main/assets/product-demo.mp4
+https://github.com/LeeJuOh/claude-code-zero/raw/develop/assets/product-demo.mp4
 
 </div>
 
