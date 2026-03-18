@@ -5,6 +5,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code Plugin Marketplace](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-orange)](https://github.com/LeeJuOh/claude-code-zero)
 
+<div align="center">
+
+https://github.com/LeeJuOh/claude-code-zero/raw/main/assets/product-demo.mp4
+
+</div>
+
 ## Quick Start
 
 ### 1. Add the marketplace
