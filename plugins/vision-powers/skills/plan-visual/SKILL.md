@@ -143,19 +143,27 @@ Delegate HTML report generation to the visual-report-writer agent.
    Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
    ```
 
-6. **Report validation** — after assembly, Read the output HTML file and verify:
-   - No unreplaced section placeholders (`<!-- SECTION_`)
-   - Every `<section>` has meaningful content beyond just a heading
-   - Mermaid `<pre class="mermaid">` blocks contain diagram syntax, not just placeholder comments
-   - Chart.js data is populated (not empty object/array)
+6. **Report validation** — run the validation script:
+   ```
+   Bash(node {validator-path} {output-path} --expected-sections 9)
+   ```
+   `{validator-path}` = `{plugin-root}/scripts/validate-report.js`
 
-   If issues found, fix via Edit on the output file.
+   The script checks: unreplaced placeholders (section + metadata), section content density, Mermaid diagram-type keywords, Chart.js data arrays, and section count. It exits 0 on PASS, 1 on FAIL with a list of issues.
 
-   If `mcp__claude-in-chrome__*` tools are available, validate in Chrome:
-   1. Open the report via `Bash(open {output-path})` — Chrome extensions cannot navigate to `file://` URLs directly, so let the system browser open it first
-   2. Call `tabs_context_mcp` to discover the newly opened tab (match by `file://` URL or report filename in the tab title)
-   3. Use `javascript_tool` on the discovered tab to check for Mermaid render errors and empty sections
-   4. Fix any issues found via Edit on the output file
+   If FAIL: fix the reported issues via Edit on the output file, then re-run the script until PASS.
+
+   **Optional Chrome visual verification** — only if `mcp__claude-in-chrome__*` tools are available:
+   1. Start a local HTTP server to serve the report (Chrome extensions cannot access `file://` URLs):
+      ```
+      Bash(python3 -m http.server 0 -d "$(dirname {output-path})" 2>&1 & echo $!)
+      ```
+      Capture the PID and port from the output.
+   2. Call `tabs_context_mcp` (with `createIfEmpty: true`) to get or create an MCP tab group.
+   3. Use `navigate` to open `http://localhost:{port}/{filename}` in the MCP tab.
+   4. Use `javascript_tool` to check for Mermaid render errors (`document.querySelectorAll('.mermaid svg').length`) and empty sections.
+   5. Fix any issues found via Edit on the output file.
+   6. Kill the server: `Bash(kill {pid} 2>/dev/null)`
 
 7. **Report completion**: Output the `file:///` URL to the user:
    ```
