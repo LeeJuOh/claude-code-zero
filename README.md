@@ -6,7 +6,9 @@
 [![Claude Code Plugin Marketplace](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-orange)](https://github.com/LeeJuOh/claude-code-zero)
 
 <div align="center">
-  <video src="assets/product-demo.mp4" width="100%" autoplay muted loop playsinline></video>
+
+[▶ Watch Demo Video](assets/product-demo.mp4)
+
 </div>
 
 ## Quick Start
