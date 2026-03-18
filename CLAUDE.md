@@ -32,7 +32,9 @@ See **Workflow step 1 (Docs)** for when consultation is required.
 
 `docs/reference/skill-building-guide.md` — Skill design spec: YAML frontmatter field reference, description writing formula, instruction best practices, 5 design patterns, testing approach, troubleshooting, and quick checklist. Extracted from Anthropic's official PDF guide.
 
-Required reference for structural plugin work. See **Workflow step 1 (Docs)**.
+`docs/reference/skill-lessons-from-anthropic.md` — Practical skill guide from Anthropic's internal usage: 9 skill categories, gotchas-driven design, progressive disclosure via folder structure, description-as-trigger pattern, on-demand hooks, data persistence (`${CLAUDE_PLUGIN_DATA}`), and marketplace curation strategy.
+
+Both references are required for structural plugin work. See **Workflow step 1 (Docs)**.
 
 ## Plugin Development
 
@@ -55,7 +57,7 @@ settings.json                # Default settings, e.g. { "agent": "name" } (optio
 
 Applies to all plugin work: creation, modification, improvement, and refactoring.
 
-1. **Docs** — Fetch https://code.claude.com/docs/llms.txt, identify relevant pages, and fetch them. Also consult `docs/reference/skill-building-guide.md`. This step is **mandatory** for: new plugins, new components (skills, agents, hooks, MCP), schema or config changes. May be **skipped** for: minor text edits, bug fixes within existing logic, or changes that don't touch plugin structure.
+1. **Docs** — Fetch https://code.claude.com/docs/llms.txt, identify relevant pages, and fetch them. Also consult `docs/reference/skill-building-guide.md` (spec) and `docs/reference/skill-lessons-from-anthropic.md` (practical patterns). This step is **mandatory** for: new plugins, new components (skills, agents, hooks, MCP), schema or config changes. May be **skipped** for: minor text edits, bug fixes within existing logic, or changes that don't touch plugin structure.
 2. **Analysis** — User provides the goal and specific reference files to read. Read ONLY those files.
 3. **Implementation** — Create or modify files under `plugins/`. Never modify files in `references/`.
 4. **Registration** — Add the plugin entry to `.claude-plugin/marketplace.json` (new plugins only).
