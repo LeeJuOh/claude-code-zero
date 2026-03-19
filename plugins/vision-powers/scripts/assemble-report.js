@@ -95,6 +95,16 @@ function main() {
     remaining.forEach(p => console.error(`  ${p}`));
   }
 
+  // Deduplicate preconnect links (font_link metadata may include them despite template already having them)
+  const preconnectPattern = /<link\s+rel=["']preconnect["'][^>]*>/gi;
+  const seen = new Set();
+  html = html.replace(preconnectPattern, (match) => {
+    const normalized = match.replace(/["']/g, '"').toLowerCase();
+    if (seen.has(normalized)) return "";
+    seen.add(normalized);
+    return match;
+  });
+
   // Normalize line endings to LF
   html = html.replace(/\r\n/g, "\n");
 

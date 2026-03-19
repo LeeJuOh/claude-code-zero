@@ -107,6 +107,20 @@ Content-type recommendations:
 - **project-recap**: Warm or distinctive pairings (narrative feel)
 - When no hint is given, vary freely for visual diversity
 
+### font_link Format
+
+The `font_link` value in metadata.json must contain ONLY the stylesheet `<link>` tag — not preconnect links. The HTML template already includes `<link rel="preconnect" href="https://fonts.googleapis.com">` and `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>`. Including them in `font_link` creates duplicates.
+
+**Correct:**
+```
+"font_link": "<link href='https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap' rel='stylesheet'>"
+```
+
+**Wrong (includes preconnect):**
+```
+"font_link": "<link rel='preconnect' href='https://fonts.googleapis.com'>\n<link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>\n<link href='https://fonts.googleapis.com/css2?...' rel='stylesheet'>"
+```
+
 ### CJK Font Auto-Loading
 
 When the output language is non-Latin (ko, ja, zh), include the corresponding CJK font:

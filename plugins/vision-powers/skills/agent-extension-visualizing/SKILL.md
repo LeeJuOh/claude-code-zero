@@ -91,7 +91,10 @@ If source cannot be found, inform user and stop.
 |-------------|--------------|---------------|-------------|
 | Local path | `local` | `{absolute-path}` | — |
 | Installed plugin | `local` | `{cache-path}` | — |
-| GitHub URL | `github` | `/tmp/agent-extension-visual-{dirname}` | `https://github.com/{owner}/{repo}/blob/{branch}` |
+| GitHub URL (root) | `github` | `/tmp/agent-extension-visual-{dirname}` | `https://github.com/{owner}/{repo}/blob/{branch}` |
+| GitHub URL (subpath) | `github` | `/tmp/agent-extension-visual-{dirname}/{subpath}` | `https://github.com/{owner}/{repo}/blob/{branch}/{subpath}` |
+
+When cloning a subpath URL (e.g., `github.com/owner/repo/tree/main/plugins/foo`), include the subpath in both `source_base` and `github_url` so that relative paths from the plugin root produce correct source links.
 
 #### Phase 2: Discovery
 
