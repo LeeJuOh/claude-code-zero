@@ -96,6 +96,54 @@ For bar charts, line charts, pie/doughnut charts in KPI dashboards. Overkill for
 
 Note: Chart.js uses resolved color values (not CSS variables) at render time. Read computed colors with `getComputedStyle()` or use conditional `isDark` values.
 
+## highlight.js v11 — Syntax Highlighting
+
+For readable code blocks with language-aware token coloring. Without this, code in reports looks like plain monospace text with no visual distinction between keywords, strings, comments, and operators.
+
+### Theme-Aware Loading
+
+Use media queries to load light/dark themes automatically:
+
+```html
+<!-- In <head> -->
+<link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css">
+<link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark-dimmed.min.css">
+
+<!-- Before </body> -->
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+```
+
+### Integration with Report Theme
+
+Override highlight.js backgrounds to keep code blocks consistent with the report's surface colors:
+
+```css
+/* highlight.js background → transparent; .code-block controls the container */
+pre code.hljs { background: transparent; padding: 0; }
+.code-block code { display: block; }
+.code-file__body code.hljs { background: transparent; padding: 0; }
+```
+
+### Usage
+
+Always specify the language on `<code>` elements for reliable highlighting:
+
+```html
+<pre class="code-block"><code class="language-typescript">
+interface User {
+  id: string;
+  name: string;
+}
+</code></pre>
+```
+
+Common language values: `javascript`, `typescript`, `python`, `json`, `bash`, `html`, `css`, `go`, `rust`, `java`, `sql`.
+
+**HTML-escape all code content** — `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;`. Unescaped tags break rendering.
+
+**No conflict with Mermaid**: highlight.js only processes `<pre><code>` blocks, not bare `<pre class="mermaid">` elements.
+
 ## anime.js — Orchestrated Animations
 
 Optional. Use when 10+ elements need a choreographed entrance sequence. For simpler reports, CSS `animation-delay` staggering is sufficient.

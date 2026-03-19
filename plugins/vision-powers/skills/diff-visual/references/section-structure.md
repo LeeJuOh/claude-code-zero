@@ -162,6 +162,8 @@ Side-by-side before/after panels for each major feature or behavioral change.
 
 Each comparison shows the previous behavior/implementation on the left and the new behavior/implementation on the right. Include code snippets where they clarify the change.
 
+**Code blocks must use language-tagged `<code>` elements** for syntax highlighting (e.g., `class="language-javascript"`). Always HTML-escape code content (`<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;`).
+
 ```html
 <section id="feature-comparisons" class="ve-card" style="--i: 3">
   <h2>Feature Comparisons</h2>
@@ -172,12 +174,12 @@ Each comparison shows the previous behavior/implementation on the left and the n
       <div class="comparison-panel comparison-panel--before">
         <div class="comparison-label">Before</div>
         <p>{description of previous behavior}</p>
-        <pre><code>{relevant code snippet — old}</code></pre>
+        <pre class="code-block"><code class="language-{lang}">{relevant code snippet — old, HTML-escaped}</code></pre>
       </div>
       <div class="comparison-panel comparison-panel--after">
         <div class="comparison-label">After</div>
         <p>{description of new behavior}</p>
-        <pre><code>{relevant code snippet — new}</code></pre>
+        <pre class="code-block"><code class="language-{lang}">{relevant code snippet — new, HTML-escaped}</code></pre>
       </div>
     </div>
   </div>

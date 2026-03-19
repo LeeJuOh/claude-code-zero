@@ -133,6 +133,8 @@ When writing section files:
 
 6. **Visual hierarchy**: Sections 1-4 dominate (hero/elevated depth, larger type). Later sections are reference material (flat/recessed, collapsible).
 
+7. **Code blocks with syntax highlighting**: Always use `<pre class="code-block"><code class="language-{lang}">` where `{lang}` is the programming language (e.g., `javascript`, `typescript`, `python`, `json`, `bash`, `go`, `rust`, `css`, `html`, `sql`). The template includes highlight.js which colors keywords, strings, comments, and operators — but only when `<code>` has a `class="language-*"` attribute. Without it, code renders as flat monospace text with no visual distinction. Always HTML-escape code content: `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;`.
+
 ### Source Link Generation
 
 When source context is provided, generate clickable source links:

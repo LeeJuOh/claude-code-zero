@@ -7,6 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- FONT_LINK -->
+  <!-- Syntax highlighting: theme-aware highlight.js -->
+  <link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css">
+  <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark-dimmed.min.css">
   <style>
     /* ===== BASE: Variables ===== */
     :root {
@@ -87,6 +90,10 @@
     /* ===== COMPONENTS: Code Blocks ===== */
     .code-block { font-family: var(--font-mono); font-size: 13px; line-height: 1.5; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
     .code-block--scroll { max-height: 400px; overflow-y: auto; }
+    /* Syntax highlighting: override highlight.js backgrounds to use report theme */
+    pre code.hljs { background: transparent; padding: 0; }
+    .code-block code { display: block; }
+    .code-file__body code.hljs { background: transparent; padding: 0; }
 
     /* ===== COMPONENTS: Tables ===== */
     .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
@@ -273,9 +280,11 @@
   });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
 <!-- CHART_DATA -->
 <script>
 <!-- SHARED_JS -->
+hljs.highlightAll();
 </script>
 </body>
 </html>
