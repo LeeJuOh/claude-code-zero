@@ -1,5 +1,15 @@
 # Release Workflow (Tagging on main)
 
+## Plugin Rename Handling
+
+When renaming a plugin (e.g., `extension-wiki` → `agent-extension-wiki`):
+
+1. Update the `name` and `source` fields in `marketplace.json`.
+2. Bump the version (at least minor) to signal the change.
+3. Update the `description` if scope has changed.
+
+## Tagging on main
+
 When the user requests a tag on `main`:
 
 1. **Compare branches** — Run `git log main..develop --oneline` and `git diff main..develop --stat` to list all changes.

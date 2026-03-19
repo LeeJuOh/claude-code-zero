@@ -15,7 +15,11 @@ plugins/<plugin-name>/            # Plugin source code (git-committed)
 references/                       # External reference materials (git-ignored)
 docs/                             # Knowledge base and reference materials
   reference/                      # Skill, hooks, env-var specs
+  enhancement/                    # Enhancement proposals
+  handoff/                        # Session handoff notes
+  plan/                           # Planning documents
   superpowers/plans/              # Plugin implementation plans
+  plugin-marketplaces.md          # Marketplace documentation
   release-workflow.md             # Release tagging process
 data/                             # Session and operational data
 assets/                           # Marketplace assets (badges, images)
@@ -24,7 +28,7 @@ AGENTS.md                         # Subset of CLAUDE.md for sub-agents
 
 ## Official Documentation
 
-Entry point: https://code.claude.com/docs/llms.txt
+Entry point: https://code.claude.com/docs/llms.txt → fetch individual pages as `https://code.claude.com/docs/en/<page>`
 
 Key pages: plugins.md, plugins-reference.md, plugin-marketplaces.md, discover-plugins.md, hooks.md, hooks-guide.md, skills.md, sub-agents.md, features-overview.md, memory.md, env-vars.md
 
@@ -127,14 +131,6 @@ claude plugin enable  <plugin-name>@claude-code-zero   # after testing
   - **minor** (`x.+1.0`) — New features, structural changes, plugin renames.
   - **major** (`+1.0.0`) — Breaking changes to the plugin's interface or behavior.
 - Repository tag version reflects overall release scope, not individual plugin versions.
-
-### Plugin Rename Handling
-
-When renaming a plugin (e.g., `extension-wiki` → `agent-extension-wiki`):
-
-1. Update the `name` and `source` fields in `marketplace.json`.
-2. Bump the version (at least minor) to signal the change.
-3. Update the `description` if scope has changed.
 
 ### Release Workflow
 
