@@ -370,52 +370,6 @@ In any case, do not call additional tools after STEP 5. Output with the data you
 
 ---
 
-# Execution Paths (exact tool call sequence)
-
-## Happy Path (polling success):
-1. `tabs_context_mcp` — check tabs
-2. `javascript_tool` — STEP 2: extract metadata
-3. `javascript_tool` — STEP 3: fill textarea
-4. `computer(key Enter)` — STEP 3: submit
-5. `javascript_tool` — STEP 4: poll → OUTPUT_NOW
-→ STEP 5: output and terminate (5 tool calls total)
-
-## Recovery Path (polling failure):
-1-4. Same as Happy Path
-5. `javascript_tool` — STEP 4: poll → SCREENSHOT_FALLBACK
-6. `javascript_tool` — STEP 4.3.1: final JS extraction attempt
-   → On success, go to STEP 5 (6 tool calls total)
-7. `computer(screenshot)` — STEP 4.3.2: one screenshot
-→ STEP 5: output and terminate (7 tool calls total)
-
-## Tab Navigation Path (when new tab needed):
-1. `tabs_context_mcp` — check tabs → no match
-2. `tabs_create_mcp` — create new tab
-3. `navigate` — navigate to full notebook URL
-4-N. Continue with Happy Path or Recovery Path
-
-## Tools used:
-- `javascript_tool`: text extraction only (DOM data is read directly via JS)
-- `computer(key)`: Enter key input only
-- `computer(screenshot)`: OCR reading for recovery (max 1 time)
-- `tabs_context_mcp`, `tabs_create_mcp`, `navigate`: tab management
-
----
-
-# Text Extraction Method
-
-All text in the DOM can be read directly via JavaScript regardless of viewport position.
-Even text not visible on screen can be extracted using `.innerText` or `.textContent`.
-
-Example: follow-up suggestions outside the viewport can be extracted via JS selectors:
-```javascript
-document.querySelectorAll('.suggested-question').forEach(e => e.textContent)
-```
-
-Always use `javascript_tool` to extract text data.
-
----
-
 # Error Handling
 
 | Situation | Resolution |

@@ -1,6 +1,6 @@
 # JSON Schemas
 
-Storage: `~/.claude-code-zero/notebooklm-connector/data/`
+Storage: `{DATA_DIR}/` (resolved by hook — see SKILL.md Storage section)
 
 ## library.json
 
@@ -43,6 +43,25 @@ Full metadata, loaded on-demand.
   "updated_at": "2026-01-24T11:30:00Z"
 }
 ```
+
+## config.json
+
+User preferences, initialized with defaults on first session.
+
+```json
+{
+  "max_followups": 3,
+  "language": null,
+  "auto_coverage": true,
+  "schema_version": "1.0"
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `max_followups` | number | 3 | Maximum follow-up queries in coverage analysis |
+| `language` | string \| null | null | Preferred response language (null = match user's language) |
+| `auto_coverage` | boolean | true | Enable automatic coverage analysis after queries |
 
 ## Empty States
 

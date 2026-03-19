@@ -2,14 +2,16 @@
 name: notebooklm-manager
 description: |
   Manages NotebookLM notebooks — query, add, list, search, enable/disable, remove.
-  ALWAYS use this skill when a notebooklm.google.com URL appears in the user's message
+  Use this skill when a notebooklm.google.com URL appears in the user's message
   or the user mentions NotebookLM in any context. This skill handles NotebookLM URLs
   through its own Chrome agent — do not navigate to NotebookLM URLs directly with
   Chrome tools when this skill is available.
 
-  Trigger phrases: "add notebook" + URL, "query [id] about X", "list my notebooks",
-  "show notebook details", "search notebooks", "check my docs",
-  "what does my notebook say about", "remove/delete/disable/enable notebook".
+  Trigger contexts: querying registered notebooks, adding notebook URLs,
+  listing or searching notebooks, checking research materials,
+  "what does my document say about...", "look it up in my notes",
+  "find in my uploaded materials", "ask my knowledge base",
+  managing notebook status (enable/disable/remove).
 
   Do NOT use for: general web searches, local file reading, or non-NotebookLM queries.
   Requires: claude --chrome with claude-in-chrome MCP.
@@ -22,13 +24,10 @@ Query orchestration and notebook registry management.
 
 ## Instructions
 
-### CRITICAL CONSTRAINT
-This skill MUST NOT call any `mcp__claude-in-chrome__*` tools.
-These tools DO NOT EXIST in this skill's allowed tool set.
-All Chrome interaction is delegated to the agent via Task.
-After receiving an agent error, do NOT attempt to use Chrome tools yourself.
+### Tool Boundaries
+Chrome MCP tools (`mcp__claude-in-chrome__*`) aren't in this skill's allowed tool set — calling them directly will error. All browser interaction goes through the chrome-mcp-query agent via Task. If the agent returns an error, don't attempt Chrome tools yourself.
 
-### 0. Data Path Resolution (MUST run first)
+### 0. Data Path Resolution (run first)
 
 Read `~/.claude-code-zero/notebooklm-connector/data-path` to obtain `DATA_DIR`.
 The PreToolUse hook automatically detects install scope (project vs user) and writes the correct path.
@@ -36,6 +35,15 @@ The PreToolUse hook automatically detects install scope (project vs user) and wr
 - The file contains a single line: the absolute path to the data directory.
 - Store this as `{DATA_DIR}` and use it for ALL subsequent file operations.
 - **File read error → Tell user to restart the session (hook may not be loaded).**
+
+### 0.1 Config
+
+Read `{DATA_DIR}/config.json` for user preferences:
+- `max_followups`: Maximum follow-up queries in coverage analysis (default: 3)
+- `language`: Preferred response language (null = match user's language)
+- `auto_coverage`: Enable automatic coverage analysis (default: true)
+
+If the file is missing or a field is absent, use defaults above.
 
 ### 1. Query Detection
 
@@ -95,12 +103,14 @@ After Task returns, check the agent output:
 5. If this is your first time connecting, restart the browser to register the native messaging host, then repeat steps 3-4
 6. Retry the query
 
-### 5. Post-Query Coverage Analysis (MANDATORY — DO NOT SKIP)
+### 5. Coverage Analysis
 
-**After EVERY successful Task(chrome-mcp-query) return, perform this checklist BEFORE presenting any answer.**
-The PostToolUse hook will also remind you via `COVERAGE_REMINDER` message.
+NotebookLM frequently answers only the first part of multi-topic questions. Without this check, users get incomplete answers and need to re-query manually.
 
-**DO NOT present the answer yet. DO NOT generate "Suggested follow-ups" yet.**
+If `auto_coverage` is `false` in config, skip to Section 6.
+
+After every successful Task(chrome-mcp-query) return, check coverage before presenting the answer.
+The PostToolUse hook will also remind you via `COVERAGE_REMINDER`.
 
 #### STEP A: ANALYZE
 Re-read user's original message. List ALL keywords/topics.
@@ -114,8 +124,8 @@ Follow-ups are cheap — the same Chrome tab is reused.
 Then return to STEP A.
 
 #### STEP D: COMPLETE
-All covered OR 3 follow-ups → Synthesize and present (Section 6 format).
-Max 3 follow-ups. After limit: AskUserQuestion to confirm whether to continue.
+All covered OR `max_followups` reached → Synthesize and present (Section 6 format).
+After limit: AskUserQuestion to confirm whether to continue.
 
 ---
 
@@ -131,6 +141,8 @@ Max 3 follow-ups. After limit: AskUserQuestion to confirm whether to continue.
 - [question 1]
 - [question 2]
 ```
+
+If `language` is set in config, present the answer in that language.
 
 ---
 
@@ -150,26 +162,31 @@ See [references/commands.md](references/commands.md) for full command reference.
 ## Storage
 
 Data is isolated per install scope. The hook resolves the correct path automatically.
+When `${CLAUDE_PLUGIN_DATA}` is available, it is used as the base directory.
+Otherwise falls back to `~/.claude-code-zero/notebooklm-connector/`.
 
 ```
-~/.claude-code-zero/notebooklm-connector/
-├── data-path                       # Current session's resolved data directory
+{base}/
+├── data-path                       # Always at ~/.claude-code-zero/notebooklm-connector/data-path
 ├── global/data/                    # User-level install (shared across projects)
 │   ├── library.json
 │   ├── archive.json
+│   ├── config.json
 │   └── notebooks/{id}.json
 └── projects/<md5-hash>/data/       # Project-level install (per-project isolation)
     ├── library.json
     ├── archive.json
+    ├── config.json
     └── notebooks/{id}.json
 ```
 
-The `data-path` file is written by the PreToolUse hook on each session start.
+The `data-path` file is always at `~/.claude-code-zero/notebooklm-connector/data-path` (fixed location).
 Data directory and default files are lazily created on first `data-path` read.
 
-**Migration (one-time)**:
+**Migration (automatic)**:
 - `data/` → `global/data/`: Existing flat data layout is moved to the global subdirectory.
 - Legacy paths (`~/.claude/plugins/...`, `~/.claude/claude-code-zero/...`) are copied to `global/data/`.
+- `~/.claude-code-zero/` → `${CLAUDE_PLUGIN_DATA}/`: When the env var becomes available, data is migrated.
 
 ---
 
@@ -182,5 +199,6 @@ Data directory and default files are lazily created on first `data-path` read.
 
 ## References
 
-- [references/commands.md](references/commands.md) - Full command reference
-- [references/schemas.md](references/schemas.md) - JSON schemas
+- [references/commands.md](references/commands.md) — Full command reference
+- [references/schemas.md](references/schemas.md) — JSON schemas
+- [references/gotchas.md](references/gotchas.md) — Common pitfalls and failure modes
