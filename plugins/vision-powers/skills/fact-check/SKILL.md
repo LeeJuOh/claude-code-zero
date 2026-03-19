@@ -29,7 +29,7 @@ Determine what to verify from `$1`:
    - Resolve relative paths against cwd
 2. **No argument**: Auto-detect the most recent HTML report:
    ```
-   ls -t ~/.claude-code-zero/vision-powers/reports/*.html | head -1
+   ls -t ${CLAUDE_PLUGIN_DATA}/reports/*.html | head -1
    ```
    If no reports found, inform the user and stop.
 

@@ -376,7 +376,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 1. **Determine output path**:
 
-   Default output path: `~/.claude-code-zero/vision-powers/reports/{YYYY-MM-DD}-{plugin-name}-report.html`
+   Default output path: `${CLAUDE_PLUGIN_DATA}/reports/{YYYY-MM-DD}-{plugin-name}-report.html`
 
    Where:
    - `{YYYY-MM-DD}` is today's date (e.g., `2026-03-14`)
@@ -384,7 +384,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
    The Write tool creates parent directories automatically — no `mkdir` needed.
 
-   **Existing report check**: Before generating, use Glob to search for `*-{plugin-name}-report.html` in `~/.claude-code-zero/vision-powers/reports/`. If any exist, use AskUserQuestion:
+   **Existing report check**: Before generating, use Glob to search for `*-{plugin-name}-report.html` in `${CLAUDE_PLUGIN_DATA}/reports/`. If any exist, use AskUserQuestion:
 
    > Found existing report(s) for {plugin-name}:
    > - {filename1}

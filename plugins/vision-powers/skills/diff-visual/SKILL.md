@@ -116,7 +116,7 @@ Follow `../../references/report-generation-workflow.md` with these parameters:
 
 | Parameter | Value |
 |-----------|-------|
-| `{output-path}` | `~/.claude-code-zero/vision-powers/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`) |
+| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`) |
 | `{template-name}` | `diff-visual.html` |
 | `{skill-prefix}` | `diff-visual` |
 | `{expected-sections}` | `10` |

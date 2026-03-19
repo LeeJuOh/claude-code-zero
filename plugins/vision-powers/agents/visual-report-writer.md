@@ -7,7 +7,7 @@ description: |
 
   <example>
   Context: Skill delegates HTML report generation with analysis results and section structure
-  user: "Generate HTML report to ~/.claude-code-zero/vision-powers/reports/my-diff-report.html"
+  user: "Generate HTML report to ${CLAUDE_PLUGIN_DATA}/reports/my-diff-report.html"
   assistant: "I'll generate a self-contained HTML report following the provided section structure and design system."
   <commentary>
   The orchestrator skill provides pre-analyzed data, section structure reference path, and design system path.

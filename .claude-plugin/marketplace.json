@@ -1,5 +1,4 @@
 {
-  "$schema": "https://claude.ai/schemas/plugin-marketplace/v1",
   "name": "claude-code-zero",
   "metadata": {
     "description": "Claude Code plugins, curated and shareable"

@@ -52,7 +52,7 @@ catch me up on this project
 Verify factual accuracy of a document against the actual codebase and git history. Corrects inaccuracies in place and adds a verification summary.
 
 ```
-fact-check ~/.claude-code-zero/vision-powers/reports/my-report.html
+fact-check ${CLAUDE_PLUGIN_DATA}/reports/my-report.html
 verify this report
 validate the last report
 ```
@@ -73,7 +73,7 @@ search reports auth
 
 All reports are saved to:
 ```
-~/.claude-code-zero/vision-powers/reports/
+${CLAUDE_PLUGIN_DATA}/reports/
 ```
 
 ## Architecture

@@ -97,7 +97,7 @@ Follow `../../references/report-generation-workflow.md` with these parameters:
 
 | Parameter | Value |
 |-----------|-------|
-| `{output-path}` | `~/.claude-code-zero/vision-powers/reports/{project-name}-project-recap.html` — where `{project-name}` is the project directory name |
+| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{project-name}-project-recap.html` — where `{project-name}` is the project directory name |
 | `{template-name}` | `project-recap.html` |
 | `{skill-prefix}` | `project-recap` |
 | `{expected-sections}` | `8` |

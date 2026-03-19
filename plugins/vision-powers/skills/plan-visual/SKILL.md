@@ -107,7 +107,7 @@ Follow `../../references/report-generation-workflow.md` with these parameters:
 
 | Parameter | Value |
 |-----------|-------|
-| `{output-path}` | `~/.claude-code-zero/vision-powers/reports/{plan-name}-plan-visual.html` — where `{plan-name}` is from the plan file name (e.g., `auth-redesign`) |
+| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{plan-name}-plan-visual.html` — where `{plan-name}` is from the plan file name (e.g., `auth-redesign`) |
 | `{template-name}` | `plan-visual.html` |
 | `{skill-prefix}` | `plan-visual` |
 | `{expected-sections}` | `9` |

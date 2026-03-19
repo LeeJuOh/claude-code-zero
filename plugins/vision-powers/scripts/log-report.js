@@ -23,6 +23,7 @@ function getLogPath() {
   if (pluginData) {
     return path.join(pluginData, "reports.log");
   }
+  // Fallback should not happen in practice — CLAUDE_PLUGIN_DATA is always set for installed plugins
   return path.join(os.homedir(), ".claude-code-zero", "vision-powers", "reports.log");
 }
 

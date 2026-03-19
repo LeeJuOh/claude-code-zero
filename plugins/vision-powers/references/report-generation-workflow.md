@@ -6,7 +6,7 @@ Each skill provides these parameters before entering the workflow:
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| `{output-path}` | Full path to the final HTML report | `~/.claude-code-zero/vision-powers/reports/feature-auth-diff-visual.html` |
+| `{output-path}` | Full path to the final HTML report | `${CLAUDE_PLUGIN_DATA}/reports/feature-auth-diff-visual.html` |
 | `{template-name}` | HTML template filename in `../../templates/` | `diff-visual.html` |
 | `{skill-prefix}` | Prefix for temp directory naming | `diff-visual` |
 | `{expected-sections}` | Number of sections the template expects | `10` |
@@ -25,7 +25,7 @@ If config exists, apply relevant values:
 - `default_language` → use as output language if no language was explicitly detected
 - `aesthetic` → use as aesthetic hint if no hint was specified by the skill
 - `auto_open` → if `true`, automatically open the report in the browser after generation (Step 6)
-- `reports_dir` → if set, use as the reports output directory instead of `~/.claude-code-zero/vision-powers/reports/`
+- `reports_dir` → if set, use as the reports output directory instead of `${CLAUDE_PLUGIN_DATA}/reports/`
 
 If no config file exists, proceed with defaults. Do not prompt the user to set up config — it's optional.
 

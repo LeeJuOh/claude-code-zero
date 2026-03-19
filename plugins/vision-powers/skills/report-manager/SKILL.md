@@ -20,7 +20,7 @@ This skill does NOT generate or modify reports. It is a file management utility 
 
 ### Reports Directory
 
-Default path: `~/.claude-code-zero/vision-powers/reports/`
+Default path: `${CLAUDE_PLUGIN_DATA}/reports/`
 
 Check if the user has a custom `reports_dir` in config:
 ```
@@ -53,7 +53,7 @@ If ambiguous, default to `list`.
 
 Display all reports in a table sorted by most recent first.
 
-1. Run `ls -lt ~/.claude-code-zero/vision-powers/reports/*.html` to get files with dates and sizes
+1. Run `ls -lt ${CLAUDE_PLUGIN_DATA}/reports/*.html` to get files with dates and sizes
 2. Infer report type from filename pattern:
 
 | Pattern | Type |
@@ -70,8 +70,8 @@ Display all reports in a table sorted by most recent first.
 ```
 | # | Report | Type | Size | Date |
 |---|--------|------|------|------|
-| 1 | [feature-auth-diff-visual.html](file:///home/user/.claude-code-zero/vision-powers/reports/feature-auth-diff-visual.html) | diff-visual | 145KB | 2026-03-03 |
-| 2 | [my-project-project-recap.html](file:///home/user/.claude-code-zero/vision-powers/reports/my-project-project-recap.html) | project-recap | 230KB | 2026-03-02 |
+| 1 | [feature-auth-diff-visual.html](file:///path/to/plugin-data/reports/feature-auth-diff-visual.html) | diff-visual | 145KB | 2026-03-03 |
+| 2 | [my-project-project-recap.html](file:///path/to/plugin-data/reports/my-project-project-recap.html) | project-recap | 230KB | 2026-03-02 |
 ```
 
 Build each Report cell as a markdown link: `[filename](file://{absolute-path})`. This lets the user click to open the report directly in their browser.
@@ -82,7 +82,7 @@ Open a report in the default browser.
 
 1. **With argument** (name or number from list): resolve the target file
    - Number: run `list` internally, pick the Nth file
-   - Partial name: Glob match against `~/.claude-code-zero/vision-powers/reports/*{arg}*.html`
+   - Partial name: Glob match against `${CLAUDE_PLUGIN_DATA}/reports/*{arg}*.html`
 2. **No argument**: open the most recent report (`ls -t ... | head -1`)
 3. Run `open` on the resolved file path (macOS)
 4. Print the `file:///` URL for reference
@@ -108,7 +108,7 @@ Steps:
 
 Search reports by filename pattern or content.
 
-1. **Filename search**: Use Glob to match `~/.claude-code-zero/vision-powers/reports/*{query}*.html`
+1. **Filename search**: Use Glob to match `${CLAUDE_PLUGIN_DATA}/reports/*{query}*.html`
 2. **Content search**: Use Grep to search inside HTML files for the query
    - Focus on meaningful content: `<title>`, `<h1>`-`<h3>`, text nodes
    - Show matching filename and the matched context
