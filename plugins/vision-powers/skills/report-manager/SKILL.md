@@ -1,20 +1,21 @@
 ---
 name: report-manager
 description: >
-  Manage vision-powers reports: list, open, delete, and search generated
-  HTML reports. Use when asked to list reports, open a previous report,
-  delete old reports, or find a specific report — including phrases like
+  Manage and refine vision-powers reports: list, open, delete, search, and
+  refine sections of generated HTML reports. Use when asked to list reports,
+  open a previous report, delete old reports, find a specific report, or
+  fix/update a section of an existing report — including phrases like
   "리포트 목록", "show my reports", "open the last report", "clean up old
-  reports", or "find a report about X".
+  reports", "find a report about X", "fix section 3", or "리포트 수정".
 argument-hint: "<list|open|delete|search> [filter] [--all]"
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(ls *), Bash(rm *), Bash(open *), Bash(node *)
+allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(ls *), Bash(rm *), Bash(open *), Bash(node *)
 ---
 
 # Report Manager
 
 Manage vision-powers HTML reports: list, open in browser, delete, and search by name or content.
 
-This skill does NOT generate or modify reports. It is a file management utility for the reports directory.
+Manage and refine vision-powers HTML reports: list, open in browser, delete, search by name or content, and refine specific sections of existing reports.
 
 ## Instructions
 
@@ -46,6 +47,7 @@ Determine the operation from `$ARGUMENTS` and user message:
 | open, view, browse | `open` |
 | delete, remove, clean, prune | `delete` |
 | search, find, grep | `search` |
+| refine, fix, update, adjust, change section | `refine` |
 
 If ambiguous, default to `list`.
 
@@ -113,3 +115,38 @@ Search reports by filename pattern or content.
    - Focus on meaningful content: `<title>`, `<h1>`-`<h3>`, text nodes
    - Show matching filename and the matched context
 3. Display results as a numbered list with report type and date, using clickable markdown links: `[filename](file://{absolute-path})`
+
+### Operation: refine
+
+Refine a specific section of an existing report based on feedback, without regenerating the entire report.
+
+*Why: Full report regeneration takes minutes and re-rolls font pairings, colors, and section content. Targeted refinement preserves what works and fixes only what needs changing.*
+
+1. **Resolve the target report**:
+   - With argument: filename, number from list, or partial name match
+   - No argument: most recent report (`ls -t ${CLAUDE_PLUGIN_DATA}/reports/*.html | head -1`)
+
+2. **Identify the target section**:
+   - Parse section number or name from the user's message (e.g., "refine section 3", "fix the Architecture section")
+   - If ambiguous, Read the report and list all `<section id="...">` elements with their headings, then use AskUserQuestion to let the user pick
+
+3. **Understand the feedback**:
+   - The user describes what to change (e.g., "the Mermaid diagram is wrong", "add more detail about the auth flow", "the numbers don't match")
+   - If feedback references source code or git data, use Grep and Read to gather the correct information
+
+4. **Apply refinement**:
+   - Read the target section content from the HTML report
+   - Use Edit to surgically modify the section based on feedback
+   - Preserve HTML structure, CSS classes, `style="--i: N"` values, and Mermaid/Chart.js formatting
+   - Do not modify surrounding sections
+
+5. **Validate**:
+   - Run the validation script:
+     ```
+     Bash(node {plugin-root}/scripts/validate-report.js {report-path})
+     ```
+   - If FAIL, fix issues and re-validate
+
+6. **Report**:
+   - Print the `file://` URL for the user to review
+   - Summarize what was changed

@@ -41,7 +41,26 @@ Determine the output language:
    - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Path-only with no other text**: Default to English
 
+### Intent Check
+
+*Why: A plan review for the author focuses on blind spots and gaps; a review for stakeholders focuses on risk and feasibility. Knowing the audience shapes which findings to emphasize.*
+
+If the user's message already conveys clear intent, skip this step.
+
+If the request is ambiguous (e.g., just a file path with no context), use AskUserQuestion to ask up to 2 questions:
+
+1. **Audience**: Who will read this? (yourself, your team, decision-makers)
+2. **Focus**: Any specific concern? (risk assessment, feasibility, completeness, blast radius)
+
+Defaults:
+- Audience: the user themselves (plan author)
+- Focus: balanced coverage with emphasis on gaps and risks
+
+Pass audience and focus context to the report generation phase.
+
 ### Plan Extraction
+
+*Why: Plans vary wildly in structure — from formal specs to Slack thread dumps. Extracting structured data from freeform text is the foundation for all subsequent analysis.*
 
 Read the plan file and extract structured information:
 
@@ -53,6 +72,8 @@ Read the plan file and extract structured information:
 - **Implementation phases**: If the plan defines phases or ordering
 
 ### Codebase Cross-Reference
+
+*Why: Plans make assumptions about the codebase. Cross-referencing catches drift between what the plan assumes and what actually exists.*
 
 Analyze the actual codebase to validate the plan:
 
@@ -74,6 +95,8 @@ Analyze the actual codebase to validate the plan:
 
 ### Blast Radius Mapping
 
+*Why: The plan's stated scope rarely captures all affected files. Mapping ripple effects reveals what the plan misses.*
+
 For each planned change, map the ripple effects:
 
 - **Direct impact**: Files explicitly mentioned in the plan
@@ -88,6 +111,8 @@ Classify each affected file:
 - **Gap**: Plan modifies something that requires coordinated changes here
 
 ### Verification Checkpoint
+
+*Why: Plan-specific claims (file existence, import relationships, ordering safety) must be verified before the report asserts them as facts.*
 
 Before generating the report, **produce a structured fact sheet** listing every claim you will present:
 

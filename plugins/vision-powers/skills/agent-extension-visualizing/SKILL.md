@@ -64,6 +64,23 @@ Determine **how** to present the result (independent of analysis mode):
 | Inline markdown | "--format md", "markdown", "md", "인라인", "텍스트" | `analyze` only |
 | Inline markdown **(always)** | — | `security`, `overview` (too brief for HTML) |
 
+### Intent Check
+
+*Why: An analysis for potential users focuses on capabilities and compatibility; an analysis for security reviewers focuses on permissions and risk. The audience shapes emphasis across all report sections.*
+
+If the user's message already conveys clear intent (e.g., "security audit", "is this plugin safe", or a specific analysis mode keyword), skip this step.
+
+If the request is ambiguous (e.g., just a plugin path with no other context), use AskUserQuestion to ask up to 2 questions:
+
+1. **Audience**: Who will read this? (yourself, your team, plugin marketplace reviewers)
+2. **Focus**: Any specific concern? (security, architecture, compatibility, general overview)
+
+Defaults:
+- Audience: the user themselves (evaluating the plugin)
+- Focus: balanced full analysis
+
+Pass audience and focus context to the analysis and report generation phases.
+
 ### Workflow
 
 #### Phase 1: Source Acquisition
@@ -97,6 +114,8 @@ If source cannot be found, inform user and stop.
 When cloning a subpath URL (e.g., `github.com/owner/repo/tree/main/plugins/foo`), include the subpath in both `source_base` and `github_url` so that relative paths from the plugin root produce correct source links.
 
 #### Phase 2: Discovery
+
+*Why: Accurate component inventory prevents analysis agents from missing or hallucinating plugin components.*
 
 Scan the target directory for all plugin components.
 
@@ -148,6 +167,8 @@ Set `{platform}` variable for subsequent phases. Currently only `claude-code` is
 
 #### Phase 3: Metadata Collection
 
+*Why: Reading identity files here avoids duplicate reads inside sub-agents, saving tokens.*
+
 Read identity files in a single message with parallel Read calls:
 
 - `plugin.json` (or `.claude-plugin/plugin.json` — whichever Phase 2 found)
@@ -161,6 +182,8 @@ Sub-agents read these files directly — the feature-architect reads README.md i
 Output for Phase 4: plugin identity + file path inventory + existence flags + language.
 
 #### Phase 4: Parallel Analysis
+
+*Why: Feature and security analysis are independent concerns — parallel execution halves wall-clock time.*
 
 For `overview` mode, skip this phase — go directly to Phase 5.
 
@@ -207,6 +230,8 @@ Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 ```
 
 #### Phase 4.5: Environment Fit Diagnosis (analyze mode only)
+
+*Why: Even a well-built plugin can be wrong for the user's environment. This step catches conflicts, redundancies, and budget overruns before they cause confusion.*
 
 Diagnose whether this plugin is a good fit for the user's current environment — not just "can it run?" but "should it be installed here?" Like a doctor assessing whether a new medication is appropriate given the patient's existing prescriptions, evaluate installation status, context budget impact, functional overlap with existing plugins, trigger collisions, hook impact, and component dependencies.
 
@@ -455,6 +480,9 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
    If FAIL: fix the reported issues via Edit on the output file, then re-run the script until PASS.
 
+   **Optional Coherence Review** — if `--verify` flag was specified or `auto_verify` is `true` in user config:
+   Run the coherence review agent (see `../../references/report-generation-workflow.md` Step 6). If HIGH severity issues are found, fix them via Edit and re-validate.
+
    **Optional Chrome visual verification** — only if `mcp__claude-in-chrome__*` tools are available:
    1. Start a local HTTP server to serve the report (Chrome extensions cannot access `file://` URLs):
       ```
@@ -492,7 +520,12 @@ If the source was also cloned from GitHub:
 Bash(rm -rf /tmp/agent-extension-visual-{dirname})
 ```
 
-After cleanup, suggest that the user can run `/fact-check` to verify the report's accuracy. This is optional — just a one-line suggestion, not an automatic invocation.
+After cleanup, suggest optional next steps:
+- `/fact-check` — verify the report's factual accuracy against the actual codebase
+- `/report-manager refine` — refine specific sections based on feedback
+- `--verify` — if not used this time, mention that coherence review is available for future runs
+
+This is informational — just a brief suggestion, not an automatic invocation.
 
 ### Gotchas
 
