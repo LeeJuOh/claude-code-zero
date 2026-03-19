@@ -244,28 +244,43 @@ echo "=== INSTALL_STATUS ==="
 ls -d ~/.claude/plugins/cache/*/{plugin-name}/ 2>/dev/null && echo "INSTALLED" || echo "(not-installed)"
 
 # B2: Installed plugins with descriptions
+# Deduplicate: cache may hold multiple versions per plugin; keep latest by mtime
 echo "=== INSTALLED_PLUGINS ==="
 python3 -c "
 import json, os, glob
-for pjson in sorted(glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/.claude-plugin/plugin.json'))):
+from collections import defaultdict
+groups = defaultdict(list)
+for pjson in glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/.claude-plugin/plugin.json')):
+    try:
+        parts = pjson.split('/cache/')[1].split('/')
+        groups[parts[1]].append(pjson)
+    except: pass
+for pname, paths in sorted(groups.items()):
+    pjson = max(paths, key=os.path.getmtime)
     try:
         d = json.load(open(pjson))
-        parts = pjson.split('/cache/')[1].split('/')
-        pname = parts[1]
         print('PLUGIN|' + pname + '|' + d.get('description', ''))
     except: pass
 " 2>/dev/null
 
 # B3: Installed skill names + trigger descriptions + context budget data
+# Deduplicate: cache holds multiple versions per plugin (e.g., 2.6.0, 2.7.1).
+# Claude Code loads only the active version, so count each (plugin, skill) once.
 echo "=== INSTALLED_SKILLS ==="
 python3 -c "
 import os, re, glob
-total_chars = 0
-disabled_count = 0
-for smd in sorted(glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/skills/*/SKILL.md'))):
+from collections import defaultdict
+groups = defaultdict(list)
+for smd in glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/skills/*/SKILL.md')):
     try:
         parts = smd.split('/cache/')[1].split('/')
-        plugin, skill = parts[1], parts[parts.index('skills')+1]
+        groups[(parts[1], parts[parts.index('skills')+1])].append(smd)
+    except: pass
+total_chars = 0
+disabled_count = 0
+for (plugin, skill), paths in sorted(groups.items()):
+    smd = max(paths, key=os.path.getmtime)
+    try:
         with open(smd) as f: content = f.read(2000)
         m = re.match(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
         if not m: continue
@@ -330,9 +345,14 @@ try:
             type_counts[t] = type_counts.get(t, 0) + 1
         print('PROJECT|' + ev + '|' + str(len(entries)))
 except: pass
+# Deduplicate: keep latest cached version per plugin
+hook_groups = {}
 for hf in glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/hooks/hooks.json')):
     parts = hf.split('/cache/')[1].split('/')
     plugin = parts[1]
+    if plugin not in hook_groups or os.path.getmtime(hf) > os.path.getmtime(hook_groups[plugin]):
+        hook_groups[plugin] = hf
+for plugin, hf in sorted(hook_groups.items()):
     try:
         d = json.load(open(hf))
         for ev, entries in d.items():
@@ -394,7 +414,7 @@ Calculate the plugin's context footprint using dual scenarios.
 
 4. **Zero-cost skills**: Note how many skills use `disable-model-invocation: true` — these have no always-on context cost and should be highlighted as a positive design choice.
 
-Severity determination: use the **more conservative** (200K) scenario for the overall severity, but present both in the report so users on 1M context can judge for themselves.
+Severity determination: present both 200K and 1M scenarios in the report. For the overall severity, use the scenario matching the **user's current session model** (e.g., Opus 4.6[1M] → 1M scenario, Sonnet/Haiku → 200K scenario). If the model context cannot be determined, default to 200K as fallback.
 
 **3D: Functional Overlap & Trigger Analysis** (compare Step 1 skills vs B3/B4 output)
 
@@ -444,8 +464,8 @@ Verdict priority (highest severity wins):
 2. Required dependency MISSING + DUPLICATE overlap → CONFLICTING
 3. DUPLICATE skill with HIGH trigger collision → at least REDUNDANT
 4. Multiple OVERLAP findings covering > 50% of plugin's skills → at least REDUNDANT
-5. Skill description budget exceeded in 200K scenario → at least CONDITIONAL; exceeded in both 200K and 1M → CONFLICTING
-6. MCP tool surface would exceed 10% cap in 200K scenario → at least CONDITIONAL; exceeded in both → CONFLICTING
+5. Skill description budget exceeded in the user's context scenario → at least CONDITIONAL; exceeded in both 200K and 1M → CONFLICTING
+6. MCP tool surface would exceed 10% cap in the user's context scenario → at least CONDITIONAL; exceeded in both → CONFLICTING
 7. Cross-plugin component dependency MISSING → at least CONDITIONAL
 8. Projected hooks > 15 or hook context injection HIGH → at least CONDITIONAL
 9. All clear → RECOMMENDED

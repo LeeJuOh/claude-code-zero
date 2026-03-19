@@ -93,8 +93,8 @@ Comprehensive assessment of whether a plugin should be installed in the user's c
 2. Required dependency MISSING + DUPLICATE overlap → CONFLICTING
 3. DUPLICATE skill with HIGH trigger collision → at least REDUNDANT
 4. Multiple OVERLAP findings covering > 50% of plugin's skills → at least REDUNDANT
-5. Skill description budget exceeded in 200K scenario → at least CONDITIONAL; exceeded in both 200K and 1M → CONFLICTING
-6. MCP tool surface would exceed 10% cap in 200K scenario → at least CONDITIONAL; exceeded in both → CONFLICTING
+5. Skill description budget exceeded in the user's context scenario → at least CONDITIONAL; exceeded in both 200K and 1M → CONFLICTING
+6. MCP tool surface would exceed 10% cap in the user's context scenario → at least CONDITIONAL; exceeded in both → CONFLICTING
 7. Cross-plugin component dependency MISSING → at least CONDITIONAL
 8. Projected hooks > 15 or hook context injection HIGH → at least CONDITIONAL
 9. All clear → RECOMMENDED
@@ -122,7 +122,9 @@ Dependency verdict:
 
 ### Context Budget
 
-Evaluate the plugin's impact on the Claude Code context window. Because the context window varies by model (200K default vs 1M extended), present both scenarios.
+Evaluate the plugin's impact on the Claude Code context window. Because the context window varies by model (200K default vs 1M extended), present both scenarios. Use the scenario matching the user's current session model for the overall severity.
+
+> **Important**: When scanning `~/.claude/plugins/cache/`, multiple versions of the same plugin may be cached. Claude Code loads only the active version, so deduplicate by plugin name (keeping the latest by file mtime) to avoid inflated counts.
 
 #### Skill Description Budget
 
