@@ -2,9 +2,9 @@
 
 > **Quick Index**
 > [Overview](#repository-overview) · [Directory Structure](#directory-structure) · [Official Docs](#official-documentation) · [Reference Materials](#reference-materials)
-> [Plugin Development](#plugin-development): [Component Structure](#plugin-component-structure) · [Workflow](#workflow) · [Validation](#validation) · [Local Testing](#local-testing)
+> [Plugin Development](#plugin-development): [Component Structure](#plugin-component-structure) · [Design Principles](#skill-design-principles) · [SKILL.md Reference](#skillmd-quick-reference) · [Hooks Reference](#hooks-quick-reference) · [Workflow](#workflow) · [Validation](#validation) · [Local Testing](#local-testing)
 > [references/ Folder](#references-folder) · [Git Workflow](#git-workflow): [Branching](#branching-strategy) · [Commits](#commit-rules) · [Versioning](#tagging--versioning) · [Rename](#plugin-rename-handling) · [Release](#release-workflow-tagging-on-main)
-> [Data Paths](#plugin-data-paths) · [Permission Gotchas](#permission-gotchas) · [Coding Style](#coding-style)
+> [Env & Data Paths](#environment-variables--data-paths) · [Gotchas](#gotchas) · [Coding Style](#coding-style)
 
 ## Repository Overview
 
@@ -16,6 +16,10 @@ Personal marketplace for Claude Code plugins. Plugins are developed under `plugi
 .claude-plugin/marketplace.json   # Marketplace definition (plugin registry)
 plugins/<plugin-name>/            # Plugin source code (git-committed)
 references/                       # External reference materials (git-ignored)
+docs/reference/                   # Skill design guides (git-ignored, local only)
+data/                             # Session and operational data
+assets/                           # Marketplace assets (badges, images)
+AGENTS.md                         # Subset of CLAUDE.md for sub-agents
 ```
 
 ## Official Documentation
@@ -51,6 +55,72 @@ hooks/                        # Hooks (hooks.json + scripts)
 .mcp.json                    # MCP server configuration (optional)
 .lsp.json                    # LSP server configuration (optional)
 settings.json                # Default settings, e.g. { "agent": "name" } (optional)
+```
+
+### Skill Design Principles
+
+Key principles from Anthropic's internal skill usage (see `docs/reference/` for full guides):
+
+- **Description is a trigger, not a summary** — Claude scans skill descriptions to decide "is there a skill for this request?" Write descriptions for model matching, not human readability.
+- **Gotchas are the highest-signal content** — Build a Gotchas section from common Claude failure points. Update it over time as new edge cases surface.
+- **Use the folder structure for progressive disclosure** — A skill is a folder, not just a markdown file. Put detailed references in `references/`, templates in `assets/`, helper scripts in `scripts/`. Tell Claude what files exist and it will read them at the right time.
+- **Don't state the obvious** — Claude already knows common coding patterns. Focus skill content on information that pushes Claude out of its default behavior.
+- **Avoid railroading** — Give Claude flexibility to adapt to the situation. Overly specific instructions make skills brittle across diverse use cases.
+- **On-demand hooks** — Skills can register hooks that activate only when the skill is invoked and last for the session. Use for opinionated guards you don't want running all the time (e.g., blocking destructive commands).
+- **Composing skills** — Reference other skills by name; the model will invoke them if installed. No formal dependency management needed.
+- **Skill categories** (for reference when designing new plugins):
+  1. Library & API Reference — how to use internal/external libraries correctly
+  2. Product Verification — test/verify code with external tools (playwright, tmux)
+  3. Data Fetching & Analysis — connect to data/monitoring stacks
+  4. Business Process & Team Automation — automate repetitive workflows
+  5. Code Scaffolding & Templates — generate framework boilerplate
+  6. Code Quality & Review — enforce quality, review code
+  7. CI/CD & Deployment — fetch, push, deploy code
+  8. Runbooks — symptom → investigation → structured report
+  9. Infrastructure Operations — maintenance with guardrails
+
+### SKILL.md Quick Reference
+
+Frontmatter fields (all optional except body content):
+
+| Field | Description |
+|-------|-------------|
+| `name` | Skill name (defaults to directory name) |
+| `description` | Trigger condition for model matching — NOT a summary. Use "Use when ..." pattern |
+| `argument-hint` | Autocomplete hint (e.g., `"[url] [options]"`) |
+| `disable-model-invocation` | `true` = user-only invocation (model cannot trigger) |
+| `user-invocable` | `false` = hidden from `/` menu (model-only) |
+| `allowed-tools` | Restrict available tools (e.g., `Read, Grep, Bash(git *)`) |
+| `model` | Model override (e.g., `sonnet`, `haiku`) |
+| `context` | `fork` = run in isolated subagent context |
+| `agent` | Agent type when `context: fork` (e.g., `Explore`) |
+| `hooks` | On-demand hooks active only during skill execution |
+
+String substitutions available in SKILL.md:
+
+| Variable | Description |
+|----------|-------------|
+| `$ARGUMENTS` | Full argument string passed to the skill |
+| `$ARGUMENTS[N]` / `$N` | Nth argument (0-based) |
+| `${CLAUDE_SKILL_DIR}` | Directory containing SKILL.md (not plugin root). Use for referencing bundled scripts/files |
+| `${CLAUDE_SESSION_ID}` | Current session ID |
+| `` !`command` `` | Shell command execution — result injected as preprocessing |
+
+### Hooks Quick Reference
+
+Defined in `hooks/hooks.json`. Events: `SessionStart`, `PreToolUse`, `PostToolUse`, `UserPromptSubmit`, `Stop`, `SubagentStart`, `SubagentStop`.
+
+Hook types: `command` (shell script), `http` (POST endpoint), `prompt` (LLM evaluation), `agent` (agent verification).
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Write|Edit",
+      "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/lint.sh" }]
+    }]
+  }
+}
 ```
 
 ### Workflow
@@ -133,21 +203,37 @@ When the user requests a tag on `main`:
 6. **Switch back** — Return to `develop`.
 7. **Confirm push** — Ask the user before pushing `main`, `develop`, and the tag to remote.
 
-## Plugin Data Paths
+## Environment Variables & Data Paths
+
+| Variable | Description |
+|----------|-------------|
+| `${CLAUDE_PLUGIN_ROOT}` | Plugin install directory (changes on update — do not store data here) |
+| `${CLAUDE_PLUGIN_DATA}` | Persistent per-plugin data directory (survives updates) |
 
 | Purpose | Path |
 |---------|------|
-| Persistent data (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
+| Persistent data (reports, config) | `${CLAUDE_PLUGIN_DATA}` (preferred) or `~/.claude-code-zero/<plugin-name>/` (legacy) |
 | Temporary data (clone tmp) | `/tmp/<plugin-name>/` |
 
+Data stored in the skill/plugin directory is deleted on upgrade — always use `${CLAUDE_PLUGIN_DATA}` for persistent storage.
 
-## Permission Gotchas
 
-Skill `allowed-tools` behavior (tested on Claude Code v2.1.63):
+## Gotchas
 
+**Component location**: commands/, agents/, skills/, hooks/ go in the **plugin root**, not inside `.claude-plugin/`. Putting them inside `.claude-plugin/` silently fails to load.
+
+**source path**: `marketplace.json` source must start with `./` (relative path). `../` is not supported.
+
+**Version priority**: If both `plugin.json` and `marketplace.json` define `version`, `plugin.json` wins. Set in one place only — this repo uses `marketplace.json` exclusively.
+
+**Hook scripts**: Must have execute permission (`chmod +x`) and a shebang line. Use `${CLAUDE_PLUGIN_ROOT}` for paths.
+
+**Installed plugin isolation**: Installed plugins are cached copies — they cannot reference files outside their own directory.
+
+**Skill allowed-tools**:
 - Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not.
 - `$()` command substitution triggers a separate security prompt regardless of allowed-tools.
-- Skills **do** inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow).
+- Skills inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow).
 
 ## Coding Style
 
