@@ -32,6 +32,8 @@ The PreToolUse hook automatically detects install scope (project vs user) and wr
 Location: `{DATA_DIR}/wishlist.json`
 
 Data is isolated per install scope. The hook resolves the correct path automatically.
+When `${CLAUDE_PLUGIN_DATA}` is available, it is used as the base directory.
+Otherwise falls back to `~/.claude-code-zero/plugin-bookmarks/`.
 
 ```
 ~/.claude-code-zero/plugin-bookmarks/
@@ -64,6 +66,7 @@ Data directory and default file are lazily created on first `data-path` read.
 **Migration (one-time)**:
 - `data/` → `global/data/`: Existing flat data layout is moved to the global subdirectory.
 - Legacy paths (`~/.claude/plugins/...`, `~/.claude/claude-code-zero/...`) are copied to `global/data/`.
+- `~/.claude-code-zero/` → `${CLAUDE_PLUGIN_DATA}/`: When the env var becomes available, data is migrated.
 
 ### URL Heuristics
 

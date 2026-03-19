@@ -3,7 +3,7 @@
  * Configuration manager for vision-powers.
  *
  * Reads/writes user preferences to ${CLAUDE_PLUGIN_DATA}/config.json
- * (falls back to ~/.claude-code-zero/vision-powers/config.json).
+ * (falls back to ~/.claude-code-zero/vision-powers/config.json if CLAUDE_PLUGIN_DATA is not set).
  *
  * Usage:
  *   node config.js get [key]          # Get a config value (or all if no key)
@@ -35,7 +35,7 @@ function getConfigPath() {
   if (pluginData) {
     return path.join(pluginData, "config.json");
   }
-  // Fallback to standard data path
+  // Fallback should not happen in practice — CLAUDE_PLUGIN_DATA is always set for installed plugins
   return path.join(os.homedir(), ".claude-code-zero", "vision-powers", "config.json");
 }
 

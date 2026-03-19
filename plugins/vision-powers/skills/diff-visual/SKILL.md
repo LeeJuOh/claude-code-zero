@@ -47,7 +47,26 @@ Determine the output language:
    - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Ref-only with no other text**: Default to English
 
+### Intent Check
+
+*Why: Understanding the audience and focus area upfront lets the report emphasize what matters most — a code review for a teammate reads differently from an architecture briefing for stakeholders.*
+
+If the user's message already conveys clear intent (specific focus, explicit audience, or detailed request), skip this step and proceed with defaults.
+
+If the request is ambiguous (e.g., just a branch name with no context), use AskUserQuestion to ask up to 2 questions:
+
+1. **Audience**: Who will read this? (yourself, your team, stakeholders)
+2. **Focus**: Any specific aspect to emphasize? (code quality, architecture impact, test coverage, migration completeness)
+
+Defaults (when not specified):
+- Audience: the user themselves
+- Focus: balanced coverage across all sections
+
+Pass audience and focus context to the report generation phase to adjust section depth and emphasis.
+
 ### Data Gathering
+
+*Why: Reading actual file contents (not just diff hunks) is essential for accurate architecture diagrams and code review assessments.*
 
 Collect comprehensive data about the diff. Run git commands in parallel where possible.
 
@@ -99,6 +118,8 @@ Use Glob + Grep to find related files (tests, configs, docs) that provide contex
 
 ### Verification Checkpoint
 
+*Why: Every claim in the report must be traceable to actual git output. This step catches hallucinated metrics before they enter the report.*
+
 Before generating the report, **produce a structured fact sheet** listing every claim you will present:
 
 1. **Quantitative check**: Lines +/−, file counts, module counts — all must match git output exactly
@@ -116,7 +137,7 @@ Follow `../../references/report-generation-workflow.md` with these parameters:
 
 | Parameter | Value |
 |-----------|-------|
-| `{output-path}` | `~/.claude-code-zero/vision-powers/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`) |
+| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`) |
 | `{template-name}` | `diff-visual.html` |
 | `{skill-prefix}` | `diff-visual` |
 | `{expected-sections}` | `10` |

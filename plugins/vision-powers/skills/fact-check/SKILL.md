@@ -29,7 +29,7 @@ Determine what to verify from `$1`:
    - Resolve relative paths against cwd
 2. **No argument**: Auto-detect the most recent HTML report:
    ```
-   ls -t ~/.claude-code-zero/vision-powers/reports/*.html | head -1
+   ls -t ${CLAUDE_PLUGIN_DATA}/reports/*.html | head -1
    ```
    If no reports found, inform the user and stop.
 
@@ -79,6 +79,8 @@ Feedback-guided verification:
 
 ### Phase 1: Extract Claims
 
+*Why: Systematic extraction prevents cherry-picking. Every verifiable claim must be identified before verification begins.*
+
 Read the target file. Extract every verifiable factual claim into 5 categories:
 
 1. **Quantitative**: Line counts, file counts, function counts, module counts, test counts, any numeric metrics
@@ -90,6 +92,8 @@ Read the target file. Extract every verifiable factual claim into 5 categories:
 **Skip** subjective analysis: opinions, design judgments, readability assessments, severity ratings, recommendations. These aren't verifiable facts.
 
 ### Phase 2: Verify Against Source
+
+*Why: Each claim category requires a different verification method. Using the wrong method (e.g., Grep for quantitative claims) produces false confirmations.*
 
 For each extracted claim, go to the actual source:
 
@@ -125,6 +129,8 @@ Classify each claim:
 
 ### Phase 3: Correct In Place
 
+*Why: Surgical corrections preserve the document's structure and style. Over-editing risks breaking HTML layout or changing the author's voice.*
+
 Use the `Edit` tool for surgical corrections:
 
 **Do correct**:
@@ -145,6 +151,8 @@ Use the `Edit` tool for surgical corrections:
 If a section contains a factual error, fix only the factual part. If a section is fundamentally wrong (not just a detail error), rewrite that section's content while preserving the surrounding HTML/markdown structure.
 
 ### Phase 4: Add Verification Summary
+
+*Why: Transparency — readers can see what was checked, what changed, and what couldn't be verified.*
 
 Insert a verification summary into the document.
 

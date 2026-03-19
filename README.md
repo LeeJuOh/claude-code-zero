@@ -7,7 +7,7 @@
 
 <div align="center">
 
-[▶ Watch Demo Video](assets/product-demo.mp4)
+<video src="https://github.com/user-attachments/assets/abb70886-6f82-474c-a956-3c89b77c4ae5" width="600" controls></video>
 
 </div>
 

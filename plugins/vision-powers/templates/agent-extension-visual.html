@@ -211,6 +211,19 @@
     .feature-list li { margin-bottom: 0.4rem; }
     .pattern-target { margin-top: 1.5rem; padding: 1rem; background: color-mix(in srgb, var(--surface) 50%, var(--bg) 50%); border-radius: 8px; }
 
+    /* ===== REPORT: Section 3 — Architecture ===== */
+    .narrative-block { display: flex; flex-direction: column; gap: 1rem; margin: 1.5rem 0; }
+    .narrative-item { padding: 1rem 1.25rem; border-radius: 8px; background: color-mix(in srgb, var(--surface) 50%, var(--bg) 50%); }
+    .narrative-item h4 { margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); }
+    .narrative-item p { margin: 0; }
+    .narrative-item--thesis { border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+    .narrative-item--thesis h4 { color: var(--accent); }
+    .philosophy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .philosophy-card { padding: 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    .philosophy-card h4 { margin: 0 0 0.5rem 0; color: var(--accent); }
+    .philosophy-card p { margin: 0 0 0.5rem 0; font-size: 0.9rem; }
+    .philosophy-example { font-size: 0.85rem; color: var(--text-dim); padding-top: 0.5rem; border-top: 1px solid var(--border); margin-top: 0.75rem; }
+
     /* ===== REPORT: Section 4 — Feature Deep Dive ===== */
     .mechanism-grid { display: flex; flex-direction: column; gap: 1.5rem; margin: 1.5rem 0; }
     .mechanism-card { padding: 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
@@ -220,6 +233,15 @@
     .mechanism-steps { padding-left: 1.5rem; margin: 0.5rem 0 1rem; }
     .mechanism-steps li { margin-bottom: 0.4rem; padding-left: 0; } .mechanism-steps li::before { content: none; }
     .mechanism-reuse { font-size: 0.9rem; padding: 0.75rem; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); border-radius: 6px; margin-top: 0.75rem; }
+    .why-matters { margin-bottom: 1rem; padding: 0.75rem 1rem; background: color-mix(in srgb, var(--warning) 6%, var(--surface)); border-radius: 6px; border-left: 3px solid var(--warning); }
+    .why-matters strong { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--warning); margin-bottom: 0.25rem; }
+    .why-matters p { margin: 0; font-size: 0.9rem; }
+    .in-practice { margin-top: 0.75rem; padding: 0.75rem 1rem; background: color-mix(in srgb, var(--success) 6%, var(--surface)); border-radius: 6px; border-left: 3px solid var(--success); }
+    .in-practice strong { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--success); margin-bottom: 0.25rem; }
+    .in-practice p { margin: 0; font-size: 0.9rem; }
+    .best-practice { margin-top: 0.5rem; padding: 0.75rem 1rem; background: color-mix(in srgb, var(--info) 6%, var(--surface)); border-radius: 6px; border-left: 3px solid var(--info); }
+    .best-practice strong { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--info); margin-bottom: 0.25rem; }
+    .best-practice p { margin: 0; font-size: 0.9rem; }
     .workflow-trace { display: flex; flex-direction: column; gap: 0; margin: 1.5rem 0; }
     .trace-step { display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
     .trace-step:last-child { border-bottom: none; }
@@ -279,6 +301,7 @@
     .env-fit-recommendations { margin: 1rem 0; padding: 0.75rem 1rem; background: color-mix(in srgb, var(--warning) 6%, var(--surface)); border-radius: 8px; }
     .env-fit-recommendations h4 { margin: 0 0 0.5rem 0; font-size: 0.95rem; }
     .env-fit-recommendations ul { margin: 0; padding-left: 1.2rem; }
+    .env-fit-note { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem; }
 
     /* ===== REPORT: Section 10 — Plugin Profile ===== */
 

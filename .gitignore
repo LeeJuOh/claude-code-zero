@@ -53,8 +53,10 @@ plugins/*/data/
 plugins/**/data/
 plugins/*/.venv/
 
-/docs/
+# /docs/ — 이제 git 추적함
 .claude/worktrees
 .claude/settings.local.json
 
 /video/
+
+docs/origin

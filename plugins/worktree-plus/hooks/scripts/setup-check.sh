@@ -17,8 +17,8 @@ EXPECTED_REMOVE="$PLUGIN_ROOT/hooks/scripts/worktree-remove.sh"
 
 # If settings file doesn't exist or jq not available, warn and exit
 if ! command -v jq >/dev/null 2>&1; then
-  jq -n --arg msg "worktree-plus: jq is required for auto-configuration. Install jq and restart." \
-    '{ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: $msg } }'
+  # Plain text stdout — added to Claude's context by SessionStart hook
+  echo "worktree-plus: jq is required for auto-configuration. Install jq (brew install jq / apt install jq) and restart."
   exit 0
 fi
 

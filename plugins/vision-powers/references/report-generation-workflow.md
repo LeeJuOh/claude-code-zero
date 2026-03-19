@@ -6,7 +6,7 @@ Each skill provides these parameters before entering the workflow:
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| `{output-path}` | Full path to the final HTML report | `~/.claude-code-zero/vision-powers/reports/feature-auth-diff-visual.html` |
+| `{output-path}` | Full path to the final HTML report | `${CLAUDE_PLUGIN_DATA}/reports/feature-auth-diff-visual.html` |
 | `{template-name}` | HTML template filename in `../../templates/` | `diff-visual.html` |
 | `{skill-prefix}` | Prefix for temp directory naming | `diff-visual` |
 | `{expected-sections}` | Number of sections the template expects | `10` |
@@ -25,7 +25,7 @@ If config exists, apply relevant values:
 - `default_language` → use as output language if no language was explicitly detected
 - `aesthetic` → use as aesthetic hint if no hint was specified by the skill
 - `auto_open` → if `true`, automatically open the report in the browser after generation (Step 6)
-- `reports_dir` → if set, use as the reports output directory instead of `~/.claude-code-zero/vision-powers/reports/`
+- `reports_dir` → if set, use as the reports output directory instead of `${CLAUDE_PLUGIN_DATA}/reports/`
 
 If no config file exists, proceed with defaults. Do not prompt the user to set up config — it's optional.
 
@@ -91,7 +91,30 @@ If FAIL: fix the reported issues via Edit on the output file, then re-run the sc
 5. Fix any issues found via Edit on the output file.
 6. Kill the server: `Bash(kill {pid} 2>/dev/null)`
 
-### Step 6: Log report and notify
+### Step 6: Coherence Review (optional)
+
+*Why: A report that looks correct to its author may confuse or mislead a fresh reader. A context-free review catches narrative gaps, internal contradictions, and unsupported assumptions that the author's knowledge masks.*
+
+This step is **off by default**. Activate it with `--verify` flag on the skill invocation, or set `auto_verify: true` in user config.
+
+When activated:
+
+```
+Agent(subagent_type: "vision-powers:coherence-reviewer", prompt: {
+  Report file path: {output-path},
+  Output language: {detected language}
+})
+```
+
+The coherence-reviewer reads ONLY the assembled report — no analysis data, no source code, no git history. This simulates a first-time reader's perspective.
+
+**If issues found**:
+- **HIGH severity**: Fix via Edit on the output file, then re-run validation (Step 5)
+- **MEDIUM/LOW severity**: Note in the user notification (Step 7) as optional improvements
+
+**If COHERENT**: Proceed to Step 7.
+
+### Step 7: Log report and notify
 
 Log the generated report for history tracking:
 ```
@@ -108,13 +131,18 @@ If `auto_open` is `true` in user config, also open it:
 Bash(open {output-path})
 ```
 
-### Step 7: Cleanup
+### Step 8: Cleanup
 
 Remove temporary sections directory:
 ```
 Bash(rm -rf /tmp/{skill-prefix}-{dirname}-sections)
 ```
 
-### Step 8: Suggest fact-check
+### Step 9: Suggest follow-up
 
-After reporting the file URL, mention that the user can run `/fact-check` to verify the report's accuracy against the actual codebase. This is optional — just a one-line suggestion, not an automatic invocation.
+After reporting the file URL, suggest optional next steps:
+- `/fact-check` — verify the report's factual accuracy against the actual codebase
+- `/report-manager refine` — refine specific sections based on feedback
+- `--verify` — if not used this time, mention that coherence review is available for future runs
+
+This is informational — just a brief suggestion, not an automatic invocation.

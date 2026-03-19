@@ -39,7 +39,26 @@ Determine the output language:
    - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **No other text**: Default to English
 
+### Intent Check
+
+*Why: A recap for someone returning from vacation differs from a status update for leadership. The audience determines what to highlight — technical debt vs. milestone progress vs. decision context.*
+
+If the user's message already conveys clear intent, skip this step.
+
+If the request is ambiguous (e.g., just a time window with no context), use AskUserQuestion to ask up to 2 questions:
+
+1. **Audience**: Who is this for? (yourself, your team, leadership)
+2. **Focus**: What matters most? (decisions made, technical changes, team activity, what needs attention)
+
+Defaults:
+- Audience: the user themselves (rebuilding mental model)
+- Focus: balanced — recent activity, decisions, and current state
+
+Pass audience and focus context to the report generation phase.
+
 ### Data Gathering
+
+*Why: Git history is ground truth, but file names alone can't describe architecture. Reading actual source files (imports, exports) is essential for accurate descriptions.*
 
 Collect comprehensive data about the project. Run git commands in parallel where possible.
 
@@ -80,6 +99,8 @@ git branch --no-merged
 
 ### Verification Checkpoint
 
+*Why: Quantitative claims (commit counts, file counts) must exactly match git output. Behavioral claims must be traceable to specific source files.*
+
 Before generating the report, produce a structured fact sheet:
 
 1. **Quantitative check**: Commit counts, file counts, line counts, branch counts — all must match git output exactly
@@ -97,7 +118,7 @@ Follow `../../references/report-generation-workflow.md` with these parameters:
 
 | Parameter | Value |
 |-----------|-------|
-| `{output-path}` | `~/.claude-code-zero/vision-powers/reports/{project-name}-project-recap.html` — where `{project-name}` is the project directory name |
+| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{project-name}-project-recap.html` — where `{project-name}` is the project directory name |
 | `{template-name}` | `project-recap.html` |
 | `{skill-prefix}` | `project-recap` |
 | `{expected-sections}` | `8` |

@@ -1,10 +1,7 @@
 # CLAUDE.md
 
-> **Quick Index**
-> [Overview](#repository-overview) · [Directory Structure](#directory-structure) · [Official Docs](#official-documentation) · [Reference Materials](#reference-materials)
-> [Plugin Development](#plugin-development): [Component Structure](#plugin-component-structure) · [Workflow](#workflow) · [Validation](#validation) · [Local Testing](#local-testing)
-> [references/ Folder](#references-folder) · [Git Workflow](#git-workflow): [Branching](#branching-strategy) · [Commits](#commit-rules) · [Versioning](#tagging--versioning) · [Rename](#plugin-rename-handling) · [Release](#release-workflow-tagging-on-main)
-> [Data Paths](#plugin-data-paths) · [Permission Gotchas](#permission-gotchas) · [Coding Style](#coding-style)
+> Navigation map. Detailed references live in `docs/`.
+> Gotchas and Coding Style are inline — highest-signal content stays in the map.
 
 ## Repository Overview
 
@@ -16,11 +13,22 @@ Personal marketplace for Claude Code plugins. Plugins are developed under `plugi
 .claude-plugin/marketplace.json   # Marketplace definition (plugin registry)
 plugins/<plugin-name>/            # Plugin source code (git-committed)
 references/                       # External reference materials (git-ignored)
+docs/                             # Knowledge base and reference materials
+  reference/                      # Skill, hooks, env-var specs
+  enhancement/                    # Enhancement proposals
+  handoff/                        # Session handoff notes
+  plan/                           # Planning documents
+  superpowers/plans/              # Plugin implementation plans
+  plugin-marketplaces.md          # Marketplace documentation
+  release-workflow.md             # Release tagging process
+data/                             # Session and operational data
+assets/                           # Marketplace assets (badges, images)
+AGENTS.md                         # Subset of CLAUDE.md for sub-agents
 ```
 
 ## Official Documentation
 
-Entry point: https://code.claude.com/docs/llms.txt
+Entry point: https://code.claude.com/docs/llms.txt → fetch individual pages as `https://code.claude.com/docs/en/<page>`
 
 Key pages: plugins.md, plugins-reference.md, plugin-marketplaces.md, discover-plugins.md, hooks.md, hooks-guide.md, skills.md, sub-agents.md, features-overview.md, memory.md, env-vars.md
 
@@ -28,13 +36,12 @@ See **Workflow step 1 (Docs)** for when consultation is required.
 
 ## Reference Materials
 
-> **Note:** The `docs/` directory is gitignored — these files exist locally only and are not tracked in git.
+Key references for structural plugin work:
 
-`docs/reference/skill-building-guide.md` — Skill design spec: YAML frontmatter field reference, description writing formula, instruction best practices, 5 design patterns, testing approach, troubleshooting, and quick checklist. Extracted from Anthropic's official PDF guide.
+- `docs/reference/skill-building-guide.md` — Skill design spec (frontmatter, description formula, 5 design patterns)
+- `docs/reference/skill-lessons-from-anthropic.md` — Practical guide (9 categories, gotchas-driven design, progressive disclosure)
 
-`docs/reference/skill-lessons-from-anthropic.md` — Practical skill guide from Anthropic's internal usage: 9 skill categories, gotchas-driven design, progressive disclosure via folder structure, description-as-trigger pattern, on-demand hooks, data persistence (`${CLAUDE_PLUGIN_DATA}`), and marketplace curation strategy.
-
-Both references are required for structural plugin work. See **Workflow step 1 (Docs)**.
+Both are required reading for new plugins and structural changes. See **Workflow step 1 (Docs)**.
 
 ## Plugin Development
 
@@ -52,6 +59,18 @@ hooks/                        # Hooks (hooks.json + scripts)
 .lsp.json                    # LSP server configuration (optional)
 settings.json                # Default settings, e.g. { "agent": "name" } (optional)
 ```
+
+### Skill Design Principles
+
+See `docs/reference/skill-lessons-from-anthropic.md` — description-as-trigger, gotchas-driven design, progressive disclosure, on-demand hooks, 9 skill categories.
+
+### SKILL.md Quick Reference
+
+See `docs/reference/skill-md-reference.md` — 10 frontmatter fields (name, description, allowed-tools, context, hooks, ...) and 5 string substitutions ($ARGUMENTS, ${CLAUDE_SKILL_DIR}, ...).
+
+### Hooks Quick Reference
+
+See `docs/reference/hooks-reference.md` — 7 events (SessionStart, PreToolUse, PostToolUse, ...), 4 hook types (command, http, prompt, agent), JSON schema with matcher patterns.
 
 ### Workflow
 
@@ -113,41 +132,36 @@ claude plugin enable  <plugin-name>@claude-code-zero   # after testing
   - **major** (`+1.0.0`) — Breaking changes to the plugin's interface or behavior.
 - Repository tag version reflects overall release scope, not individual plugin versions.
 
-### Plugin Rename Handling
+### Release Workflow
 
-When renaming a plugin (e.g., `extension-wiki` → `agent-extension-wiki`):
+See `docs/release-workflow.md` — 7-step process: compare branches → bump versions → merge to main → tag → push.
 
-1. Update the `name` and `source` fields in `marketplace.json`.
-2. Bump the version (at least minor) to signal the change.
-3. Update the `description` if scope has changed.
+## Environment Variables & Data Paths
 
-### Release Workflow (Tagging on main)
+See `docs/reference/env-and-data-paths.md` — `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, path resolution, legacy paths.
 
-When the user requests a tag on `main`:
+**Critical:** Data in the plugin directory is deleted on upgrade — always use `${CLAUDE_PLUGIN_DATA}` for persistent storage.
 
-1. **Compare branches** — Run `git log main..develop --oneline` and `git diff main..develop --stat` to list all changes.
-2. **Ask about marketplace update** — Show each plugin's current version and what changed since `main`. Ask which plugins should have their version bumped and by how much.
-3. **Update on develop** — Update `marketplace.json` for selected plugins. Commit (e.g., `release: bump versions for <tag>`).
-4. **Merge to main** — Switch to `main` and merge `develop` (no fast-forward: `git merge --no-ff develop`).
-5. **Create tag** — Create the annotated tag on `main` (e.g., `git tag -a v1.5.0 -m "v1.5.0"`).
-6. **Switch back** — Return to `develop`.
-7. **Confirm push** — Ask the user before pushing `main`, `develop`, and the tag to remote.
+## Gotchas
 
-## Plugin Data Paths
+**Component location**: commands/, agents/, skills/, hooks/ go in the **plugin root**, not inside `.claude-plugin/`. Putting them inside `.claude-plugin/` silently fails to load.
 
-| Purpose | Path |
-|---------|------|
-| Persistent data (reports, config) | `~/.claude-code-zero/<plugin-name>/` |
-| Temporary data (clone tmp) | `/tmp/<plugin-name>/` |
+**source path**: `marketplace.json` source must start with `./` (relative path). `../` is not supported.
 
+**Version priority**: If both `plugin.json` and `marketplace.json` define `version`, `plugin.json` wins. Set in one place only — this repo uses `marketplace.json` exclusively.
 
-## Permission Gotchas
+**Hook scripts**: Must have execute permission (`chmod +x`) and a shebang line. Use `${CLAUDE_PLUGIN_ROOT}` for paths.
 
-Skill `allowed-tools` behavior (tested on Claude Code v2.1.63):
+**Installed plugin isolation**: Installed plugins are cached copies — they cannot reference files outside their own directory.
 
+**Plugin agent security restrictions**: Plugin-defined agents (`agents/*.md`) silently ignore `permissionMode`, `hooks`, and `mcpServers` frontmatter fields. Only `tools`, `disallowedTools`, `model`, `maxTurns` work. To use permissionMode, the agent file must be in `.claude/agents/` or `~/.claude/agents/`, not in a plugin. (Source: sub-agents docs)
+
+**Plugin settings.json limitations**: Plugin `settings.json` only supports the `agent` field. `permissions`, `hooks`, and other settings are NOT supported. A plugin cannot grant its subagents permission to read paths outside the project directory — there is no workaround within the plugin itself.
+
+**Skill allowed-tools**:
 - Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not.
 - `$()` command substitution triggers a separate security prompt regardless of allowed-tools.
-- Skills **do** inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow).
+- Skills inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow).
 
 ## Coding Style
 
