@@ -4,8 +4,10 @@ description: >
   Generate a visual project recap — rebuild mental model of a project's
   current state, recent activity, key decisions, and cognitive debt hotspots.
   Use when asked to recap, summarize, snapshot, or catch up on a project's
-  status, progress, or recent activity. Accepts a time window (2w, 30d, 3m).
-  Not for generating changelogs, release notes, or commit-level diffs.
+  status, progress, or recent activity — including phrases like "what happened
+  recently", "요즘 프로젝트 어떻게 됐어", "catch me up", "status update",
+  "what's been going on", or "give me the big picture". Accepts a time window
+  (2w, 30d, 3m).
 argument-hint: "[time-window: 2w|30d|3m] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git log *), Bash(git shortlog *), Bash(git status *), Bash(git branch *), Bash(git rev-parse *), Bash(git diff *), Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/project-recap-*)
 ---
@@ -91,84 +93,28 @@ If any claim cannot be sourced, mark it as uncertain rather than stating it as f
 
 Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
 
-Delegate HTML report generation to the visual-report-writer agent.
+Follow `../../references/report-generation-workflow.md` with these parameters:
 
-1. **Determine output path**:
-   ```
-   ~/.claude-code-zero/vision-powers/reports/{project-name}-project-recap.html
-   ```
-   Where `{project-name}` is the project directory name (e.g., `my-app`, `claude-code-zero`).
+| Parameter | Value |
+|-----------|-------|
+| `{output-path}` | `~/.claude-code-zero/vision-powers/reports/{project-name}-project-recap.html` — where `{project-name}` is the project directory name |
+| `{template-name}` | `project-recap.html` |
+| `{skill-prefix}` | `project-recap` |
+| `{expected-sections}` | `8` |
+| `{report-title}` | `"Project Recap: {project-name} ({time-window})"` |
+| `{aesthetic-hint}` | `"Paper-ink"` |
+| `{agent-prompt-data}` | All gathered data: identity, activity, state, decisions, architecture, cognitive debt |
 
-2. **Resolve reference paths**:
-   - Template: resolve `../../templates/project-recap.html` to absolute path
-   - Section structure: resolve `references/section-structure.md` to absolute path
-   - Font system: resolve `../../references/design-system/font-system.md` to absolute path
-   - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
-   - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
-   - Shared directory: resolve `../../shared/` to absolute path
-   Do NOT read these files — they are passed as paths to the agent and assembler.
+### Gotchas
 
-3. **Create sections temp directory**:
-   The sections directory path: `/tmp/project-recap-{dirname}-sections/`
-   Pick any 8-character hex string for `{dirname}` (e.g., `a1b2c3d4`).
-   No mkdir needed — the visual-report-writer creates files via Write, which auto-creates directories.
-
-4. **Delegate to visual-report-writer**:
-   ```
-   Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
-     Analysis data: {all gathered data — identity, activity, state, decisions, architecture, cognitive debt},
-     sections output directory (absolute path from step 3),
-     section structure path (absolute path from step 2),
-     font system path (absolute path from step 2),
-     anti-slop rules path (absolute path from step 2),
-     Output language: {detected language},
-     Report title: "Project Recap: {project-name} ({time-window})",
-     Aesthetic hint: "Paper-ink"
-   })
-   ```
-   The agent writes section files and `metadata.json` to the sections directory.
-
-5. **Assemble report** — run the assembler script to combine template + sections:
-   ```
-   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
-   ```
-
-6. **Report validation** — run the validation script:
-   ```
-   Bash(node {validator-path} {output-path} --expected-sections 8)
-   ```
-   `{validator-path}` = `{plugin-root}/scripts/validate-report.js`
-
-   The script checks: unreplaced placeholders (section + metadata), section content density, Mermaid diagram-type keywords, Chart.js data arrays, and section count. It exits 0 on PASS, 1 on FAIL with a list of issues.
-
-   If FAIL: fix the reported issues via Edit on the output file, then re-run the script until PASS.
-
-   **Optional Chrome visual verification** — only if `mcp__claude-in-chrome__*` tools are available:
-   1. Start a local HTTP server to serve the report (Chrome extensions cannot access `file://` URLs):
-      ```
-      Bash(python3 -m http.server 0 -d "$(dirname {output-path})" 2>&1 & echo $!)
-      ```
-      Capture the PID and port from the output.
-   2. Call `tabs_context_mcp` (with `createIfEmpty: true`) to get or create an MCP tab group.
-   3. Use `navigate` to open `http://localhost:{port}/{filename}` in the MCP tab.
-   4. Use `javascript_tool` to check for Mermaid render errors (`document.querySelectorAll('.mermaid svg').length`) and empty sections.
-   5. Fix any issues found via Edit on the output file.
-   6. Kill the server: `Bash(kill {pid} 2>/dev/null)`
-
-7. **Report completion**: Output the `file:///` URL to the user:
-   ```
-   Report generated: file://{absolute-path-to-report}
-   ```
-
-8. **Cleanup** — remove temporary sections directory:
-   ```
-   Bash(rm -rf /tmp/project-recap-{dirname}-sections)
-   ```
+- **Short time windows in new repos**: `git log --since="2 weeks ago"` in a repo less than 2 weeks old returns the entire history. This is fine, but the report should note the actual project age rather than implying it's a 2-week window.
+- **Large repos with high commit volume**: A 30-day window in an active monorepo can return thousands of commits. Use `git shortlog` and `--stat` summaries rather than reading every individual commit. Focus on the top 20 most-changed files.
+- **Multiple contributors vs solo project**: Adjust the report tone — a solo project doesn't need contributor breakdown charts. Detect contributor count early and skip the "team activity" framing if it's a single person.
+- **No meaningful git history**: Some projects have only an initial commit or use squash merges that hide development history. The recap should acknowledge the limited signal rather than speculating about development patterns.
+- **TODO/FIXME noise**: Grepping for `TODO|FIXME` in large codebases can return hundreds of results, many ancient. Filter to only recently changed files (within the time window) and cap at 20 results.
+- **Missing README or package manifest**: Not all projects have `README.md` or `package.json`. Don't treat this as an error — infer project identity from directory name and top-level file structure instead.
 
 ### Reference Files
 
-- `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
-- `../../templates/project-recap.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
-- `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
-- `../../references/design-system/font-system.md` — Font pairing selection guide. Visual-report-writer reads it directly
-- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Visual-report-writer reads it directly
+- `../../references/report-generation-workflow.md` — Shared report generation steps (resolve paths, delegate, assemble, validate, cleanup)
+- `references/section-structure.md` — HTML structure patterns for each report section

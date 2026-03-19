@@ -3,10 +3,11 @@ name: report-manager
 description: >
   Manage vision-powers reports: list, open, delete, and search generated
   HTML reports. Use when asked to list reports, open a previous report,
-  delete old reports, or find a specific report. Not for generating or
-  modifying report content.
+  delete old reports, or find a specific report — including phrases like
+  "리포트 목록", "show my reports", "open the last report", "clean up old
+  reports", or "find a report about X".
 argument-hint: "<list|open|delete|search> [filter] [--all]"
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(ls *), Bash(rm *), Bash(open *)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(ls *), Bash(rm *), Bash(open *), Bash(node *)
 ---
 
 # Report Manager
@@ -19,9 +20,21 @@ This skill does NOT generate or modify reports. It is a file management utility 
 
 ### Reports Directory
 
-Fixed path: `~/.claude-code-zero/vision-powers/reports/`
+Default path: `~/.claude-code-zero/vision-powers/reports/`
 
-If the directory does not exist or is empty, inform the user and stop.
+Check if the user has a custom `reports_dir` in config:
+```
+Bash(node {plugin-root}/scripts/config.js get reports_dir)
+```
+If set, use that directory instead. If the directory does not exist or is empty, inform the user and stop.
+
+### Report History
+
+Optionally consult the report history log for richer metadata:
+```
+Bash(node {plugin-root}/scripts/log-report.js --list)
+```
+This returns JSON entries with `timestamp`, `path`, `type`, and `title` for each report. Use this to enhance the `list` output with original titles and generation timestamps.
 
 ### Operation Detection
 

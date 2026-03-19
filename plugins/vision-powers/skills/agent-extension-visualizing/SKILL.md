@@ -5,8 +5,10 @@ description: >
   with security audit, architecture diagrams, and plugin profiles.
   Currently supports Claude Code plugins.
   Use when asked to analyze, audit, inspect, review, document, or wiki a plugin
-  or extension. Default output is an interactive HTML report; use --format md
-  for inline markdown. Not for plugin development, installation, or creation.
+  or extension — including phrases like "이 플러그인 뭐야", "what does this plugin do",
+  "tell me about this extension", "break down this plugin", or "generate a report
+  for this plugin". Also triggers on GitHub plugin URLs or local plugin paths.
+  Default output is an interactive HTML report; use --format md for inline markdown.
 argument-hint: "<path-or-url> [--format html|md] [--lang <code>]"
 compatibility: "Requires gh CLI for GitHub URL analysis"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
@@ -221,191 +223,45 @@ Diagnose whether this plugin is a good fit for the user's current environment �
   - Agent `mcpServers:` string references (not inline) → Agent→External MCP
   - Skills with `allowed-tools` containing `mcp__*` patterns → Skill→MCP dependency
 
-**Step 2**: Construct and run a single bash block combining dependency checks and environment scan.
+**Step 2**: Run the environment scan script:
 
-**Section A** — Dependency checks (include only if `requirements` block exists):
+```
+Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name})
+```
 
-Build dynamically from the requirements list. Each type:
+Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. The script outputs JSON with: `install_status`, `installed_plugins`, `installed_skills` (with `total_desc_chars`, `disabled_count`), `local_skills`, `hook_inventory` (with `total`, `type_counts`), and `context_metrics` (with `mcp_servers`).
+
+If the plugin has external requirements (from Step 1), also check them with simple commands:
 
 | Type | Check pattern | Status values |
 |------|--------------|---------------|
 | CLI | `which {name} >/dev/null 2>&1` | AVAILABLE / MISSING |
 | MCP | `grep -q '"{name}"' ~/.claude/.mcp.json 2>/dev/null` | AVAILABLE / MISSING |
 | ENV | `[ -n "${name}" ]` | SET / UNSET |
-| Plugin | `ls -d ~/.claude/plugins/cache/*/{name}/ 2>/dev/null` | AVAILABLE / MISSING |
 
-**Section B** — Environment scan (always include):
+**Step 3**: Parse the JSON output and perform six diagnostic analyses.
 
-```bash
-echo "=== ENV_FIT ==="
+**3A: Installation Status** (from `install_status` field)
 
-# B1: Is this exact plugin already installed?
-echo "=== INSTALL_STATUS ==="
-ls -d ~/.claude/plugins/cache/*/{plugin-name}/ 2>/dev/null && echo "INSTALLED" || echo "(not-installed)"
+- `INSTALLED` → `ALREADY_INSTALLED`
+- `NOT_INSTALLED` → `NEW`
 
-# B2: Installed plugins with descriptions
-# Deduplicate: cache may hold multiple versions per plugin; keep latest by mtime
-echo "=== INSTALLED_PLUGINS ==="
-python3 -c "
-import json, os, glob
-from collections import defaultdict
-groups = defaultdict(list)
-for pjson in glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/.claude-plugin/plugin.json')):
-    try:
-        parts = pjson.split('/cache/')[1].split('/')
-        groups[parts[1]].append(pjson)
-    except: pass
-for pname, paths in sorted(groups.items()):
-    pjson = max(paths, key=os.path.getmtime)
-    try:
-        d = json.load(open(pjson))
-        print('PLUGIN|' + pname + '|' + d.get('description', ''))
-    except: pass
-" 2>/dev/null
-
-# B3: Installed skill names + trigger descriptions + context budget data
-# Deduplicate: cache holds multiple versions per plugin (e.g., 2.6.0, 2.7.1).
-# Claude Code loads only the active version, so count each (plugin, skill) once.
-echo "=== INSTALLED_SKILLS ==="
-python3 -c "
-import os, re, glob
-from collections import defaultdict
-groups = defaultdict(list)
-for smd in glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/skills/*/SKILL.md')):
-    try:
-        parts = smd.split('/cache/')[1].split('/')
-        groups[(parts[1], parts[parts.index('skills')+1])].append(smd)
-    except: pass
-total_chars = 0
-disabled_count = 0
-for (plugin, skill), paths in sorted(groups.items()):
-    smd = max(paths, key=os.path.getmtime)
-    try:
-        with open(smd) as f: content = f.read(2000)
-        m = re.match(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
-        if not m: continue
-        fm = m.group(1)
-        dm = re.search(r'description:\s*[>|]?\s*\n((?:[ \t]+.+\n?)+)', fm)
-        desc = ' '.join(dm.group(1).split()) if dm else ''
-        if not desc:
-            dm2 = re.search(r'description:\s*(.+)', fm)
-            desc = dm2.group(1).strip() if dm2 else ''
-        disabled = 1 if re.search(r'disable-model-invocation:\s*true', fm) else 0
-        if not disabled:
-            total_chars += len(desc)
-        else:
-            disabled_count += 1
-        print('SKILL|' + plugin + '|' + skill + '|' + desc[:300] + '|' + str(len(desc)) + '|' + str(disabled))
-    except: pass
-print('DESC_BUDGET_INSTALLED|' + str(total_chars) + '|' + str(disabled_count))
-" 2>/dev/null
-
-# B4: Project-local and user-global skills
-echo "=== LOCAL_SKILLS ==="
-python3 -c "
-import os, re, glob
-total_chars = 0
-disabled_count = 0
-for base in ['.claude/skills', os.path.expanduser('~/.claude/skills')]:
-    for smd in sorted(glob.glob(os.path.join(base, '*/SKILL.md'))):
-        try:
-            skill = os.path.basename(os.path.dirname(smd))
-            with open(smd) as f: content = f.read(2000)
-            m = re.match(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
-            if not m: continue
-            fm = m.group(1)
-            dm = re.search(r'description:\s*[>|]?\s*\n((?:[ \t]+.+\n?)+)', fm)
-            desc = ' '.join(dm.group(1).split()) if dm else ''
-            if not desc:
-                dm2 = re.search(r'description:\s*(.+)', fm)
-                desc = dm2.group(1).strip() if dm2 else ''
-            disabled = 1 if re.search(r'disable-model-invocation:\s*true', fm) else 0
-            if not disabled:
-                total_chars += len(desc)
-            else:
-                disabled_count += 1
-            print('LOCAL|' + skill + '|' + desc[:300] + '|' + str(len(desc)) + '|' + str(disabled))
-        except: pass
-print('DESC_BUDGET_LOCAL|' + str(total_chars) + '|' + str(disabled_count))
-" 2>/dev/null
-
-# B5: Hook inventory across environment
-echo "=== HOOK_INVENTORY ==="
-python3 -c "
-import json, glob, os
-total = 0
-type_counts = {'command': 0, 'http': 0, 'prompt': 0, 'agent': 0}
-try:
-    d = json.load(open('.claude/settings.local.json'))
-    for ev, entries in d.get('hooks', {}).items():
-        if not isinstance(entries, list): entries = [entries]
-        for e in entries:
-            total += 1
-            t = e.get('type', 'command') if isinstance(e, dict) else 'command'
-            type_counts[t] = type_counts.get(t, 0) + 1
-        print('PROJECT|' + ev + '|' + str(len(entries)))
-except: pass
-# Deduplicate: keep latest cached version per plugin
-hook_groups = {}
-for hf in glob.glob(os.path.expanduser('~/.claude/plugins/cache/*/*/*/hooks/hooks.json')):
-    parts = hf.split('/cache/')[1].split('/')
-    plugin = parts[1]
-    if plugin not in hook_groups or os.path.getmtime(hf) > os.path.getmtime(hook_groups[plugin]):
-        hook_groups[plugin] = hf
-for plugin, hf in sorted(hook_groups.items()):
-    try:
-        d = json.load(open(hf))
-        for ev, entries in d.items():
-            if not isinstance(entries, list): entries = [entries]
-            for e in entries:
-                total += 1
-                t = e.get('type', 'command') if isinstance(e, dict) else 'command'
-                type_counts[t] = type_counts.get(t, 0) + 1
-            print('PLUGIN|' + plugin + '|' + ev + '|' + str(len(entries)))
-    except: pass
-print('TOTAL|' + str(total))
-print('HOOK_TYPES|' + str(type_counts.get('command',0)) + '|' + str(type_counts.get('http',0)) + '|' + str(type_counts.get('prompt',0)) + '|' + str(type_counts.get('agent',0)))
-" 2>/dev/null
-
-# B6: MCP server count
-echo "=== CONTEXT_METRICS ==="
-python3 -c "
-import json
-try:
-    d = json.load(open('.claude/settings.local.json'))
-    s = d.get('mcpServers', d.get('enabledMcpjsonServers', {}))
-    print('mcp_servers: ' + str(len(s) if isinstance(s, dict) else len(list(s))))
-except: print('mcp_servers: 0')
-" 2>/dev/null
-
-echo "=== END ==="
-```
-
-Replace `{plugin-name}` with the actual plugin name from Phase 3. Do NOT use `$()` command substitution — triggers separate security prompt.
-
-**Step 3**: Parse bash output and perform six diagnostic analyses.
-
-**3A: Installation Status** (from B1 output)
-
-- Plugin name found in cache → `ALREADY_INSTALLED`
-- Not found → `NEW`
-
-**3B: Dependency Check** (from Section A output, if present)
+**3B: Dependency Check** (from Step 2 requirement checks, if any)
 
 Build requirements table: `[{name, type, required, status, help}]`.
 Determine: READY / PARTIAL / ACTION_NEEDED.
 If no requirements block existed → READY.
 
-**3C: Context Budget Analysis** (from B3/B4 summary lines + B6 mcp_servers output + Step 1 data)
+**3C: Context Budget Analysis** (from `installed_skills`, `local_skills`, `context_metrics` fields + Step 1 data)
 
 Calculate the plugin's context footprint using dual scenarios.
 
-1. **Skill description chars**: Sum description chars for skills in this plugin that do NOT have `disable-model-invocation: true`. Add to current environment total from B3 `DESC_BUDGET_INSTALLED` + B4 `DESC_BUDGET_LOCAL` summary lines.
+1. **Skill description chars**: Sum description chars for skills in this plugin that do NOT have `disable-model-invocation: true`. Add to current environment total from `installed_skills.total_desc_chars` + `local_skills.total_desc_chars`.
    - 200K scenario: compare against 16,000 char fallback budget
    - 1M scenario: compare against ~80,000 char budget (2% of 1M)
 
 2. **MCP tool surface**: Count MCP servers this plugin adds (from `.mcp.json`). Estimate tokens using heuristic: servers × 25 tools × 200 tokens/tool.
-   - Current MCP token estimate: `existing_servers (from B6 mcp_servers) × 25 × 200`
+   - Current MCP token estimate: `context_metrics.mcp_servers × 25 × 200`
    - Adding: `new_servers × 25 × 200`
    - 200K scenario: compare projected total against ~20,000 token cap (10% of 200K)
    - 1M scenario: compare projected total against ~100,000 token cap (10% of 1M)
@@ -416,7 +272,7 @@ Calculate the plugin's context footprint using dual scenarios.
 
 Severity determination: present both 200K and 1M scenarios in the report. For the overall severity, use the scenario matching the **user's current session model** (e.g., Opus 4.6[1M] → 1M scenario, Sonnet/Haiku → 200K scenario). If the model context cannot be determined, default to 200K as fallback.
 
-**3D: Functional Overlap & Trigger Analysis** (compare Step 1 skills vs B3/B4 output)
+**3D: Functional Overlap & Trigger Analysis** (compare Step 1 skills vs `installed_skills` + `local_skills` output)
 
 Compare the analyzed plugin's skills against all installed/local skill descriptions. For each skill, scan for semantic overlap — considering purpose, trigger phrases, and approach.
 
@@ -434,14 +290,14 @@ For DUPLICATE/OVERLAP findings, assess trigger collision severity:
 - **MEDIUM**: Shared keywords but distinguishable intent/scope
 - **LOW**: Thematically related but clearly different triggers
 
-**3E: Hook Impact** (from B5 output + `HOOK_TYPES` summary line)
+**3E: Hook Impact** (from `hook_inventory` field)
 
-- Current hook count + adding → projected total
-- Distinguish hook types from B5 summary: command/http (lightweight, zero context) vs prompt/agent (LLM call per event)
+- Current hook count (`hook_inventory.total`) + adding → projected total
+- Distinguish hook types from `hook_inventory.type_counts`: command/http (lightweight, zero context) vs prompt/agent (LLM call per event)
 - Flag: projected hooks > 15 (HIGH), 10-15 (MEDIUM)
 - Same-event collisions with existing plugins (informational)
 
-**3F: Component Dependency Analysis** (from Step 1 interaction patterns + B3/B4/B6 output)
+**3F: Component Dependency Analysis** (from Step 1 interaction patterns + `installed_skills`/`local_skills`/`context_metrics` output)
 
 For each cross-plugin reference found in Step 1:
 1. Check if the referenced component exists in the user's environment (installed plugins, local skills, MCP servers)
@@ -632,6 +488,17 @@ If the source was also cloned from GitHub:
 ```
 Bash(rm -rf /tmp/agent-extension-visual-{dirname})
 ```
+
+After cleanup, suggest that the user can run `/fact-check` to verify the report's accuracy. This is optional — just a one-line suggestion, not an automatic invocation.
+
+### Gotchas
+
+- **`$()` command substitution triggers security prompt**: The `Bash(echo $(date))` pattern causes Claude Code to show a separate permission dialog regardless of `allowed-tools`. Use literal values or `Bash(date)` with separate processing instead.
+- **GitHub rate limiting**: `gh repo clone` and `gh api` calls can fail silently with HTTP 403 when the user's token is rate-limited. If clone fails, check `gh auth status` before retrying.
+- **Plugin cache has multiple versions**: `~/.claude/plugins/cache/` stores every installed version (e.g., `2.6.0/`, `2.7.1/`). The Phase 4.5 environment scan deduplicates by mtime, but if you manually scan the cache, always pick the latest version per plugin to avoid counting stale entries.
+- **Large plugin batching threshold**: The 15-component threshold for splitting feature-architect is approximate. Plugins with many small commands but few skills may not need splitting, while plugins with 10 dense skills might. Use judgment — the goal is keeping each agent under context limits.
+- **Existing report overwrite prompt**: The "create new or update" prompt uses AskUserQuestion. If the user is running non-interactively or in a pipeline, this blocks. Default to "create new" if no user response is available.
+- **Temp directory collision**: The 8-char hex `{dirname}` has a negligible collision risk, but if a previous run crashed without cleanup, `/tmp/agent-extension-visual-*` directories may linger. The cleanup phase handles the current run only — it does not garbage-collect stale dirs.
 
 ### Reference Files
 

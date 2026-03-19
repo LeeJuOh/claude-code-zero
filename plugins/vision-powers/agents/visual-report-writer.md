@@ -157,6 +157,17 @@ The feedback system depends on `<section id="...">` elements — ensure every co
 
 **When updating shared code:** Edit the files in `shared/` directly. Changes apply to all 4 report types automatically through the assembler.
 
+## Gotchas
+
+- **Mermaid `rgba()` crashes the parser**: Mermaid's classDef parser splits on commas, so `fill:rgba(8,145,178,0.15)` breaks the diagram. Always use 8-digit hex instead: `fill:#0891b226`. This is the single most common rendering failure.
+- **Mermaid `color:` in classDef is ignored and causes warnings**: Mermaid does not support `color:` in classDef. Text color is inherited from the theme. Remove any `color:` property from classDef rules.
+- **Mermaid `<div>` vs `<pre>`**: Mermaid.js only initializes content inside `<pre class="mermaid">`. Using `<div class="mermaid">` renders nothing. Always use `<pre>`.
+- **TOC-section ID mismatch**: If metadata.json `toc_content` links to `#overview` but the section file has `id="plugin-overview"`, the TOC link does nothing and scroll-spy breaks. Double-check every `href="#..."` has a matching section `id`.
+- **Adding `<style>` blocks breaks template CSS**: All CSS classes from section-structure.md are pre-defined in the HTML template. Inline `<style>` blocks inside section files can conflict with or override template styles. The only allowed inline style is `style="--i: N"` for animation stagger.
+- **Chart.js with empty data arrays**: `data: []` renders a blank canvas with no error message, which looks broken to the user. If data is unavailable, omit the chart entirely and use a text-based summary instead.
+- **CJK font loading race**: Google Fonts loads asynchronously. If the page renders before CJK fonts arrive, there's a visible layout shift. This is cosmetic — the fonts will load eventually — but including `font-display: swap` in the link query helps.
+- **Section files must not Read before Write**: The sections directory is always fresh. Attempting to Read a section file before writing it wastes a turn and returns an error. Always Write directly.
+
 ## Anti-Slop Checklist
 
 Before completing, verify:

@@ -1,0 +1,17 @@
+{
+  "description": "Auto-validate vision-powers HTML reports after Write operations",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/check-report-write.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

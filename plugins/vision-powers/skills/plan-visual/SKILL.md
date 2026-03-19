@@ -4,8 +4,10 @@ description: >
   Review implementation plans as interactive HTML reports with architecture
   diagrams, blast radius analysis, risk assessment, and gap detection.
   Use when asked to review, visualize, evaluate, assess, or critique an
-  implementation plan. Accepts plan file paths or reads from the current
-  Claude Code plan. Not for creating or executing plans.
+  implementation plan — including phrases like "이 플랜 괜찮아?", "check my plan",
+  "is this plan feasible", "review the implementation plan", or "what could go
+  wrong with this plan". Accepts plan file paths or reads from the current
+  Claude Code plan.
 argument-hint: "<plan-file-path> [codebase-path] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/plan-visual-*)
 ---
@@ -101,84 +103,27 @@ Document discrepancies as "Understanding Gaps" for Section 9.
 
 Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
 
-Delegate HTML report generation to the visual-report-writer agent.
+Follow `../../references/report-generation-workflow.md` with these parameters:
 
-1. **Determine output path**:
-   ```
-   ~/.claude-code-zero/vision-powers/reports/{plan-name}-plan-visual.html
-   ```
-   Where `{plan-name}` is derived from the plan file name (e.g., `cozy-moseying-star`, `auth-redesign`).
+| Parameter | Value |
+|-----------|-------|
+| `{output-path}` | `~/.claude-code-zero/vision-powers/reports/{plan-name}-plan-visual.html` — where `{plan-name}` is from the plan file name (e.g., `auth-redesign`) |
+| `{template-name}` | `plan-visual.html` |
+| `{skill-prefix}` | `plan-visual` |
+| `{expected-sections}` | `9` |
+| `{report-title}` | `"Plan Visual: {plan-name}"` |
+| `{aesthetic-hint}` | `"Blueprint"` (or `"Paper-ink"` for narrative-heavy plans) |
+| `{agent-prompt-data}` | Plan extraction + codebase cross-reference + blast radius + verification results |
 
-2. **Resolve reference paths**:
-   - Template: resolve `../../templates/plan-visual.html` to absolute path
-   - Section structure: resolve `references/section-structure.md` to absolute path
-   - Font system: resolve `../../references/design-system/font-system.md` to absolute path
-   - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
-   - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
-   - Shared directory: resolve `../../shared/` to absolute path
-   Do NOT read these files — they are passed as paths to the agent and assembler.
+### Gotchas
 
-3. **Create sections temp directory**:
-   The sections directory path: `/tmp/plan-visual-{dirname}-sections/`
-   Pick any 8-character hex string for `{dirname}` (e.g., `a1b2c3d4`).
-   No mkdir needed — the visual-report-writer creates files via Write, which auto-creates directories.
-
-4. **Delegate to visual-report-writer**:
-   ```
-   Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
-     Analysis data: {plan extraction + codebase cross-reference + blast radius + verification results},
-     sections output directory (absolute path from step 3),
-     section structure path (absolute path from step 2),
-     font system path (absolute path from step 2),
-     anti-slop rules path (absolute path from step 2),
-     Output language: {detected language},
-     Report title: "Plan Visual: {plan-name}",
-     Aesthetic hint: "Blueprint" (or "Paper-ink" for narrative-heavy plans)
-   })
-   ```
-   The agent writes section files and `metadata.json` to the sections directory.
-
-5. **Assemble report** — run the assembler script to combine template + sections:
-   ```
-   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
-   ```
-
-6. **Report validation** — run the validation script:
-   ```
-   Bash(node {validator-path} {output-path} --expected-sections 9)
-   ```
-   `{validator-path}` = `{plugin-root}/scripts/validate-report.js`
-
-   The script checks: unreplaced placeholders (section + metadata), section content density, Mermaid diagram-type keywords, Chart.js data arrays, and section count. It exits 0 on PASS, 1 on FAIL with a list of issues.
-
-   If FAIL: fix the reported issues via Edit on the output file, then re-run the script until PASS.
-
-   **Optional Chrome visual verification** — only if `mcp__claude-in-chrome__*` tools are available:
-   1. Start a local HTTP server to serve the report (Chrome extensions cannot access `file://` URLs):
-      ```
-      Bash(python3 -m http.server 0 -d "$(dirname {output-path})" 2>&1 & echo $!)
-      ```
-      Capture the PID and port from the output.
-   2. Call `tabs_context_mcp` (with `createIfEmpty: true`) to get or create an MCP tab group.
-   3. Use `navigate` to open `http://localhost:{port}/{filename}` in the MCP tab.
-   4. Use `javascript_tool` to check for Mermaid render errors (`document.querySelectorAll('.mermaid svg').length`) and empty sections.
-   5. Fix any issues found via Edit on the output file.
-   6. Kill the server: `Bash(kill {pid} 2>/dev/null)`
-
-7. **Report completion**: Output the `file:///` URL to the user:
-   ```
-   Report generated: file://{absolute-path-to-report}
-   ```
-
-8. **Cleanup** — remove temporary sections directory:
-   ```
-   Bash(rm -rf /tmp/plan-visual-{dirname}-sections)
-   ```
+- **Unstructured plan files**: Not all plans follow a clear format. Some are freeform notes, Slack thread dumps, or stream-of-consciousness. Extract what structure you can — problem/changes/decisions — but don't fabricate structure that isn't there. Flag gaps as "Understanding Gaps" in the report.
+- **Plan references deleted files**: Plans written days ago may reference files that have since been modified, renamed, or deleted. Always verify file existence before asserting the plan's assumptions hold. Note any drift between plan and current codebase.
+- **No active Claude Code plan**: `~/.claude/plans/` may be empty or not exist. This is normal for users who don't use Claude Code's plan feature. Inform the user and ask for a direct file path.
+- **Circular dependencies in blast radius**: Tracing import dependents can lead to cycles (A imports B imports C imports A). Cap the dependency tracing depth at 3 levels to avoid infinite loops.
+- **Plans with no codebase context**: Some plans describe greenfield projects with no existing code. The "Codebase Cross-Reference" phase produces nothing useful — skip it and focus the report on the plan's internal consistency and risk assessment.
 
 ### Reference Files
 
-- `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
-- `../../templates/plan-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
-- `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
-- `../../references/design-system/font-system.md` — Font pairing selection guide. Visual-report-writer reads it directly
-- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Visual-report-writer reads it directly
+- `../../references/report-generation-workflow.md` — Shared report generation steps (resolve paths, delegate, assemble, validate, cleanup)
+- `references/section-structure.md` — HTML structure patterns for each report section
