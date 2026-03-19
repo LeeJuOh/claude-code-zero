@@ -16,8 +16,9 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
 FILE_PATH="${FILE_PATH/#\~/$HOME}"
 
 PLUGIN_NAME="plugin-bookmarks"
-BASE_DIR="$HOME/.claude-code-zero/$PLUGIN_NAME"
-DATA_PATH_FILE="$BASE_DIR/data-path"
+STABLE_DIR="$HOME/.claude-code-zero/$PLUGIN_NAME"
+BASE_DIR="${CLAUDE_PLUGIN_DATA:-$STABLE_DIR}"
+DATA_PATH_FILE="$STABLE_DIR/data-path"
 
 # data-path read request → lazy init
 if [ "$FILE_PATH" = "$DATA_PATH_FILE" ]; then
@@ -34,10 +35,10 @@ if [ "$FILE_PATH" = "$DATA_PATH_FILE" ]; then
   fi
 
   # Migration: data/ → global/data/ (one-time, from pre-isolation layout)
-  if [ -d "$BASE_DIR/data" ] && [ ! -d "$BASE_DIR/global/data" ]; then
+  if [ -d "$STABLE_DIR/data" ] && [ ! -d "$BASE_DIR/global/data" ]; then
     mkdir -p "$BASE_DIR/global/data"
-    cp -r "$BASE_DIR/data"/. "$BASE_DIR/global/data"/
-    mv "$BASE_DIR/data" "$BASE_DIR/data.migrated" 2>/dev/null || true
+    cp -r "$STABLE_DIR/data"/. "$BASE_DIR/global/data"/
+    mv "$STABLE_DIR/data" "$STABLE_DIR/data.migrated" 2>/dev/null || true
   fi
 
   # Legacy migration (v1/v2 → global/data/)
@@ -47,6 +48,15 @@ if [ "$FILE_PATH" = "$DATA_PATH_FILE" ]; then
       cp -r "$OLD"/. "$BASE_DIR/global/data"/
     fi
   done
+
+  # Migration: ~/.claude-code-zero/ → ${CLAUDE_PLUGIN_DATA}/ (when env var becomes available)
+  if [ -n "$CLAUDE_PLUGIN_DATA" ] && [ "$CLAUDE_PLUGIN_DATA" != "$STABLE_DIR" ]; then
+    for SUBDIR in global projects; do
+      if [ -d "$STABLE_DIR/$SUBDIR" ] && [ ! -d "$CLAUDE_PLUGIN_DATA/$SUBDIR" ]; then
+        cp -r "$STABLE_DIR/$SUBDIR" "$CLAUDE_PLUGIN_DATA/"
+      fi
+    done
+  fi
 
   # Initialize data directory and default file
   mkdir -p "$DATA_DIR"
