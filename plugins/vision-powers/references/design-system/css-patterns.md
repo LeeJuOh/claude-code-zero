@@ -238,6 +238,23 @@ Code needs explicit whitespace preservation and height constraints:
 }
 ```
 
+### Syntax Highlighting
+
+Code blocks use highlight.js for language-aware syntax coloring. The template loads theme-aware CSS (github for light, github-dark-dimmed for dark) and calls `hljs.highlightAll()` at page load. To enable highlighting, always use a language-tagged `<code>` element inside `<pre>`:
+
+```html
+<pre class="code-block"><code class="language-javascript">
+const result = await fetchData();
+console.log(result);
+</code></pre>
+```
+
+Common language values: `javascript`, `typescript`, `python`, `json`, `bash`, `html`, `css`, `go`, `rust`, `java`, `sql`.
+
+The highlight.js background is overridden to transparent so `.code-block` controls the container styling. Token colors (keywords, strings, comments, operators) come from highlight.js themes and adapt to light/dark mode automatically.
+
+**HTML-escape code content**: Always escape `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;` inside `<code>` blocks. Unescaped HTML tags break both rendering and highlighting.
+
 ### Code File with Header
 
 ```css

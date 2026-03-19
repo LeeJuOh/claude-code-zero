@@ -1,0 +1,333 @@
+#!/usr/bin/env node
+/**
+ * Environment Fit Scanner for vision-powers.
+ *
+ * Scans the user's Claude Code environment to collect data for the
+ * Environment Fit Diagnosis in agent-extension-visualizing reports.
+ *
+ * Outputs a JSON object with sections:
+ *   install_status, installed_plugins, installed_skills, local_skills,
+ *   hook_inventory, context_metrics
+ *
+ * Usage:
+ *   node env-fit-scan.js --plugin-name <name>
+ *
+ * Exit codes:
+ *   0 = success (JSON on stdout)
+ *   2 = usage error
+ */
+
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+
+// ---------------------------------------------------------------------------
+// Arg parsing
+// ---------------------------------------------------------------------------
+function parseArgs(argv) {
+  const args = { pluginName: null };
+  for (let i = 2; i < argv.length; i++) {
+    if (argv[i] === "--plugin-name" && argv[i + 1]) {
+      args.pluginName = argv[i + 1];
+      i++;
+    }
+  }
+  return args;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Simple glob: expand ~ and return matching paths via fs */
+function expandHome(p) {
+  return p.startsWith("~") ? path.join(os.homedir(), p.slice(1)) : p;
+}
+
+/** Recursively find files matching a test function under a directory */
+function findFiles(dir, testFn, maxDepth = 6, depth = 0) {
+  const results = [];
+  if (depth > maxDepth) return results;
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return results;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...findFiles(full, testFn, maxDepth, depth + 1));
+    } else if (testFn(full, entry.name)) {
+      results.push(full);
+    }
+  }
+  return results;
+}
+
+/** Deduplicate cache paths: keep latest mtime per plugin name */
+function deduplicateByPlugin(paths, getPluginName) {
+  const groups = {};
+  for (const p of paths) {
+    const name = getPluginName(p);
+    if (!name) continue;
+    if (!groups[name] || mtime(p) > mtime(groups[name])) {
+      groups[name] = p;
+    }
+  }
+  return groups;
+}
+
+function mtime(p) {
+  try {
+    return fs.statSync(p).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+/** Extract plugin name from a cache path like ~/.claude/plugins/cache/marketplace/pluginName/version/... */
+function pluginNameFromCachePath(p) {
+  const idx = p.indexOf("/cache/");
+  if (idx === -1) return null;
+  const parts = p.slice(idx + 7).split("/");
+  return parts.length >= 2 ? parts[1] : null;
+}
+
+/** Parse YAML frontmatter from SKILL.md content (first 2000 chars) */
+function parseFrontmatter(content) {
+  const m = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!m) return null;
+  const fm = m[1];
+
+  // Description: multiline (> or |) or inline
+  let desc = "";
+  const multiline = fm.match(/description:\s*[>|]\s*\n((?:[ \t]+.+\n?)+)/);
+  if (multiline) {
+    desc = multiline[1].split("\n").map(l => l.trim()).filter(Boolean).join(" ");
+  } else {
+    const inline = fm.match(/description:\s*(.+)/);
+    if (inline) desc = inline[1].trim();
+  }
+
+  const disabled = /disable-model-invocation:\s*true/.test(fm);
+  return { description: desc, disabled };
+}
+
+// ---------------------------------------------------------------------------
+// Scanners
+// ---------------------------------------------------------------------------
+
+function scanInstallStatus(pluginName) {
+  const cacheBase = expandHome("~/.claude/plugins/cache");
+  const allPluginJsons = findFiles(cacheBase, (full, name) => name === "plugin.json");
+  for (const pj of allPluginJsons) {
+    if (pluginNameFromCachePath(pj) === pluginName) {
+      return "INSTALLED";
+    }
+  }
+  return "NOT_INSTALLED";
+}
+
+function scanInstalledPlugins() {
+  const cacheBase = expandHome("~/.claude/plugins/cache");
+  const allPluginJsons = findFiles(
+    cacheBase,
+    (full, name) => name === "plugin.json" && full.includes(".claude-plugin"),
+  );
+
+  const groups = deduplicateByPlugin(allPluginJsons, pluginNameFromCachePath);
+  const plugins = [];
+
+  for (const [name, pjPath] of Object.entries(groups).sort()) {
+    try {
+      const data = JSON.parse(fs.readFileSync(pjPath, "utf-8"));
+      plugins.push({ name, description: data.description || "" });
+    } catch {
+      plugins.push({ name, description: "" });
+    }
+  }
+  return plugins;
+}
+
+function scanInstalledSkills() {
+  const cacheBase = expandHome("~/.claude/plugins/cache");
+  const allSkills = findFiles(cacheBase, (full, name) => name === "SKILL.md");
+
+  // Deduplicate by (plugin, skill) pair
+  const groups = {};
+  for (const smd of allSkills) {
+    const pluginName = pluginNameFromCachePath(smd);
+    if (!pluginName) continue;
+    const parts = smd.split("/");
+    const skillsIdx = parts.lastIndexOf("skills");
+    if (skillsIdx === -1 || skillsIdx + 1 >= parts.length) continue;
+    const skillName = parts[skillsIdx + 1];
+    const key = `${pluginName}/${skillName}`;
+    if (!groups[key] || mtime(smd) > mtime(groups[key])) {
+      groups[key] = smd;
+    }
+  }
+
+  let totalChars = 0;
+  let disabledCount = 0;
+  const skills = [];
+
+  for (const [key, smdPath] of Object.entries(groups).sort()) {
+    const [plugin, skill] = key.split("/");
+    try {
+      const content = fs.readFileSync(smdPath, "utf-8").slice(0, 2000);
+      const fm = parseFrontmatter(content);
+      if (!fm) continue;
+      if (!fm.disabled) {
+        totalChars += fm.description.length;
+      } else {
+        disabledCount++;
+      }
+      skills.push({
+        plugin,
+        skill,
+        description: fm.description.slice(0, 300),
+        desc_chars: fm.description.length,
+        disabled: fm.disabled,
+      });
+    } catch {
+      /* skip unreadable */
+    }
+  }
+
+  return { skills, total_desc_chars: totalChars, disabled_count: disabledCount };
+}
+
+function scanLocalSkills() {
+  const bases = [
+    path.resolve(".claude/skills"),
+    expandHome("~/.claude/skills"),
+  ];
+
+  let totalChars = 0;
+  let disabledCount = 0;
+  const skills = [];
+
+  for (const base of bases) {
+    let entries;
+    try {
+      entries = fs.readdirSync(base, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const smdPath = path.join(base, entry.name, "SKILL.md");
+      try {
+        const content = fs.readFileSync(smdPath, "utf-8").slice(0, 2000);
+        const fm = parseFrontmatter(content);
+        if (!fm) continue;
+        if (!fm.disabled) {
+          totalChars += fm.description.length;
+        } else {
+          disabledCount++;
+        }
+        skills.push({
+          skill: entry.name,
+          description: fm.description.slice(0, 300),
+          desc_chars: fm.description.length,
+          disabled: fm.disabled,
+        });
+      } catch {
+        /* skip */
+      }
+    }
+  }
+
+  return { skills, total_desc_chars: totalChars, disabled_count: disabledCount };
+}
+
+function scanHookInventory() {
+  let total = 0;
+  const typeCounts = { command: 0, http: 0, prompt: 0, agent: 0 };
+  const projectHooks = [];
+  const pluginHooks = [];
+
+  // Project-local hooks
+  try {
+    const data = JSON.parse(fs.readFileSync(".claude/settings.local.json", "utf-8"));
+    const hooks = data.hooks || {};
+    for (const [event, entries] of Object.entries(hooks)) {
+      const list = Array.isArray(entries) ? entries : [entries];
+      for (const e of list) {
+        total++;
+        const t = (typeof e === "object" && e.type) ? e.type : "command";
+        typeCounts[t] = (typeCounts[t] || 0) + 1;
+      }
+      projectHooks.push({ source: "project", event, count: list.length });
+    }
+  } catch {
+    /* no local settings */
+  }
+
+  // Plugin hooks (deduplicated)
+  const cacheBase = expandHome("~/.claude/plugins/cache");
+  const hookFiles = findFiles(cacheBase, (full, name) => name === "hooks.json" && full.includes("/hooks/"));
+  const groups = deduplicateByPlugin(hookFiles, pluginNameFromCachePath);
+
+  for (const [plugin, hfPath] of Object.entries(groups).sort()) {
+    try {
+      const data = JSON.parse(fs.readFileSync(hfPath, "utf-8"));
+      for (const [event, entries] of Object.entries(data)) {
+        const list = Array.isArray(entries) ? entries : [entries];
+        for (const e of list) {
+          total++;
+          const t = (typeof e === "object" && e.type) ? e.type : "command";
+          typeCounts[t] = (typeCounts[t] || 0) + 1;
+        }
+        pluginHooks.push({ source: plugin, event, count: list.length });
+      }
+    } catch {
+      /* skip */
+    }
+  }
+
+  return {
+    total,
+    type_counts: typeCounts,
+    project_hooks: projectHooks,
+    plugin_hooks: pluginHooks,
+  };
+}
+
+function scanContextMetrics() {
+  let mcpServers = 0;
+  try {
+    const data = JSON.parse(fs.readFileSync(".claude/settings.local.json", "utf-8"));
+    const s = data.mcpServers || data.enabledMcpjsonServers || {};
+    mcpServers = typeof s === "object" ? Object.keys(s).length : 0;
+  } catch {
+    /* no settings */
+  }
+  return { mcp_servers: mcpServers };
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+function main() {
+  const args = parseArgs(process.argv);
+  if (!args.pluginName) {
+    console.error("Usage: node env-fit-scan.js --plugin-name <name>");
+    process.exit(2);
+  }
+
+  const result = {
+    install_status: scanInstallStatus(args.pluginName),
+    installed_plugins: scanInstalledPlugins(),
+    installed_skills: scanInstalledSkills(),
+    local_skills: scanLocalSkills(),
+    hook_inventory: scanHookInventory(),
+    context_metrics: scanContextMetrics(),
+  };
+
+  console.log(JSON.stringify(result, null, 2));
+}
+
+main();

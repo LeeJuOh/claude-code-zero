@@ -5,8 +5,10 @@ description: >
   history. Extracts verifiable claims, checks each against source, corrects
   inaccuracies in place, and adds a verification summary.
   Use when asked to verify, fact-check, validate, or audit claims in a
-  report, plan, or document. Accepts a file path or auto-detects the most
-  recent HTML report. Not for re-reviewing analysis or changing document structure.
+  report, plan, or document — including phrases like "이거 맞아?", "is this
+  accurate", "double-check this report", "verify the numbers", or "are these
+  claims correct". Accepts a file path or auto-detects the most recent HTML
+  report.
 argument-hint: "[file-path] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(git shortlog *), Bash(wc -l *), Bash(ls -t *)
 ---
@@ -204,6 +206,15 @@ Place the verification section as the last content section, before `</main>` or 
 ### Unverifiable Claims
 - {claim and reason}
 ```
+
+### Gotchas
+
+- **Over-correcting opinions as facts**: "This architecture is well-designed" is a subjective judgment, not a factual claim. Only correct things that can be verified against source — names, numbers, behaviors, paths. When in doubt, skip it.
+- **Modifying HTML structure**: The Edit tool is for surgical text corrections only. Do not reorganize sections, move content between sections, or change HTML wrapper elements. If a section is fundamentally wrong, rewrite the text content inside the existing `<section>` tags.
+- **Stale git refs in diff-visual reports**: A diff-visual report captures a snapshot. If new commits landed since the report was generated, the fact-checker sees different data than the report author did. Verify against the same ref the report was based on (look for commit hashes in the report), not HEAD.
+- **Feedback.json from wrong report**: The auto-detect checks `~/Downloads/feedback.json` which may be from a completely different report. Always verify the `report_path` field matches the target file before using feedback data.
+- **Counting claims too aggressively**: Not every number in a report is a "claim" worth verifying. Focus on claims that matter — metrics in KPI cards, file counts in summaries, function names in architecture descriptions. Ignore incidental numbers in prose.
+- **Mermaid diagram labels**: Mermaid node labels that contain function or file names are factual claims. If a diagram says `validateAuth()` but the actual function is `verifyAuth()`, that's a correction. But don't change diagram layout or styling.
 
 ### Phase 5: Report
 

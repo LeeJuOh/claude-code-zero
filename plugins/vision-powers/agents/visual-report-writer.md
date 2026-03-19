@@ -133,6 +133,8 @@ When writing section files:
 
 6. **Visual hierarchy**: Sections 1-4 dominate (hero/elevated depth, larger type). Later sections are reference material (flat/recessed, collapsible).
 
+7. **Code blocks with syntax highlighting**: Always use `<pre class="code-block"><code class="language-{lang}">` where `{lang}` is the programming language (e.g., `javascript`, `typescript`, `python`, `json`, `bash`, `go`, `rust`, `css`, `html`, `sql`). The template includes highlight.js which colors keywords, strings, comments, and operators — but only when `<code>` has a `class="language-*"` attribute. Without it, code renders as flat monospace text with no visual distinction. Always HTML-escape code content: `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;`.
+
 ### Source Link Generation
 
 When source context is provided, generate clickable source links:
@@ -156,6 +158,17 @@ All templates include a built-in per-section feedback system. The CSS lives in `
 The feedback system depends on `<section id="...">` elements — ensure every content section has a unique `id` attribute. The feedback JS automatically attaches to all `section[id]` elements.
 
 **When updating shared code:** Edit the files in `shared/` directly. Changes apply to all 4 report types automatically through the assembler.
+
+## Gotchas
+
+- **Mermaid `rgba()` crashes the parser**: Mermaid's classDef parser splits on commas, so `fill:rgba(8,145,178,0.15)` breaks the diagram. Always use 8-digit hex instead: `fill:#0891b226`. This is the single most common rendering failure.
+- **Mermaid `color:` in classDef is ignored and causes warnings**: Mermaid does not support `color:` in classDef. Text color is inherited from the theme. Remove any `color:` property from classDef rules.
+- **Mermaid `<div>` vs `<pre>`**: Mermaid.js only initializes content inside `<pre class="mermaid">`. Using `<div class="mermaid">` renders nothing. Always use `<pre>`.
+- **TOC-section ID mismatch**: If metadata.json `toc_content` links to `#overview` but the section file has `id="plugin-overview"`, the TOC link does nothing and scroll-spy breaks. Double-check every `href="#..."` has a matching section `id`.
+- **Adding `<style>` blocks breaks template CSS**: All CSS classes from section-structure.md are pre-defined in the HTML template. Inline `<style>` blocks inside section files can conflict with or override template styles. The only allowed inline style is `style="--i: N"` for animation stagger.
+- **Chart.js with empty data arrays**: `data: []` renders a blank canvas with no error message, which looks broken to the user. If data is unavailable, omit the chart entirely and use a text-based summary instead.
+- **CJK font loading race**: Google Fonts loads asynchronously. If the page renders before CJK fonts arrive, there's a visible layout shift. This is cosmetic — the fonts will load eventually — but including `font-display: swap` in the link query helps.
+- **Section files must not Read before Write**: The sections directory is always fresh. Attempting to Read a section file before writing it wastes a turn and returns an error. Always Write directly.
 
 ## Anti-Slop Checklist
 

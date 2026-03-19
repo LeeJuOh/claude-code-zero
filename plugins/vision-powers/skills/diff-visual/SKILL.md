@@ -4,8 +4,10 @@ description: >
   Visualize git diffs as interactive HTML reports with architecture diagrams,
   KPI dashboards, code review cards, and side-by-side comparisons.
   Use when asked to visualize, review, explain, or summarize a diff, branch,
-  commit, PR, or set of changes. Accepts branch names, commit hashes, HEAD,
-  PR numbers, or commit ranges. Not for making changes or resolving conflicts.
+  commit, PR, or set of changes — including phrases like "what changed",
+  "show me the changes", "코드 변경 내용 보여줘", "review this PR visually",
+  or "make a visual diff report". Accepts branch names, commit hashes, HEAD,
+  PR numbers, or commit ranges.
 argument-hint: "<branch|commit|HEAD|#PR|range> [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
@@ -110,76 +112,28 @@ If any claim cannot be sourced, remove it or mark it as uncertain.
 
 Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
 
-Delegate HTML report generation to the visual-report-writer agent.
+Follow `../../references/report-generation-workflow.md` with these parameters:
 
-1. **Determine output path**:
-   ```
-   ~/.claude-code-zero/vision-powers/reports/{scope}-diff-visual.html
-   ```
-   Where `{scope}` is a sanitized version of the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`).
+| Parameter | Value |
+|-----------|-------|
+| `{output-path}` | `~/.claude-code-zero/vision-powers/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`) |
+| `{template-name}` | `diff-visual.html` |
+| `{skill-prefix}` | `diff-visual` |
+| `{expected-sections}` | `10` |
+| `{report-title}` | `"Diff Visual: {scope description}"` |
+| `{aesthetic-hint}` | `"Editorial"` (or `"Blueprint"` for infrastructure-heavy diffs) |
+| `{agent-prompt-data}` | All gathered data: stats, metrics, architecture, features, code review, decisions |
 
-2. **Resolve reference paths**:
-   - Template: resolve `../../templates/diff-visual.html` to absolute path
-   - Section structure: resolve `references/section-structure.md` to absolute path
-   - Font system: resolve `../../references/design-system/font-system.md` to absolute path
-   - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
-   - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
-   - Shared directory: resolve `../../shared/` to absolute path
-   Do NOT read these files — they are passed as paths to the agent and assembler.
+### Gotchas
 
-3. **Create sections temp directory**:
-   The sections directory path: `/tmp/diff-visual-{dirname}-sections/`
-   Pick any 8-character hex string for `{dirname}` (e.g., `a1b2c3d4`).
-   No mkdir needed — the visual-report-writer creates files via Write, which auto-creates directories.
-
-4. **Delegate to visual-report-writer**:
-   ```
-   Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
-     Analysis data: {all gathered data — stats, metrics, architecture, features, code review, decisions},
-     sections output directory (absolute path from step 3),
-     section structure path (absolute path from step 2),
-     font system path (absolute path from step 2),
-     anti-slop rules path (absolute path from step 2),
-     Output language: {detected language},
-     Report title: "Diff Visual: {scope description}",
-     Aesthetic hint: "Editorial" (or "Blueprint" for infrastructure-heavy diffs)
-   })
-   ```
-   The agent writes section files and `metadata.json` to the sections directory.
-
-5. **Assemble report** — run the assembler script to combine template + sections:
-   ```
-   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
-   ```
-
-6. **Report validation** — after assembly, Read the output HTML file and verify:
-   - No unreplaced section placeholders (`<!-- SECTION_`)
-   - Every `<section>` has meaningful content beyond just a heading
-   - Mermaid `<pre class="mermaid">` blocks contain diagram syntax, not just placeholder comments
-   - Chart.js data is populated (not empty object/array)
-
-   If issues found, fix via Edit on the output file.
-
-   If `mcp__claude-in-chrome__*` tools are available, validate in Chrome:
-   1. Open the report via `Bash(open {output-path})` — Chrome extensions cannot navigate to `file://` URLs directly, so let the system browser open it first
-   2. Call `tabs_context_mcp` to discover the newly opened tab (match by `file://` URL or report filename in the tab title)
-   3. Use `javascript_tool` on the discovered tab to check for Mermaid render errors and empty sections
-   4. Fix any issues found via Edit on the output file
-
-7. **Report completion**: Output the `file:///` URL to the user:
-   ```
-   Report generated: file://{absolute-path-to-report}
-   ```
-
-8. **Cleanup** — remove temporary sections directory:
-   ```
-   Bash(rm -rf /tmp/diff-visual-{dirname}-sections)
-   ```
+- **Three-dot vs two-dot range**: `git diff a..b` shows all changes between a and b. `git diff a...b` shows changes on b since it diverged from a. Users often say "compare branches" meaning `...` (three-dot). When in doubt, use three-dot for branch comparisons and two-dot for commit ranges.
+- **Detached HEAD or no base branch**: Some repos don't have a `main` or `master` branch. The fallback `git rev-parse --verify main || master` fails silently. If both fail, ask the user for the base branch name.
+- **Empty diff for uncommitted changes**: `git diff HEAD` returns nothing when there are no uncommitted changes. This is a valid state — inform the user rather than generating an empty report.
+- **PR diff requires `gh` auth**: `gh pr diff` needs authentication. If it fails with 401/403, suggest `gh auth login` rather than falling back to a different approach silently.
+- **Binary files in diff**: `git diff --stat` counts binary files but `--numstat` shows `-` for their line counts. Don't report binary file "lines added/removed" — note them separately as binary changes.
+- **Very large diffs (>5000 lines)**: Reading the full diff content can overwhelm context. Focus on the `--stat` summary and read only the most architecturally significant changed files in full.
 
 ### Reference Files
 
-- `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
-- `../../templates/diff-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
-- `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
-- `../../references/design-system/font-system.md` — Font pairing selection guide. Visual-report-writer reads it directly
-- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Visual-report-writer reads it directly
+- `../../references/report-generation-workflow.md` — Shared report generation steps (resolve paths, delegate, assemble, validate, cleanup)
+- `references/section-structure.md` — HTML structure patterns for each report section
