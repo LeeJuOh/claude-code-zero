@@ -123,40 +123,16 @@ This log is useful for verifying which gitignored files were included and for de
 
 ## Worktree Cleanup
 
-Worktree cleanup uses a two-layer defense to protect unsaved work:
+Claude Code has built-in work state protection: when a worktree session ends with uncommitted changes, Claude Code asks the user whether to **Keep** or **Remove** the worktree before calling the `WorktreeRemove` hook. This means the hook only fires when the user explicitly chose removal (or the worktree is clean).
 
-### Layer 1: Stop hook (user interaction)
-
-When Claude finishes responding inside a worktree with uncommitted changes, the Stop hook blocks and asks the user to choose:
-
-- **Keep** — worktree is preserved with all changes intact
-- **Remove** — creates a force-remove marker, then WorktreeRemove deletes the worktree
-
-The Stop hook only fires on normal session exit (not Ctrl+C) and asks only once per session.
-
-### Layer 2: WorktreeRemove (safe-by-default fallback)
-
-When the WorktreeRemove hook runs, it checks the worktree state:
-
-1. **Force-remove marker exists** → force delete (user explicitly chose "remove")
-2. **Dirty** (uncommitted changes, unpushed commits, or stashes) → preserve and print manual cleanup commands
-3. **Clean** → auto-delete via `git worktree remove` + branch cleanup
-
-### Scenario matrix
-
-| Exit method | Work state | Stop hook | WorktreeRemove | Result |
-|---|---|---|---|---|
-| Normal exit | dirty | asks keep/remove | marker or dirty check | user decides |
-| Normal exit | clean | passes through | clean → auto-delete | auto-deleted |
-| Ctrl+C | dirty | does not fire | dirty → preserve | **preserved** |
-| Ctrl+C | clean | does not fire | clean → auto-delete | auto-deleted |
+The `WorktreeRemove` hook performs the actual cleanup:
+- `git worktree remove --force` to delete the worktree directory
+- `git branch -D` to delete the associated branch
+- Falls back to `rm -rf` + `git worktree prune` if the first method fails
 
 ### Manual cleanup
 
 ```bash
-# Resume work in a preserved worktree
-cd <worktree-path>
-
 # Force remove a preserved worktree
 git worktree remove <worktree-path> --force
 git branch -D <branch-name>

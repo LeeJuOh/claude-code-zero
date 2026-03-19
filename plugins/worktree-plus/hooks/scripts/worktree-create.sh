@@ -35,15 +35,18 @@ fi
 
 WORKTREE_DIR="${PROJECT_ROOT}/.claude/worktrees/${NAME}"
 
-# --- Pre-checks (match git worktree add default behavior) ---
+# --- Pre-checks ---
 
-# 1. Path already exists as a worktree
+# 1. Path already exists as a valid worktree -> reuse it
+#    WorktreeCreate must always output a path to stdout; exit 1 with no stdout
+#    causes Claude Code to hang indefinitely waiting for the path.
 if [ -d "$WORKTREE_DIR" ] && [ -e "$WORKTREE_DIR/.git" ]; then
-  echo "fatal: '${WORKTREE_DIR}' already exists" >&2
-  exit 1
+  echo "Reusing existing worktree: ${WORKTREE_DIR}" >&2
+  echo "$WORKTREE_DIR"
+  exit 0
 fi
 
-# 2. Branch already checked out by another worktree
+# 2. Branch already checked out by another worktree -> reuse that worktree
 CHECKED_OUT_AT=$(git -C "$PROJECT_ROOT" worktree list --porcelain 2>/dev/null \
   | awk -v branch="$BRANCH" '
     /^worktree /{ wt=$2 }
@@ -53,8 +56,9 @@ CHECKED_OUT_AT=$(git -C "$PROJECT_ROOT" worktree list --porcelain 2>/dev/null \
     }
   ')
 if [ -n "$CHECKED_OUT_AT" ]; then
-  echo "fatal: '${BRANCH}' is already checked out at '${CHECKED_OUT_AT}'" >&2
-  exit 1
+  echo "Reusing worktree at '${CHECKED_OUT_AT}' (branch '${BRANCH}' already checked out)" >&2
+  echo "$CHECKED_OUT_AT"
+  exit 0
 fi
 
 # Read guessRemote config (default: true)
