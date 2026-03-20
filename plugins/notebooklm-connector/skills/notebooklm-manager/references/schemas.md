@@ -51,6 +51,7 @@ User preferences, initialized with defaults on first session.
 ```json
 {
   "max_followups": 3,
+  "max_query_length": 40000,
   "language": null,
   "auto_coverage": true,
   "schema_version": "1.0"
@@ -60,6 +61,7 @@ User preferences, initialized with defaults on first session.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `max_followups` | number | 3 | Maximum follow-up queries in coverage analysis |
+| `max_query_length` | number | 40000 | Maximum characters per query sent to NotebookLM |
 | `language` | string \| null | null | Preferred response language (null = match user's language) |
 | `auto_coverage` | boolean | true | Enable automatic coverage analysis after queries |
 

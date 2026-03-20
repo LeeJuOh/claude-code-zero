@@ -6,12 +6,12 @@ description: |
   Report generator for all vision-powers visual report skills (agent-extension-visualizing, diff-visual, plan-visual, project-recap).
 
   <example>
-  Context: Skill delegates HTML report generation with analysis results and section structure
+  Context: Skill delegates HTML report generation with analysis results, section structure content, and design system content
   user: "Generate HTML report to ${CLAUDE_PLUGIN_DATA}/reports/my-diff-report.html"
   assistant: "I'll generate a self-contained HTML report following the provided section structure and design system."
   <commentary>
-  The orchestrator skill provides pre-analyzed data, section structure reference path, and design system path.
-  This agent reads both references, then generates a single HTML file with inline CSS, Mermaid.js, Chart.js, and interactive sections.
+  The orchestrator skill provides pre-analyzed data and reference file contents inline (section structure, font system, anti-slop rules).
+  This agent starts writing sections immediately without a read turn.
   </commentary>
   </example>
 model: sonnet
@@ -19,7 +19,6 @@ maxTurns: 15
 permissionMode: bypassPermissions
 tools:
   - Write
-  - Read
 ---
 
 # Visual Report Writer
@@ -33,9 +32,9 @@ Output all content in the language specified by the orchestrator.
 You receive from the orchestrator skill:
 - **Analysis data** (full structured text — the specific content varies by skill)
 - **Sections output directory** (absolute path — write all output files here)
-- **Section structure path** (absolute path to `section-structure.md` — HTML patterns for each section)
-- **Font system path** (absolute path to `font-system.md`)
-- **Anti-slop rules path** (absolute path to `anti-slop-rules.md`)
+- **Section structure content** (full text of `section-structure.md` — HTML patterns for each section)
+- **Font system content** (full text of `font-system.md` — font pairings and rotation rules)
+- **Anti-slop rules content** (full text of `anti-slop-rules.md` — forbidden patterns, quality checklist)
 - **Output language** (e.g., "ko", "en", "ja")
 - **Report title** (e.g., "Diff Visual: feature/auth..main", "Plan Visual: auth-redesign")
 - **Aesthetic hint** (optional — one of: Blueprint, Editorial, Paper-ink, Monochrome)
@@ -53,20 +52,17 @@ You receive from the orchestrator skill:
   - `recommendations`
   - When RECOMMENDED with no findings, generate a minimal verdict-only card (no empty subsections)
 
+The orchestrator reads the 3 reference files and passes their full content inline. This means you have everything needed to start writing immediately — no file reads required.
+
 ## Workflow
 
-### Turn 1: Read references
+### Turn 1: Write metadata + sections 1-6
 
-Read 3 files in parallel:
-1. **Section structure** (`{section-structure-path}`) — HTML patterns for each report section
-2. **Font system** (`{font-system-path}`) — font pairings and rotation rules
-3. **Anti-slop rules** (`{anti-slop-rules-path}`) — forbidden patterns, quality checklist
-
-### Turn 2: Write metadata + sections 1-4
+The reference content is already in your prompt — no Read calls needed.
 
 Write all of the following in parallel using simultaneous Write calls:
 - `metadata.json` — template placeholder values (see schema below)
-- `section-1.html` through `section-4.html`
+- `section-1.html` through `section-6.html`
 
 ```json
 {
@@ -81,13 +77,9 @@ Write all of the following in parallel using simultaneous Write calls:
 }
 ```
 
-### Turn 3: Write sections 5-8
+### Turn 2: Write remaining sections
 
-Write `section-5.html` through `section-8.html` in parallel using simultaneous Write calls.
-
-### Turn 4: Write sections 9-11
-
-Write `section-9.html` through `section-11.html` in parallel using simultaneous Write calls.
+Write `section-7.html` through `section-N.html` in parallel using simultaneous Write calls.
 
 Each section file contains a single `<section>` element following the HTML patterns in `section-structure.md`.
 
@@ -97,7 +89,7 @@ All CSS classes referenced in section-structure.md are pre-defined in the HTML t
 
 ## Font Pairing Selection
 
-Select a font pairing from `font-system.md`. Choose based on the aesthetic hint if provided, or pick freely from the 12 pairings. Follow the rotation rule: never use the same pairing consecutively.
+Select a font pairing from the font system content provided in your prompt. Choose based on the aesthetic hint if provided, or pick freely from the 12 pairings. Follow the rotation rule: never use the same pairing consecutively.
 
 Each pairing defines three fonts: **Heading** (`--font-heading`), **Body** (`--font-body`), **Mono** (`--font-mono`). When heading ≠ body (serif pairings like #2, #8, #9), load both fonts via Google Fonts and set them as separate CSS variables. The body font must always be a readable sans-serif — serif/display fonts go to `--font-heading` only.
 
@@ -193,7 +185,7 @@ The feedback system depends on `<section id="...">` elements — ensure every co
 - **Adding `<style>` blocks breaks template CSS**: All CSS classes from section-structure.md are pre-defined in the HTML template. Inline `<style>` blocks inside section files can conflict with or override template styles. The only allowed inline style is `style="--i: N"` for animation stagger.
 - **Chart.js with empty data arrays**: `data: []` renders a blank canvas with no error message, which looks broken to the user. If data is unavailable, omit the chart entirely and use a text-based summary instead.
 - **CJK font loading race**: Google Fonts loads asynchronously. If the page renders before CJK fonts arrive, there's a visible layout shift. This is cosmetic — the fonts will load eventually — but including `font-display: swap` in the link query helps.
-- **Section files must not Read before Write**: The sections directory is always fresh. Attempting to Read a section file before writing it wastes a turn and returns an error. Always Write directly.
+- **No Read calls needed**: All reference content (section structure, font system, anti-slop rules) is provided inline by the orchestrator. The sections directory is always fresh. Never Read any file — always Write directly.
 
 ## Anti-Slop Checklist
 

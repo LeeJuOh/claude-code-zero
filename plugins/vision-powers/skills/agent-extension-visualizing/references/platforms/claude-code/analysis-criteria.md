@@ -74,6 +74,48 @@ PASS/FAIL items — objective checks only:
 | Skill auxiliary files organized | Templates, refs in subdirectories |
 | Error handling documented | Error scenarios addressed in descriptions or code |
 
+## Skill Category Distribution
+
+Classify each active skill into one of the 9 functional categories. This reveals the plugin's purpose and capability spread.
+
+| Category | Icon | Purpose |
+|----------|------|---------|
+| Library & API Reference | `scope-badge--info` | Knowledge about how to use libraries, CLIs, SDKs |
+| Product Verification | `scope-badge--success` | Testing and verifying code output |
+| Data Fetching & Analysis | `scope-badge--info` | Connecting to data and monitoring stacks |
+| Business Process & Team Automation | `scope-badge--warning` | Automating repetitive team workflows |
+| Code Scaffolding & Templates | `scope-badge--info` | Generating framework boilerplate |
+| Code Quality & Review | `scope-badge--success` | Enforcing code quality standards |
+| CI/CD & Deployment | `scope-badge--warning` | Fetching, pushing, and deploying code |
+| Runbooks | `scope-badge--danger` | Multi-tool investigation from symptoms to reports |
+| Infrastructure Operations | `scope-badge--danger` | Routine maintenance and operational procedures |
+
+Use the distribution to characterize the plugin: a plugin with mostly "Library & API Reference" skills is a knowledge-focused library; one with "CI/CD" + "Runbooks" is an operations toolkit.
+
+## Skill Design Quality
+
+Evaluate design maturity based on established best practices from the Claude Code ecosystem.
+
+### Evaluation Criteria
+
+| Criterion | What it measures | Detection |
+|-----------|-----------------|-----------|
+| Description as Trigger | Does the `description` field explain when to trigger, not just what the skill does? | Look for "Use when...", trigger scenarios, context keywords. Bad: just "Generates X reports" |
+| Progressive Disclosure | Does the skill keep SKILL.md focused and use supporting files for detail? | SKILL.md under ~500 lines; `references/`, `scripts/`, `assets/` directories used; pointers from SKILL.md to reference files |
+| Gotchas Section | Does the skill document common failure points? | Presence of "Gotchas", "Common issues", "Troubleshooting", or equivalent section |
+| Script Bundling | Does the skill include reusable scripts? | `scripts/` directory with executable files; skill instructions reference bundled scripts instead of having the model write them from scratch |
+| On-demand Hooks | Does the skill register session-scoped hooks? | `hooks` field in SKILL.md frontmatter |
+| Data Persistence | If the skill stores data, does it use stable storage? | Uses `${CLAUDE_PLUGIN_DATA}` rather than `${CLAUDE_PLUGIN_ROOT}` or skill directory |
+| Anti-railroading | Do instructions explain the why, giving Claude flexibility to adapt? | Instructions explain reasoning; avoid excessive all-caps MUSTs or rigid step sequences; theory-of-mind approach |
+
+### Maturity Levels
+
+| Level | Badge | Criteria |
+|-------|-------|----------|
+| Mature | `check-badge--pass` | 5+ criteria pass (or N/A); has progressive disclosure + gotchas |
+| Developing | `scope-badge--medium` | 3-4 criteria pass; functional but missing gotchas or reference files |
+| Basic | `scope-badge--low` | 1-2 criteria pass; works but follows few best practices |
+
 ## Environment Fit
 
 Comprehensive assessment of whether a plugin should be installed in the user's current environment. Builds on dependency checking with functional overlap analysis, trigger collision detection, and context impact evaluation.

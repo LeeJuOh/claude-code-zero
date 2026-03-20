@@ -40,6 +40,7 @@ The PreToolUse hook automatically detects install scope (project vs user) and wr
 
 Read `{DATA_DIR}/config.json` for user preferences:
 - `max_followups`: Maximum follow-up queries in coverage analysis (default: 3)
+- `max_query_length`: Maximum characters per query sent to NotebookLM (default: 40000)
 - `language`: Preferred response language (null = match user's language)
 - `auto_coverage`: Enable automatic coverage analysis (default: true)
 
@@ -63,6 +64,17 @@ Default: `clearHistory: false` (keep previous context).
 
 Set `clearHistory: true` only when the user explicitly requests it
 (e.g., "clear history and query…", "start fresh on this notebook").
+
+### 3.5 Input Length Validation
+
+NotebookLM has a server-side character limit on chat input (~45,000–50,000 chars). There is no client-side enforcement — the textarea accepts any length, but the backend silently fails to respond beyond the limit, leaving the agent stuck in a polling loop.
+
+Read `max_query_length` from config (default: 40000).
+
+If `question.length > max_query_length`:
+1. **Condense**: Rewrite the question to stay within the limit while preserving intent and key terms.
+2. **Inform user**: Note that the question was condensed and show the shortened version.
+3. If the question cannot be meaningfully condensed (e.g., a large code block the user wants analyzed), suggest breaking it into smaller, focused queries.
 
 ### 4. Agent Invocation
 
@@ -92,7 +104,9 @@ After Task returns, check the agent output:
 | `ERROR_TYPE: AUTH_REQUIRED` | Tell user to log in to Google in Chrome, stop |
 | `ERROR_TYPE:` (any other) | Show error details from agent output, stop |
 | Task tool itself errors | Inform user the agent could not start. Check plugin installation. |
-| Normal response (no ERROR_TYPE) | Proceed to Section 5 |
+| `truncated: true` in agent output | Present the response but warn user that NotebookLM truncated the input. Suggest shortening the query or increasing `max_query_length` in config. |
+| Response is empty or very short (< 20 chars) | Inform user that NotebookLM returned no meaningful response. Likely causes: input too long, no relevant content in notebook, or backend timeout. Do NOT proceed to coverage analysis. |
+| Normal response (no ERROR_TYPE, ≥ 20 chars) | Proceed to Section 5 |
 
 **Chrome Connection Troubleshooting** (show to user):
 1. Verify Chrome or Edge browser is running

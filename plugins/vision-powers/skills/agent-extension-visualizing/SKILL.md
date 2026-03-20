@@ -233,150 +233,21 @@ Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 
 *Why: Even a well-built plugin can be wrong for the user's environment. This step catches conflicts, redundancies, and budget overruns before they cause confusion.*
 
-Diagnose whether this plugin is a good fit for the user's current environment — not just "can it run?" but "should it be installed here?" Like a doctor assessing whether a new medication is appropriate given the patient's existing prescriptions, evaluate installation status, context budget impact, functional overlap with existing plugins, trigger collisions, hook impact, and component dependencies.
+Diagnose whether this plugin is a good fit for the user's current environment — not just "can it run?" but "should it be installed here?"
 
-**Step 1**: Extract analyzed plugin characteristics from feature-architect output:
-- Plugin name and at-a-glance description (from Plugin Summary)
-- Skill names and trigger descriptions (from Functionality Analysis → Skills table)
-- Skill description character counts (sum of all description text)
-- Skills with `disable-model-invocation: true` (zero always-on context cost)
-- Hook events, count, and **types** (command / prompt / agent) (from Hooks table; 0 if no hooks)
-- Hooks that return `additionalContext` (if identifiable from hook scripts)
-- External requirements (`requirements` code block; empty if none)
-- MCP server count (from `.mcp.json` if present)
-- Component interaction patterns:
-  - Skills with `allowed-tools` containing `Skill(...)` → Skill→Skill dependency
-  - Skills with `context: fork` + `agent` referencing non-plugin agents → Skill→External Agent
-  - Agent `skills:` field entries not in this plugin → Agent→External Skill
-  - Agent `mcpServers:` string references (not inline) → Agent→External MCP
-  - Skills with `allowed-tools` containing `mcp__*` patterns → Skill→MCP dependency
+**Full procedure**: Read `references/platforms/claude-code/env-fit-diagnosis.md` for the detailed 5-step process covering:
+1. Extract plugin characteristics from feature-architect output
+2. Run the environment scan script (`env-fit-scan.js`)
+3. Perform six diagnostic analyses (installation status, dependency check, context budget, functional overlap, hook impact, component dependencies)
+4. Determine overall verdict (RECOMMENDED / CONDITIONAL / REDUNDANT / CONFLICTING)
+5. Build diagnosis data structure for Phase 5/5R
 
-**Step 2**: Run the environment scan script:
-
+The environment scan script:
 ```
 Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name})
 ```
 
-Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. The script outputs JSON with: `install_status`, `installed_plugins`, `installed_skills` (with `total_desc_chars`, `disabled_count`), `local_skills`, `hook_inventory` (with `total`, `type_counts`), and `context_metrics` (with `mcp_servers`).
-
-If the plugin has external requirements (from Step 1), also check them with simple commands:
-
-| Type | Check pattern | Status values |
-|------|--------------|---------------|
-| CLI | `which {name} >/dev/null 2>&1` | AVAILABLE / MISSING |
-| MCP | `grep -q '"{name}"' ~/.claude/.mcp.json 2>/dev/null` | AVAILABLE / MISSING |
-| ENV | `[ -n "${name}" ]` | SET / UNSET |
-
-**Step 3**: Parse the JSON output and perform six diagnostic analyses.
-
-**3A: Installation Status** (from `install_status` field)
-
-- `INSTALLED` → `ALREADY_INSTALLED`
-- `NOT_INSTALLED` → `NEW`
-
-**3B: Dependency Check** (from Step 2 requirement checks, if any)
-
-Build requirements table: `[{name, type, required, status, help}]`.
-Determine: READY / PARTIAL / ACTION_NEEDED.
-If no requirements block existed → READY.
-
-**3C: Context Budget Analysis** (from `installed_skills`, `local_skills`, `context_metrics` fields + Step 1 data)
-
-Calculate the plugin's context footprint using dual scenarios.
-
-1. **Skill description chars**: Sum description chars for skills in this plugin that do NOT have `disable-model-invocation: true`. Add to current environment total from `installed_skills.total_desc_chars` + `local_skills.total_desc_chars`.
-   - 200K scenario: compare against 16,000 char fallback budget
-   - 1M scenario: compare against ~80,000 char budget (2% of 1M)
-
-2. **MCP tool surface**: Count MCP servers this plugin adds (from `.mcp.json`). Estimate tokens using heuristic: servers × 25 tools × 200 tokens/tool.
-   - Current MCP token estimate: `context_metrics.mcp_servers × 25 × 200`
-   - Adding: `new_servers × 25 × 200`
-   - 200K scenario: compare projected total against ~20,000 token cap (10% of 200K)
-   - 1M scenario: compare projected total against ~100,000 token cap (10% of 1M)
-
-3. **Hook context injection**: Check if any hooks in this plugin return `additionalContext` or use `type: prompt`/`type: agent`. Note but don't score heavily — these are per-event, not always-on.
-
-4. **Zero-cost skills**: Note how many skills use `disable-model-invocation: true` — these have no always-on context cost and should be highlighted as a positive design choice.
-
-Severity determination: present both 200K and 1M scenarios in the report. For the overall severity, use the scenario matching the **user's current session model** (e.g., Opus 4.6[1M] → 1M scenario, Sonnet/Haiku → 200K scenario). If the model context cannot be determined, default to 200K as fallback.
-
-**3D: Functional Overlap & Trigger Analysis** (compare Step 1 skills vs `installed_skills` + `local_skills` output)
-
-Compare the analyzed plugin's skills against all installed/local skill descriptions. For each skill, scan for semantic overlap — considering purpose, trigger phrases, and approach.
-
-Classify each meaningful overlap:
-
-| Classification | Condition | Example |
-|----------------|-----------|---------|
-| DUPLICATE | Same purpose AND same triggers | Two "commit message generator" skills |
-| OVERLAP | Similar purpose, partial trigger overlap | Both handle "code review" but different scope |
-| COMPLEMENT | Related domain, different purpose | One analyzes PRs, other generates changelogs |
-| UPGRADE | Same purpose but analyzed plugin is superior | More features, better design, broader coverage |
-
-For DUPLICATE/OVERLAP findings, assess trigger collision severity:
-- **HIGH**: Near-identical descriptions → Claude unpredictably chooses
-- **MEDIUM**: Shared keywords but distinguishable intent/scope
-- **LOW**: Thematically related but clearly different triggers
-
-**3E: Hook Impact** (from `hook_inventory` field)
-
-- Current hook count (`hook_inventory.total`) + adding → projected total
-- Distinguish hook types from `hook_inventory.type_counts`: command/http (lightweight, zero context) vs prompt/agent (LLM call per event)
-- Flag: projected hooks > 15 (HIGH), 10-15 (MEDIUM)
-- Same-event collisions with existing plugins (informational)
-
-**3F: Component Dependency Analysis** (from Step 1 interaction patterns + `installed_skills`/`local_skills`/`context_metrics` output)
-
-For each cross-plugin reference found in Step 1:
-1. Check if the referenced component exists in the user's environment (installed plugins, local skills, MCP servers)
-2. Classify as AVAILABLE or MISSING
-3. Internal references (within the same plugin) → INTERNAL, skip
-
-Types to check:
-- Skill → Skill: `allowed-tools: Skill(plugin:name)` or instruction-based invocation
-- Agent → Skill: `skills:` field with non-plugin skill names
-- Skill/Agent → MCP: `mcp__server__*` in allowed-tools, or `mcpServers:` string references
-- Skill → Agent: `context: fork` + `agent` field referencing external agent
-
-MISSING dependencies → at least CONDITIONAL verdict.
-
-**Step 4**: Determine overall verdict using `references/platforms/claude-code/analysis-criteria.md` (Environment Fit section).
-
-Verdict priority (highest severity wins):
-
-1. Required dependency MISSING/UNSET → at least CONDITIONAL
-2. Required dependency MISSING + DUPLICATE overlap → CONFLICTING
-3. DUPLICATE skill with HIGH trigger collision → at least REDUNDANT
-4. Multiple OVERLAP findings covering > 50% of plugin's skills → at least REDUNDANT
-5. Skill description budget exceeded in the user's context scenario → at least CONDITIONAL; exceeded in both 200K and 1M → CONFLICTING
-6. MCP tool surface would exceed 10% cap in the user's context scenario → at least CONDITIONAL; exceeded in both → CONFLICTING
-7. Cross-plugin component dependency MISSING → at least CONDITIONAL
-8. Projected hooks > 15 or hook context injection HIGH → at least CONDITIONAL
-9. All clear → RECOMMENDED
-
-**Step 5**: Build diagnosis data for Phase 5/5R:
-
-```
-environment_fit: {
-  verdict: RECOMMENDED | CONDITIONAL | REDUNDANT | CONFLICTING,
-  verdict_summary: "1-2 sentence diagnosis in output language",
-  installation_status: NEW | ALREADY_INSTALLED,
-  context_budget: {
-    skill_desc: { current_chars, adding_chars, budget_200k, budget_1m, severity },
-    mcp_tools: { current_servers, adding_servers, est_tokens, budget_200k, budget_1m, severity },
-    hook_injection: [{ hook_name, type, impact_note }],
-    zero_cost_skills: N
-  },
-  dependency_check: { verdict, requirements[] },
-  overlap_findings: [{ analyzed_skill, existing_skill, classification, detail }],
-  trigger_collisions: [{ skills, severity, collision_phrases }],
-  hook_impact: { current, adding, projected, types: {command, prompt, agent}, event_collisions[], severity },
-  component_deps: [{ source, target, dep_type, status }],
-  recommendations: ["actionable 1-line recommendation"]
-}
-```
-
-Omit empty categories. Save for Phase 5/5R.
+Save the resulting `environment_fit` data for Phase 5/5R. Omit empty categories.
 
 #### Phase 5: Report Assembly (inline markdown)
 
@@ -386,11 +257,12 @@ Assemble the report using `references/platforms/claude-code/report-template.md` 
 
 - **`overview` mode**: Identity + Component Inventory sections only
 - **`security` mode**: Security-focused report with risk summary, permission matrix, findings
-- **`analyze` mode (--format md)**: Full report with analysis, Environment Fit Diagnosis, and Plugin Profile
+- **`analyze` mode (--format md)**: Full report with analysis, Environment Fit Diagnosis, Skill Design Quality, and Plugin Profile
 
-For Plugin Profile, apply criteria from `references/platforms/claude-code/analysis-criteria.md`.
+For Plugin Profile and Skill Design Quality, apply criteria from `references/platforms/claude-code/analysis-criteria.md`.
 For risk levels, apply rules from `references/platforms/claude-code/security-rules.md`.
 Environment Fit Diagnosis is a standalone section between Feature Deep Dive and Usage (not part of Plugin Profile). Include the full diagnosis from Phase 4.5: verdict, context budget (200K/1M scenarios), installation status, dependency check, overlap/trigger findings, hook impact, component dependencies, and recommendations.
+Skill Design Quality includes: skill category distribution, per-skill design assessment (description quality, progressive disclosure, gotchas, scripts, hooks, data persistence, maturity level), and improvement recommendations. This data comes from the feature-architect's Skill Design Quality output.
 
 Output the report in the detected language, using `references/platforms/claude-code/report-template.md` format.
 Translate all section headers, labels, and descriptions to the target language.
@@ -427,14 +299,20 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    - If user chooses "update" → use the existing file path as output
    - If no existing reports found → proceed with default dated path without asking
 
-2. **Resolve reference paths**:
+2. **Resolve paths and read references**:
    - Template: resolve `../../templates/agent-extension-visual.html` to absolute path
    - Section structure: resolve `references/section-structure.md` to absolute path
    - Font system: resolve `../../references/design-system/font-system.md` to absolute path
    - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
    - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
    - Shared directory: resolve `../../shared/` to absolute path
-   Do NOT read these files — they are passed as paths to the agent and assembler.
+
+   **Read 3 reference files** in a single parallel Read call:
+   1. Section structure (`references/section-structure.md`)
+   2. Font system (`../../references/design-system/font-system.md`)
+   3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
+
+   Save their content for step 4. Do NOT read the template, assembler, or shared directory — those are passed as paths to the assembler script.
 
 3. **Create sections temp directory**:
    The sections directory path: `/tmp/agent-extension-visual-{dirname}-sections/`
@@ -444,14 +322,14 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 4. **Delegate to visual-report-writer agent**:
    ```
    Task(subagent_type: "vision-powers:visual-report-writer", prompt: {
-     feature-architect analysis results (full text, including Plugin Summary and Raw Content Excerpts),
+     feature-architect analysis results (full text, including Plugin Summary, Raw Content Excerpts, and Skill Design Quality),
      security-auditor analysis results (full text),
      plugin metadata (name, version, author, license, keywords, description),
      sections output directory (absolute path from step 3),
      output language,
-     section structure path (absolute path from step 2),
-     font system path (absolute path from step 2),
-     anti-slop rules path (absolute path from step 2),
+     section structure content (full text read in step 2),
+     font system content (full text read in step 2),
+     anti-slop rules content (full text read in step 2),
      report title: "Agent Extension Visual: {plugin-name}",
      aesthetic hint: "Editorial",
      source context: { source_type, source_base, github_url (if applicable) },
@@ -460,10 +338,15 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
        dependency_check, overlap_findings, trigger_collisions,
        hook_impact: { current, adding, projected, types, event_collisions, severity },
        component_deps,
-       recommendations } (from Phase 4.5; when RECOMMENDED with no findings, pass minimal verdict-only data)
+       recommendations } (from Phase 4.5; when RECOMMENDED with no findings, pass minimal verdict-only data),
+     skill design quality: { category_distribution, design_assessment[], summary }
+       (from feature-architect's Skill Design Quality output; include in Plugin Profile section)
    })
    ```
+   Pass the **file contents** read in step 2, not paths. This eliminates the agent's read turn.
    The agent writes `section-1.html` through `section-11.html` and `metadata.json` to the sections directory.
+
+   **Do NOT background this agent.** Plugin-defined agents silently ignore `permissionMode`, so the visual-report-writer needs user approval for each Write call. Backgrounded agents cannot prompt for permissions and will fail silently. Always run in the foreground.
 
 5. **Assemble report** — run the assembler script to combine template + sections:
    ```
@@ -535,14 +418,20 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **Large plugin batching threshold**: The 15-component threshold for splitting feature-architect is approximate. Plugins with many small commands but few skills may not need splitting, while plugins with 10 dense skills might. Use judgment — the goal is keeping each agent under context limits.
 - **Existing report overwrite prompt**: The "create new or update" prompt uses AskUserQuestion. If the user is running non-interactively or in a pipeline, this blocks. Default to "create new" if no user response is available.
 - **Temp directory collision**: The 8-char hex `{dirname}` has a negligible collision risk, but if a previous run crashed without cleanup, `/tmp/agent-extension-visual-*` directories may linger. The cleanup phase handles the current run only — it does not garbage-collect stale dirs.
+- **Skill category misclassification**: Skills that span multiple categories (e.g., a deploy skill with review features) should be classified by primary purpose — what the user invokes it for. Don't try to assign multiple categories; pick the best fit and note the overlap in the description.
+- **Design quality false negatives**: A skill with no `scripts/` directory isn't necessarily "Basic" — some skills genuinely don't need scripts (pure knowledge/reference skills). Apply the N/A classification for criteria that don't apply to the skill type.
+- **New hook events**: The security-auditor knows about 22 hook events as of 2026-03. If new events are added to Claude Code, the event list in `security-rules.md` and `security-auditor.md` may need updating.
+- **visual-report-writer 백그라운드 실행 금지**: Plugin-defined agents는 `permissionMode`가 무시되므로, visual-report-writer를 백그라운드로 보내면 Write 권한 승인을 받을 수 없어 실패합니다. 반드시 포그라운드에서 실행해야 합니다.
+- **Agent `effort` field**: The `effort` field (low/medium/high/max) is distinct from the `model` field. A Haiku agent with `effort: max` is different from an Opus agent with default effort. Report both when present.
 
 ### Reference Files
 
-- `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist)
-- `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification
+- `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist, skill categories, design quality)
+- `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification (with context modifiers)
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
+- `references/platforms/claude-code/env-fit-diagnosis.md` — Environment Fit Diagnosis detailed steps (Phase 4.5)
 - `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
 - `../../templates/agent-extension-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
 - `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
-- `../../references/design-system/font-system.md` — Font pairing selection guide. Visual-report-writer reads it directly
-- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Visual-report-writer reads it directly
+- `../../references/design-system/font-system.md` — Font pairing selection guide. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
+- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
