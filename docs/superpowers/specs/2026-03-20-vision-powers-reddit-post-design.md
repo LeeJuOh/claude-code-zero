@@ -23,7 +23,7 @@ r/ClaudeAI에 vision-powers 플러그인 홍보 포스트를 작성한다. 반�
 
 ## Post Format
 
-이미지/미디어 포스트 (리포트 스크린샷 메인)
+텍스트 포스트 + 인라인 이미지 (본문에 스크린샷 삽입, 이미지 전용 포스트 아님)
 
 ## Title
 
@@ -43,8 +43,14 @@ So I built a plugin that takes any plugin path or GitHub URL and auto-generates 
 
 ### 3) Media — Report screenshots
 
-- 리포트 스크린샷 2-3장 삽입 (아키텍처 다이어그램, 플러그인 프로필, 스킬 구조 등)
-- 데모 영상 링크 (선택)
+분석 대상: 유명한 서드파티 플러그인 (예: superpowers, taskmaster 등 사용자들이 알만한 것)
+
+스크린샷 구성:
+- 1장: 플러그인 프로필 + 개요 섹션 (한눈에 뭔지 파악)
+- 1장: 아키텍처 다이어그램 (Mermaid 기반 인터랙티브)
+- 1장: 스킬/에이전트 구조 breakdown
+
+데모 영상: video/product-demo/out/product-demo.mp4 활용 가능
 
 ### 4) Usage (3 lines) — Install + run
 
@@ -52,10 +58,10 @@ So I built a plugin that takes any plugin path or GitHub URL and auto-generates 
 claude plugin add vision-powers@claude-code-zero
 ```
 
-Then just:
+Then just ask Claude:
 ```
-analyze ./plugins/some-plugin
-analyze github.com/owner/repo
+"analyze this plugin at ./plugins/some-plugin"
+"analyze github.com/owner/repo"
 ```
 
 ### 5) Closing (2 sentences) — Casual feedback ask
@@ -65,6 +71,16 @@ It's part of a personal plugin collection I've been building. Would love to hear
 ### 6) Link
 
 GitHub: https://github.com/LeeJuOh/claude-code-zero
+
+## Anticipated Questions (댓글 대응)
+
+| 예상 질문 | 답변 방향 |
+|-----------|----------|
+| "How is this different from just reading the source?" | README는 구조/관계를 안 보여줌. 이건 아키텍처 다이어그램 + 컴포넌트 관계를 자동 시각화 |
+| "Does it work on any repo / non-plugin projects?" | 현재는 Claude Code 플러그인 전용. 향후 확장 가능 |
+| "What model does it use? How many tokens?" | Claude가 분석하고 HTML 생성. 토큰은 플러그인 크기에 따라 다름 |
+| "Can I see a live demo / hosted report?" | 스크린샷 참고 + GitHub에서 직접 설치해서 돌려볼 수 있음 |
+| "Is this safe? Does it execute plugin code?" | 코드 실행 없음. 파일을 읽고 분석만 함 |
 
 ## Checklist (before posting)
 
