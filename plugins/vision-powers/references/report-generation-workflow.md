@@ -31,7 +31,7 @@ If no config file exists, proceed with defaults. Do not prompt the user to set u
 
 ## Steps
 
-### Step 1: Resolve reference paths
+### Step 1: Resolve paths and read references
 
 Resolve these relative paths (from the skill directory) to absolute paths:
 - Template: `../../templates/{template-name}`
@@ -42,7 +42,14 @@ Resolve these relative paths (from the skill directory) to absolute paths:
 - Validator script: `../../scripts/validate-report.js`
 - Shared directory: `../../shared/`
 
-Do NOT read these files — they are passed as paths to the agent and assembler.
+**Read 3 reference files** in a single parallel Read call:
+1. Section structure (`references/section-structure.md`)
+2. Font system (`../../references/design-system/font-system.md`)
+3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
+
+Save their content for Step 3 — the visual-report-writer receives content directly so it can start writing immediately without a read turn.
+
+Do NOT read the template, assembler, validator, or shared directory — those are passed as paths to the assembler script.
 
 ### Step 2: Create sections temp directory
 
@@ -56,14 +63,16 @@ Pick any 8-character hex string for `{dirname}` (e.g., `a1b2c3d4`). No mkdir nee
 Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
   {agent-prompt-data},
   sections output directory (absolute path from Step 2),
-  section structure path (absolute path from Step 1),
-  font system path (absolute path from Step 1),
-  anti-slop rules path (absolute path from Step 1),
+  section structure content (full text read in Step 1),
+  font system content (full text read in Step 1),
+  anti-slop rules content (full text read in Step 1),
   Output language: {detected language},
   Report title: {report-title},
   Aesthetic hint: {aesthetic-hint}
 })
 ```
+
+Pass the **file contents** read in Step 1, not paths. This eliminates the agent's read turn — it can start writing sections immediately.
 
 The agent writes `section-1.html` through `section-N.html` and `metadata.json` to the sections directory.
 

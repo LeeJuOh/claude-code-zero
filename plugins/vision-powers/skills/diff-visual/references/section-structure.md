@@ -1,6 +1,6 @@
 # Vision Diff — Section Structure
 
-This document defines the 10-section structure for vision-diff HTML reports. The visual-report-writer agent reads this file and renders each section using the HTML pattern snippets below.
+This document defines the 10-section structure for vision-diff HTML reports. The orchestrator reads this file and passes its content to the visual-report-writer agent, which renders each section using the HTML pattern snippets below.
 
 All CSS classes (`.ve-card`, `.ve-card--hero`, `.ve-card--elevated`, `.ve-card--recessed`, depth tiers, status indicators) are defined in the shared `design-system/css-patterns.md`.
 

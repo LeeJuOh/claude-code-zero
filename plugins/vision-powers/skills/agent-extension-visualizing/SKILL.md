@@ -299,14 +299,20 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    - If user chooses "update" → use the existing file path as output
    - If no existing reports found → proceed with default dated path without asking
 
-2. **Resolve reference paths**:
+2. **Resolve paths and read references**:
    - Template: resolve `../../templates/agent-extension-visual.html` to absolute path
    - Section structure: resolve `references/section-structure.md` to absolute path
    - Font system: resolve `../../references/design-system/font-system.md` to absolute path
    - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
    - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
    - Shared directory: resolve `../../shared/` to absolute path
-   Do NOT read these files — they are passed as paths to the agent and assembler.
+
+   **Read 3 reference files** in a single parallel Read call:
+   1. Section structure (`references/section-structure.md`)
+   2. Font system (`../../references/design-system/font-system.md`)
+   3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
+
+   Save their content for step 4. Do NOT read the template, assembler, or shared directory — those are passed as paths to the assembler script.
 
 3. **Create sections temp directory**:
    The sections directory path: `/tmp/agent-extension-visual-{dirname}-sections/`
@@ -321,9 +327,9 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      plugin metadata (name, version, author, license, keywords, description),
      sections output directory (absolute path from step 3),
      output language,
-     section structure path (absolute path from step 2),
-     font system path (absolute path from step 2),
-     anti-slop rules path (absolute path from step 2),
+     section structure content (full text read in step 2),
+     font system content (full text read in step 2),
+     anti-slop rules content (full text read in step 2),
      report title: "Agent Extension Visual: {plugin-name}",
      aesthetic hint: "Editorial",
      source context: { source_type, source_base, github_url (if applicable) },
@@ -337,6 +343,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
        (from feature-architect's Skill Design Quality output; include in Plugin Profile section)
    })
    ```
+   Pass the **file contents** read in step 2, not paths. This eliminates the agent's read turn.
    The agent writes `section-1.html` through `section-11.html` and `metadata.json` to the sections directory.
 
 5. **Assemble report** — run the assembler script to combine template + sections:
@@ -423,5 +430,5 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
 - `../../templates/agent-extension-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
 - `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
-- `../../references/design-system/font-system.md` — Font pairing selection guide. Visual-report-writer reads it directly
-- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Visual-report-writer reads it directly
+- `../../references/design-system/font-system.md` — Font pairing selection guide. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
+- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
