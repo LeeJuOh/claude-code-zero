@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trigger Eval Set - __SKILL_NAME_PLACEHOLDER__</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:system-ui,sans-serif; background:#faf9f5; padding:2rem; color:#141413; }
+    h1 { font-size:1.5rem; margin-bottom:0.5rem; }
+    .desc { color:#b0aea5; margin-bottom:1.5rem; font-style:italic; max-width:900px; }
+    .controls { margin-bottom:1rem; display:flex; gap:0.5rem; }
+    .btn { padding:0.5rem 1rem; border:none; border-radius:6px; cursor:pointer; font-size:0.875rem; font-weight:500; }
+    .btn-add { background:#6a9bcc; color:#fff; }
+    .btn-export { background:#d97757; color:#fff; }
+    table { width:100%; max-width:1100px; border-collapse:collapse; background:#fff; border-radius:6px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    th { background:#141413; color:#faf9f5; padding:0.75rem 1rem; text-align:left; font-size:0.875rem; }
+    td { padding:0.75rem 1rem; border-bottom:1px solid #e8e6dc; vertical-align:top; }
+    tr:nth-child(even) td { background:#faf9f5; }
+    .section-header td { background:#e8e6dc; font-weight:500; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; }
+    .query-input { width:100%; padding:0.4rem; border:1px solid #e8e6dc; border-radius:4px; font-size:0.875rem; resize:vertical; min-height:60px; font-family:inherit; }
+    .query-input:focus { outline:none; border-color:#d97757; }
+    .toggle { position:relative; display:inline-block; width:44px; height:24px; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .slider { position:absolute; inset:0; background:#b0aea5; border-radius:24px; cursor:pointer; transition:0.2s; }
+    .slider::before { content:""; position:absolute; width:18px; height:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s; }
+    .toggle input:checked + .slider { background:#d97757; }
+    .toggle input:checked + .slider::before { transform:translateX(20px); }
+    .btn-del { background:#c44; color:#fff; padding:0.3rem 0.6rem; border:none; border-radius:4px; cursor:pointer; font-size:0.75rem; }
+    .summary { margin-top:1rem; color:#b0aea5; font-size:0.875rem; }
+  </style>
+</head>
+<body>
+  <h1>Trigger Eval Set: <span id="sname">__SKILL_NAME_PLACEHOLDER__</span></h1>
+  <p class="desc">Current description: <span id="sdesc">__SKILL_DESCRIPTION_PLACEHOLDER__</span></p>
+  <div class="controls">
+    <button class="btn btn-add" id="add-btn">+ Add Query</button>
+    <button class="btn btn-export" id="export-btn">Export Eval Set</button>
+  </div>
+  <table>
+    <thead><tr><th>#</th><th>Query</th><th>Should Trigger</th><th>Actions</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <p class="summary" id="summary"></p>
+
+  <script>
+    var items = __EVAL_DATA_PLACEHOLDER__;
+
+    function render() {
+      var tb = document.getElementById('tbody');
+      tb.textContent = '';
+      var pos = items.filter(function(i){return i.should_trigger;});
+      var neg = items.filter(function(i){return !i.should_trigger;});
+
+      function addSection(label) {
+        var tr = document.createElement('tr'); tr.className = 'section-header';
+        var td = document.createElement('td'); td.colSpan = 4; td.textContent = label;
+        tr.appendChild(td); tb.appendChild(tr);
+      }
+
+      function addRow(item, idx) {
+        var tr = document.createElement('tr');
+        var td1 = document.createElement('td'); td1.textContent = idx + 1; tr.appendChild(td1);
+        var td2 = document.createElement('td');
+        var ta = document.createElement('textarea'); ta.className = 'query-input'; ta.value = item.query;
+        ta.addEventListener('input', function(){ item.query = ta.value; });
+        td2.appendChild(ta); tr.appendChild(td2);
+        var td3 = document.createElement('td');
+        var lbl = document.createElement('label'); lbl.className = 'toggle';
+        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = item.should_trigger;
+        cb.addEventListener('change', function(){ item.should_trigger = cb.checked; render(); });
+        var sl = document.createElement('span'); sl.className = 'slider';
+        lbl.appendChild(cb); lbl.appendChild(sl); td3.appendChild(lbl); tr.appendChild(td3);
+        var td4 = document.createElement('td');
+        var del = document.createElement('button'); del.className = 'btn-del'; del.textContent = 'Delete';
+        del.addEventListener('click', function(){ items.splice(items.indexOf(item), 1); render(); });
+        td4.appendChild(del); tr.appendChild(td4);
+        tb.appendChild(tr);
+      }
+
+      if (pos.length) { addSection('Should Trigger (' + pos.length + ')'); pos.forEach(function(it){ addRow(it, items.indexOf(it)); }); }
+      if (neg.length) { addSection('Should NOT Trigger (' + neg.length + ')'); neg.forEach(function(it){ addRow(it, items.indexOf(it)); }); }
+
+      document.getElementById('summary').textContent = items.length + ' queries (' + pos.length + ' trigger, ' + neg.length + ' no-trigger)';
+    }
+
+    document.getElementById('add-btn').addEventListener('click', function() {
+      items.push({query: '', should_trigger: true});
+      render();
+    });
+
+    document.getElementById('export-btn').addEventListener('click', function() {
+      var blob = new Blob([JSON.stringify(items, null, 2)], {type:'application/json'});
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'eval_set.json'; a.click();
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -43,6 +43,12 @@
       "source": "./plugins/worktree-plus",
       "version": "2.4.3",
       "description": "Enhanced git worktree: custom branch prefix, remote branch tracking, selective copy/symlink for gitignored files, work state protection on cleanup"
+    },
+    {
+      "name": "skill-creator-pro",
+      "source": "./plugins/skill-creator-pro",
+      "version": "1.0.0",
+      "description": "Create, test, measure, and iteratively improve Claude Code skills with category-aware design, gotchas-driven development, progressive disclosure coaching, and automated description optimization"
     }
   ]
 }

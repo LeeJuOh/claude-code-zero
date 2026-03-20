@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skill Forge - Review</title>
+  <style>
+    :root { --bg:#faf9f5; --surface:#fff; --border:#e8e6dc; --text:#141413; --muted:#b0aea5; --accent:#d97757; --green:#788c5d; --red:#c44; --header-bg:#141413; --header-text:#faf9f5; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; }
+    .header { background:var(--header-bg); color:var(--header-text); padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center; }
+    .header h1 { font-size:1.2rem; }
+    .tabs { display:flex; gap:0; }
+    .tab-btn { padding:0.5rem 1.5rem; cursor:pointer; border:none; background:transparent; color:var(--muted); font-size:0.9rem; border-bottom:2px solid transparent; }
+    .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .panel { flex:1; overflow:auto; padding:2rem; }
+    .nav-bar { display:flex; gap:1rem; align-items:center; margin-bottom:1.5rem; }
+    .nav-bar button { padding:0.5rem 1rem; border:1px solid var(--border); border-radius:4px; background:var(--surface); cursor:pointer; }
+    .counter { color:var(--muted); font-size:0.9rem; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:1.5rem; margin-bottom:1rem; }
+    .card h3 { font-size:0.85rem; color:var(--muted); text-transform:uppercase; margin-bottom:0.5rem; }
+    .card pre { white-space:pre-wrap; word-wrap:break-word; font-size:0.85rem; line-height:1.5; max-height:400px; overflow:auto; }
+    .card img { max-width:100%; }
+    .fb-area { width:100%; min-height:80px; padding:0.5rem; border:1px solid var(--border); border-radius:4px; font:inherit; resize:vertical; }
+    .grades { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem; }
+    .grade { padding:0.25rem 0.5rem; border-radius:4px; font-size:0.8rem; }
+    .grade-pass { background:#eef2e8; color:var(--green); }
+    .grade-fail { background:#fceaea; color:var(--red); }
+    details { margin-top:0.5rem; }
+    summary { cursor:pointer; color:var(--muted); font-size:0.85rem; }
+    .bar { position:sticky; bottom:0; background:var(--surface); border-top:1px solid var(--border); padding:1rem 2rem; display:flex; justify-content:flex-end; }
+    .btn-go { padding:0.75rem 2rem; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:1rem; }
+    .bm-table { width:100%; border-collapse:collapse; }
+    .bm-table th,.bm-table td { padding:0.5rem 1rem; border:1px solid var(--border); text-align:left; font-size:0.85rem; }
+    .bm-table th { background:var(--header-bg); color:var(--header-text); }
+    .notes-list li { margin-bottom:0.5rem; font-size:0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 id="page-title">Review</h1>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="outputs">Outputs</button>
+      <button class="tab-btn" data-tab="benchmark">Benchmark</button>
+    </div>
+  </div>
+  <div id="outputs-panel" class="panel"></div>
+  <div id="benchmark-panel" class="panel" style="display:none"></div>
+  <div class="bar"><button class="btn-go" id="submit-btn">Submit All Reviews</button></div>
+
+  <script>
+    /*__EMBEDDED_DATA__*/
+    var D = typeof EMBEDDED_DATA !== 'undefined' ? EMBEDDED_DATA : {runs:[],skill_name:'',previous_feedback:{},previous_outputs:{}};
+    var ci = 0, fb = {};
+
+    function safe(s) {
+      if (!s) return '';
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.getElementById('page-title').textContent = (D.skill_name || 'Skill') + ' - Review';
+
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+        btn.classList.add('active');
+        var t = btn.getAttribute('data-tab');
+        document.getElementById('outputs-panel').style.display = t === 'outputs' ? 'block' : 'none';
+        document.getElementById('benchmark-panel').style.display = t === 'benchmark' ? 'block' : 'none';
+        if (t === 'benchmark') showBenchmark();
+      });
+    });
+
+    function showRun(idx) {
+      if (!D.runs.length) { document.getElementById('outputs-panel').textContent = 'No runs found.'; return; }
+      ci = idx;
+      var r = D.runs[idx];
+      var prevFb = D.previous_feedback[r.id] || '';
+      var prevOut = D.previous_outputs[r.id] || [];
+      var el = document.getElementById('outputs-panel');
+      el.textContent = '';
+
+      // Nav
+      var nav = document.createElement('div');
+      nav.className = 'nav-bar';
+      var prevBtn = document.createElement('button');
+      prevBtn.textContent = '\u2190 Prev';
+      prevBtn.addEventListener('click', function(){showRun(Math.max(0,ci-1));});
+      var nextBtn = document.createElement('button');
+      nextBtn.textContent = 'Next \u2192';
+      nextBtn.addEventListener('click', function(){showRun(Math.min(D.runs.length-1,ci+1));});
+      var cnt = document.createElement('span');
+      cnt.className = 'counter';
+      cnt.textContent = (idx+1) + ' / ' + D.runs.length;
+      nav.appendChild(prevBtn); nav.appendChild(cnt); nav.appendChild(nextBtn);
+      el.appendChild(nav);
+
+      // Prompt
+      var pc = document.createElement('div'); pc.className = 'card';
+      var ph = document.createElement('h3'); ph.textContent = 'Prompt'; pc.appendChild(ph);
+      var pp = document.createElement('pre'); pp.textContent = r.prompt; pc.appendChild(pp);
+      el.appendChild(pc);
+
+      // Outputs
+      if (r.outputs) {
+        r.outputs.forEach(function(f) {
+          var c = document.createElement('div'); c.className = 'card';
+          var h = document.createElement('h3'); h.textContent = f.name; c.appendChild(h);
+          if (f.type === 'text') { var p = document.createElement('pre'); p.textContent = f.content; c.appendChild(p); }
+          else if (f.type === 'image') { var img = document.createElement('img'); img.src = f.data_uri; img.alt = f.name; c.appendChild(img); }
+          else if (f.type === 'pdf') { var ifr = document.createElement('iframe'); ifr.src = f.data_uri; ifr.style.cssText = 'width:100%;height:500px;border:none'; c.appendChild(ifr); }
+          else if (f.type === 'binary') { var a = document.createElement('a'); a.href = f.data_uri; a.download = f.name; a.textContent = 'Download ' + f.name; c.appendChild(a); }
+          else { var p2 = document.createElement('pre'); p2.textContent = f.content || '(No preview)'; c.appendChild(p2); }
+          el.appendChild(c);
+        });
+      }
+
+      // Previous outputs
+      if (prevOut.length) {
+        var det = document.createElement('details');
+        var sum = document.createElement('summary'); sum.textContent = 'Previous Iteration Output'; det.appendChild(sum);
+        prevOut.forEach(function(f) {
+          var c = document.createElement('div'); c.className = 'card';
+          var h = document.createElement('h3'); h.textContent = f.name; c.appendChild(h);
+          if (f.type === 'text') { var p = document.createElement('pre'); p.textContent = f.content; c.appendChild(p); }
+          else { var sp = document.createElement('p'); sp.textContent = '(' + f.type + ' file)'; c.appendChild(sp); }
+          det.appendChild(c);
+        });
+        el.appendChild(det);
+      }
+
+      // Grading
+      if (r.grading && r.grading.expectations) {
+        var gdet = document.createElement('details');
+        var gsum = document.createElement('summary'); gsum.textContent = 'Formal Grades'; gdet.appendChild(gsum);
+        var gd = document.createElement('div'); gd.className = 'grades';
+        r.grading.expectations.forEach(function(e) {
+          var sp = document.createElement('span');
+          sp.className = 'grade ' + (e.passed ? 'grade-pass' : 'grade-fail');
+          sp.textContent = (e.passed ? '\u2713' : '\u2717') + ' ' + e.text;
+          gd.appendChild(sp);
+        });
+        gdet.appendChild(gd);
+        el.appendChild(gdet);
+      }
+
+      // Previous feedback
+      if (prevFb) {
+        var pfc = document.createElement('div'); pfc.className = 'card';
+        var pfh = document.createElement('h3'); pfh.textContent = 'Previous Feedback'; pfc.appendChild(pfh);
+        var pfp = document.createElement('pre'); pfp.textContent = prevFb; pfc.appendChild(pfp);
+        el.appendChild(pfc);
+      }
+
+      // Feedback textarea
+      var fbc = document.createElement('div'); fbc.className = 'card';
+      var fbh = document.createElement('h3'); fbh.textContent = 'Feedback'; fbc.appendChild(fbh);
+      var ta = document.createElement('textarea'); ta.className = 'fb-area';
+      ta.placeholder = 'Leave feedback...';
+      ta.value = fb[r.id] || '';
+      ta.addEventListener('input', function(){ fb[r.id] = ta.value; });
+      fbc.appendChild(ta);
+      el.appendChild(fbc);
+    }
+
+    function showBenchmark() {
+      var bm = D.benchmark;
+      var el = document.getElementById('benchmark-panel');
+      el.textContent = '';
+      if (!bm) { el.textContent = 'No benchmark data available.'; return; }
+
+      var rs = bm.run_summary || {};
+      var configs = Object.keys(rs).filter(function(k){return k !== 'delta';});
+      var delta = rs.delta || {};
+
+      var c = document.createElement('div'); c.className = 'card';
+      var h = document.createElement('h3'); h.textContent = 'Summary'; c.appendChild(h);
+      var t = document.createElement('table'); t.className = 'bm-table';
+      var thead = document.createElement('tr');
+      var th0 = document.createElement('th'); th0.textContent = 'Metric'; thead.appendChild(th0);
+      configs.forEach(function(cn){ var th = document.createElement('th'); th.textContent = cn.replace(/_/g,' '); thead.appendChild(th); });
+      var thd = document.createElement('th'); thd.textContent = 'Delta'; thead.appendChild(thd);
+      t.appendChild(thead);
+
+      ['pass_rate','time_seconds','tokens'].forEach(function(m) {
+        var tr = document.createElement('tr');
+        var td0 = document.createElement('td'); td0.textContent = m.replace(/_/g,' '); tr.appendChild(td0);
+        configs.forEach(function(cn) {
+          var v = (rs[cn] || {})[m] || {};
+          var td = document.createElement('td');
+          td.textContent = (v.mean || 0).toFixed(m === 'pass_rate' ? 2 : 1) + ' +/- ' + (v.stddev || 0).toFixed(2);
+          tr.appendChild(td);
+        });
+        var tdd = document.createElement('td'); tdd.textContent = delta[m] || '-'; tr.appendChild(tdd);
+        t.appendChild(tr);
+      });
+      c.appendChild(t); el.appendChild(c);
+
+      if (bm.notes && bm.notes.length) {
+        var nc = document.createElement('div'); nc.className = 'card';
+        var nh = document.createElement('h3'); nh.textContent = 'Analyst Notes'; nc.appendChild(nh);
+        var ul = document.createElement('ul'); ul.className = 'notes-list';
+        bm.notes.forEach(function(n){ var li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+        nc.appendChild(ul); el.appendChild(nc);
+      }
+    }
+
+    document.getElementById('submit-btn').addEventListener('click', function() {
+      var reviews = D.runs.map(function(r){ return { run_id: r.id, feedback: fb[r.id] || '', timestamp: new Date().toISOString() }; });
+      var payload = JSON.stringify({reviews: reviews, status: 'complete'}, null, 2);
+      fetch('/api/feedback', {method:'POST', headers:{'Content-Type':'application/json'}, body: payload})
+        .then(function(resp){ if(resp.ok) alert('Feedback saved!'); else throw new Error('server error'); })
+        .catch(function(){
+          var blob = new Blob([payload], {type:'application/json'});
+          var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'feedback.json'; a.click();
+        });
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowLeft') showRun(Math.max(0, ci-1));
+      if (e.key === 'ArrowRight') showRun(Math.min(D.runs.length-1, ci+1));
+    });
+
+    showRun(0);
+  </script>
+</body>
+</html>
