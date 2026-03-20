@@ -106,6 +106,39 @@ function checkMermaid(html) {
     if (content.length < 20) {
       issues.push(`Mermaid block #${count} appears to be a stub (${content.length} chars)`);
     }
+
+    // Deep syntax checks for common parser-breaking patterns
+    const lines = content.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const ln = i + 1;
+
+      // classDef with rgba() — commas break Mermaid's parser
+      if (/classDef\s/.test(line) && /rgba?\s*\(/.test(line)) {
+        issues.push(`Mermaid #${count} L${ln}: rgba() in classDef breaks parser, use 8-digit hex`);
+      }
+
+      // classDef with color: — unsupported property
+      if (/classDef\s/.test(line) && /\bcolor\s*:/.test(line)) {
+        issues.push(`Mermaid #${count} L${ln}: color: in classDef unsupported, remove it`);
+      }
+
+      // Unquoted special characters in node labels
+      const nodeLabel = line.match(/\w+\[([^\]"'][^\]]*)\]/);
+      if (nodeLabel && /[(){}:;/\\<>]/.test(nodeLabel[1])) {
+        issues.push(`Mermaid #${count} L${ln}: unquoted special chars in node label, wrap in quotes`);
+      }
+
+      // Spaces inside relationship label delimiters
+      if (/--[->]?\|\s+"/.test(line) || /"\s+\|/.test(line)) {
+        issues.push(`Mermaid #${count} L${ln}: spaces inside |"label"| delimiters`);
+      }
+
+      // classDef applied to subgraph declaration
+      if (/subgraph\s.*:::/.test(line)) {
+        issues.push(`Mermaid #${count} L${ln}: classDef on subgraph is invalid syntax`);
+      }
+    }
   }
 
   return { issues, count };

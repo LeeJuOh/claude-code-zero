@@ -136,6 +136,8 @@
     .zoom-controls button { width: 28px; height: 28px; border: none; background: transparent; color: var(--text-dim); font-family: var(--font-mono); font-size: 14px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: background 0.15s ease, color 0.15s ease; }
     .zoom-controls button:hover { background: var(--border); color: var(--text); }
     .zoom-level { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); min-width: 40px; text-align: center; user-select: none; }
+    .mermaid .clickable { cursor: pointer; transition: filter 0.2s ease; }
+    .mermaid .clickable:hover { filter: brightness(1.15); }
 
     /* ===== CHART ===== */
     .chart-container { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; position: relative; max-width: 400px; margin: 1.5rem auto; }
@@ -237,9 +239,13 @@
 </div>
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs';
+  mermaid.registerLayoutLoaders(elkLayouts);
   var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   mermaid.initialize({
     startOnLoad: true, theme: 'base', look: 'classic',
+    securityLevel: 'loose',
+    flowchart: { defaultRenderer: 'elk' },
     themeVariables: {
       primaryColor: isDark ? '#134e4a' : '#ccfbf1',
       primaryBorderColor: isDark ? '#14b8a6' : '#0d9488',

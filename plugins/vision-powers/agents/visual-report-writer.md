@@ -139,6 +139,17 @@ When writing section files:
 
 2. **Mermaid diagrams**: Always use `<pre class="mermaid">` (never `<div>`). In `classDef`, use 8-digit hex for fills (`fill:#0891b226`) — NEVER `rgba()` because commas break Mermaid's parser. Never set `color:` in classDef. Wrap in `.mermaid-wrap` with `.zoom-controls`.
 
+3. **Clickable diagram nodes**: In architecture diagrams, add `click` events to link nodes to their corresponding report sections. This enables in-report navigation — clicking a component node scrolls to its detail section. Use `click NodeId "#section-id"` syntax where `section-id` matches the target `<section id="...">`. Example:
+   ```
+   click SkillsNode "#components"
+   click SecurityNode "#security-audit"
+   ```
+   For source links (when source context is provided), link nodes to source paths:
+   ```
+   click SkillNode "https://github.com/owner/repo/blob/main/skills/my-skill/SKILL.md"
+   ```
+   Templates use `securityLevel: 'loose'` which enables click events.
+
 3. **Chart.js**: Place chart configurations in `metadata.json` `chart_data` field as a `<script>` block string. Use `isDark` detection for colors.
 
 4. **Translation**: Translate section headers, labels, descriptions. Keep file paths, tool names, code identifiers, severity levels untranslated.
@@ -197,3 +208,4 @@ Before completing, verify:
 8. **Section content**: Each section-N.html has meaningful content beyond just `<section id="..."></section>` — at minimum a heading and one content element.
 9. **TOC-section ID match**: Every `href="#..."` in metadata.json `toc_content` has a corresponding `<section id="...">` in the section files. Every section file with an `id` attribute has a matching TOC link.
 10. **Mermaid syntax**: All `<pre class="mermaid">` blocks contain diagram syntax (not placeholder comments). No `rgba()` in any `classDef` rule — use 8-digit hex instead (e.g., `fill:#0891b226`). No `color:` property in `classDef`.
+11. **Clickable nodes**: Architecture diagrams include `click NodeId "#section-id"` events linking to corresponding report sections. At minimum, link the main component nodes (skills, agents, security, etc.) to their detail sections.

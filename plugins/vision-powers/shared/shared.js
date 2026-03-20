@@ -23,6 +23,65 @@ document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
 });
 document.addEventListener('keydown', function(e) { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; var wrap = document.querySelector('.mermaid-wrap:hover'); if (!wrap) return; if (e.key === '+' || e.key === '=') { e.preventDefault(); var t = wrap.querySelector('.mermaid'); applyZoom(wrap, Math.min(parseFloat(t.dataset.zoom || INITIAL_ZOOM) * 1.3, 30)); } else if (e.key === '-') { e.preventDefault(); var t = wrap.querySelector('.mermaid'); applyZoom(wrap, Math.max(parseFloat(t.dataset.zoom || INITIAL_ZOOM) / 1.3, 0.3)); } });
 
+/* ===== Touch Gestures: pinch-to-zoom + touch drag ===== */
+document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+  wrap.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 2) {
+      wrap._pinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+      wrap._pinchZoom = parseFloat(wrap.querySelector('.mermaid').dataset.zoom || INITIAL_ZOOM);
+    } else if (e.touches.length === 1) {
+      wrap._touchX = e.touches[0].pageX; wrap._touchY = e.touches[0].pageY;
+      wrap._touchSL = wrap.scrollLeft; wrap._touchST = wrap.scrollTop;
+    }
+  }, { passive: true });
+  wrap.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 2 && wrap._pinchDist) {
+      e.preventDefault();
+      var dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+      applyZoom(wrap, Math.min(Math.max(wrap._pinchZoom * (dist / wrap._pinchDist), 0.3), 30));
+    } else if (e.touches.length === 1 && wrap._touchX !== undefined) {
+      wrap.scrollLeft = wrap._touchSL - (e.touches[0].pageX - wrap._touchX);
+      wrap.scrollTop = wrap._touchST - (e.touches[0].pageY - wrap._touchY);
+    }
+  }, { passive: false });
+  wrap.addEventListener('touchend', function() { delete wrap._pinchDist; delete wrap._pinchZoom; delete wrap._touchX; delete wrap._touchY; });
+});
+
+/* ===== PNG Export ===== */
+function exportDiagramPng(btn) {
+  var wrap = btn.closest('.mermaid-wrap');
+  var svgEl = wrap.querySelector('.mermaid svg');
+  if (!svgEl) return;
+  var scale = 4;
+  var clone = svgEl.cloneNode(true);
+  var w = svgEl.viewBox.baseVal.width || svgEl.clientWidth;
+  var h = svgEl.viewBox.baseVal.height || svgEl.clientHeight;
+  clone.setAttribute('width', w); clone.setAttribute('height', h);
+  var svgData = new XMLSerializer().serializeToString(clone);
+  var canvas = document.createElement('canvas');
+  canvas.width = w * scale; canvas.height = h * scale;
+  var ctx = canvas.getContext('2d');
+  var img = new Image();
+  img.onload = function() {
+    ctx.fillStyle = window.matchMedia('(prefers-color-scheme: dark)').matches ? '#0d1117' : '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, w, h);
+    var a = document.createElement('a');
+    a.download = (document.title || 'diagram').replace(/[^a-zA-Z0-9\-_ ]/g, '') + '.png';
+    a.href = canvas.toDataURL('image/png', 1.0);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+  img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+}
+document.querySelectorAll('.zoom-controls').forEach(function(controls) {
+  var btn = document.createElement('button');
+  btn.textContent = '\u2913';
+  btn.title = 'Export PNG';
+  btn.onclick = function() { exportDiagramPng(btn); };
+  controls.appendChild(btn);
+});
+
 /* ===== Initial Zoom: apply after Mermaid renders SVGs ===== */
 document.querySelectorAll('.mermaid').forEach(function(el) {
   new MutationObserver(function(mutations, obs) {
