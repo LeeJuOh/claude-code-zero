@@ -76,6 +76,8 @@ Pass the **file contents** read in Step 1, not paths. This eliminates the agent'
 
 The agent writes `section-1.html` through `section-N.html` and `metadata.json` to the sections directory.
 
+**Do NOT background this agent.** Plugin-defined agents silently ignore `permissionMode`, so the visual-report-writer needs user approval for each Write call. Backgrounded agents cannot prompt for permissions and will fail silently. Always run in the foreground.
+
 ### Step 4: Assemble report
 
 ```

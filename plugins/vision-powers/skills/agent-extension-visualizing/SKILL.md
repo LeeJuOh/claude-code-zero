@@ -346,6 +346,8 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    Pass the **file contents** read in step 2, not paths. This eliminates the agent's read turn.
    The agent writes `section-1.html` through `section-11.html` and `metadata.json` to the sections directory.
 
+   **Do NOT background this agent.** Plugin-defined agents silently ignore `permissionMode`, so the visual-report-writer needs user approval for each Write call. Backgrounded agents cannot prompt for permissions and will fail silently. Always run in the foreground.
+
 5. **Assemble report** — run the assembler script to combine template + sections:
    ```
    Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
@@ -419,6 +421,7 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **Skill category misclassification**: Skills that span multiple categories (e.g., a deploy skill with review features) should be classified by primary purpose — what the user invokes it for. Don't try to assign multiple categories; pick the best fit and note the overlap in the description.
 - **Design quality false negatives**: A skill with no `scripts/` directory isn't necessarily "Basic" — some skills genuinely don't need scripts (pure knowledge/reference skills). Apply the N/A classification for criteria that don't apply to the skill type.
 - **New hook events**: The security-auditor knows about 22 hook events as of 2026-03. If new events are added to Claude Code, the event list in `security-rules.md` and `security-auditor.md` may need updating.
+- **visual-report-writer 백그라운드 실행 금지**: Plugin-defined agents는 `permissionMode`가 무시되므로, visual-report-writer를 백그라운드로 보내면 Write 권한 승인을 받을 수 없어 실패합니다. 반드시 포그라운드에서 실행해야 합니다.
 - **Agent `effort` field**: The `effort` field (low/medium/high/max) is distinct from the `model` field. A Haiku agent with `effort: max` is different from an Opus agent with default effort. Report both when present.
 
 ### Reference Files
