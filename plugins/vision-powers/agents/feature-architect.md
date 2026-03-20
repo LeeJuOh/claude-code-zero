@@ -13,8 +13,7 @@ description: |
   The agent-extension-visualizing skill provides metadata and file paths. This agent reads the actual files and performs feature/architecture analysis.
   </commentary>
   </example>
-model: sonnet
-permissionMode: plan
+effort: high
 maxTurns: 20
 tools:
   - Read
@@ -569,11 +568,11 @@ some-plugin|Plugin|optional|claude plugin add some-plugin
 \`\`\`
 
 Rules:
-- `type`: CLI, MCP, ENV, Plugin 중 하나
-- `required`: required 또는 optional
-- `help`: 설치/설정 방법 한 줄 (파이프 문자 `|` 금지)
-- 외부 의존성 없으면 이 섹션 자체를 생략
-- Claude Code 내장 도구(Read, Write, Bash, Agent 등)는 포함하지 않음
+- `type`: one of CLI, MCP, ENV, Plugin
+- `required`: required or optional
+- `help`: one-line install/setup instruction (pipe character `|` forbidden)
+- Omit this section entirely if there are no external dependencies
+- Do not include Claude Code built-in tools (Read, Write, Bash, Agent, etc.)
 
 ## Usage Guide
 

@@ -5,7 +5,7 @@ description: >
   current state, recent activity, key decisions, and cognitive debt hotspots.
   Use when asked to recap, summarize, snapshot, or catch up on a project's
   status, progress, or recent activity — including phrases like "what happened
-  recently", "요즘 프로젝트 어떻게 됐어", "catch me up", "status update",
+  recently", "catch me up", "status update",
   "what's been going on", or "give me the big picture". Accepts a time window
   (2w, 30d, 3m).
 argument-hint: "[time-window: 2w|30d|3m] [--lang <code>]"
@@ -36,7 +36,7 @@ Determine the output language:
 
 1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
 2. **User message text**: Detect the language of the message (excluding ref/path) and match it
-   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
+   - Examples: Korean text → Korean, Japanese text → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **No other text**: Default to English
 
 ### Intent Check

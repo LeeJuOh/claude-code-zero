@@ -14,9 +14,8 @@ description: |
   This agent starts writing sections immediately without a read turn.
   </commentary>
   </example>
-model: sonnet
+effort: high
 maxTurns: 15
-permissionMode: bypassPermissions
 tools:
   - Write
 ---

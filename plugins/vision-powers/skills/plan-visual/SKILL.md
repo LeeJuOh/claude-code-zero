@@ -4,7 +4,7 @@ description: >
   Review implementation plans as interactive HTML reports with architecture
   diagrams, blast radius analysis, risk assessment, and gap detection.
   Use when asked to review, visualize, evaluate, assess, or critique an
-  implementation plan — including phrases like "이 플랜 괜찮아?", "check my plan",
+  implementation plan — including phrases like "check my plan",
   "is this plan feasible", "review the implementation plan", or "what could go
   wrong with this plan". Accepts plan file paths or reads from the current
   Claude Code plan.
@@ -38,7 +38,7 @@ Determine the output language:
 
 1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
 2. **User message text**: Detect the language of the message (excluding path) and match it
-   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
+   - Examples: Korean text → Korean, Japanese text → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Path-only with no other text**: Default to English
 
 ### Intent Check

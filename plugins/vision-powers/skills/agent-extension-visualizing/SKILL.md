@@ -5,7 +5,7 @@ description: >
   with security audit, architecture diagrams, and plugin profiles.
   Currently supports Claude Code plugins.
   Use when asked to analyze, audit, inspect, review, document, or wiki a plugin
-  or extension — including phrases like "이 플러그인 뭐야", "what does this plugin do",
+  or extension — including phrases like "what does this plugin do",
   "tell me about this extension", "break down this plugin", or "generate a report
   for this plugin". Also triggers on GitHub plugin URLs or local plugin paths.
   Default output is an interactive HTML report; use --format md for inline markdown.
@@ -39,7 +39,7 @@ Determine the output language:
 
 1. **Explicit language argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
 2. **User message text**: Detect the language of the message (excluding URL/path) and match it
-   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
+   - Examples: Korean text → Korean, Japanese text → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **URL only with no other text**: Use AskUserQuestion to ask the user's preferred language
 
 Pass the detected language to sub-agents and use it for Phase 5 report assembly.
@@ -50,9 +50,9 @@ Determine **what** to analyze:
 
 | Mode | Trigger Keywords | Scope |
 |------|-----------------|-------|
-| `analyze` **(default)** | "analyze", "분석", "inspect", "report", "wiki", "document", "리포트", "문서화" | Full analysis and Plugin Profile |
-| `security` | "security audit", "보안 감사", "권한 분석", "permission" | Security only |
-| `overview` | "overview", "개요", "요약", "summary" | Identity + inventory only |
+| `analyze` **(default)** | "analyze", "inspect", "report", "wiki", "document" | Full analysis and Plugin Profile |
+| `security` | "security audit", "permission analysis" | Security only |
+| `overview` | "overview", "summary" | Identity + inventory only |
 
 ### Output Format Detection
 
@@ -61,7 +61,7 @@ Determine **how** to present the result (independent of analysis mode):
 | Format | Trigger | Applies to |
 |--------|---------|------------|
 | HTML **(default)** | Default for `analyze` mode | `analyze` only |
-| Inline markdown | "--format md", "markdown", "md", "인라인", "텍스트" | `analyze` only |
+| Inline markdown | "--format md", "markdown", "md", "inline", "text" | `analyze` only |
 | Inline markdown **(always)** | — | `security`, `overview` (too brief for HTML) |
 
 ### Intent Check
@@ -421,7 +421,8 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **Skill category misclassification**: Skills that span multiple categories (e.g., a deploy skill with review features) should be classified by primary purpose — what the user invokes it for. Don't try to assign multiple categories; pick the best fit and note the overlap in the description.
 - **Design quality false negatives**: A skill with no `scripts/` directory isn't necessarily "Basic" — some skills genuinely don't need scripts (pure knowledge/reference skills). Apply the N/A classification for criteria that don't apply to the skill type.
 - **New hook events**: The security-auditor knows about 22 hook events as of 2026-03. If new events are added to Claude Code, the event list in `security-rules.md` and `security-auditor.md` may need updating.
-- **visual-report-writer 백그라운드 실행 금지**: Plugin-defined agents는 `permissionMode`가 무시되므로, visual-report-writer를 백그라운드로 보내면 Write 권한 승인을 받을 수 없어 실패합니다. 반드시 포그라운드에서 실행해야 합니다.
+- **Do not background visual-report-writer**: Plugin-defined agents silently ignore `permissionMode`, so backgrounding visual-report-writer prevents Write permission prompts from reaching the user, causing silent failure. Always run in foreground.
+- **Plugin agent ignored frontmatter fields**: `permissionMode`, `hooks`, `mcpServers` are silently ignored on plugin agents. The fields `effort`, `model`, `tools`, `disallowedTools`, `maxTurns`, `skills`, `memory`, `background`, `isolation` work normally. Analysis agents use `effort: high` and inherit the session model.
 - **Agent `effort` field**: The `effort` field (low/medium/high/max) is distinct from the `model` field. A Haiku agent with `effort: max` is different from an Opus agent with default effort. Report both when present.
 - **Instruction layer analysis false positives**: Step 10 of the security-auditor analyzes SKILL.md body text for adversarial patterns (env var exfiltration, obfuscation, undeclared URLs). Setup/config skills that reference env var names as documentation, API skills with endpoint URLs, and encoding skills with base64 examples will trigger pattern matches. Context Modifiers handle common cases, but review flagged findings carefully — a MEDIUM on a config skill's env var reference is usually informational, not a real threat.
 

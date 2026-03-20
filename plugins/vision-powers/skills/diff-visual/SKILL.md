@@ -5,7 +5,7 @@ description: >
   KPI dashboards, code review cards, and side-by-side comparisons.
   Use when asked to visualize, review, explain, or summarize a diff, branch,
   commit, PR, or set of changes — including phrases like "what changed",
-  "show me the changes", "코드 변경 내용 보여줘", "review this PR visually",
+  "show me the changes", "review this PR visually",
   or "make a visual diff report". Accepts branch names, commit hashes, HEAD,
   PR numbers, or commit ranges.
 argument-hint: "<branch|commit|HEAD|#PR|range> [--lang <code>]"
@@ -44,7 +44,7 @@ Determine the output language:
 
 1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
 2. **User message text**: Detect the language of the message (excluding ref/path) and match it
-   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
+   - Examples: Korean text → Korean, Japanese text → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Ref-only with no other text**: Default to English
 
 ### Intent Check

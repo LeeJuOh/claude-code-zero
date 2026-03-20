@@ -13,8 +13,7 @@ description: |
   The agent-extension-visualizing skill provides metadata and file paths. This agent reads the actual files and performs security analysis.
   </commentary>
   </example>
-model: sonnet
-permissionMode: plan
+effort: high
 maxTurns: 20
 tools:
   - Read

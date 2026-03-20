@@ -126,15 +126,15 @@ Force node/edge text to follow the page's color scheme. Without these, `classDef
 
 ### Scaling Options
 
-복잡한 다이어그램(10+ 노드)이 너무 작게 렌더링될 때 3가지 접근법:
+Three approaches when complex diagrams (10+ nodes) render too small:
 
-| 방법 | 코드 | 장점 | 단점 |
+| Method | Code | Pros | Cons |
 |---|---|---|---|
-| `transform: scale()` (기본) | `.mermaid { transform: scale(1.4); transform-origin: 0 0; }` | 표준 CSS, SVG 벡터 품질 무한 유지, 줌 컨트롤과 연동 | JS로 컨테이너 스크롤 영역 업데이트 필요 |
-| `zoom` | `.mermaid { zoom: 1.4; }` | 간단, 컨테이너 크기 자동 조정 | 비표준 CSS, 고배율에서 품질 저하 |
-| `fontSize` | `themeVariables: { fontSize: '20px' }` | 텍스트만 커짐, 레이아웃 자연스러움 | 노드 크기도 같이 커져 전체 다이어그램이 넓어질 수 있음 |
+| `transform: scale()` (default) | `.mermaid { transform: scale(1.4); transform-origin: 0 0; }` | Standard CSS, infinite SVG vector quality, integrates with zoom controls | Requires JS to update container scroll area |
+| `zoom` | `.mermaid { zoom: 1.4; }` | Simple, container size adjusts automatically | Non-standard CSS, quality degrades at high magnification |
+| `fontSize` | `themeVariables: { fontSize: '20px' }` | Only text grows, natural layout | Node sizes also grow, may widen the entire diagram |
 
-기본값 `transform: scale()`를 우선 사용. SVG 벡터 특성상 어떤 배율에서도 선명도가 유지됨.
+Prefer `transform: scale()` by default. SVG vector graphics maintain sharpness at any scale.
 
 ### Size Variants
 

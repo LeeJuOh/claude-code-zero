@@ -5,8 +5,8 @@ description: >
   refine sections of generated HTML reports. Use when asked to list reports,
   open a previous report, delete old reports, find a specific report, or
   fix/update a section of an existing report — including phrases like
-  "리포트 목록", "show my reports", "open the last report", "clean up old
-  reports", "find a report about X", "fix section 3", or "리포트 수정".
+  "show my reports", "open the last report", "clean up old
+  reports", "find a report about X", "fix section 3", or "update report".
 argument-hint: "<list|open|delete|search> [filter] [--all]"
 allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(ls *), Bash(rm *), Bash(open *), Bash(node *)
 ---
