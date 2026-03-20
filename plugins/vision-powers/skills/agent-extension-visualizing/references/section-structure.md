@@ -2,6 +2,8 @@
 
 This document defines the 11-section HTML structure for agent-extension-visual reports. All CSS classes referenced below are pre-defined in the HTML template — do not add `<style>` blocks or inline styles except `style="--i: N"` for animation stagger.
 
+**Class name rule**: Use ONLY the exact CSS class names shown in the HTML examples below. The template CSS is pre-built — inventing class names (e.g., `stat-row` instead of `kpi-grid`, `chart-wrap` instead of `chart-container`) will produce unstyled, broken layouts. Copy the class names verbatim from the examples.
+
 ---
 
 ## Section 1: Header (Hero)
@@ -117,11 +119,10 @@ Plugin narrative block, design philosophy cards, and Mermaid diagrams (component
   <h3>Component Relationships</h3>
   <div class="mermaid-wrap">
     <div class="zoom-controls">
-      <button onclick="zoomDiagram(this,1.3)">+</button>
+      <button class="zoom-btn zoom-in" title="Zoom in">+</button>
       <span class="zoom-level">140%</span>
-      <button onclick="zoomDiagram(this,1/1.3)">−</button>
-      <button onclick="resetZoom(this)">Reset</button>
-      <button onclick="toggleFullscreen(this)">⛶</button>
+      <button class="zoom-btn zoom-out" title="Zoom out">−</button>
+      <button class="zoom-btn zoom-reset" title="Reset">&#8635;</button>
     </div>
     <pre class="mermaid">
 graph TD
@@ -150,10 +151,7 @@ Philosophy enforcement analysis — how design principles are made concrete in c
   <p class="lead">How this plugin's design principles are enforced in code</p>
   <div class="mechanism-grid">
     <div class="mechanism-card">
-      <div class="mechanism-header">
-        <span class="mechanism-number">01</span>
-        <h3>{Principle}: {How It's Enforced}</h3>
-      </div>
+      <h3>{Principle}: {How It's Enforced}</h3>
       <div class="why-matters">
         <strong>Why This Matters</strong>
         <p>{problem without this}</p>

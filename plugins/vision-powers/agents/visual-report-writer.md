@@ -86,6 +86,10 @@ Each section file contains a single `<section>` element following the HTML patte
 
 All CSS classes referenced in section-structure.md are pre-defined in the HTML template — do not add `<style>` blocks or inline styles except `style="--i: N"` for animation stagger.
 
+**Class name discipline**: Copy class names verbatim from the section-structure.md HTML examples. Do not invent alternatives (e.g., use `kpi-grid` not `stat-row`, `chart-container` not `chart-wrap`, `kpi-card` not `stat-card`). The template has no styles for improvised class names — they produce broken layouts.
+
+**Zoom controls**: When adding zoom controls to `.mermaid-wrap` diagrams, use the exact button classes from section-structure.md. The template JS binds click handlers automatically via class names — no `onclick` attributes needed, but include them for completeness.
+
 ## Font Pairing Selection
 
 Select a font pairing from the font system content provided in your prompt. Choose based on the aesthetic hint if provided, or pick freely from the 12 pairings. Follow the rotation rule: never use the same pairing consecutively.

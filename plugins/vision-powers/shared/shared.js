@@ -75,11 +75,21 @@ function exportDiagramPng(btn) {
   img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
 }
 document.querySelectorAll('.zoom-controls').forEach(function(controls) {
-  var btn = document.createElement('button');
-  btn.textContent = '\u2913';
-  btn.title = 'Export PNG';
-  btn.onclick = function() { exportDiagramPng(btn); };
-  controls.appendChild(btn);
+  /* Bind zoom/reset/fullscreen clicks via event delegation — works regardless of onclick attributes */
+  controls.addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn || btn.classList.contains('export-png')) return;
+    if (btn.classList.contains('zoom-in') || btn.textContent.trim() === '+') zoomDiagram(btn, 1.3);
+    else if (btn.classList.contains('zoom-out') || btn.textContent.trim() === '\u2212' || btn.textContent.trim() === '-') zoomDiagram(btn, 1 / 1.3);
+    else if (btn.classList.contains('zoom-reset') || btn.title === 'Reset') resetZoom(btn);
+    else if (btn.title === 'Fullscreen' || btn.textContent.trim() === '\u26F6') toggleFullscreen(btn);
+  });
+  var exportBtn = document.createElement('button');
+  exportBtn.className = 'export-png';
+  exportBtn.textContent = '\u2913';
+  exportBtn.title = 'Export PNG';
+  exportBtn.onclick = function() { exportDiagramPng(exportBtn); };
+  controls.appendChild(exportBtn);
 });
 
 /* ===== Initial Zoom: apply after Mermaid renders SVGs ===== */
