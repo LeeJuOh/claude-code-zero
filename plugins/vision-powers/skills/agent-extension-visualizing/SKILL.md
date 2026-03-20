@@ -423,6 +423,7 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **New hook events**: The security-auditor knows about 22 hook events as of 2026-03. If new events are added to Claude Code, the event list in `security-rules.md` and `security-auditor.md` may need updating.
 - **visual-report-writer 백그라운드 실행 금지**: Plugin-defined agents는 `permissionMode`가 무시되므로, visual-report-writer를 백그라운드로 보내면 Write 권한 승인을 받을 수 없어 실패합니다. 반드시 포그라운드에서 실행해야 합니다.
 - **Agent `effort` field**: The `effort` field (low/medium/high/max) is distinct from the `model` field. A Haiku agent with `effort: max` is different from an Opus agent with default effort. Report both when present.
+- **Instruction layer analysis false positives**: Step 10 of the security-auditor analyzes SKILL.md body text for adversarial patterns (env var exfiltration, obfuscation, undeclared URLs). Setup/config skills that reference env var names as documentation, API skills with endpoint URLs, and encoding skills with base64 examples will trigger pattern matches. Context Modifiers handle common cases, but review flagged findings carefully — a MEDIUM on a config skill's env var reference is usually informational, not a real threat.
 
 ### Reference Files
 

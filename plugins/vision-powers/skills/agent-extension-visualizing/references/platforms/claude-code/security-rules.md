@@ -31,6 +31,8 @@ Reserve HIGH for patterns where **the risk is not mitigated by Claude Code's nor
 | Dynamic context injection (dangerous) | Grep SKILL.md body for `` !`command` `` pattern with network/destructive commands | `skills/*/SKILL.md` | Shell execution during rendering |
 | LSP server running untrusted binary | Check `.lsp.json` command field for non-standard binaries | `.lsp.json` | Persistent background process |
 | Prompt hook with data exfiltration | Check `prompt` type hooks for instructions that reference user data and external destinations | `hooks/`, frontmatter `hooks` | Data leaves local environment |
+| Env var exfiltration via instructions | Scan SKILL.md body for natural language references to sensitive env var names (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `AWS_SECRET_ACCESS_KEY`, `*_TOKEN`, `*_SECRET`) combined with transmission instructions | `skills/*/SKILL.md` body | Apply Context Modifiers — setup/config skills legitimately reference env vars → MEDIUM |
+| Output-channel data embedding | Instructions directing Claude to embed sensitive data (env vars, file contents, credentials) in externally-visible outputs: git commits, PR bodies, API request payloads, generated docs | `skills/*/SKILL.md` body | Exfiltration without direct network access |
 
 ### MEDIUM RISK
 
@@ -43,6 +45,9 @@ Worth noting. Patterns that expand the plugin's attack surface but are **commonl
 | External MCP servers | MCP config pointing to non-local servers | `.mcp.json` | Third-party code execution |
 | Agent memory persistence | Agent with `memory` field storing potentially sensitive data | `agents/*.md` | Cross-session data leakage potential |
 | Unrestricted file write combo | Skill/agent with `Write` + `Bash` + no path restrictions | Frontmatter | Broad write surface |
+| Content obfuscation | Base64 strings (>40 chars), zero-width Unicode (U+200B–U+200F, U+FEFF), or invisible/non-printing characters in markdown files | All `.md` files | Possible concealed instructions or payload |
+| Undeclared outbound URLs | URLs, domains, or IP addresses in SKILL.md body not matching the plugin's stated purpose or documented endpoints | `skills/*/SKILL.md` body | Apply Context Modifiers — API reference skills naturally contain endpoint URLs → LOW |
+| Unreferenced executable files | `.sh`, `.py`, `.js` scripts or binary files not referenced by any hook config, SKILL.md `allowed-tools`, or SKILL.md body instructions | Root and subdirectories | Possible sleeping payload — bundled code with no visible invocation path |
 
 ### LOW RISK
 
@@ -104,6 +109,33 @@ Context modifiers adjust severity based on how a pattern is actually used. The a
 **Applies to**: `WorktreeCreate` and `WorktreeRemove` hooks
 **Condition**: Hooks that replace default git worktree behavior
 **Why**: These hooks override Claude Code's built-in worktree management. Not inherently risky, but worth noting since they change default isolation behavior. Report as LOW with an informational note.
+
+### Setup/Configuration Pattern (HIGH → MEDIUM)
+
+**Applies to**: Env var references in SKILL.md body
+**Condition**: Skill's stated purpose involves configuration, setup, secret management, or environment bootstrapping:
+- Skill name or description contains "setup", "config", "secret", "env", "bootstrap"
+- The instruction guides users to *set* env vars, not to read and transmit them
+
+**Why**: Configuration skills legitimately reference env var names as documentation. The risk is when instructions direct reading and transmitting env values, not merely naming them.
+
+### API Reference Pattern (MEDIUM → LOW)
+
+**Applies to**: Undeclared outbound URLs in SKILL.md body
+**Condition**: Skill's stated purpose involves API documentation, integration, or external service interaction:
+- URLs point to documented API endpoints or official documentation sites
+- URLs are in code examples, not in behavioral instructions
+
+**Why**: API reference skills naturally contain endpoint URLs. The risk is URLs embedded in behavioral instructions (e.g., "POST data to this URL"), not in reference documentation.
+
+### Encoding Utility Pattern (MEDIUM → LOW)
+
+**Applies to**: Base64 strings in SKILL.md
+**Condition**: The skill's purpose involves encoding, serialization, or data transformation:
+- Base64 strings appear in code examples or test fixtures
+- The skill description references encoding/decoding operations
+
+**Why**: Encoding skills legitimately contain encoded example strings. The risk is base64-encoded instructions or payloads concealed as data, not visible test fixtures.
 
 ### Elicitation Hooks (MEDIUM consideration)
 
