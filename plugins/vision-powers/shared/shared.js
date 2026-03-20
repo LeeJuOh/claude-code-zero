@@ -1,5 +1,5 @@
 /* ===== Zoom Controls ===== */
-var INITIAL_ZOOM = 1.4;
+var INITIAL_ZOOM = 1;
 function applyZoom(wrap, level) {
   var target = wrap.querySelector('.mermaid');
   target.dataset.zoom = level;
