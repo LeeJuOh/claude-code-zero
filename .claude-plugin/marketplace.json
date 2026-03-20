@@ -11,13 +11,13 @@
     {
       "name": "notebooklm-connector",
       "source": "./plugins/notebooklm-connector",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
     },
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -29,7 +29,7 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "2.10.0",
+      "version": "2.11.0",
       "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, and report management with interactive diagrams and curated design system"
     },
     {
