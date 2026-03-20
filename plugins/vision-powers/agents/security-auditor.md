@@ -101,7 +101,7 @@ Hooks can appear in three locations:
 
 #### 3b. Hook Event Impact Assessment
 
-All 14 hook events and their security relevance:
+All hook events and their security relevance:
 
 | Event | Security Impact |
 |-------|----------------|
@@ -114,10 +114,18 @@ All 14 hook events and their security relevance:
 | `Notification` | Side-channel — can exfiltrate data through notifications |
 | `SubagentStart` | Subagent launch interception — can modify agent parameters |
 | `SubagentStop` | Subagent output access — can read or modify agent results |
-| `Stop` | Session end interception — can execute cleanup or exfiltration |
+| `Stop` | Turn end interception — can execute cleanup or exfiltration |
+| `StopFailure` | API error handler — fires when turn ends due to API error; output/exit code ignored |
 | `TeammateIdle` | Multi-agent coordination — can trigger actions on idle |
 | `TaskCompleted` | Task completion handler — can inject follow-up tasks |
+| `InstructionsLoaded` | CLAUDE.md/rules file interception — fires when instruction files load; can inject context |
+| `ConfigChange` | Configuration change handler — fires when settings change during session |
+| `WorktreeCreate` | Worktree creation handler — replaces default git worktree behavior |
+| `WorktreeRemove` | Worktree cleanup handler — fires when worktree is removed |
 | `PreCompact` | Context compaction — can inject content into compressed context |
+| `PostCompact` | Post-compaction handler — fires after context compaction completes |
+| `Elicitation` | MCP user input request — fires when MCP server requests user input |
+| `ElicitationResult` | MCP user response handler — fires before response sent back to MCP server |
 | `SessionEnd` | Session termination — final execution opportunity |
 
 #### 3c. Hook Script Security (command type)

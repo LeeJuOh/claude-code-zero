@@ -507,7 +507,7 @@ Four sub-tables in collapsible `<details>` blocks.
 
 **Depth**: `.ve-card--elevated` | **Index**: `--i: 9`
 
-Component inventory, documentation checklist, security risk summary, pattern, target users, quality checklist.
+Component inventory, documentation checklist, security risk summary, pattern, target users, quality checklist, skill category distribution, and skill design quality assessment.
 
 ```html
 <section id="plugin-profile" class="ve-card ve-card--elevated" style="--i: 9">
@@ -519,6 +519,20 @@ Component inventory, documentation checklist, security risk summary, pattern, ta
       <tbody>
         <tr><td>Skills</td><td>{n}</td><td>{names}</td></tr>
         <!-- rows for: Agents, Commands, Hooks, MCP Servers, LSP Servers -->
+      </tbody>
+    </table>
+  </div>
+  <h3>Skill Category Distribution</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Category</th><th>Count</th><th>Skills</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="scope-badge scope-badge--{badge-variant}">{category name}</span></td>
+          <td>{n}</td>
+          <td>{comma-separated skill names}</td>
+        </tr>
+        <!-- repeat for each category with skills -->
       </tbody>
     </table>
   </div>
@@ -554,6 +568,30 @@ Component inventory, documentation checklist, security risk summary, pattern, ta
         <!-- more criteria rows -->
       </tbody>
     </table>
+  </div>
+  <h3>Skill Design Quality</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Skill</th><th>Description</th><th>Disclosure</th><th>Gotchas</th><th>Scripts</th><th>Hooks</th><th>Maturity</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>{skill-name}</td>
+          <td><span class="check-badge check-badge--{pass|fail}">{Good|Needs work}</span></td>
+          <td><span class="check-badge check-badge--{pass|fail}">{Good|Needs work}</span></td>
+          <td><span class="check-badge check-badge--{pass|fail}">{Yes|No}</span></td>
+          <td><span class="check-badge check-badge--{pass|fail}">{Yes|No}</span></td>
+          <td><span class="check-badge check-badge--{pass|fail}">{Yes|No}</span></td>
+          <td><span class="check-badge check-badge--{pass|fail}">{Mature}</span></td>
+        </tr>
+        <!-- repeat for each active skill -->
+      </tbody>
+    </table>
+  </div>
+  <div class="env-fit-recommendations">
+    <h4>Design Improvement Opportunities</h4>
+    <ul>
+      <li>{actionable recommendation}</li>
+    </ul>
   </div>
 </section>
 ```

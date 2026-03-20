@@ -188,9 +188,9 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 ### Skills — Active ({n})
 
-| Skill | Purpose | Tools | Notable |
-|-------|---------|-------|---------|
-| {name} | {1-line} | {tools} | {fork/hooks/aux files} |
+| Skill | Purpose | Category | Tools | Notable |
+|-------|---------|----------|-------|---------|
+| {name} | {1-line} | {category} | {tools} | {fork/hooks/aux files} |
 
 {if any active skills have auxiliary files:}
 #### Auxiliary Files
@@ -287,6 +287,27 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 | Component | Model | Reason |
 |-----------|-------|--------|
 | {name} | {model} | {why} |
+
+---
+
+## Skill Design Quality
+> {section-intro: Evaluates how well the plugin's skills follow established design best practices.}
+
+### Skill Category Distribution
+| Category | Count | Skills |
+|----------|-------|--------|
+| {category} | {n} | {comma-separated skill names} |
+
+### Design Assessment
+| Skill | Description Quality | Progressive Disclosure | Gotchas | Scripts | Hooks | Persistence | Maturity |
+|-------|-------------------|----------------------|---------|---------|-------|-------------|----------|
+| {name} | {Good/Needs work} | {Good/Needs work/N/A} | {Yes/No} | {Yes/No/N/A} | {Yes/No/N/A} | {Good/Needs work/N/A} | {Mature/Developing/Basic} |
+
+### Summary
+- **Mature**: {n} skills, **Developing**: {n} skills, **Basic**: {n} skills
+- **Top improvements**:
+  1. {actionable recommendation}
+  2. {actionable recommendation}
 
 ---
 

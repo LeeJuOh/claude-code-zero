@@ -99,6 +99,18 @@ Context modifiers adjust severity based on how a pattern is actually used. The a
 **Condition**: The hook reads variables with names containing `TOKEN`, `SECRET`, `KEY`, `PASSWORD`, `CREDENTIAL`, or `AUTH`
 **Why**: Most env var access is benign configuration. But reading explicitly sensitive variables in a hook (which runs automatically) warrants more attention.
 
+### Worktree Hooks (inform only)
+
+**Applies to**: `WorktreeCreate` and `WorktreeRemove` hooks
+**Condition**: Hooks that replace default git worktree behavior
+**Why**: These hooks override Claude Code's built-in worktree management. Not inherently risky, but worth noting since they change default isolation behavior. Report as LOW with an informational note.
+
+### Elicitation Hooks (MEDIUM consideration)
+
+**Applies to**: `Elicitation` and `ElicitationResult` hooks
+**Condition**: Hooks that intercept MCP server user input requests or responses
+**Why**: These can intercept user responses to MCP servers — a potential vector for modifying user intent before it reaches the MCP server. If the hook modifies the response body, flag as MEDIUM.
+
 ## Permission Matrix Template
 
 ```

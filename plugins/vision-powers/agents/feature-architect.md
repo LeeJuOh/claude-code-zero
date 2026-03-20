@@ -115,6 +115,7 @@ For each component, determine:
 - Inline hooks: Does the skill define its own hooks? (`hooks` field in frontmatter)
 - Anti-patterns: What should it NOT be used for? (parse "Do NOT use for:" from description)
 - Auxiliary files: List non-SKILL.md files in the skill directory (templates, examples, scripts, references)
+- **Skill category**: Classify into one of the 9 categories below (step 1.5)
 
 **Agents (.md in agents/)**:
 - Purpose: What specialized task does it handle?
@@ -128,6 +129,7 @@ For each component, determine:
 - Background execution: Can it run async? (`background` field)
 - Isolation: Does it use worktree isolation? (`isolation` field)
 - Inline hooks: Does the agent define its own hooks? (`hooks` field)
+- Effort level: Does it override effort? (`effort` field — low/medium/high/max)
 
 **Commands (.md in commands/)**:
 - Purpose: What does the command do?
@@ -151,6 +153,28 @@ For each component, determine:
 - Command: What binary does it run?
 - Languages: What file types does it handle? (`extensionToLanguage`)
 - Transport: What protocol does it use?
+
+### 1.5 Skill Category Classification
+
+Classify each active skill into one of 9 functional categories. This classification helps users understand the plugin's purpose at a glance and reveals gaps or concentrations in functionality.
+
+| Category | Detection Heuristics | Examples |
+|----------|---------------------|----------|
+| **Library & API Reference** | Pure knowledge/guidance; description mentions "how to use", "conventions", "patterns", "gotchas"; has `references/` with API docs or code snippets | billing-lib, frontend-design |
+| **Product Verification** | Description mentions "test", "verify", "validate", "assert", "check"; uses Bash with test runners (playwright, jest, tmux); has scripts/ with test helpers | signup-flow-driver, checkout-verifier |
+| **Data Fetching & Analysis** | Description mentions "query", "data", "metrics", "dashboard", "analytics"; uses Bash with data tools (bq, psql, curl to APIs); references datasource IDs or table names | funnel-query, grafana |
+| **Business Process & Team Automation** | Description mentions "standup", "ticket", "recap", "post", "notify", "workflow"; integrates with Slack, Linear, Jira, GitHub Issues; saves log files for history | standup-post, weekly-recap |
+| **Code Scaffolding & Templates** | Description mentions "scaffold", "generate", "create", "new", "template", "boilerplate"; has `templates/` or `assets/` with template files; produces new files | new-migration, create-app |
+| **Code Quality & Review** | Description mentions "review", "lint", "style", "quality", "refactor"; may spawn review subagents; uses Git diff patterns; has style rules or checklists | adversarial-review, code-style |
+| **CI/CD & Deployment** | Description mentions "deploy", "build", "release", "merge", "PR", "pipeline"; uses gh/git CLI heavily; monitors CI status | babysit-pr, deploy-service |
+| **Runbooks** | Description mentions "debug", "investigate", "diagnose", "incident", "alert", "oncall"; multi-tool investigation workflow; produces structured reports | service-debugging, oncall-runner |
+| **Infrastructure Operations** | Description mentions "cleanup", "orphan", "cost", "dependency", "maintenance"; involves destructive actions with guardrails; uses cloud/container CLIs | resource-orphans, cost-investigation |
+
+**Classification rules**:
+- One primary category per skill (pick the best fit)
+- If a skill spans two categories, pick the one that describes its primary purpose — what the user invokes it for
+- Reference skills (from step 0.5) get classified too when analyzed individually (small plugins)
+- If no category fits well, use the closest match and note the ambiguity
 
 ### 2. Architecture Analysis
 
@@ -348,6 +372,32 @@ Check the following:
 | English content in public-facing files | |
 | Error handling documented or evident | |
 
+### 5.5 Skill Design Quality Assessment
+
+Evaluate how well the plugin's skills follow established best practices. This assessment helps users understand the plugin's maturity and identify areas for improvement.
+
+For each active skill, evaluate:
+
+| Criterion | What to check | Good / Needs work |
+|-----------|--------------|-------------------|
+| **Description as trigger** | Does the `description` field explain when to trigger, not just what it does? Does it include concrete trigger phrases and contexts? | Good: includes "Use when..." or trigger scenarios. Needs work: only says what it does ("Generates X") |
+| **Progressive disclosure** | Does the skill use supporting files (`references/`, `scripts/`, `assets/`, `templates/`) to keep SKILL.md focused? Is SKILL.md under ~500 lines? | Good: SKILL.md < 500 lines with pointers to reference files. Needs work: everything in one monolithic SKILL.md |
+| **Gotchas section** | Does the skill document common failure points and edge cases? | Good: has a Gotchas or "Common issues" section. Needs work: no mention of failure modes |
+| **Script bundling** | Does the skill include reusable scripts that save the model from reconstructing boilerplate? | Good: `scripts/` with helper functions. Needs work: instructions to write boilerplate from scratch each time |
+| **On-demand hooks** | Does the skill register session-scoped hooks via frontmatter `hooks` field for contextual guardrails? | Good: uses hooks for validation/formatting. N/A: skill doesn't need hooks |
+| **Data persistence** | If the skill stores data, does it use `${CLAUDE_PLUGIN_DATA}` (survives upgrades) rather than the skill directory? | Good: uses stable storage path. Needs work: writes to `${CLAUDE_PLUGIN_ROOT}` or skill dir |
+| **Anti-railroading** | Do instructions give Claude flexibility to adapt, or are they overly prescriptive with rigid step sequences? | Good: explains the why, lets Claude choose how. Needs work: excessive MUSTs and rigid sequences |
+
+**Output**: For each skill, assign an overall design maturity:
+
+| Level | Criteria |
+|-------|----------|
+| **Mature** | Passes 5+ criteria (or N/A); has progressive disclosure + gotchas |
+| **Developing** | Passes 3-4 criteria; functional but could benefit from documented gotchas or reference files |
+| **Basic** | Passes 1-2 criteria; works but follows few best practices |
+
+Plugin-level summary: count skills by maturity level and note the most impactful improvement opportunities (1-3 actionable recommendations).
+
 ## Output Format
 
 ### Writing Guidelines
@@ -385,9 +435,9 @@ Return your analysis in this exact structure:
 
 ### Skills — Active ({n})
 
-| Skill | Purpose | Trigger | Tools | Source | Notable |
-|-------|---------|---------|-------|--------|---------|
-| {name} | {1-line} | {key phrase} | {tools} | {relative path} | {fork/hooks/aux files/etc.} |
+| Skill | Purpose | Category | Trigger | Tools | Source | Notable |
+|-------|---------|----------|---------|-------|--------|---------|
+| {name} | {1-line} | {category} | {key phrase} | {tools} | {relative path} | {fork/hooks/aux files/etc.} |
 
 {Only for skills with special behavior (context:fork, inline hooks,
  rich auxiliary files, complex cross-references) — add 2-3 line detail block.
@@ -406,7 +456,7 @@ Return your analysis in this exact structure:
 
 | Agent | Purpose | Model | Tools | Source | Constraints |
 |-------|---------|-------|-------|--------|-------------|
-| {name} | {1-line} | {model} | {tools or "unrestricted"} | {relative path} | {maxTurns/memory/etc.} |
+| {name} | {1-line} | {model} | {tools or "unrestricted"} | {relative path} | {maxTurns/memory/effort/isolation/background} |
 
 **{agent-name}** delegation trigger:
 > {frontmatter description field verbatim, first 3 sentences}
@@ -582,6 +632,22 @@ Rules:
 
 ### Target Users
 {1-2 sentence description}
+
+## Skill Design Quality
+
+### Category Distribution
+| Category | Count | Skills |
+|----------|-------|--------|
+| {category} | {n} | {comma-separated skill names} |
+
+### Design Assessment
+| Skill | Description Quality | Progressive Disclosure | Gotchas | Scripts | On-demand Hooks | Data Persistence | Maturity |
+|-------|-------------------|----------------------|---------|---------|-----------------|-----------------|----------|
+| {name} | {Good/Needs work} | {Good/Needs work/N/A} | {Yes/No} | {Yes/No/N/A} | {Yes/No/N/A} | {Good/Needs work/N/A} | {Mature/Developing/Basic} |
+
+### Summary
+- **Mature**: {n} skills, **Developing**: {n} skills, **Basic**: {n} skills
+- **Top improvements**: {1-3 actionable recommendations for the plugin author}
 
 ## Raw Content Excerpts
 
