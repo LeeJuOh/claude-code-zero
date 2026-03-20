@@ -345,6 +345,86 @@ document.addEventListener('keydown', function(e) {
 }
 ```
 
+## ELK Layout
+
+All templates use ELK (Eclipse Layout Kernel) as the default renderer for flowcharts. ELK produces cleaner vertical layouts than dagre, especially for complex graphs with 10+ nodes and subgraphs.
+
+The ELK module is imported alongside Mermaid in the template:
+
+```html
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs';
+  mermaid.registerLayoutLoaders(elkLayouts);
+  mermaid.initialize({
+    startOnLoad: true, theme: 'base', look: 'classic',
+    securityLevel: 'loose',
+    flowchart: { defaultRenderer: 'elk' },
+    themeVariables: { /* ... */ }
+  });
+</script>
+```
+
+ELK only applies to flowchart/graph diagrams. Other diagram types (sequence, ER, state, etc.) use their own renderers and are unaffected.
+
+## Click Events
+
+Mermaid nodes can be made clickable to enable in-report navigation. Templates use `securityLevel: 'loose'` which enables this.
+
+### Section Anchor Links
+
+Link diagram nodes to report sections:
+
+```
+graph TD
+  A["Skills"] --> B["Agents"]
+  A --> C["Hooks"]
+
+  click A "#components"
+  click B "#architecture"
+  click C "#security-audit"
+```
+
+The `#section-id` must match a `<section id="...">` in the report. Clicking the node scrolls to that section.
+
+### Source File Links
+
+When source context is available, link nodes to source files:
+
+```
+click SkillNode "https://github.com/owner/repo/blob/main/skills/my-skill/SKILL.md"
+click AgentNode "file:///path/to/agents/my-agent.md"
+```
+
+### CSS
+
+The template includes hover styles for clickable nodes:
+
+```css
+.mermaid .clickable { cursor: pointer; transition: filter 0.2s ease; }
+.mermaid .clickable:hover { filter: brightness(1.15); }
+```
+
+## PNG Export
+
+Each `.mermaid-wrap` automatically gets a PNG export button (injected by `shared.js`). The export:
+
+1. Clones the SVG element
+2. Renders to canvas at 4x DPI for high-resolution output
+3. Fills background based on current color scheme (white for light, dark for dark)
+4. Triggers a download as `{document-title}.png`
+
+No additional markup needed — the button appears alongside the zoom controls automatically.
+
+## Touch Gestures
+
+Mobile touch support is built into `shared.js`:
+
+- **Pinch-to-zoom**: Two-finger pinch gesture zooms the diagram in/out (same range as scroll zoom: 0.3x to 30x)
+- **Touch drag**: Single-finger drag pans the diagram within the `.mermaid-wrap` container
+
+These work alongside the existing mouse controls (Ctrl/Cmd+scroll, click-drag panning).
+
 ## classDef Rules
 
 `classDef` values are static text inside `<pre>` — they can't use CSS variables or JS ternaries.
