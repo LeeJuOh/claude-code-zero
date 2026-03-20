@@ -62,7 +62,7 @@ if [ "$FILE_PATH" = "$DATA_PATH_FILE" ]; then
   mkdir -p "$DATA_DIR/notebooks"
   [ -f "$DATA_DIR/library.json" ] || echo '{"notebooks":{},"schema_version":"1.0","updated_at":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"}' > "$DATA_DIR/library.json"
   [ -f "$DATA_DIR/archive.json" ] || echo '{"notebooks":{},"schema_version":"1.0","updated_at":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"}' > "$DATA_DIR/archive.json"
-  [ -f "$DATA_DIR/config.json" ] || echo '{"max_followups":3,"language":null,"auto_coverage":true,"schema_version":"1.0"}' > "$DATA_DIR/config.json"
+  [ -f "$DATA_DIR/config.json" ] || echo '{"max_followups":3,"max_query_length":40000,"language":null,"auto_coverage":true,"schema_version":"1.0"}' > "$DATA_DIR/config.json"
 
   # Write resolved path for Claude to read
   mkdir -p "$(dirname "$DATA_PATH_FILE")"

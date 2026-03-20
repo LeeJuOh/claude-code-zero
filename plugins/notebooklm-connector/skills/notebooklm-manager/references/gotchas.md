@@ -13,6 +13,9 @@ NotebookLM is an Angular app with no `<form>` element. The `form_fill_and_submit
 ### String Escaping for javascript_tool
 User input embedded in JavaScript strings must be escaped: `\` → `\\`, `"` → `\"`, newline → `\n`, carriage return → `\r`. Always use double quotes. Unescaped quotes break JS execution silently — no error, just no output.
 
+### Max Input Character Limit
+NotebookLM has a server-side character limit of approximately 45,000–50,000 characters. There is **no client-side enforcement** — the textarea has no `maxLength` attribute, no character counter, and the submit button stays enabled regardless of input length. Testing confirmed: 10k, 20k, 30k, 40k, and 45k characters all returned responses successfully, while 50k characters caused a silent timeout with no response. The skill pre-validates question length (`max_query_length` in config, default 40,000) and the agent reports textarea fill status. If the agent returns an empty response (backend timeout), the skill blocks coverage analysis to prevent a follow-up loop that would multiply the wait time.
+
 ### Extension Service Worker Goes Idle
 Chrome Manifest V3 extensions have a service worker that idles after ~30 seconds of inactivity. MCP tool calls then fail with `"Receiving end does not exist"`. This maps to the `CHROME_NOT_CONNECTED` error — user needs to reconnect the extension via the side panel.
 

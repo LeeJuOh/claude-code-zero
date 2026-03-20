@@ -232,7 +232,7 @@ ERROR_TYPE: AUTH_REQUIRED
 mcp__claude-in-chrome__javascript_tool({
   action: "javascript_exec",
   tabId: {tabId},
-  text: "(() => { const selectors = ['textarea.query-box-input', 'textarea[aria-label*=\"query\" i]', 'textarea[aria-label*=\"Ask\" i]', 'textarea[aria-label*=\"Frage\" i]', 'textarea[aria-label*=\"pregunta\" i]', 'textarea[aria-label*=\"question\" i]']; let ta; for (const s of selectors) { ta = document.querySelector(s); if (ta) break; } if (!ta) { const ce = document.querySelector('[contenteditable=\"true\"][aria-label*=\"query\" i]') || document.querySelector('[contenteditable=\"true\"][aria-label*=\"Ask\" i]'); if (ce) { ce.focus(); ce.textContent = \"{escaped_question}\"; ce.dispatchEvent(new Event('input', { bubbles: true })); return { filled: true, type: 'contenteditable' }; } return { filled: false, error: 'Textarea not found' }; } ta.focus(); const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set; nativeSetter.call(ta, \"{escaped_question}\"); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); return { filled: true, type: 'textarea' }; })()"
+  text: "(() => { const question = \"{escaped_question}\"; const selectors = ['textarea.query-box-input', 'textarea[aria-label*=\"query\" i]', 'textarea[aria-label*=\"Ask\" i]', 'textarea[aria-label*=\"Frage\" i]', 'textarea[aria-label*=\"pregunta\" i]', 'textarea[aria-label*=\"question\" i]']; let ta; for (const s of selectors) { ta = document.querySelector(s); if (ta) break; } if (!ta) { const ce = document.querySelector('[contenteditable=\"true\"][aria-label*=\"query\" i]') || document.querySelector('[contenteditable=\"true\"][aria-label*=\"Ask\" i]'); if (ce) { ce.focus(); ce.textContent = question; ce.dispatchEvent(new Event('input', { bubbles: true })); return { filled: true, type: 'contenteditable', inputLength: question.length }; } return { filled: false, error: 'Textarea not found' }; } ta.focus(); const charLimit = ta.maxLength > 0 ? ta.maxLength : null; const text = (charLimit && question.length > charLimit) ? question.substring(0, charLimit) : question; const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set; nativeSetter.call(ta, text); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); return { filled: true, type: 'textarea', inputLength: question.length, actualLength: ta.value.length, charLimit: charLimit, truncated: ta.value.length < question.length }; })()"
 })
 ```
 
@@ -246,6 +246,10 @@ mcp__claude-in-chrome__computer({
   key: "Enter"
 })
 ```
+
+**3.2.1 Check for truncation** — If 3.1 returns `truncated: true`:
+
+The textarea has a character limit (`charLimit`) and the question was auto-truncated to fit. Proceed with submission (the truncated text is already set), but include `truncated: true`, `charLimit`, `inputLength`, and `actualLength` in the STEP 5 output so the orchestrating skill can warn the user.
 
 **3.3 Fallback** — If 3.1 returns `filled: false`:
 
@@ -323,11 +327,15 @@ Read the response text from the screenshot via OCR → **Go to STEP 5**
 
 **Response Length**: {responseLength} characters
 
+**Input Truncated**: {true/false} (charLimit: {N}, inputLength: {N}, actualLength: {N})
+
 **Suggested follow-ups**:
 - {followups[0]}
 - {followups[1]}
 - ...
 ```
+
+Omit the "Input Truncated" line if `truncated` is `false` or was not reported.
 
 **5.2 Error Output Format (if workflow failed):**
 
