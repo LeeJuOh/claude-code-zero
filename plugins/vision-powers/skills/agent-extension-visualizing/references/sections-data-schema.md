@@ -83,7 +83,7 @@ Passed through from the orchestrator. Used for generating source links on compon
 | `what` | string | What the plugin does |
 | `how` | string | How it works |
 | `unique` | string | What makes it different |
-| `features` | string[] | Key feature list |
+| `features` | string[] | Key feature list. ⚠️ Plain strings only — NOT objects like `{title, description}`. Write each feature as a single sentence. |
 | `kpis` | array | KPI stat cards (see below) |
 | `chart` | object | Component chart data (see below) |
 | `pattern` | string | Primary pattern description |
@@ -105,6 +105,8 @@ Passed through from the orchestrator. Used for generating source links on compon
 | `labels` | string[] | Chart labels |
 | `data` | number[] | Chart data values |
 | `colors` | string[] | Optional custom colors (auto-generated if omitted) |
+
+**⚠️ Chart labels MUST use extension types** — `["Skills", "Agents", "Commands", "Hooks", "MCP", "LSP"]` with counts from the component inventory. Do NOT use purpose/category labels (e.g., "Scaffolding", "Automation"). The chart shows the composition of the plugin by Claude Code extension type. Omit types with zero count.
 
 ---
 
@@ -142,7 +144,14 @@ Passed through from the orchestrator. Used for generating source links on compon
 | `mermaid` | string | Raw Mermaid diagram code |
 | `size` | string | Optional: `"compact"`, `"default"`, or `"tall"` |
 
-**Mermaid rules still apply**: Use `<pre class="mermaid">` syntax in the raw code. Use 8-digit hex for fills in classDef (`fill:#0891b226`), never `rgba()`. Never set `color:` in classDef. Add `click NodeId "#section-id"` for in-report navigation.
+**Mermaid rules still apply**: Use 8-digit hex for fills in classDef (`fill:#0891b226`), never `rgba()`. Never set `color:` in classDef. Add `click NodeId "#section-id"` for in-report navigation. Do NOT wrap mermaid code in `<pre class="mermaid">` tags — the render script adds those automatically.
+
+**⚠️ Architecture diagram guidelines**:
+- Show the **structural relationships** between layers, not a flat list of all components.
+- For plugins with many components (>15), group by architectural layer (e.g., "Command Layer", "Agent Layer", "Hook Layer") and show **representative examples** (3-5 per layer) with a note like "(18 agents)".
+- NEVER list all components individually or use "...N more" truncation — this produces broken layouts.
+- Focus on data flow, dispatch patterns, and inter-layer connections.
+- Keep total node count under 25 per diagram for readable rendering.
 
 ---
 
@@ -208,14 +217,14 @@ Standalone diagnosis section. When verdict is RECOMMENDED with no findings, prov
 | `heading` | string | Optional section heading |
 | `verdict` | string | `"RECOMMENDED"`, `"CONDITIONAL"`, `"REDUNDANT"`, or `"CONFLICTING"` |
 | `verdict_summary` | string | 1-2 sentence diagnosis |
-| `installation_status` | object | `{ "status": "NEW\|ALREADY_INSTALLED", "detail": "..." }` |
+| `installation_status` | object | ⚠️ Must be an object: `{ "status": "NEW\|ALREADY_INSTALLED", "detail": "..." }`. NOT a plain string. |
 | `context_budget` | object | See below |
 | `dependency_check` | object | See below |
 | `overlap` | array | Functional overlap findings |
 | `trigger_collisions` | array | Trigger collision findings |
 | `hook_impact` | object | Hook impact analysis |
 | `component_deps` | array | Component dependency findings |
-| `recommendations` | string[] | Actionable recommendations |
+| `recommendations` | string[] | ⚠️ Plain strings only — NOT objects like `{priority, text}`. Each item is one recommendation sentence. |
 
 ### context_budget
 
@@ -228,8 +237,8 @@ Standalone diagnosis section. When verdict is RECOMMENDED with no findings, prov
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status` | string | `"READY"`, `"PARTIAL"`, or `"ACTION_NEEDED"` |
-| `severity` | string | `"low"`, `"medium"`, or `"high"` |
+| `status` | string | ⚠️ Required. `"READY"`, `"PARTIAL"`, or `"ACTION_NEEDED"`. Infer from items if needed. |
+| `severity` | string | ⚠️ Required. `"low"`, `"medium"`, or `"high"`. Must match status. |
 | `items` | array | `[{ "name", "type", "required": bool, "status": "AVAILABLE\|MISSING", "help" }]` |
 
 ### overlap[]
@@ -326,7 +335,7 @@ Tab-based component listing. The render script generates the tab UI automaticall
 | `target_users` | string | Target users |
 | `quality_checklist` | array | `[{ "criterion", "status": "pass\|fail", "details" }]` |
 | `skill_design_quality` | array | See below |
-| `improvement_recommendations` | string[] | Actionable design improvement recommendations |
+| `improvement_recommendations` | string[] | ⚠️ Plain strings only — NOT objects. Each item is one recommendation sentence. |
 
 ### skill_design_quality[]
 

@@ -55,6 +55,15 @@ function scopeBadge(text, variant) {
   return `<span class="scope-badge${v}">${esc(text)}</span>`;
 }
 
+function renderKeywords(kw) {
+  if (!kw) return "";
+  let tags = [];
+  if (Array.isArray(kw)) tags = kw.filter(Boolean);
+  else if (typeof kw === "string") tags = kw.split(",").map(s => s.trim()).filter(Boolean);
+  if (tags.length === 0) return "";
+  return `<span class="keyword-tags">${tags.map(t => `<span class="scope-badge">${esc(t)}</span>`).join(" ")}</span>`;
+}
+
 // ---------------------------------------------------------------------------
 // Section renderers
 // ---------------------------------------------------------------------------
@@ -71,7 +80,7 @@ function renderHeader(d) {
   const metaRows = [
     d.author ? `<tr><td>Author</td><td>${esc(d.author)}</td></tr>` : "",
     d.license ? `<tr><td>License</td><td>${esc(d.license)}</td></tr>` : "",
-    d.keywords ? `<tr><td>Keywords</td><td>${esc(d.keywords)}</td></tr>` : "",
+    d.keywords ? `<tr><td>Keywords</td><td>${renderKeywords(d.keywords)}</td></tr>` : "",
     `<tr><td>Risk Level</td><td>${riskBadge(d.risk_level)}</td></tr>`,
   ].filter(Boolean).join("\n        ");
 
@@ -380,7 +389,7 @@ ${rows}
       `          <tr>
             <td>${esc(o.this_skill)}</td>
             <td>${esc(o.existing_skill)}</td>
-            <td>${scopeBadge(o.classification, o.classification.toLowerCase())}</td>
+            <td>${scopeBadge(o.classification || "UNKNOWN", (o.classification || "unknown").toLowerCase())}</td>
             <td>${esc(o.detail)}</td>
           </tr>`
     ).join("\n");
@@ -654,7 +663,7 @@ function renderDependencies(d) {
     if (!rows || rows.length === 0) return "";
     const ths = headers.map(h => `<th>${esc(h)}</th>`).join("");
     const trs = rows.map(r => {
-      const tds = r.map(c => `<td>${c.startsWith("<") ? c : esc(c)}</td>`).join("");
+      const tds = r.map(c => { const v = c == null ? "" : String(c); return `<td>${v.startsWith("<") ? v : esc(v)}</td>`; }).join("");
       return `          <tr>${tds}</tr>`;
     }).join("\n");
     return `  <details${open ? " open" : ""}>
@@ -876,6 +885,286 @@ function parseArgs(argv) {
 }
 
 // ---------------------------------------------------------------------------
+// JSON Data Normalization — fix common LLM output shape mismatches
+// ---------------------------------------------------------------------------
+
+function normalizeSectionsData(input) {
+  const fixes = [];
+  if (!input.sections) return fixes;
+  const s = input.sections;
+
+  // 1. ComponentCard.meta: dict {key: value} → array [{label, value}]
+  function normalizeMeta(cards, label) {
+    if (!Array.isArray(cards)) return;
+    for (const card of cards) {
+      if (card && card.meta && !Array.isArray(card.meta)) {
+        if (typeof card.meta === "object") {
+          card.meta = Object.entries(card.meta).map(([k, v]) => ({ label: k, value: String(v) }));
+          fixes.push(`${label}: converted meta dict→array on "${card.name || "?"}"`);
+        }
+      }
+      if (card && card.meta == null) card.meta = [];
+    }
+  }
+  if (s.components) {
+    for (const key of ["agents", "commands", "hooks", "mcp", "lsp"]) {
+      normalizeMeta(s.components[key], `components.${key}`);
+    }
+    if (s.components.skills) {
+      normalizeMeta(s.components.skills.active, "components.skills.active");
+      normalizeMeta(s.components.skills.reference, "components.skills.reference");
+    }
+  }
+
+  // 2. workflow_trace: dict {title?, steps: [...]} → array [{title, description, source_link}]
+  if (s.feature_deep_dive) {
+    const wt = s.feature_deep_dive.workflow_trace;
+    if (wt && !Array.isArray(wt) && typeof wt === "object") {
+      const steps = wt.steps || [];
+      s.feature_deep_dive.workflow_trace = steps.map(step => ({
+        title: step.command || step.title || step.name || "",
+        description: step.description || "",
+        source_link: step.source_link || null,
+      }));
+      fixes.push(`feature_deep_dive.workflow_trace: converted dict→array (${steps.length} steps)`);
+    }
+  }
+
+  // 3. dependencies: field name aliases + item shape normalization
+  if (s.dependencies) {
+    const d = s.dependencies;
+    // Field name aliases
+    if (d.tool_matrix && !d.tools) {
+      d.tools = d.tool_matrix.map(t => ({
+        tool: t.tool || "",
+        used_by: Array.isArray(t.agents) ? t.agents.join(", ") : (t.used_by || t.agents || ""),
+        purpose: t.purpose || "Agent tool access",
+      }));
+      delete d.tool_matrix;
+      fixes.push("dependencies: renamed tool_matrix→tools");
+    }
+    if (d.external_deps && !d.external) {
+      d.external = d.external_deps;
+      delete d.external_deps;
+      fixes.push("dependencies: renamed external_deps→external");
+    }
+    // env_vars item: name → variable
+    if (Array.isArray(d.env_vars)) {
+      for (const ev of d.env_vars) {
+        if (ev.name && !ev.variable) { ev.variable = ev.name; delete ev.name; }
+      }
+    }
+    // model_usage: string → array
+    if (d.model_usage && !d.models) {
+      if (typeof d.model_usage === "string") {
+        d.models = [{ component: "All agents", model: "Inherited", purpose: d.model_usage.slice(0, 200) }];
+      } else if (Array.isArray(d.model_usage)) {
+        d.models = d.model_usage;
+      }
+      delete d.model_usage;
+      fixes.push("dependencies: converted model_usage→models");
+    }
+  }
+
+  // 4. inventory: dict {agents: N, ...} → array [{type, count, names}]
+  if (s.plugin_profile) {
+    const inv = s.plugin_profile.inventory;
+    if (inv && !Array.isArray(inv) && typeof inv === "object") {
+      s.plugin_profile.inventory = Object.entries(inv)
+        .filter(([, v]) => typeof v === "number")
+        .map(([k, v]) => ({ type: k.charAt(0).toUpperCase() + k.slice(1), count: v, names: "" }));
+      fixes.push(`plugin_profile.inventory: converted dict→array`);
+    }
+  }
+
+  // 5. plugin_profile: normalize checklist field names + alias fields
+  if (s.plugin_profile) {
+    const pp = s.plugin_profile;
+    // docs_checklist: present/exists → status
+    for (const item of (pp.docs_checklist || [])) {
+      if (!item.status) {
+        if ("present" in item) { item.status = item.present ? "pass" : "fail"; delete item.present; }
+        else if ("exists" in item) { item.status = item.exists ? "pass" : "fail"; delete item.exists; }
+      }
+    }
+    // quality_checklist: pass/result → status
+    for (const item of (pp.quality_checklist || [])) {
+      if (!item.status) {
+        if ("pass" in item) { item.status = item.pass ? "pass" : "fail"; delete item.pass; }
+        else if ("result" in item) { item.status = item.result; delete item.result; }
+      }
+    }
+    // command_design_quality alias → skill_design_quality
+    if (pp.command_design_quality && !pp.skill_design_quality) {
+      pp.skill_design_quality = pp.command_design_quality;
+      delete pp.command_design_quality;
+      fixes.push("plugin_profile: renamed command_design_quality→skill_design_quality");
+    }
+    // Ensure array fields exist (empty is fine — render script handles it)
+    if (!pp.category_distribution) pp.category_distribution = [];
+    if (!pp.skill_design_quality) pp.skill_design_quality = [];
+    if (!pp.improvement_recommendations) pp.improvement_recommendations = [];
+  }
+
+  // 6. Mermaid double-wrap: strip <pre class="mermaid"> from diagram data
+  if (s.architecture && Array.isArray(s.architecture.diagrams)) {
+    for (const dg of s.architecture.diagrams) {
+      if (dg.mermaid && dg.mermaid.includes('<pre class="mermaid">')) {
+        dg.mermaid = dg.mermaid
+          .replace(/<pre class="mermaid">\s*/g, "")
+          .replace(/\s*<\/pre>/g, "")
+          .trim();
+        fixes.push(`architecture.diagrams: stripped double <pre> from "${dg.title || "?"}"`);
+      }
+    }
+  }
+
+  // 7. environment_fit.overlap: alias for overlap_findings
+  if (s.environment_fit) {
+    const ef = s.environment_fit;
+    if (ef.overlap_findings && !ef.overlap) {
+      ef.overlap = ef.overlap_findings;
+      delete ef.overlap_findings;
+      fixes.push("environment_fit: renamed overlap_findings→overlap");
+    }
+  }
+
+  // 8. architecture.philosophy: fill empty name from description
+  if (s.architecture && Array.isArray(s.architecture.philosophy)) {
+    let fixedCount = 0;
+    for (const p of s.architecture.philosophy) {
+      if (p && (!p.name || !p.name.trim()) && p.description) {
+        // Extract first clause (up to period, comma, or dash) as name
+        const match = p.description.match(/^(.{10,60}?)[.,:—–-]\s/);
+        if (match) {
+          p.name = match[1].trim();
+        } else {
+          p.name = p.description.slice(0, 50).trim() + (p.description.length > 50 ? "..." : "");
+        }
+        fixedCount++;
+      }
+    }
+    if (fixedCount > 0) {
+      fixes.push(`architecture.philosophy: inferred name for ${fixedCount} card(s)`);
+    }
+  }
+
+  // 9. overview.features: object array [{title, description}] → string array
+  if (s.overview && Array.isArray(s.overview.features)) {
+    const feats = s.overview.features;
+    const hasObj = feats.some(f => f && typeof f === "object" && !Array.isArray(f));
+    if (hasObj) {
+      s.overview.features = feats.map(f => {
+        if (typeof f === "string") return f;
+        if (f && typeof f === "object") {
+          const t = f.title || f.name || "";
+          const d = f.description || f.detail || "";
+          return t && d ? `${t}: ${d}` : t || d || JSON.stringify(f);
+        }
+        return String(f);
+      });
+      fixes.push(`overview.features: converted ${feats.length} object(s)→strings`);
+    }
+  }
+
+  // 9. recommendations: object array [{priority, text}] → string array
+  function normalizeStringArray(arr, label) {
+    if (!Array.isArray(arr)) return arr;
+    const hasObj = arr.some(r => r && typeof r === "object" && !Array.isArray(r));
+    if (!hasObj) return arr;
+    const result = arr.map(r => {
+      if (typeof r === "string") return r;
+      if (r && typeof r === "object") {
+        return r.text || r.description || r.recommendation || r.detail
+          || (r.title && r.description ? `${r.title}: ${r.description}` : "")
+          || JSON.stringify(r);
+      }
+      return String(r);
+    }).filter(Boolean);
+    fixes.push(`${label}: converted ${arr.length} object(s)→strings`);
+    return result;
+  }
+
+  if (s.environment_fit) {
+    if (s.environment_fit.recommendations) {
+      s.environment_fit.recommendations = normalizeStringArray(
+        s.environment_fit.recommendations, "environment_fit.recommendations");
+    }
+  }
+  if (s.plugin_profile) {
+    if (s.plugin_profile.improvement_recommendations) {
+      s.plugin_profile.improvement_recommendations = normalizeStringArray(
+        s.plugin_profile.improvement_recommendations, "plugin_profile.improvement_recommendations");
+    }
+  }
+
+  // 10. installation_status: string → {status, detail} object
+  if (s.environment_fit) {
+    const is = s.environment_fit.installation_status;
+    if (typeof is === "string") {
+      s.environment_fit.installation_status = { status: is, detail: "" };
+      fixes.push(`environment_fit.installation_status: converted string "${is}"→object`);
+    }
+  }
+
+  // 11. dependency_check: ensure status and severity fields exist
+  if (s.environment_fit && s.environment_fit.dependency_check) {
+    const dc = s.environment_fit.dependency_check;
+    if (!dc.status) {
+      const items = dc.items || [];
+      const hasMissing = items.some(i => String(i.status).toUpperCase() === "MISSING" && i.required);
+      dc.status = hasMissing ? "ACTION_NEEDED" : items.length > 0 ? "READY" : "UNKNOWN";
+      fixes.push(`environment_fit.dependency_check: inferred status="${dc.status}"`);
+    }
+    if (!dc.severity) {
+      const statusMap = { READY: "low", PARTIAL: "medium", ACTION_NEEDED: "high" };
+      dc.severity = statusMap[dc.status] || "low";
+      fixes.push(`environment_fit.dependency_check: inferred severity="${dc.severity}"`);
+    }
+  }
+
+  // 12. header.keywords: array → comma-separated string
+  if (s.header && Array.isArray(s.header.keywords)) {
+    s.header.keywords = s.header.keywords.filter(Boolean).join(", ");
+    fixes.push("header.keywords: converted array→comma-separated string");
+  }
+
+  // 13. overview.chart: auto-generate extension-type chart from component inventory if chart uses purpose categories
+  if (s.overview && s.overview.chart && s.components) {
+    const chart = s.overview.chart;
+    const extensionTypes = ["skills", "agents", "commands", "hooks", "mcp", "lsp"];
+    const labels = (chart.labels || []).map(l => String(l).toLowerCase());
+    // Detect if chart is NOT using extension types (i.e. using purpose categories)
+    const isExtType = labels.some(l => extensionTypes.includes(l));
+    if (!isExtType && labels.length > 0) {
+      const comp = s.components;
+      const skillCount = ((comp.skills?.active || []).length + (comp.skills?.reference || []).length) || 0;
+      const agentCount = (comp.agents || []).length;
+      const commandCount = (comp.commands || []).length;
+      const hookCount = (comp.hooks || []).length;
+      const mcpCount = (comp.mcp || []).length;
+      const lspCount = (comp.lsp || []).length;
+      const newLabels = [];
+      const newData = [];
+      if (skillCount > 0) { newLabels.push("Skills"); newData.push(skillCount); }
+      if (agentCount > 0) { newLabels.push("Agents"); newData.push(agentCount); }
+      if (commandCount > 0) { newLabels.push("Commands"); newData.push(commandCount); }
+      if (hookCount > 0) { newLabels.push("Hooks"); newData.push(hookCount); }
+      if (mcpCount > 0) { newLabels.push("MCP"); newData.push(mcpCount); }
+      if (lspCount > 0) { newLabels.push("LSP"); newData.push(lspCount); }
+      if (newLabels.length > 0) {
+        chart.labels = newLabels;
+        chart.data = newData;
+        delete chart.colors; // let auto-colors take over
+        fixes.push(`overview.chart: replaced purpose-based→extension-type chart (${newLabels.join(", ")})`);
+      }
+    }
+  }
+
+  return fixes;
+}
+
+// ---------------------------------------------------------------------------
 // JSON Data Validation
 // ---------------------------------------------------------------------------
 
@@ -960,6 +1249,13 @@ function main() {
   }
 
   const input = JSON.parse(fs.readFileSync(args.data, "utf-8"));
+
+  // Normalize common LLM output mismatches before validation
+  const fixes = normalizeSectionsData(input);
+  if (fixes.length > 0) {
+    console.error(`\n=== NORMALIZED ${fixes.length} field(s) ===`);
+    for (const f of fixes) console.error(`  FIX: ${f}`);
+  }
 
   // Validate JSON data before rendering
   const { warnings, errors } = validateSectionsData(input);
