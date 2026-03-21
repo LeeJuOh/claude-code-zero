@@ -38,7 +38,7 @@ Do NOT ask the user for eval criteria yet. Evals come from observing real failur
 
 ---
 
-## Step 1: Read the Skill
+## Step 1: Read the Skill and Learn Design Principles
 
 Before changing anything, read and understand the target skill completely.
 
@@ -46,8 +46,12 @@ Before changing anything, read and understand the target skill completely.
 2. Read any files in `references/` that the skill links to
 3. Identify the skill's core job, process steps, and output format
 4. Note any existing quality checks or anti-patterns already in the skill
+5. Read skill design principles to inform your mutations:
+   - `${CLAUDE_SKILL_DIR}/../skill-creator-pro/references/design-patterns.md` — gotchas patterns, progressive disclosure, description-as-trigger
+   - If available in the project: `docs/reference/skill-lessons-from-anthropic.md` — Anthropic's practical lessons from building hundreds of skills
+   - If the skill uses platform features (hooks, allowed-tools, frontmatter) and something seems wrong, fetch `https://code.claude.com/docs/llms.txt` and the relevant page to verify against the latest spec
 
-Do NOT skip this. You need to understand what the skill does before you can improve it.
+Do NOT skip this. You need to understand both the skill AND what makes skills work before you can improve it.
 
 ---
 
@@ -168,7 +172,7 @@ This is the core autoresearch loop. Once started, run autonomously until stopped
 
 2. **Form a hypothesis.** Pick ONE thing to change. Don't change 5 things at once -- you won't know what helped.
 
-   Good mutations:
+   Good mutations (mechanical):
    - Add a specific instruction that addresses the most common failure
    - Reword an ambiguous instruction to be more explicit
    - Add an anti-pattern ("Do NOT do X") for a recurring mistake
@@ -176,11 +180,20 @@ This is the core autoresearch loop. Once started, run autonomously until stopped
    - Add or improve an example showing correct behavior
    - Remove an instruction causing over-optimization for one thing at the expense of others
 
+   Good mutations (principle-based — from design-patterns.md and Anthropic lessons):
+   - Replace a command ("ALWAYS do X") with reasoning ("We do X because Y silently fails otherwise") — models generalize better from reasoning
+   - Remove instructions that state what Claude already knows — focus on what pushes it out of default patterns
+   - Add a gotcha for a recurring failure — gotchas are the highest-ROI content in any skill
+   - Move detailed content from SKILL.md body to a `references/` file — progressive disclosure reduces context noise
+   - Simplify rigid step sequences into flexible guidance — skills are reused across many situations
+   - Split a section that serves two audiences into variant files (e.g., `references/aws.md` vs `references/gcp.md`)
+
    Bad mutations:
    - Rewriting the entire skill from scratch
    - Adding 10 new rules at once
    - Making the skill longer without a specific reason
    - Adding vague instructions like "make it better"
+   - Adding ALL CAPS directives instead of explaining the reasoning
 
 3. **Make the change.** Edit SKILL.md with ONE targeted mutation.
 
@@ -202,7 +215,7 @@ This is the core autoresearch loop. Once started, run autonomously until stopped
 - You hit the budget cap (if set)
 - You hit 95%+ pass rate for 3 consecutive experiments (diminishing returns)
 
-**If you run out of ideas:** Re-read failing outputs. Try combining two previous near-miss mutations. Try a completely different approach. Try removing things instead of adding them. Simplification that maintains the score is a win.
+**If you run out of ideas:** Re-read failing outputs. Try combining two previous near-miss mutations. Try a completely different approach. Try removing things instead of adding them. Simplification that maintains the score is a win. Re-read the design principles from Step 1 — there may be a pattern you haven't tried yet. If the skill uses platform features (hooks, frontmatter, allowed-tools) and failures seem structural, fetch the official docs (`https://code.claude.com/docs/en/skills.md` or `hooks.md`) to check if the skill's usage matches the current spec.
 
 ---
 
