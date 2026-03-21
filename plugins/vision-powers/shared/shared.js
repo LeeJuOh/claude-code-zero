@@ -1,5 +1,5 @@
 /* ===== Zoom Controls ===== */
-var INITIAL_ZOOM = 1;
+var INITIAL_ZOOM = 1.4;
 function applyZoom(wrap, level) {
   var target = wrap.querySelector('.mermaid');
   target.dataset.zoom = level;
@@ -92,16 +92,55 @@ document.querySelectorAll('.zoom-controls').forEach(function(controls) {
   controls.appendChild(exportBtn);
 });
 
-/* ===== Initial Zoom: apply after Mermaid renders SVGs ===== */
-document.querySelectorAll('.mermaid').forEach(function(el) {
-  new MutationObserver(function(mutations, obs) {
-    if (el.querySelector('svg')) {
-      var wrap = el.closest('.mermaid-wrap');
-      if (wrap) applyZoom(wrap, INITIAL_ZOOM);
-      obs.disconnect();
+/* ===== Mermaid ViewBox Correction ===== */
+function fixMermaidViewBox(svg) {
+  try {
+    var vb = svg.viewBox.baseVal;
+    if (!vb || vb.width === 0) return;
+    // Crop viewBox to actual content bounds
+    var bbox = svg.getBBox();
+    if (bbox.width > 0 && bbox.height > 0) {
+      var pad = Math.max(bbox.width, bbox.height) * 0.04;
+      var newW = bbox.width + 2 * pad;
+      var newH = bbox.height + 2 * pad;
+      if (newW < vb.width * 0.85 || newH < vb.height * 0.85) {
+        svg.setAttribute('viewBox',
+          (bbox.x - pad) + ' ' + (bbox.y - pad) + ' ' + newW + ' ' + newH);
+      }
     }
-  }).observe(el, { childList: true });
+    // For large diagrams: set minimum SVG width so text stays readable
+    var finalVb = svg.viewBox.baseVal;
+    if (finalVb.width > 4000) {
+      var minWidth = Math.ceil(finalVb.width * 0.7);
+      svg.style.width = minWidth + 'px';
+      svg.style.maxWidth = 'none';
+      svg.style.height = 'auto';
+    }
+  } catch(e) { /* getBBox can throw if SVG is not yet in DOM */ }
+}
+
+/* ===== Initial Zoom: apply after Mermaid renders SVGs ===== */
+/* Watch .mermaid-wrap (not .mermaid) because Mermaid v11 replaces the <pre> node entirely.
+   Delay viewBox correction to run after Mermaid fully finishes rendering. */
+document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+  new MutationObserver(function(mutations, obs) {
+    var svg = wrap.querySelector('svg');
+    if (svg) {
+      obs.disconnect();
+      applyZoom(wrap, INITIAL_ZOOM);
+    }
+  }).observe(wrap, { childList: true, subtree: true });
 });
+/* Run viewBox correction after all Mermaid rendering completes */
+setTimeout(function() {
+  document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+    var svg = wrap.querySelector('svg');
+    if (svg) {
+      fixMermaidViewBox(svg);
+      applyZoom(wrap, INITIAL_ZOOM);
+    }
+  });
+}, 1500);
 
 /* ===== Scroll Spy ===== */
 (function() {

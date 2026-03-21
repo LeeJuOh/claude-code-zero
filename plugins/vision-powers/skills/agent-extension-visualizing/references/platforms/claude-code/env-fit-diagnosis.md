@@ -27,7 +27,7 @@ Extract these from the feature-architect output:
 Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name})
 ```
 
-Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. The script outputs JSON with: `install_status`, `installed_plugins`, `installed_skills` (with `total_desc_chars`, `disabled_count`), `local_skills`, `hook_inventory` (with `total`, `type_counts`), and `context_metrics` (with `mcp_servers`).
+Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. The script outputs JSON with: `install_status`, `installed_plugins`, `installed_skills` (with `total_desc_chars`, `disabled_count`), `installed_commands` (with `total_desc_chars`, `disabled_count`), `local_skills` (includes both skills and commands), `hook_inventory` (with `total`, `type_counts`), `context_metrics` (with `mcp_servers`), and `disabled_plugins` (list of disabled plugin names filtered from settings).
 
 If the plugin has external requirements (from Step 1), also check them with simple commands:
 
@@ -54,9 +54,14 @@ If no requirements block existed → READY.
 
 Calculate the plugin's context footprint using dual scenarios.
 
-1. **Skill description chars**: Sum description chars for skills in this plugin that do NOT have `disable-model-invocation: true`. Add to current environment total from `installed_skills.total_desc_chars` + `local_skills.total_desc_chars`.
-   - 200K scenario: compare against 16,000 char fallback budget
-   - 1M scenario: compare against ~80,000 char budget (2% of 1M)
+1. **Skill/command description chars**: Sum description chars for skills AND commands in this plugin that do NOT have `disable-model-invocation: true`. Add to current environment total from `installed_skills.total_desc_chars` + `installed_commands.total_desc_chars` + `local_skills.total_desc_chars`.
+
+   **Budget reference** (source: [official Skills docs](https://code.claude.com/docs/en/skills)):
+   > "The budget scales dynamically at 2% of the context window, with a fallback of 16,000 characters."
+   > Overridable via `SLASH_COMMAND_TOOL_CHAR_BUDGET` environment variable.
+
+   - 200K scenario: ~16,000 chars (2% of 200K tokens × ~4 chars/token ≈ 16K; coincides with the 16K fallback)
+   - 1M scenario: ~80,000 chars (2% of 1M tokens × ~4 chars/token ≈ 80K)
 
 2. **MCP tool surface**: Count MCP servers this plugin adds (from `.mcp.json`). Estimate tokens using heuristic: servers x 25 tools x 200 tokens/tool.
    - Current MCP token estimate: `context_metrics.mcp_servers x 25 x 200`

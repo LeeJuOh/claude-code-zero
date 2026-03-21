@@ -338,13 +338,10 @@
 </div>
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs';
-  mermaid.registerLayoutLoaders(elkLayouts);
   var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   mermaid.initialize({
     startOnLoad: true, theme: 'base', look: 'classic',
     securityLevel: 'loose',
-    flowchart: { defaultRenderer: 'elk' },
     themeVariables: {
       primaryColor: isDark ? '#134e4a' : '#ccfbf1',
       primaryBorderColor: isDark ? '#14b8a6' : '#0d9488',

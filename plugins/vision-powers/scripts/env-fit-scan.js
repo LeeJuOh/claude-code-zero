@@ -94,24 +94,47 @@ function pluginNameFromCachePath(p) {
   return parts.length >= 2 ? parts[1] : null;
 }
 
-/** Parse YAML frontmatter from SKILL.md content (first 2000 chars) */
+/** Parse YAML frontmatter from SKILL.md or command .md content (first 2000 chars) */
 function parseFrontmatter(content) {
   const m = content.match(/^---\s*\n([\s\S]*?)\n---/);
   if (!m) return null;
   const fm = m[1];
 
-  // Description: multiline (> or |) or inline
+  // Description: multiline (> or |) or inline, or quoted
   let desc = "";
   const multiline = fm.match(/description:\s*[>|]\s*\n((?:[ \t]+.+\n?)+)/);
   if (multiline) {
     desc = multiline[1].split("\n").map(l => l.trim()).filter(Boolean).join(" ");
   } else {
+    const quoted = fm.match(/description:\s*["'](.+?)["']/);
     const inline = fm.match(/description:\s*(.+)/);
-    if (inline) desc = inline[1].trim();
+    if (quoted) desc = quoted[1].trim();
+    else if (inline) desc = inline[1].trim();
   }
 
   const disabled = /disable-model-invocation:\s*true/.test(fm);
   return { description: desc, disabled };
+}
+
+/** Load disabled plugin names from all settings scopes */
+function getDisabledPlugins() {
+  const disabled = new Set();
+  const settingsFiles = [
+    expandHome("~/.claude/settings.json"),
+    ".claude/settings.json",
+    ".claude/settings.local.json",
+  ];
+  for (const sf of settingsFiles) {
+    try {
+      const data = JSON.parse(fs.readFileSync(sf, "utf-8"));
+      for (const entry of data.disabledPlugins || []) {
+        // entry can be "pluginName@marketplace" or just "pluginName"
+        const name = String(entry).split("@")[0];
+        if (name) disabled.add(name);
+      }
+    } catch { /* skip */ }
+  }
+  return disabled;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +173,7 @@ function scanInstalledPlugins() {
   return plugins;
 }
 
-function scanInstalledSkills() {
+function scanInstalledSkills(disabledPlugins) {
   const cacheBase = expandHome("~/.claude/plugins/cache");
   const allSkills = findFiles(cacheBase, (full, name) => name === "SKILL.md");
 
@@ -159,6 +182,7 @@ function scanInstalledSkills() {
   for (const smd of allSkills) {
     const pluginName = pluginNameFromCachePath(smd);
     if (!pluginName) continue;
+    if (disabledPlugins.has(pluginName)) continue;
     const parts = smd.split("/");
     const skillsIdx = parts.lastIndexOf("skills");
     if (skillsIdx === -1 || skillsIdx + 1 >= parts.length) continue;
@@ -199,17 +223,75 @@ function scanInstalledSkills() {
   return { skills, total_desc_chars: totalChars, disabled_count: disabledCount };
 }
 
+function scanInstalledCommands(disabledPlugins) {
+  const cacheBase = expandHome("~/.claude/plugins/cache");
+  const allCmds = findFiles(cacheBase, (full, name) =>
+    name.endsWith(".md") && full.includes("/commands/"),
+  );
+
+  const groups = {};
+  for (const cmd of allCmds) {
+    const pluginName = pluginNameFromCachePath(cmd);
+    if (!pluginName) continue;
+    if (disabledPlugins.has(pluginName)) continue;
+    const cmdName = path.basename(cmd, ".md");
+    const key = `${pluginName}/${cmdName}`;
+    if (!groups[key] || mtime(cmd) > mtime(groups[key])) {
+      groups[key] = cmd;
+    }
+  }
+
+  let totalChars = 0;
+  let disabledCount = 0;
+  const commands = [];
+
+  for (const [key, cmdPath] of Object.entries(groups).sort()) {
+    const [plugin, command] = key.split("/");
+    try {
+      const content = fs.readFileSync(cmdPath, "utf-8").slice(0, 2000);
+      const fm = parseFrontmatter(content);
+      if (!fm) {
+        // Commands without frontmatter: first paragraph is the description
+        const firstPara = content.replace(/^---[\s\S]*?---\s*/, "").trim().split("\n\n")[0] || "";
+        const desc = firstPara.slice(0, 300);
+        totalChars += desc.length;
+        commands.push({ plugin, command, description: desc, desc_chars: desc.length, disabled: false });
+        continue;
+      }
+      if (!fm.disabled) {
+        totalChars += fm.description.length;
+      } else {
+        disabledCount++;
+      }
+      commands.push({
+        plugin,
+        command,
+        description: fm.description.slice(0, 300),
+        desc_chars: fm.description.length,
+        disabled: fm.disabled,
+      });
+    } catch { /* skip */ }
+  }
+
+  return { commands, total_desc_chars: totalChars, disabled_count: disabledCount };
+}
+
 function scanLocalSkills() {
-  const bases = [
+  const skillBases = [
     path.resolve(".claude/skills"),
     expandHome("~/.claude/skills"),
+  ];
+  const cmdBases = [
+    path.resolve(".claude/commands"),
+    expandHome("~/.claude/commands"),
   ];
 
   let totalChars = 0;
   let disabledCount = 0;
   const skills = [];
 
-  for (const base of bases) {
+  // Scan skills/ directories (SKILL.md in subdirectories)
+  for (const base of skillBases) {
     let entries;
     try {
       entries = fs.readdirSync(base, { withFileTypes: true });
@@ -230,13 +312,50 @@ function scanLocalSkills() {
         }
         skills.push({
           skill: entry.name,
+          type: "skill",
           description: fm.description.slice(0, 300),
           desc_chars: fm.description.length,
           disabled: fm.disabled,
         });
-      } catch {
-        /* skip */
-      }
+      } catch { /* skip */ }
+    }
+  }
+
+  // Scan commands/ directories (*.md files)
+  for (const base of cmdBases) {
+    let entries;
+    try {
+      entries = fs.readdirSync(base, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+      const cmdPath = path.join(base, entry.name);
+      try {
+        const content = fs.readFileSync(cmdPath, "utf-8").slice(0, 2000);
+        const fm = parseFrontmatter(content);
+        const cmdName = entry.name.replace(/\.md$/, "");
+        if (!fm) {
+          const firstPara = content.trim().split("\n\n")[0] || "";
+          const desc = firstPara.slice(0, 300);
+          totalChars += desc.length;
+          skills.push({ skill: cmdName, type: "command", description: desc, desc_chars: desc.length, disabled: false });
+          continue;
+        }
+        if (!fm.disabled) {
+          totalChars += fm.description.length;
+        } else {
+          disabledCount++;
+        }
+        skills.push({
+          skill: cmdName,
+          type: "command",
+          description: fm.description.slice(0, 300),
+          desc_chars: fm.description.length,
+          disabled: fm.disabled,
+        });
+      } catch { /* skip */ }
     }
   }
 
@@ -318,13 +437,17 @@ function main() {
     process.exit(2);
   }
 
+  const disabledPlugins = getDisabledPlugins();
+
   const result = {
     install_status: scanInstallStatus(args.pluginName),
     installed_plugins: scanInstalledPlugins(),
-    installed_skills: scanInstalledSkills(),
+    installed_skills: scanInstalledSkills(disabledPlugins),
+    installed_commands: scanInstalledCommands(disabledPlugins),
     local_skills: scanLocalSkills(),
     hook_inventory: scanHookInventory(),
     context_metrics: scanContextMetrics(),
+    disabled_plugins: [...disabledPlugins],
   };
 
   console.log(JSON.stringify(result, null, 2));

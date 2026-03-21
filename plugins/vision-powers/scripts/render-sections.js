@@ -23,6 +23,7 @@ const path = require("path");
 
 function esc(s) {
   if (s == null) return "";
+  if (typeof s === "object") return esc(JSON.stringify(s));
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
@@ -60,22 +61,30 @@ function scopeBadge(text, variant) {
 
 function renderHeader(d) {
   const rl = String(d.risk_level || "low").toLowerCase();
+  const scopeBadges = [
+    d.version ? `<span class="scope-badge">v${esc(d.version)}</span>` : "",
+    d.author ? `<span class="scope-badge">${esc(d.author)}</span>` : "",
+    d.date ? `<span class="scope-badge">${esc(d.date)}</span>` : "",
+    `<span class="scope-badge scope-badge--${esc(rl)}">${esc(String(d.risk_level || "low").toUpperCase())} Risk</span>`,
+  ].filter(Boolean).join("\n    ");
+
+  const metaRows = [
+    d.author ? `<tr><td>Author</td><td>${esc(d.author)}</td></tr>` : "",
+    d.license ? `<tr><td>License</td><td>${esc(d.license)}</td></tr>` : "",
+    d.keywords ? `<tr><td>Keywords</td><td>${esc(d.keywords)}</td></tr>` : "",
+    `<tr><td>Risk Level</td><td>${riskBadge(d.risk_level)}</td></tr>`,
+  ].filter(Boolean).join("\n        ");
+
   return `<section id="header" class="ve-card ve-card--hero" style="--i: 0">
   <h1>${esc(d.plugin_name)}</h1>
   <p class="hero-subtitle">${esc(d.subtitle || "Agent Extension Visual Report")}</p>
   <div class="scope-summary">
-    <span class="scope-badge">v${esc(d.version)}</span>
-    <span class="scope-badge">${esc(d.author)}</span>
-    <span class="scope-badge">${esc(d.date)}</span>
-    <span class="scope-badge scope-badge--${esc(rl)}">${esc(String(d.risk_level).toUpperCase())} Risk</span>
+    ${scopeBadges}
   </div>
   <div class="table-wrapper">
     <table class="meta-table">
       <tbody>
-        <tr><td>Author</td><td>${esc(d.author)}</td></tr>
-        <tr><td>License</td><td>${esc(d.license)}</td></tr>
-        <tr><td>Keywords</td><td>${esc(d.keywords)}</td></tr>
-        <tr><td>Risk Level</td><td>${riskBadge(d.risk_level)}</td></tr>
+        ${metaRows}
       </tbody>
     </table>
   </div>
@@ -83,13 +92,22 @@ function renderHeader(d) {
 }
 
 function renderOverview(d) {
-  const features = (d.features || []).map(f => `    <li>${esc(f)}</li>`).join("\n");
-  const kpis = (d.kpis || []).map(k =>
+  const featureItems = (d.features || []).filter(f => f);
+  const features = featureItems.length > 0
+    ? `  <h3>Key Features</h3>
+  <ul class="feature-list">
+${featureItems.map(f => `    <li>${esc(f)}</li>`).join("\n")}
+  </ul>` : "";
+
+  const kpiItems = (d.kpis || []).filter(k => k && k.label);
+  const kpis = kpiItems.length > 0
+    ? `  <div class="kpi-grid">
+${kpiItems.map(k =>
     `    <div class="kpi-card kpi-card--${esc(k.variant || "info")}">
       <span class="kpi-value">${esc(k.value)}</span>
       <span class="kpi-label">${esc(k.label)}</span>
-    </div>`
-  ).join("\n");
+    </div>`).join("\n")}
+  </div>` : "";
 
   return `<section id="plugin-overview" class="ve-card ve-card--elevated" style="--i: 1">
   <h2>${esc(d.heading || "Plugin Overview")}</h2>
@@ -101,13 +119,8 @@ function renderOverview(d) {
       <div class="whu-item"><strong>Unique:</strong> ${esc(d.unique)}</div>
     </div>
   </div>
-  <h3>Key Features</h3>
-  <ul class="feature-list">
 ${features}
-  </ul>
-  <div class="kpi-grid">
 ${kpis}
-  </div>
   <div class="chart-container">
     <canvas id="component-chart"></canvas>
   </div>
@@ -116,6 +129,17 @@ ${kpis}
     <p><strong>Target Users:</strong> ${esc(d.target_users)}</p>
   </div>
 </section>`;
+}
+
+/** Quote unquoted Mermaid node labels that contain special chars (: / etc.) */
+function sanitizeMermaid(code) {
+  if (!code) return "";
+  // Match node definitions: ID[label] or ID([label]) or ID{label} etc.
+  // Only quote if label contains special chars and isn't already quoted
+  return code.replace(/(\w+)(\[|\(\[|\{\{?)([^\]}\n"]+?)(\]|\]\)|\}\}?)/g, function(m, id, open, label, close) {
+    if (label.startsWith('"') || !/[:/<>]/.test(label)) return m;
+    return id + open + '"' + label + '"' + close;
+  });
 }
 
 function renderMermaidWrap(title, mermaidCode, size) {
@@ -129,7 +153,7 @@ function renderMermaidWrap(title, mermaidCode, size) {
       <button class="zoom-btn zoom-reset" title="Reset">&#8635;</button>
     </div>
     <pre class="mermaid">
-${raw(mermaidCode)}
+${raw(sanitizeMermaid(mermaidCode))}
     </pre>
   </div>`;
 }
@@ -156,11 +180,11 @@ function renderArchitecture(d) {
     </div>`);
   }
 
-  const philosophyCards = (d.philosophy || []).map(p =>
+  const philosophyCards = (d.philosophy || []).filter(p => p && p.name).map(p =>
     `    <div class="philosophy-card">
       <h4>${esc(p.name)}</h4>
       <p>${esc(p.description)}</p>
-      <p class="philosophy-example"><em>Example:</em> ${esc(p.example)}</p>
+      ${p.example ? `<p class="philosophy-example"><em>Example:</em> ${esc(p.example)}</p>` : ""}
     </div>`
   ).join("\n");
 
@@ -455,46 +479,53 @@ ${parts.join("\n")}
 }
 
 function renderUsageGuide(d) {
-  const prereqs = (d.prerequisites || []).map(p =>
-    `        <tr><td>${esc(p.requirement)}</td><td>${esc(p.details)}</td></tr>`
-  ).join("\n");
-  const components = (d.key_components || []).map(c =>
-    `    <li><strong>${esc(c.name)}</strong> &mdash; ${esc(c.summary)}</li>`
-  ).join("\n");
-  const whenUse = (d.when_to_use || []).map(u => `      <li>${esc(u)}</li>`).join("\n");
-  const whenNot = (d.when_not_to_use || []).map(u => `      <li>${esc(u)}</li>`).join("\n");
-
-  return `<section id="usage-guide" class="ve-card" style="--i: 5">
-  <h2>${esc(d.heading || "Usage Guide")}</h2>
-  <h3>Installation</h3>
-  <pre class="code-block"><code>${esc(d.installation_cmd)}</code></pre>
-  <h3>Prerequisites</h3>
+  const prereqItems = (d.prerequisites || []).filter(p => p && (p.requirement || p.details));
+  const prereqs = prereqItems.length > 0
+    ? `  <h3>Prerequisites</h3>
   <div class="table-wrapper">
     <table>
       <thead><tr><th>Requirement</th><th>Details</th></tr></thead>
       <tbody>
-${prereqs}
+${prereqItems.map(p => `        <tr><td>${esc(p.requirement)}</td><td>${esc(p.details)}</td></tr>`).join("\n")}
       </tbody>
     </table>
-  </div>
-  <h3>Key Components</h3>
+  </div>` : "";
+
+  const compItems = (d.key_components || []).filter(c => c && c.name);
+  const components = compItems.length > 0
+    ? `  <h3>Key Components</h3>
   <ul>
-${components}
-  </ul>
-  <div class="usage-guidance">
-    <div class="usage-do">
+${compItems.map(c => `    <li><strong>${esc(c.name)}</strong> &mdash; ${esc(c.summary)}</li>`).join("\n")}
+  </ul>` : "";
+
+  const installBlock = d.installation_cmd
+    ? `  <h3>Installation</h3>
+  <pre class="code-block"><code>${esc(d.installation_cmd)}</code></pre>` : "";
+
+  const whenUse = (d.when_to_use || []).filter(Boolean);
+  const whenNot = (d.when_not_to_use || []).filter(Boolean);
+  const guidance = (whenUse.length > 0 || whenNot.length > 0)
+    ? `  <div class="usage-guidance">
+${whenUse.length > 0 ? `    <div class="usage-do">
       <h4>When to Use</h4>
       <ul>
-${whenUse}
+${whenUse.map(u => `        <li>${esc(u)}</li>`).join("\n")}
       </ul>
-    </div>
-    <div class="usage-dont">
+    </div>` : ""}
+${whenNot.length > 0 ? `    <div class="usage-dont">
       <h4>When NOT to Use</h4>
       <ul>
-${whenNot}
+${whenNot.map(u => `        <li>${esc(u)}</li>`).join("\n")}
       </ul>
-    </div>
-  </div>
+    </div>` : ""}
+  </div>` : "";
+
+  return `<section id="usage-guide" class="ve-card" style="--i: 5">
+  <h2>${esc(d.heading || "Usage Guide")}</h2>
+${installBlock}
+${prereqs}
+${components}
+${guidance}
 </section>`;
 }
 
@@ -655,11 +686,25 @@ ${[tools, external, envVars, models].filter(Boolean).join("\n")}
 }
 
 function renderPluginProfile(d) {
-  const inventory = (d.inventory || []).map(r =>
+  // Helper: render a table section only if it has rows
+  function profileTable(heading, headers, rows) {
+    if (!rows || rows.length === 0) return "";
+    return `  <h3>${heading}</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr>${headers.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>`;
+  }
+
+  const inventory = (d.inventory || []).filter(r => r && r.type).map(r =>
     `        <tr><td>${esc(r.type)}</td><td>${esc(r.count)}</td><td>${esc(r.names)}</td></tr>`
   ).join("\n");
 
-  const catDist = (d.category_distribution || []).map(r =>
+  const catDist = (d.category_distribution || []).filter(r => r && r.category).map(r =>
     `        <tr>
           <td>${scopeBadge(r.category, r.badge_variant)}</td>
           <td>${esc(r.count)}</td>
@@ -667,7 +712,7 @@ function renderPluginProfile(d) {
         </tr>`
   ).join("\n");
 
-  const docs = (d.docs_checklist || []).map(r =>
+  const docs = (d.docs_checklist || []).filter(r => r && r.item).map(r =>
     `        <tr>
           <td>${esc(r.item)}</td>
           <td>${checkBadge(r.status)}</td>
@@ -675,7 +720,7 @@ function renderPluginProfile(d) {
         </tr>`
   ).join("\n");
 
-  const quality = (d.quality_checklist || []).map(r =>
+  const quality = (d.quality_checklist || []).filter(r => r && r.criterion).map(r =>
     `        <tr>
           <td>${esc(r.criterion)}</td>
           <td>${checkBadge(r.status)}</td>
@@ -683,7 +728,8 @@ function renderPluginProfile(d) {
         </tr>`
   ).join("\n");
 
-  const skillDesign = (d.skill_design_quality || []).map(r =>
+  const skillDesignItems = (d.skill_design_quality || []).filter(r => r && r.name);
+  const skillDesign = skillDesignItems.map(r =>
     `        <tr>
           <td>${esc(r.name)}</td>
           <td>${checkBadge(r.description)}</td>
@@ -695,75 +741,59 @@ function renderPluginProfile(d) {
         </tr>`
   ).join("\n");
 
-  const improvements = (d.improvement_recommendations || []).length > 0
+  const improvements = (d.improvement_recommendations || []).filter(Boolean);
+  const improvementsHtml = improvements.length > 0
     ? `  <div class="env-fit-recommendations">
     <h4>Design Improvement Opportunities</h4>
     <ul>
-${d.improvement_recommendations.map(r => `      <li>${esc(r)}</li>`).join("\n")}
+${improvements.map(r => `      <li>${esc(r)}</li>`).join("\n")}
     </ul>
   </div>` : "";
 
+  // Resolve security_summary — handle string or object
+  let secSummary = d.security_summary;
+  if (typeof secSummary === "object" && secSummary !== null) {
+    if (secSummary.summary) secSummary = secSummary.summary;
+    else if (secSummary.text) secSummary = secSummary.text;
+    else {
+      // Build readable summary from structured data
+      const parts = [];
+      if (secSummary.risk_level) parts.push(`Risk level: ${String(secSummary.risk_level).toUpperCase()}.`);
+      const f = secSummary.findings_by_severity;
+      if (f) parts.push(`Findings: ${f.critical || 0} critical, ${f.high || 0} high, ${f.medium || 0} medium, ${f.low || 0} low.`);
+      if (Array.isArray(secSummary.positive_features) && secSummary.positive_features.length > 0)
+        parts.push(`Positive: ${secSummary.positive_features.join("; ")}`);
+      secSummary = parts.length > 0 ? parts.join(" ") : null;
+    }
+  }
+
+  const sections = [
+    profileTable("Component Inventory", ["Type", "Count", "Components"], inventory),
+    profileTable("Skill Category Distribution", ["Category", "Count", "Skills"], catDist),
+    profileTable("Documentation Checklist", ["Item", "Status", "Notes"], docs),
+    secSummary ? `  <h3>Security Risk</h3>\n  <p>${esc(secSummary)}</p>` : "",
+    (d.pattern || d.target_users) ? `  <h3>Pattern &amp; Target</h3>
+  <p><strong>Primary Pattern:</strong> ${esc(d.pattern)}</p>
+  <p><strong>Target Users:</strong> ${esc(d.target_users)}</p>` : "",
+    profileTable("Quality Checklist", ["Criterion", "Status", "Details"], quality),
+    skillDesignItems.length > 0
+      ? profileTable("Skill Design Quality", ["Skill", "Description", "Disclosure", "Gotchas", "Scripts", "Hooks", "Maturity"], skillDesign)
+      : "",
+    improvementsHtml,
+  ].filter(Boolean);
+
   return `<section id="plugin-profile" class="ve-card ve-card--elevated" style="--i: 9">
   <h2>${esc(d.heading || "Plugin Profile")}</h2>
-  <h3>Component Inventory</h3>
-  <div class="table-wrapper">
-    <table>
-      <thead><tr><th>Type</th><th>Count</th><th>Components</th></tr></thead>
-      <tbody>
-${inventory}
-      </tbody>
-    </table>
-  </div>
-  <h3>Skill Category Distribution</h3>
-  <div class="table-wrapper">
-    <table>
-      <thead><tr><th>Category</th><th>Count</th><th>Skills</th></tr></thead>
-      <tbody>
-${catDist}
-      </tbody>
-    </table>
-  </div>
-  <h3>Documentation Checklist</h3>
-  <div class="table-wrapper">
-    <table>
-      <thead><tr><th>Item</th><th>Status</th><th>Notes</th></tr></thead>
-      <tbody>
-${docs}
-      </tbody>
-    </table>
-  </div>
-  <h3>Security Risk</h3>
-  <p>${esc(d.security_summary)}</p>
-  <h3>Pattern &amp; Target</h3>
-  <p><strong>Primary Pattern:</strong> ${esc(d.pattern)}</p>
-  <p><strong>Target Users:</strong> ${esc(d.target_users)}</p>
-  <h3>Quality Checklist</h3>
-  <div class="table-wrapper">
-    <table>
-      <thead><tr><th>Criterion</th><th>Status</th><th>Details</th></tr></thead>
-      <tbody>
-${quality}
-      </tbody>
-    </table>
-  </div>
-  <h3>Skill Design Quality</h3>
-  <div class="table-wrapper">
-    <table>
-      <thead><tr><th>Skill</th><th>Description</th><th>Disclosure</th><th>Gotchas</th><th>Scripts</th><th>Hooks</th><th>Maturity</th></tr></thead>
-      <tbody>
-${skillDesign}
-      </tbody>
-    </table>
-  </div>
-${improvements}
+${sections.join("\n")}
 </section>`;
 }
 
 function renderFooter(d) {
+  const parts = [d.date, d.version ? `v${d.version}` : ""].filter(Boolean);
+  const meta = parts.length > 0 ? `\n    <p>${parts.map(esc).join(" &middot; ")}</p>` : "";
   return `<section id="footer" class="ve-card ve-card--recessed" style="--i: 10">
   <div class="footer-content">
-    <p>Generated by <strong>Agent Extension Visual</strong></p>
-    <p>${esc(d.date)} &middot; v${esc(d.version)}</p>
+    <p>Generated by <strong>Agent Extension Visual</strong></p>${meta}
   </div>
 </section>`;
 }
@@ -845,6 +875,78 @@ function parseArgs(argv) {
   return args;
 }
 
+// ---------------------------------------------------------------------------
+// JSON Data Validation
+// ---------------------------------------------------------------------------
+
+function validateSectionsData(input) {
+  const warnings = [];
+  const errors = [];
+
+  // Top-level structure
+  if (!input.metadata) errors.push("Missing top-level 'metadata' object");
+  if (!input.sections) errors.push("Missing top-level 'sections' object");
+  if (!input.sections) return { warnings, errors };
+
+  const s = input.sections;
+
+  // Required sections
+  const requiredSections = ["header", "overview", "architecture", "feature_deep_dive",
+    "usage_guide", "components", "security_audit", "plugin_profile", "footer"];
+  for (const name of requiredSections) {
+    if (!s[name]) errors.push(`Missing required section: '${name}'`);
+  }
+
+  // Header checks
+  if (s.header) {
+    if (!s.header.plugin_name) errors.push("header.plugin_name is required");
+    if (!s.header.risk_level) warnings.push("header.risk_level missing (defaulting to 'low')");
+  }
+
+  // Overview checks
+  if (s.overview) {
+    if (!s.overview.summary) warnings.push("overview.summary is empty");
+    if (!s.overview.features || s.overview.features.length === 0)
+      warnings.push("overview.features is empty — Key Features section will be hidden");
+    if (!s.overview.kpis || s.overview.kpis.length === 0)
+      warnings.push("overview.kpis is empty — KPI grid will be hidden");
+    if (!s.overview.chart || !s.overview.chart.labels)
+      warnings.push("overview.chart is missing — component chart will be empty");
+  }
+
+  // Architecture checks
+  if (s.architecture) {
+    const phil = s.architecture.philosophy || [];
+    const emptyNames = phil.filter(p => p && (!p.name || !p.name.trim()));
+    if (emptyNames.length > 0)
+      warnings.push(`architecture.philosophy has ${emptyNames.length} card(s) with empty 'name' — will be filtered out`);
+    if (!s.architecture.diagrams || s.architecture.diagrams.length === 0)
+      warnings.push("architecture.diagrams is empty — no architecture diagrams will render");
+  }
+
+  // Security audit checks
+  if (s.security_audit) {
+    if (typeof s.security_audit.risk_summary === "object")
+      warnings.push("security_audit.risk_summary is an object (should be string) — will be JSON-stringified");
+  }
+
+  // Plugin profile checks
+  if (s.plugin_profile) {
+    if (typeof s.plugin_profile.security_summary === "object")
+      warnings.push("plugin_profile.security_summary is an object (should be string) — will be extracted or JSON-stringified");
+    if (!s.plugin_profile.inventory || s.plugin_profile.inventory.length === 0)
+      warnings.push("plugin_profile.inventory is empty — Component Inventory section will be hidden");
+  }
+
+  // Footer checks
+  if (s.footer) {
+    if (!s.footer.date && !s.footer.version)
+      warnings.push("footer has no date or version — footer will be minimal");
+  }
+
+  return { warnings, errors };
+}
+
 function main() {
   const args = parseArgs(process.argv);
   if (!args.data || !args.output) {
@@ -858,6 +960,21 @@ function main() {
   }
 
   const input = JSON.parse(fs.readFileSync(args.data, "utf-8"));
+
+  // Validate JSON data before rendering
+  const { warnings, errors } = validateSectionsData(input);
+  if (errors.length > 0) {
+    console.error(`\n=== JSON DATA ERRORS (${errors.length}) ===`);
+    for (const e of errors) console.error(`  ERROR: ${e}`);
+  }
+  if (warnings.length > 0) {
+    console.error(`\n=== JSON DATA WARNINGS (${warnings.length}) ===`);
+    for (const w of warnings) console.error(`  WARN: ${w}`);
+  }
+  if (errors.length > 0) {
+    console.error("\nRendering will proceed but output may be incomplete.");
+  }
+
   const meta = input.metadata || {};
   const sections = input.sections || {};
   const srcCtx = input.source_context || null;
