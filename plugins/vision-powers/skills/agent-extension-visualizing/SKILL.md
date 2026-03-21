@@ -301,33 +301,37 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 2. **Resolve paths and read references**:
    - Template: resolve `../../templates/agent-extension-visual.html` to absolute path
-   - Section structure: resolve `references/section-structure.md` to absolute path
+   - JSON schema: resolve `references/sections-data-schema.md` to absolute path
    - Font system: resolve `../../references/design-system/font-system.md` to absolute path
    - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
+   - Render script: resolve `../../scripts/render-sections.js` to absolute path
    - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
    - Shared directory: resolve `../../shared/` to absolute path
 
    **Read 3 reference files** in a single parallel Read call:
-   1. Section structure (`references/section-structure.md`)
+   1. JSON schema (`references/sections-data-schema.md`)
    2. Font system (`../../references/design-system/font-system.md`)
    3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
 
-   Save their content for step 4. Do NOT read the template, assembler, or shared directory — those are passed as paths to the assembler script.
+   Save their content for step 4. Do NOT read the template, assembler, render script, or shared directory — those are passed as paths.
 
 3. **Create sections temp directory**:
    The sections directory path: `/tmp/agent-extension-visual-{dirname}-sections/`
    (reuse the same `{dirname}` from Phase 1 if GitHub clone, or generate one for local sources)
-   No mkdir needed — the visual-report-writer creates files via Write, which auto-creates directories.
+   The JSON data file path: `/tmp/agent-extension-visual-{dirname}-sections/sections-data.json`
+   No mkdir needed — Write auto-creates directories, and render-sections.js creates the sections dir.
 
-4. **Delegate to visual-report-writer agent**:
+4. **Delegate to visual-report-writer agent (JSON mode)**:
    ```
    Task(subagent_type: "vision-powers:visual-report-writer", prompt: {
+     **Output mode: JSON**
+     Write a single file: {sections-data-json-path}
+
      feature-architect analysis results (full text, including Plugin Summary, Raw Content Excerpts, and Skill Design Quality),
      security-auditor analysis results (full text),
      plugin metadata (name, version, author, license, keywords, description),
-     sections output directory (absolute path from step 3),
      output language,
-     section structure content (full text read in step 2),
+     JSON schema content (full text read in step 2),
      font system content (full text read in step 2),
      anti-slop rules content (full text read in step 2),
      report title: "Agent Extension Visual: {plugin-name}",
@@ -344,16 +348,22 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    })
    ```
    Pass the **file contents** read in step 2, not paths. This eliminates the agent's read turn.
-   The agent writes `section-1.html` through `section-11.html` and `metadata.json` to the sections directory.
+   The agent writes a single `sections-data.json` file (1 Write call instead of ~13 in HTML mode).
 
-   **Do NOT background this agent.** Plugin-defined agents silently ignore `permissionMode`, so the visual-report-writer needs user approval for each Write call. Backgrounded agents cannot prompt for permissions and will fail silently. Always run in the foreground.
+   **Do NOT background this agent.** Plugin-defined agents silently ignore `permissionMode`, so the visual-report-writer needs user approval for the Write call. Backgrounded agents cannot prompt for permissions and will fail silently. Always run in the foreground.
 
-5. **Assemble report** — run the assembler script to combine template + sections:
+5. **Render sections** — convert JSON data into HTML section files + metadata.json:
+   ```
+   Bash(node {render-script-path} --data {sections-data-json-path} --output {sections-dir})
+   ```
+   This script produces `section-1.html` through `section-11.html` and `metadata.json` with correct CSS class names hardcoded. No LLM-generated class names.
+
+6. **Assemble report** — run the assembler script to combine template + sections:
    ```
    Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
    ```
 
-6. **Report validation** — run the validation script:
+7. **Report validation** — run the validation script:
    ```
    Bash(node {validator-path} {output-path} --expected-sections 11)
    ```
@@ -378,7 +388,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    5. Fix any issues found via Edit on the output file.
    6. Kill the server: `Bash(kill {pid} 2>/dev/null)`
 
-7. **Report completion + Feedback Loop**:
+8. **Report completion + Feedback Loop**:
 
    Use `AskUserQuestion` with the `file://` URL embedded in the question text itself:
    ```
@@ -432,8 +442,10 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification (with context modifiers)
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
 - `references/platforms/claude-code/env-fit-diagnosis.md` — Environment Fit Diagnosis detailed steps (Phase 4.5)
-- `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
+- `references/sections-data-schema.md` — JSON data schema for all 11 report sections. Visual-report-writer reads it to generate `sections-data.json`
+- `references/section-structure.md` — HTML structure patterns for each report section (used by render-sections.js, not by the writer in JSON mode)
 - `../../templates/agent-extension-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
+- `../../scripts/render-sections.js` — Render script (Node.js) that converts `sections-data.json` into HTML section files + metadata.json with correct CSS class names
 - `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
 - `../../references/design-system/font-system.md` — Font pairing selection guide. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
 - `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
