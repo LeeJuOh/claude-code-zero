@@ -5,7 +5,7 @@ description: >
   history. Extracts verifiable claims, checks each against source, corrects
   inaccuracies in place, and adds a verification summary.
   Use when asked to verify, fact-check, validate, or audit claims in a
-  report, plan, or document — including phrases like "이거 맞아?", "is this
+  report, plan, or document — including phrases like "is this
   accurate", "double-check this report", "verify the numbers", or "are these
   claims correct". Accepts a file path or auto-detects the most recent HTML
   report.
@@ -50,7 +50,7 @@ Determine the output language for the verification summary:
 
 1. **Explicit argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
 2. **User message text**: Detect the language of the message (excluding path) and match it
-   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
+   - Examples: Korean text → Korean, Japanese text → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Document language**: Match the language of the document being verified
 4. **Default**: English
 

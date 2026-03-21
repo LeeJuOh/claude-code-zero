@@ -5,7 +5,7 @@ description: >
   with security audit, architecture diagrams, and plugin profiles.
   Currently supports Claude Code plugins.
   Use when asked to analyze, audit, inspect, review, document, or wiki a plugin
-  or extension — including phrases like "이 플러그인 뭐야", "what does this plugin do",
+  or extension — including phrases like "what does this plugin do",
   "tell me about this extension", "break down this plugin", or "generate a report
   for this plugin". Also triggers on GitHub plugin URLs or local plugin paths.
   Default output is an interactive HTML report; use --format md for inline markdown.
@@ -39,7 +39,7 @@ Determine the output language:
 
 1. **Explicit language argument**: `--lang <code>` (e.g., `--lang ko`, `--lang fr`, `--lang zh`) → use that language. Any language code is valid
 2. **User message text**: Detect the language of the message (excluding URL/path) and match it
-   - Examples: 한글 → Korean, 日本語 → Japanese, "en español" → Spanish, "auf Deutsch" → German
+   - Examples: Korean text → Korean, Japanese text → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **URL only with no other text**: Use AskUserQuestion to ask the user's preferred language
 
 Pass the detected language to sub-agents and use it for Phase 5 report assembly.
@@ -50,9 +50,9 @@ Determine **what** to analyze:
 
 | Mode | Trigger Keywords | Scope |
 |------|-----------------|-------|
-| `analyze` **(default)** | "analyze", "분석", "inspect", "report", "wiki", "document", "리포트", "문서화" | Full analysis and Plugin Profile |
-| `security` | "security audit", "보안 감사", "권한 분석", "permission" | Security only |
-| `overview` | "overview", "개요", "요약", "summary" | Identity + inventory only |
+| `analyze` **(default)** | "analyze", "inspect", "report", "wiki", "document" | Full analysis and Plugin Profile |
+| `security` | "security audit", "permission analysis" | Security only |
+| `overview` | "overview", "summary" | Identity + inventory only |
 
 ### Output Format Detection
 
@@ -61,7 +61,7 @@ Determine **how** to present the result (independent of analysis mode):
 | Format | Trigger | Applies to |
 |--------|---------|------------|
 | HTML **(default)** | Default for `analyze` mode | `analyze` only |
-| Inline markdown | "--format md", "markdown", "md", "인라인", "텍스트" | `analyze` only |
+| Inline markdown | "--format md", "markdown", "md", "inline", "text" | `analyze` only |
 | Inline markdown **(always)** | — | `security`, `overview` (too brief for HTML) |
 
 ### Intent Check
@@ -301,33 +301,37 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 2. **Resolve paths and read references**:
    - Template: resolve `../../templates/agent-extension-visual.html` to absolute path
-   - Section structure: resolve `references/section-structure.md` to absolute path
+   - JSON schema: resolve `references/sections-data-schema.md` to absolute path
    - Font system: resolve `../../references/design-system/font-system.md` to absolute path
    - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
+   - Render script: resolve `../../scripts/render-sections.js` to absolute path
    - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
    - Shared directory: resolve `../../shared/` to absolute path
 
    **Read 3 reference files** in a single parallel Read call:
-   1. Section structure (`references/section-structure.md`)
+   1. JSON schema (`references/sections-data-schema.md`)
    2. Font system (`../../references/design-system/font-system.md`)
    3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
 
-   Save their content for step 4. Do NOT read the template, assembler, or shared directory — those are passed as paths to the assembler script.
+   Save their content for step 4. Do NOT read the template, assembler, render script, or shared directory — those are passed as paths.
 
 3. **Create sections temp directory**:
    The sections directory path: `/tmp/agent-extension-visual-{dirname}-sections/`
    (reuse the same `{dirname}` from Phase 1 if GitHub clone, or generate one for local sources)
-   No mkdir needed — the visual-report-writer creates files via Write, which auto-creates directories.
+   The JSON data file path: `/tmp/agent-extension-visual-{dirname}-sections/sections-data.json`
+   No mkdir needed — Write auto-creates directories, and render-sections.js creates the sections dir.
 
-4. **Delegate to visual-report-writer agent**:
+4. **Delegate to visual-report-writer agent (JSON mode)**:
    ```
    Task(subagent_type: "vision-powers:visual-report-writer", prompt: {
+     **Output mode: JSON**
+     Write a single file: {sections-data-json-path}
+
      feature-architect analysis results (full text, including Plugin Summary, Raw Content Excerpts, and Skill Design Quality),
      security-auditor analysis results (full text),
      plugin metadata (name, version, author, license, keywords, description),
-     sections output directory (absolute path from step 3),
      output language,
-     section structure content (full text read in step 2),
+     JSON schema content (full text read in step 2),
      font system content (full text read in step 2),
      anti-slop rules content (full text read in step 2),
      report title: "Agent Extension Visual: {plugin-name}",
@@ -344,16 +348,22 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    })
    ```
    Pass the **file contents** read in step 2, not paths. This eliminates the agent's read turn.
-   The agent writes `section-1.html` through `section-11.html` and `metadata.json` to the sections directory.
+   The agent writes a single `sections-data.json` file (1 Write call instead of ~13 in HTML mode).
 
-   **Do NOT background this agent.** Plugin-defined agents silently ignore `permissionMode`, so the visual-report-writer needs user approval for each Write call. Backgrounded agents cannot prompt for permissions and will fail silently. Always run in the foreground.
+   **Do NOT background this agent.** Plugin-defined agents silently ignore `permissionMode`, so the visual-report-writer needs user approval for the Write call. Backgrounded agents cannot prompt for permissions and will fail silently. Always run in the foreground.
 
-5. **Assemble report** — run the assembler script to combine template + sections:
+5. **Render sections** — convert JSON data into HTML section files + metadata.json:
+   ```
+   Bash(node {render-script-path} --data {sections-data-json-path} --output {sections-dir})
+   ```
+   This script produces `section-1.html` through `section-11.html` and `metadata.json` with correct CSS class names hardcoded. No LLM-generated class names.
+
+6. **Assemble report** — run the assembler script to combine template + sections:
    ```
    Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
    ```
 
-6. **Report validation** — run the validation script:
+7. **Report validation** — run the validation script:
    ```
    Bash(node {validator-path} {output-path} --expected-sections 11)
    ```
@@ -366,7 +376,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    **Optional Coherence Review** — if `--verify` flag was specified or `auto_verify` is `true` in user config:
    Run the coherence review agent (see `../../references/report-generation-workflow.md` Step 6). If HIGH severity issues are found, fix them via Edit and re-validate.
 
-   **Optional Chrome visual verification** — only if `mcp__claude-in-chrome__*` tools are available:
+   **Optional Chrome visual verification** — only if `--verify` flag was specified AND `mcp__claude-in-chrome__*` tools are available. Skip entirely otherwise:
    1. Start a local HTTP server to serve the report (Chrome extensions cannot access `file://` URLs):
       ```
       Bash(python3 -m http.server 0 -d "$(dirname {output-path})" 2>&1 & echo $!)
@@ -378,7 +388,7 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    5. Fix any issues found via Edit on the output file.
    6. Kill the server: `Bash(kill {pid} 2>/dev/null)`
 
-7. **Report completion + Feedback Loop**:
+8. **Report completion + Feedback Loop**:
 
    Use `AskUserQuestion` with the `file://` URL embedded in the question text itself:
    ```
@@ -414,15 +424,23 @@ This is informational — just a brief suggestion, not an automatic invocation.
 
 - **`$()` command substitution triggers security prompt**: The `Bash(echo $(date))` pattern causes Claude Code to show a separate permission dialog regardless of `allowed-tools`. Use literal values or `Bash(date)` with separate processing instead.
 - **GitHub rate limiting**: `gh repo clone` and `gh api` calls can fail silently with HTTP 403 when the user's token is rate-limited. If clone fails, check `gh auth status` before retrying.
-- **Plugin cache has multiple versions**: `~/.claude/plugins/cache/` stores every installed version (e.g., `2.6.0/`, `2.7.1/`). The Phase 4.5 environment scan deduplicates by mtime, but if you manually scan the cache, always pick the latest version per plugin to avoid counting stale entries.
+- **Plugin cache has multiple versions**: `~/.claude/plugins/cache/` stores every installed version (e.g., `2.6.0/`, `2.7.1/`). Phase 4.5 uses the session context directly (not cache scanning), but if you ever need to inspect the cache manually, always pick the latest version per plugin to avoid counting stale entries.
 - **Large plugin batching threshold**: The 15-component threshold for splitting feature-architect is approximate. Plugins with many small commands but few skills may not need splitting, while plugins with 10 dense skills might. Use judgment — the goal is keeping each agent under context limits.
 - **Existing report overwrite prompt**: The "create new or update" prompt uses AskUserQuestion. If the user is running non-interactively or in a pipeline, this blocks. Default to "create new" if no user response is available.
 - **Temp directory collision**: The 8-char hex `{dirname}` has a negligible collision risk, but if a previous run crashed without cleanup, `/tmp/agent-extension-visual-*` directories may linger. The cleanup phase handles the current run only — it does not garbage-collect stale dirs.
 - **Skill category misclassification**: Skills that span multiple categories (e.g., a deploy skill with review features) should be classified by primary purpose — what the user invokes it for. Don't try to assign multiple categories; pick the best fit and note the overlap in the description.
 - **Design quality false negatives**: A skill with no `scripts/` directory isn't necessarily "Basic" — some skills genuinely don't need scripts (pure knowledge/reference skills). Apply the N/A classification for criteria that don't apply to the skill type.
 - **New hook events**: The security-auditor knows about 22 hook events as of 2026-03. If new events are added to Claude Code, the event list in `security-rules.md` and `security-auditor.md` may need updating.
-- **visual-report-writer 백그라운드 실행 금지**: Plugin-defined agents는 `permissionMode`가 무시되므로, visual-report-writer를 백그라운드로 보내면 Write 권한 승인을 받을 수 없어 실패합니다. 반드시 포그라운드에서 실행해야 합니다.
+- **Do not background visual-report-writer**: Plugin-defined agents silently ignore `permissionMode`, so backgrounding visual-report-writer prevents Write permission prompts from reaching the user, causing silent failure. Always run in foreground.
+- **Plugin agent ignored frontmatter fields**: `permissionMode`, `hooks`, `mcpServers` are silently ignored on plugin agents. The fields `effort`, `model`, `tools`, `disallowedTools`, `maxTurns`, `skills`, `memory`, `background`, `isolation` work normally. Analysis agents use `effort: high` and inherit the session model.
 - **Agent `effort` field**: The `effort` field (low/medium/high/max) is distinct from the `model` field. A Haiku agent with `effort: max` is different from an Opus agent with default effort. Report both when present.
+- **Instruction layer analysis false positives**: Step 10 of the security-auditor analyzes SKILL.md body text for adversarial patterns (env var exfiltration, obfuscation, undeclared URLs). Setup/config skills that reference env var names as documentation, API skills with endpoint URLs, and encoding skills with base64 examples will trigger pattern matches. Context Modifiers handle common cases, but review flagged findings carefully — a MEDIUM on a config skill's env var reference is usually informational, not a real threat.
+- **Mermaid node labels with special chars**: Node labels containing `:`, `/`, `<`, `>` must be double-quoted in Mermaid code (`C1["gsd:new-project"]` not `C1[gsd:new-project]`). Unquoted special chars cause Mermaid parsing errors and can produce oversized layouts. The render script auto-quotes these, but the visual-report-writer should generate quoted labels to begin with.
+- **Command-based plugins and empty Skill Design Quality**: Plugins built on `commands/` instead of `skills/` will have empty skill_design_quality arrays and missing features/KPIs. The render script skips empty sections gracefully, but the visual-report-writer should adapt its analysis for command-based plugins rather than leaving fields empty.
+- **security_summary as object**: The visual-report-writer sometimes passes `security_summary` as a JSON object (with `risk_level`, `findings_by_severity`, `positive_features`) instead of a plain string. The render script handles both formats, but a string summary is preferred.
+- **LLM schema mismatches handled by normalize**: The `render-sections.js` normalize function auto-corrects 15 common LLM output variations. Do NOT write Python fixup scripts in Bash — the normalize layer handles these deterministically. Key patterns: `features` as `[{title, description}]` → `string[]`, `recommendations` as `[{priority, text}]` → `string[]`, `keywords` as array → comma-separated string, `installation_status` as string → `{status, detail}`, `dependency_check` missing `status`/`severity`, `philosophy` cards with empty `name`, chart labels by purpose instead of extension type, `workflow_trace` title leading numbers stripped, and `context_budget` empty budget columns filled with official doc values.
+- **Architecture diagrams with large plugins**: Plugins with 15+ components cause the LLM to list all nodes individually, producing broken Mermaid layouts or "...N more" truncation. The schema now instructs showing 3-5 representatives per architectural layer with total counts, keeping under 25 nodes per diagram.
+- **Overview chart must use extension types**: The chart labels must be extension types (Skills, Agents, Commands, Hooks, MCP, LSP) not purpose categories (Scaffolding, Automation, etc.). The normalize function auto-corrects this by counting from the components section, but the schema also instructs this explicitly.
 
 ### Reference Files
 
@@ -430,8 +448,10 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification (with context modifiers)
 - `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
 - `references/platforms/claude-code/env-fit-diagnosis.md` — Environment Fit Diagnosis detailed steps (Phase 4.5)
-- `references/section-structure.md` — HTML structure patterns for each report section. Visual-report-writer reads it to generate section files
+- `references/sections-data-schema.md` — JSON data schema for all 11 report sections. Visual-report-writer reads it to generate `sections-data.json`
+- `references/section-structure.md` — HTML structure patterns for each report section (used by render-sections.js, not by the writer in JSON mode)
 - `../../templates/agent-extension-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
+- `../../scripts/render-sections.js` — Render script (Node.js) that converts `sections-data.json` into HTML section files + metadata.json with correct CSS class names
 - `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
 - `../../references/design-system/font-system.md` — Font pairing selection guide. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
 - `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer

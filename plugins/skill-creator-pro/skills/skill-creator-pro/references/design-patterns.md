@@ -17,6 +17,137 @@ Detailed guidance on writing effective skills, from gotchas sections to progress
 
 ---
 
+## Implementation Patterns
+
+Five common patterns for structuring skill workflows. Choose the one that fits your skill's primary action.
+
+### Pattern 1: Sequential Workflow Orchestration
+
+**Use when:** Users need multi-step processes in a specific order.
+
+```markdown
+## Workflow: Onboard New Customer
+
+### Step 1: Create Account
+Call MCP tool: `create_customer`
+Parameters: name, email, company
+
+### Step 2: Setup Payment
+Call MCP tool: `setup_payment_method`
+Wait for: payment method verification
+
+### Step 3: Create Subscription
+Call MCP tool: `create_subscription`
+Parameters: plan_id, customer_id (from Step 1)
+
+### Step 4: Send Welcome Email
+Call MCP tool: `send_email`
+Template: welcome_email_template
+```
+
+Key techniques: explicit step ordering, dependencies between steps, validation at each stage, rollback instructions for failures.
+
+### Pattern 2: Multi-MCP Coordination
+
+**Use when:** Workflows span multiple services (e.g., Figma + Google Drive + Linear + Slack).
+
+```markdown
+### Phase 1: Design Export (Figma MCP)
+1. Export design assets from Figma
+2. Generate design specifications
+
+### Phase 2: Asset Storage (Drive MCP)
+1. Create project folder in Drive
+2. Upload all assets
+
+### Phase 3: Task Creation (Linear MCP)
+1. Create development tasks
+2. Attach asset links to tasks
+
+### Phase 4: Notification (Slack MCP)
+1. Post handoff summary to #engineering
+```
+
+Key techniques: clear phase separation, data passing between MCPs, validation before moving to next phase.
+
+### Pattern 3: Iterative Refinement
+
+**Use when:** Output quality improves with iteration (reports, documents, designs).
+
+```markdown
+## Iterative Report Creation
+
+### Initial Draft
+1. Fetch data via MCP
+2. Generate first draft report
+3. Save to temporary file
+
+### Quality Check
+1. Run validation script: `scripts/check_report.py`
+2. Identify issues:
+   - Missing sections
+   - Inconsistent formatting
+   - Data validation errors
+
+### Refinement Loop
+1. Address each identified issue
+2. Regenerate affected sections
+3. Re-validate
+4. Repeat until quality threshold met
+```
+
+Key techniques: explicit quality criteria, validation scripts, knowing when to stop iterating.
+
+### Pattern 4: Context-aware Tool Selection
+
+**Use when:** Same outcome, different tools depending on context.
+
+```markdown
+### Decision Tree
+1. Check file type and size
+2. Determine best storage location:
+   - Large files (>10MB): Use cloud storage MCP
+   - Collaborative docs: Use Notion/Docs MCP
+   - Code files: Use GitHub MCP
+   - Temporary files: Use local storage
+
+### Execute Storage
+Based on decision:
+- Call appropriate MCP tool
+- Apply service-specific metadata
+
+### Provide Context to User
+Explain why that storage was chosen
+```
+
+Key techniques: clear decision criteria, fallback options, transparency about choices.
+
+### Pattern 5: Domain-specific Intelligence
+
+**Use when:** Your skill adds specialized knowledge beyond tool access.
+
+```markdown
+### Before Processing (Compliance Check)
+1. Fetch transaction details via MCP
+2. Apply compliance rules:
+   - Check sanctions lists
+   - Verify jurisdiction allowances
+   - Assess risk level
+3. Document compliance decision
+
+### Processing
+IF compliance passed:
+   - Call payment processing MCP tool
+   - Apply appropriate fraud checks
+ELSE:
+   - Flag for review
+   - Create compliance case
+```
+
+Key techniques: domain expertise embedded in logic, compliance before action, comprehensive documentation.
+
+---
+
 ## Writing Effective Instructions
 
 ### Use Imperative Form

@@ -41,6 +41,27 @@ Start by understanding the user's intent. If the current conversation already co
 2. When should this skill trigger? (what user phrases/contexts)
 3. What's the expected output format?
 4. Should we set up test cases? Skills with objectively verifiable outputs (file transforms, data extraction, code generation, fixed workflow steps) benefit from tests. Skills with subjective outputs (writing style, art direction) often don't. Suggest the appropriate default, but let the user decide.
+5. How will we know this skill is working? (trigger accuracy, output quality, token efficiency -- pick what matters most for this skill. This feeds directly into eval design in Phase 3.)
+
+### Interview and Research
+
+Once intent is captured, proactively dig deeper before writing anything:
+
+- **Edge cases**: What inputs could break this? What happens with empty data, huge files, missing permissions?
+- **Input/output formats**: Exact file types, schemas, APIs involved. Ask for example files if available.
+- **Dependencies**: What tools, MCPs, or other skills does this need? Check available MCPs -- if useful for research, research in parallel via subagents.
+- **Success criteria from question 5**: Turn the user's answer into concrete, testable statements you'll use in Phase 3.
+
+Wait to write test prompts until you've got this part ironed out.
+
+### Identify Approach: Problem-first vs Tool-first
+
+Before choosing a category, clarify the skill's orientation:
+
+- **Problem-first**: "I need to set up a project workspace" -- the skill orchestrates the right tool calls in the right sequence. Users describe outcomes; the skill handles the tools.
+- **Tool-first**: "I have Notion MCP connected" -- the skill teaches Claude the optimal workflows and best practices for tools the user already has access to.
+
+Most skills lean one direction. Knowing which helps you choose the right structure and category below.
 
 ### Identify Skill Category
 
@@ -68,15 +89,40 @@ Also identify the skill type:
 
 ## Phase 2: Design
 
+### Consult Official Docs (When Needed)
+
+Before writing SKILL.md, check if the skill uses platform features where the official spec is the source of truth:
+
+- **Frontmatter fields** (allowed-tools, context, hooks, disable-model-invocation)
+- **Hook events and syntax** (PreToolUse, PostToolUse, SessionStart, etc.)
+- **allowed-tools patterns** (command-scoped like `Bash(git *)`, tool restrictions)
+- **Plugin manifest** (plugin.json schema, settings.json limitations)
+
+For these, fetch the official docs index and the relevant page:
+
+```
+WebFetch https://code.claude.com/docs/llms.txt
+```
+
+Then fetch the specific page (e.g., `skills.md`, `hooks.md`, `plugins-reference.md`):
+
+```
+WebFetch https://code.claude.com/docs/en/<page>
+```
+
+Key pages: `skills.md` (frontmatter spec), `hooks.md` + `hooks-guide.md` (hook events/syntax), `plugins-reference.md` (plugin.json schema), `sub-agents.md` (agent restrictions).
+
+Skip this step when: writing skill body content, designing gotchas, structuring folders, or working on evals -- these don't depend on platform spec.
+
 ### Write the SKILL.md
 
-Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/references/design-patterns.md` for detailed guidance.
+Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/references/design-patterns.md` for detailed guidance -- it covers both **implementation patterns** (sequential workflow, multi-MCP coordination, iterative refinement, context-aware tool selection, domain-specific intelligence) and **writing patterns** (gotchas design, progressive disclosure, hooks, composability).
 
 **Core principles:**
 
-1. **Don't state the obvious.** Claude knows a lot about coding. Focus on information that pushes Claude out of its default patterns. A `frontend-design` skill should focus on aesthetic choices beyond Claude's defaults, not basic React patterns.
+1. **Don't state the obvious.** Claude already knows how to code. If your skill just restates things Claude would do anyway, it's wasting context for zero gain. Focus on information that pushes Claude out of its default patterns -- the `frontend-design` skill works because it teaches aesthetic choices Claude wouldn't make on its own, not basic React patterns.
 
-2. **Gotchas section = highest ROI.** Build it from common failure points Claude encounters. Start with at least 2-3 gotchas based on domain knowledge. Update as you test.
+2. **Gotchas section = highest ROI.** This is the single most impactful thing you can put in a skill. Every gotcha prevents Claude from hitting a failure mode that would waste the user's time. Build it from real failure points -- start with 2-3 based on domain knowledge, then grow it as you test. A good gotcha names the problem AND the fix:
 
    ```markdown
    ## Gotchas
@@ -85,9 +131,9 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
    - Batch size > 100 silently drops records without error
    ```
 
-3. **Explain the why.** LLMs are smart. When given good reasoning, they generalize beyond rote instructions. Instead of "ALWAYS use format X", explain why format X matters. If you find yourself writing ALWAYS or NEVER in all caps, that's a yellow flag -- reframe with reasoning.
+3. **Explain the why.** LLMs are smart -- when you explain reasoning, they generalize beyond the specific case you wrote about. "We validate timestamps because the API silently accepts future dates but the downstream system crashes" is far more powerful than "ALWAYS validate timestamps." If you find yourself writing ALWAYS or NEVER in all caps, that's a yellow flag -- reframe with reasoning.
 
-4. **Give flexibility.** Skills are reused across many situations. Give Claude the information it needs but let it adapt. Avoid over-constraining with rigid step sequences when the model could make better context-dependent choices.
+4. **Give flexibility.** Skills get reused across situations you can't predict. If you over-constrain with rigid step sequences, the skill breaks on anything slightly different from your test cases. Give Claude the information it needs but let it adapt to context.
 
 **Key frontmatter fields:**
 
@@ -95,10 +141,15 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 |-------|-------------|
 | `name` | kebab-case, matches folder name |
 | `description` | Trigger condition -- see Phase 5 for optimization |
+| `argument-hint` | Hint shown during autocomplete (e.g., `[issue-number]`) |
 | `allowed-tools` | Restrict tools (e.g., `Read, Grep, Bash(git *)`) |
+| `model` | Model override when this skill is active |
+| `effort` | Effort level override (`low`, `medium`, `high`, `max`) |
 | `context` | `fork` to run in isolated subagent |
+| `agent` | Subagent type when `context: fork` is set (e.g., `Explore`, `Plan`) |
 | `hooks` | On-demand hooks active during skill execution |
 | `disable-model-invocation` | `true` = manual-only (user invokes with `/name`) |
+| `user-invocable` | `false` = hidden from `/` menu, Claude-only background knowledge |
 
 ### Structure the Folder
 
@@ -145,6 +196,8 @@ Skills can register hooks that activate only during the skill's session. Use the
 - `/freeze` -- Block Edit/Write outside a specific directory during debugging
 
 Consider adding hooks when the skill touches production data, involves destructive operations, or needs directory boundaries.
+
+When designing hooks, verify the supported events and matcher syntax against the official docs (`hooks.md`, `hooks-guide.md`) -- the available events and hook types evolve across releases.
 
 ### Memory & Data Persistence (Optional)
 
@@ -195,7 +248,7 @@ Write `eval_metadata.json` for each test case with `eval_id`, `eval_name`, `prom
 
 **Step 2: Draft assertions while runs are in progress**
 
-Don't just wait. Draft quantitative assertions with descriptive names. Good assertions are objectively verifiable and read clearly in the benchmark viewer.
+Don't just wait. Draft quantitative assertions with descriptive names. Good assertions are binary (pass/fail), objectively verifiable, and read clearly in the benchmark viewer. See `${CLAUDE_SKILL_DIR}/references/eval-writing-guide.md` for how to write good assertions.
 
 Subjective skills (writing style, design quality) are better evaluated qualitatively -- don't force assertions onto things that need human judgment.
 
@@ -268,6 +321,10 @@ Keep going until the user is happy, feedback is all empty, or progress plateaus.
 
 For rigorous A/B comparison, read `${CLAUDE_SKILL_DIR}/agents/comparator.md` and `${CLAUDE_SKILL_DIR}/agents/analyzer.md`. Give two outputs to an independent agent without revealing which is which. Optional -- the human review loop is usually sufficient.
 
+### Autonomous Optimization (Advanced)
+
+If the user wants hands-off optimization instead of the manual review loop above, suggest `/autoresearch`. It runs the skill dozens of times, scores outputs with binary evals, mutates the prompt, and keeps only improvements -- all autonomously. Best for skills that already work but need to go from 70% to 95%+.
+
 ---
 
 ## Phase 5: Polish
@@ -308,6 +365,17 @@ Before packaging, verify:
 - [ ] Tested triggering on obvious + paraphrased requests
 - [ ] Tested NOT triggering on related-but-different requests
 
+### Troubleshooting
+
+If `claude plugin validate .` fails or the skill doesn't trigger/behave as expected:
+
+1. Fetch `https://code.claude.com/docs/llms.txt` to get the docs index
+2. Identify the relevant page (e.g., `skills.md` for frontmatter errors, `hooks.md` for hook failures, `plugins-reference.md` for manifest issues)
+3. Fetch that page and compare your skill against the current spec
+4. Common causes: deprecated frontmatter fields, changed hook event names, unsupported allowed-tools patterns
+
+The bundled references in this skill cover design principles and eval methodology, but **platform spec** (what fields exist, what syntax is valid) lives in the official docs and may have changed since these references were written.
+
 ### Package
 
 ```bash
@@ -326,6 +394,8 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 | `agents/grader.md` | Evaluate assertions against outputs |
 | `agents/comparator.md` | Blind A/B comparison between two outputs |
 | `agents/analyzer.md` | Analyze benchmark patterns and comparison results |
+
+**Official docs (external):** `https://code.claude.com/docs/llms.txt` → index of all pages. Fetch when working with platform features (frontmatter, hooks, allowed-tools, plugin manifest). Key pages: `skills.md`, `hooks.md`, `hooks-guide.md`, `plugins-reference.md`, `sub-agents.md`.
 
 ## Environment Notes
 

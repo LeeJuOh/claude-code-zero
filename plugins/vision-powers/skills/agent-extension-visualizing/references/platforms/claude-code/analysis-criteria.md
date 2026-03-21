@@ -170,16 +170,16 @@ Evaluate the plugin's impact on the Claude Code context window. Because the cont
 
 #### Skill Description Budget
 
-Claude loads all skill descriptions (from skills without `disable-model-invocation: true`) at session start. Official budget: 2% of context window, with 16,000 character fallback. Overridable via `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var.
+Claude loads all skill and command descriptions (from those without `disable-model-invocation: true`) at session start. Official budget (source: [Skills docs](https://code.claude.com/docs/en/skills#troubleshooting)): **2% of context window, with 16,000 character fallback** when context window size cannot be determined. Overridable via `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var.
 
-| Window | Budget | Threshold (HIGH) | Threshold (MEDIUM) |
-|--------|--------|-------------------|---------------------|
-| 200K | 16,000 chars (fallback) | Projected > 14,000 chars (87%) | Projected > 10,000 chars (62%) |
-| 1M | ~80,000 chars (est. 2% × 1M tokens × ~4 chars/token) | Projected > 70,000 chars (87%) | Projected > 50,000 chars (62%) |
+| Window | Budget | Derivation | Threshold (HIGH) | Threshold (MEDIUM) |
+|--------|--------|------------|-------------------|---------------------|
+| 200K | ~16,000 chars | 2% × 200K tokens × ~4 chars/token (coincides with fallback) | Projected > 14,000 chars (87%) | Projected > 10,000 chars (62%) |
+| 1M | ~80,000 chars | 2% × 1M tokens × ~4 chars/token | Projected > 70,000 chars (87%) | Projected > 50,000 chars (62%) |
 
-Skills with `disable-model-invocation: true` have zero always-on cost — exclude from calculation.
+Skills and commands with `disable-model-invocation: true` have zero always-on cost — exclude from calculation.
 
-> **Note**: The 1M budget is an estimated conversion (tokens → chars). If `SLASH_COMMAND_TOOL_CHAR_BUDGET` is set, use that value instead.
+> **Note**: Both skills (`skills/*/SKILL.md`) and commands (`commands/*.md`) consume context budget. The env-fit-scan.js script counts both. If `SLASH_COMMAND_TOOL_CHAR_BUDGET` is set, use that value instead of the calculated budget.
 
 #### MCP Tool Surface
 

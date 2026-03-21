@@ -521,10 +521,10 @@ a:hover { color: var(--text); }
 
 ## Prose Page Elements
 
-텍스트 강조 컴포넌트. 시각적 페이지 내에서 핵심 포인트를 강조하거나 맥락을 제공할 때 사용.
+Text emphasis components. Use within visual pages to highlight key points or provide context.
 
 ### Lead Paragraph
-섹션 도입부에 사용. 일반 텍스트보다 크고 눈에 띄게:
+Used at section openings. Larger and more prominent than regular text:
 
 ```css
 .lead {
@@ -537,7 +537,7 @@ a:hover { color: var(--text); }
 ```
 
 ### Pull Quote
-핵심 인사이트를 크게 인용. 페이지당 최대 1개:
+Large pull quote for key insights. Maximum 1 per page:
 
 ```css
 .pull-quote {
@@ -553,7 +553,7 @@ a:hover { color: var(--text); }
 ```
 
 ### Callout Box
-경고, 팁, 중요 참고사항:
+Warnings, tips, and important notes:
 
 ```css
 .callout {
@@ -574,9 +574,9 @@ a:hover { color: var(--text); }
 
 ## SVG Connectors
 
-CSS Grid 아키텍처 레이아웃에서 카드 사이 화살표. 텍스트가 풍부한 카드(설명, 코드, 도구 목록)를 연결할 때 Mermaid 대신 사용.
+Arrows between cards in CSS Grid architecture layouts. Use instead of Mermaid when connecting text-rich cards (descriptions, code, tool lists).
 
-**언제 쓰는가**: 카드 내용이 중요하고 풍부할 때 (CSS Grid + SVG Connector). 연결 토폴로지가 중요할 때는 Mermaid.
+**When to use**: When card content is important and rich (CSS Grid + SVG Connector). Use Mermaid when connection topology matters more.
 
 ### Vertical Arrow
 

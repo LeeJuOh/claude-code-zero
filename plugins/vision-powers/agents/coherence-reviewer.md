@@ -15,8 +15,7 @@ description: |
   source code, or git history — simulating a first-time reader's experience.
   </commentary>
   </example>
-model: sonnet
-permissionMode: plan
+model: haiku
 maxTurns: 5
 tools:
   - Read
