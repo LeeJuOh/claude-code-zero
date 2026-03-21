@@ -46,7 +46,10 @@ function riskBadge(level) {
 
 function checkBadge(status) {
   const s = String(status).toLowerCase();
-  const variant = s === "pass" || s === "available" || s === "ready" || s === "yes" || s === "good" ? "pass" : "fail";
+  let variant;
+  if (s === "already_installed" || s === "installed") variant = "info";
+  else if (s === "pass" || s === "available" || s === "ready" || s === "yes" || s === "good" || s === "new") variant = "pass";
+  else variant = "fail";
   return `<span class="check-badge check-badge--${variant}">${esc(status)}</span>`;
 }
 
@@ -864,6 +867,17 @@ new Chart(document.getElementById('component-chart'), {
       legend: {
         position: 'bottom',
         labels: { color: isDark ? '#e6edf3' : '#1a1a2e', font: { size: 12 } }
+      },
+      datalabels: {
+        color: '#fff',
+        font: { weight: 'bold', size: 13 },
+        textShadowColor: 'rgba(0,0,0,0.4)',
+        textShadowBlur: 4,
+        formatter: function(value, ctx) {
+          var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+          if (value / total < 0.05) return '';
+          return ctx.chart.data.labels[ctx.dataIndex] + '\\n' + value;
+        }
       }
     }
   }
@@ -1129,7 +1143,19 @@ function normalizeSectionsData(input) {
     fixes.push("header.keywords: converted array→comma-separated string");
   }
 
-  // 13. overview.chart: auto-generate extension-type chart from component inventory if chart uses purpose categories
+  // 13. workflow_trace titles: strip leading numbers (e.g. "1. Session Bootstrap" → "Session Bootstrap")
+  if (s.feature_deep_dive && Array.isArray(s.feature_deep_dive.workflow_trace)) {
+    let stripped = 0;
+    for (const t of s.feature_deep_dive.workflow_trace) {
+      if (t.title) {
+        const clean = t.title.replace(/^\d+\.\s*/, "");
+        if (clean !== t.title) { t.title = clean; stripped++; }
+      }
+    }
+    if (stripped > 0) fixes.push(`feature_deep_dive.workflow_trace: stripped leading numbers from ${stripped} title(s)`);
+  }
+
+  // 14. overview.chart: auto-generate extension-type chart from component inventory if chart uses purpose categories
   if (s.overview && s.overview.chart && s.components) {
     const chart = s.overview.chart;
     const extensionTypes = ["skills", "agents", "commands", "hooks", "mcp", "lsp"];
@@ -1157,6 +1183,20 @@ function normalizeSectionsData(input) {
         chart.data = newData;
         delete chart.colors; // let auto-colors take over
         fixes.push(`overview.chart: replaced purpose-based→extension-type chart (${newLabels.join(", ")})`);
+      }
+    }
+  }
+
+  // 15. context_budget rows: fill empty budget columns with official doc values
+  if (s.environment_fit && s.environment_fit.context_budget && Array.isArray(s.environment_fit.context_budget.rows)) {
+    for (const r of s.environment_fit.context_budget.rows) {
+      const res = (r.resource || "").toLowerCase();
+      if (res.includes("skill") || res.includes("description") || res.includes("command")) {
+        if (!r.budget_200k) { r.budget_200k = "16,000 chars"; fixes.push("context_budget: filled budget_200k for skill descriptions"); }
+        if (!r.budget_1m) { r.budget_1m = "80,000 chars"; fixes.push("context_budget: filled budget_1m for skill descriptions"); }
+      } else if (res.includes("mcp")) {
+        if (!r.budget_200k) { r.budget_200k = "~20,000 tokens"; fixes.push("context_budget: filled budget_200k for MCP"); }
+        if (!r.budget_1m) { r.budget_1m = "~100,000 tokens"; fixes.push("context_budget: filled budget_1m for MCP"); }
       }
     }
   }

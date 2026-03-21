@@ -86,6 +86,14 @@ function mtime(p) {
   }
 }
 
+/** Check if a file path is under any of the active install paths */
+function isUnderActivePath(filePath, activePaths) {
+  for (const ap of activePaths) {
+    if (filePath.startsWith(ap)) return true;
+  }
+  return false;
+}
+
 /** Extract plugin name from a cache path like ~/.claude/plugins/cache/marketplace/pluginName/version/... */
 function pluginNameFromCachePath(p) {
   const idx = p.indexOf("/cache/");
@@ -127,14 +135,38 @@ function getDisabledPlugins() {
   for (const sf of settingsFiles) {
     try {
       const data = JSON.parse(fs.readFileSync(sf, "utf-8"));
+      // Check enabledPlugins dict: { "name@marketplace": true/false }
+      if (data.enabledPlugins && typeof data.enabledPlugins === "object") {
+        for (const [key, enabled] of Object.entries(data.enabledPlugins)) {
+          if (enabled === false) {
+            const name = String(key).split("@")[0];
+            if (name) disabled.add(name);
+          }
+        }
+      }
+      // Legacy: also check disabledPlugins array
       for (const entry of data.disabledPlugins || []) {
-        // entry can be "pluginName@marketplace" or just "pluginName"
         const name = String(entry).split("@")[0];
         if (name) disabled.add(name);
       }
     } catch { /* skip */ }
   }
   return disabled;
+}
+
+/** Load active install paths from installed_plugins.json */
+function getActiveInstallPaths() {
+  const regPath = expandHome("~/.claude/plugins/installed_plugins.json");
+  try {
+    const data = JSON.parse(fs.readFileSync(regPath, "utf-8"));
+    const paths = new Set();
+    for (const entries of Object.values(data.plugins || {})) {
+      for (const e of (Array.isArray(entries) ? entries : [entries])) {
+        if (e.installPath) paths.add(e.installPath);
+      }
+    }
+    return paths;
+  } catch { return null; }
 }
 
 // ---------------------------------------------------------------------------
@@ -173,7 +205,7 @@ function scanInstalledPlugins() {
   return plugins;
 }
 
-function scanInstalledSkills(disabledPlugins) {
+function scanInstalledSkills(disabledPlugins, activeInstallPaths) {
   const cacheBase = expandHome("~/.claude/plugins/cache");
   const allSkills = findFiles(cacheBase, (full, name) => name === "SKILL.md");
 
@@ -183,6 +215,8 @@ function scanInstalledSkills(disabledPlugins) {
     const pluginName = pluginNameFromCachePath(smd);
     if (!pluginName) continue;
     if (disabledPlugins.has(pluginName)) continue;
+    // Filter: only include skills under active install paths
+    if (activeInstallPaths && !isUnderActivePath(smd, activeInstallPaths)) continue;
     const parts = smd.split("/");
     const skillsIdx = parts.lastIndexOf("skills");
     if (skillsIdx === -1 || skillsIdx + 1 >= parts.length) continue;
@@ -223,7 +257,7 @@ function scanInstalledSkills(disabledPlugins) {
   return { skills, total_desc_chars: totalChars, disabled_count: disabledCount };
 }
 
-function scanInstalledCommands(disabledPlugins) {
+function scanInstalledCommands(disabledPlugins, activeInstallPaths) {
   const cacheBase = expandHome("~/.claude/plugins/cache");
   const allCmds = findFiles(cacheBase, (full, name) =>
     name.endsWith(".md") && full.includes("/commands/"),
@@ -234,6 +268,7 @@ function scanInstalledCommands(disabledPlugins) {
     const pluginName = pluginNameFromCachePath(cmd);
     if (!pluginName) continue;
     if (disabledPlugins.has(pluginName)) continue;
+    if (activeInstallPaths && !isUnderActivePath(cmd, activeInstallPaths)) continue;
     const cmdName = path.basename(cmd, ".md");
     const key = `${pluginName}/${cmdName}`;
     if (!groups[key] || mtime(cmd) > mtime(groups[key])) {
@@ -438,12 +473,13 @@ function main() {
   }
 
   const disabledPlugins = getDisabledPlugins();
+  const activeInstallPaths = getActiveInstallPaths();
 
   const result = {
     install_status: scanInstallStatus(args.pluginName),
     installed_plugins: scanInstalledPlugins(),
-    installed_skills: scanInstalledSkills(disabledPlugins),
-    installed_commands: scanInstalledCommands(disabledPlugins),
+    installed_skills: scanInstalledSkills(disabledPlugins, activeInstallPaths),
+    installed_commands: scanInstalledCommands(disabledPlugins, activeInstallPaths),
     local_skills: scanLocalSkills(),
     hook_inventory: scanHookInventory(),
     context_metrics: scanContextMetrics(),

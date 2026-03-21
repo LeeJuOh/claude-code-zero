@@ -295,6 +295,9 @@
     .check-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.05em; }
     .check-badge--pass { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
     .check-badge--fail { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+    .check-badge--info { background: color-mix(in srgb, var(--info) 15%, transparent); color: var(--info); }
+    .risk-badge--recommended { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+    .risk-badge--ok { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
     .env-fit-verdict { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: color-mix(in srgb, var(--surface) 60%, var(--bg) 40%); border-radius: 8px; margin-bottom: 1.5rem; }
     .env-fit-verdict p { margin: 0; }
     .env-fit-item { margin: 1rem 0; padding: 0.75rem 1rem; border-left: 3px solid var(--border); }
@@ -363,6 +366,7 @@
   });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
 <!-- CHART_DATA -->
 <script>
