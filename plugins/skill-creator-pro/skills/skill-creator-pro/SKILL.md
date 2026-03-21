@@ -68,6 +68,31 @@ Also identify the skill type:
 
 ## Phase 2: Design
 
+### Consult Official Docs (When Needed)
+
+Before writing SKILL.md, check if the skill uses platform features where the official spec is the source of truth:
+
+- **Frontmatter fields** (allowed-tools, context, hooks, disable-model-invocation)
+- **Hook events and syntax** (PreToolUse, PostToolUse, SessionStart, etc.)
+- **allowed-tools patterns** (command-scoped like `Bash(git *)`, tool restrictions)
+- **Plugin manifest** (plugin.json schema, settings.json limitations)
+
+For these, fetch the official docs index and the relevant page:
+
+```
+WebFetch https://code.claude.com/docs/llms.txt
+```
+
+Then fetch the specific page (e.g., `skills.md`, `hooks.md`, `plugins-reference.md`):
+
+```
+WebFetch https://code.claude.com/docs/en/<page>
+```
+
+Key pages: `skills.md` (frontmatter spec), `hooks.md` + `hooks-guide.md` (hook events/syntax), `plugins-reference.md` (plugin.json schema), `sub-agents.md` (agent restrictions).
+
+Skip this step when: writing skill body content, designing gotchas, structuring folders, or working on evals -- these don't depend on platform spec.
+
 ### Write the SKILL.md
 
 Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/references/design-patterns.md` for detailed guidance.
@@ -145,6 +170,8 @@ Skills can register hooks that activate only during the skill's session. Use the
 - `/freeze` -- Block Edit/Write outside a specific directory during debugging
 
 Consider adding hooks when the skill touches production data, involves destructive operations, or needs directory boundaries.
+
+When designing hooks, verify the supported events and matcher syntax against the official docs (`hooks.md`, `hooks-guide.md`) -- the available events and hook types evolve across releases.
 
 ### Memory & Data Persistence (Optional)
 
@@ -312,6 +339,17 @@ Before packaging, verify:
 - [ ] Tested triggering on obvious + paraphrased requests
 - [ ] Tested NOT triggering on related-but-different requests
 
+### Troubleshooting
+
+If `claude plugin validate .` fails or the skill doesn't trigger/behave as expected:
+
+1. Fetch `https://code.claude.com/docs/llms.txt` to get the docs index
+2. Identify the relevant page (e.g., `skills.md` for frontmatter errors, `hooks.md` for hook failures, `plugins-reference.md` for manifest issues)
+3. Fetch that page and compare your skill against the current spec
+4. Common causes: deprecated frontmatter fields, changed hook event names, unsupported allowed-tools patterns
+
+The bundled references in this skill cover design principles and eval methodology, but **platform spec** (what fields exist, what syntax is valid) lives in the official docs and may have changed since these references were written.
+
 ### Package
 
 ```bash
@@ -330,6 +368,8 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 | `agents/grader.md` | Evaluate assertions against outputs |
 | `agents/comparator.md` | Blind A/B comparison between two outputs |
 | `agents/analyzer.md` | Analyze benchmark patterns and comparison results |
+
+**Official docs (external):** `https://code.claude.com/docs/llms.txt` → index of all pages. Fetch when working with platform features (frontmatter, hooks, allowed-tools, plugin manifest). Key pages: `skills.md`, `hooks.md`, `hooks-guide.md`, `plugins-reference.md`, `sub-agents.md`.
 
 ## Environment Notes
 
