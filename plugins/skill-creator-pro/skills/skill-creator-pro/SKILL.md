@@ -195,7 +195,7 @@ Write `eval_metadata.json` for each test case with `eval_id`, `eval_name`, `prom
 
 **Step 2: Draft assertions while runs are in progress**
 
-Don't just wait. Draft quantitative assertions with descriptive names. Good assertions are objectively verifiable and read clearly in the benchmark viewer.
+Don't just wait. Draft quantitative assertions with descriptive names. Good assertions are binary (pass/fail), objectively verifiable, and read clearly in the benchmark viewer. See `${CLAUDE_SKILL_DIR}/references/eval-writing-guide.md` for how to write good assertions.
 
 Subjective skills (writing style, design quality) are better evaluated qualitatively -- don't force assertions onto things that need human judgment.
 
@@ -267,6 +267,10 @@ Keep going until the user is happy, feedback is all empty, or progress plateaus.
 ### Blind Comparison (Advanced)
 
 For rigorous A/B comparison, read `${CLAUDE_SKILL_DIR}/agents/comparator.md` and `${CLAUDE_SKILL_DIR}/agents/analyzer.md`. Give two outputs to an independent agent without revealing which is which. Optional -- the human review loop is usually sufficient.
+
+### Autonomous Optimization (Advanced)
+
+If the user wants hands-off optimization instead of the manual review loop above, suggest `/autoresearch`. It runs the skill dozens of times, scores outputs with binary evals, mutates the prompt, and keeps only improvements -- all autonomously. Best for skills that already work but need to go from 70% to 95%+.
 
 ---
 
