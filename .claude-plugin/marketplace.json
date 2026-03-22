@@ -17,7 +17,7 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -29,7 +29,7 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "2.11.1",
+      "version": "2.12.0",
       "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, and report management with interactive diagrams and curated design system"
     },
     {
@@ -47,7 +47,7 @@
     {
       "name": "skill-creator-pro",
       "source": "./plugins/skill-creator-pro",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Create, test, measure, and iteratively improve Claude Code skills with category-aware design, gotchas-driven development, progressive disclosure coaching, and automated description optimization"
     }
   ]
