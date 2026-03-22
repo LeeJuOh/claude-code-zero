@@ -1,6 +1,6 @@
 ---
 name: secret-setup
-description: Extract hardcoded secrets from CLAUDE.md and project config into a gitignored env file, then wire a SessionStart hook to load them automatically. Use when user says "separate secrets", "extract API keys", "secret setup", "env var setup", "hardcoded credentials", ".env setup for Claude", "load secrets via hook", or "protect credentials in CLAUDE.md".
+description: Extract hardcoded secrets from CLAUDE.md, .mcp.json, and project config into a gitignored env file, then wire a SessionStart hook to load them automatically. Use when user says "separate secrets", "extract API keys", "secret setup", "env var setup", "hardcoded credentials", ".env setup for Claude", "load secrets via hook", "protect credentials", or "clean up mcp secrets".
 disable-model-invocation: true
 allowed-tools: Read, Edit, Write, Bash, Grep, Glob, AskUserQuestion
 argument-hint: "[scan-only]"
@@ -8,9 +8,9 @@ argument-hint: "[scan-only]"
 
 # Secret Setup
 
-Extract hardcoded secrets from CLAUDE.md and project config into a gitignored env file, then wire up a SessionStart hook to load them automatically via `CLAUDE_ENV_FILE`.
+Extract hardcoded secrets from CLAUDE.md, `.mcp.json`, and project config into a gitignored env file, then wire up a SessionStart hook to load them automatically via `CLAUDE_ENV_FILE`.
 
-Secrets in CLAUDE.md get committed to git, shared with collaborators, and cached in Claude's context. This skill moves them to a gitignored file and loads them through a hook.
+Secrets in CLAUDE.md and `.mcp.json` get committed to git, shared with collaborators, and cached in Claude's context. This skill moves them to a gitignored file and loads them through a hook or shell profile.
 
 If the user passes `scan-only`, stop after Phase 1 (report findings without modifying anything).
 
@@ -36,13 +36,14 @@ For each confirmed secret, propose an environment variable name:
 - If the secret is already referenced by a known env var name in the project (e.g., `DATABASE_URL` in code), reuse that name.
 - Otherwise, derive a descriptive UPPER_SNAKE_CASE name from context.
 
-Present the mapping and ask for confirmation:
+Present the mapping and ask for confirmation. Mark the source so MCP secrets get handled differently in Phase 4:
 
 ```
-| # | Current value (masked) | Proposed env var |
-|---|----------------------|-----------------|
-| 1 | sk-...abc1 | OPENAI_API_KEY |
-| 2 | postgres://...@host/db | DATABASE_URL |
+| # | Source | Current value (masked) | Proposed env var |
+|---|--------|----------------------|-----------------|
+| 1 | CLAUDE.md | sk-...abc1 | OPENAI_API_KEY |
+| 2 | CLAUDE.md | postgres://...@host/db | DATABASE_URL |
+| 3 | .mcp.json | xoxb-...token | SLACK_TOKEN |
 ```
 
 The user may rename variables or skip items. Wait for approval before proceeding.
@@ -147,9 +148,11 @@ Add deny rules to `.claude/settings.local.json` to prevent Claude from reading t
 
 Merge with existing deny rules — do not remove existing entries.
 
-## Phase 4: Clean up CLAUDE.md
+## Phase 4: Clean up source files
 
-Replace each hardcoded value with the `$ENV_VAR_NAME` reference in the original file.
+### CLAUDE.md and config files
+
+Replace each hardcoded value with the `$ENV_VAR_NAME` reference.
 
 Before:
 ```
@@ -170,6 +173,39 @@ Environment variables are loaded automatically via SessionStart hook.
 See `.claude/hooks/load-secrets.sh` for the loading mechanism.
 Do not hardcode secrets in this file — use `$VAR_NAME` references.
 ```
+
+### MCP config files (.mcp.json)
+
+MCP servers are spawned as separate processes when Claude Code starts — **before** SessionStart hooks run. This means MCP servers cannot receive env vars set via the SessionStart hook. They only inherit env vars already present in the parent shell environment.
+
+Present the user with two options:
+
+**Option A (recommended for shared repos):** Remove the hardcoded value from the `env` field. The user sets the env var in their shell profile (`~/.zshrc` or `~/.bashrc`) instead. The MCP server inherits it from the parent process.
+
+Before:
+```json
+{
+  "env": {
+    "SLACK_TOKEN": "xoxb-actual-token"
+  }
+}
+```
+
+After:
+```json
+{
+  "env": {}
+}
+```
+
+User adds to `~/.zshrc`:
+```bash
+export SLACK_TOKEN="xoxb-actual-token"
+```
+
+**Option B (simpler):** Gitignore `.mcp.json` entirely. Secrets stay in the file but are not committed. Downside: MCP server configuration is no longer shared with collaborators.
+
+Ask the user which option they prefer. If Option A, also add the env var to the `.env.local` file (as a reference, even though it won't be loaded via hook for MCP). Tell the user they must restart their shell and Claude Code for changes to take effect.
 
 ## Phase 5: Verification
 
@@ -202,3 +238,5 @@ After verification, inform the user:
 - **Hook idempotency**: The hook script skips gracefully if the env file does not exist yet. This prevents errors when the env file is created later.
 - **Line ending safety**: Always use Unix LF line endings in the hook script. CRLF causes `command\r: not found` errors.
 - **Value quoting**: The hook script wraps values in double quotes (`export KEY="value"`) to handle spaces and special characters. If a value itself contains double quotes, the user must escape them in the env file (`KEY=value with \"quotes\"`).
+- **MCP secrets ≠ CLAUDE.md secrets**: MCP servers start as separate processes before SessionStart hooks run. They cannot receive env vars from the hook. MCP secrets must be set in the shell profile (`~/.zshrc`) or the `.mcp.json` must be gitignored.
+- **MCP env field inheritance**: When an `env` field in `.mcp.json` is empty or missing a key, the MCP server inherits that env var from the parent shell. This is standard Unix process behavior — removing a key from `env` does NOT block inheritance.
