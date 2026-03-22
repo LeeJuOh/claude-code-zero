@@ -198,11 +198,11 @@ Dispatch an agent to work on a specific issue. Agent reads the issue file, execu
 
 ### 8. Hooks
 
-| Event | Action | Principle |
-|-------|--------|-----------|
-| SessionStart | Show open issues summary + compliance warnings | 3, 4 |
-| PreToolUse(Write) | Check architectural boundary violations | 7 |
-| PostToolUse(Bash) | Check linter error messages are agent-friendly | 8 |
+| Event | Action | Principle | Phase |
+|-------|--------|-----------|-------|
+| SessionStart | Show open issues summary + compliance warnings | 3, 4 | MVP |
+| PreToolUse(Write) | Check architectural boundary violations | 7 | Phase 2 |
+| PostToolUse(Bash) | Check linter error messages are agent-friendly | 8 | Phase 3 |
 
 ## Plugin Structure
 
@@ -272,10 +272,86 @@ plugins/harness-engineer/
 
 No existing tool combines repo-native issue management with harness principle enforcement.
 
-## Open Questions
+## Design Decisions
 
-1. **Plugin name** — `harness-engineer`? `harness-check`? `repo-harness`?
-2. **Dashboard tech** — Static HTML generation vs lightweight local server (Node/Python/Bun)?
-3. **Issue ID format** — Auto-increment (`ISSUE-001`) vs timestamp-based vs slug-only?
-4. **Config format** — YAML (`.harness/config.yaml`) vs TOML vs JSON?
-5. **Backlog.md compatibility** — Should we be compatible with Backlog.md's file format, or design our own?
+1. **Plugin name** — `harness-engineer`. Describes what it does (engineer the harness).
+2. **Dashboard tech** — Static HTML generation. No runtime dependency (no Node/Python/Bun server required). The skill generates an HTML file with embedded data and opens it in the browser. Regenerated on each `/harness board` invocation. For Phase 2+, may upgrade to a lightweight local server if real-time updates prove necessary.
+3. **Issue ID format** — Auto-increment with prefix: `ISSUE-001`, `ISSUE-002`. Simple, readable, sortable. The prefix distinguishes from decision (`DEC-`) and plan (`PLAN-`) IDs.
+4. **Config format** — YAML (`.harness/config.yaml`). Consistent with the rest of the ecosystem (AGENTS.md, architecture files). Human-readable. Agent-readable.
+5. **Backlog.md compatibility** — Design our own format optimized for harness engineering (includes agent execution log, principle tags). Backlog.md's format is a reference but not a constraint. Migration tooling is out of scope.
+6. **Issues directory location** — `issues/` at repo root (not `.harness/issues/`). Maximizes agent discoverability and follows the "repo knowledge is the system of record" principle — issues are first-class repo content, not hidden config.
+
+## Architecture Definition Format
+
+`.harness/architecture.yaml` defines layer boundaries for Principle 7 checks:
+
+```yaml
+layers:
+  - name: types
+    paths: ["src/types/**"]
+    allowed_imports: []                    # types import nothing
+  - name: repo
+    paths: ["src/repo/**"]
+    allowed_imports: ["types"]             # repo imports types only
+  - name: service
+    paths: ["src/service/**"]
+    allowed_imports: ["types", "repo"]     # service imports types + repo
+  - name: ui
+    paths: ["src/ui/**", "src/components/**"]
+    allowed_imports: ["types", "service"]  # ui imports types + service, never repo
+```
+
+The check validates that files in each layer only import from allowed layers. Violation messages include the principle number and remediation:
+
+```
+[Principle 7] Architectural boundary violation:
+  src/ui/Login.tsx imports from src/repo/userRepo.ts
+  UI layer cannot import from Repo layer directly.
+  Fix: Use a Service layer function instead.
+```
+
+## Compliance Check Criteria (All 15 Principles)
+
+Each principle has concrete, scannable criteria for pass/warn/fail:
+
+| # | Principle | Pass | Warn | Fail |
+|---|-----------|------|------|------|
+| 1 | Humans Steer | `issues/` has issues with `assignee: agent` | — | No issues directory |
+| 2 | No Manual Code | Advisory only (Phase 3) | — | — |
+| 3 | Repo = SoR | `issues/` + `docs/decisions/` + `docs/plans/` all exist with content | Some directories empty | Missing directories |
+| 4 | Progressive Disclosure | `AGENTS.md` exists and < 200 lines | `AGENTS.md` exists but > 200 lines | No `AGENTS.md` |
+| 5 | App Legibility | Advisory only (Phase 3) | — | — |
+| 6 | Ephemeral Observability | Advisory only (Phase 3) | — | — |
+| 7 | Rigid Boundaries | `.harness/architecture.yaml` exists and no violations found | Config exists but violations detected | No architecture config |
+| 8 | Mechanical Enforcement | Linter config detected in repo (`.eslintrc`, `ruff.toml`, etc.) | Linter exists but no agent-friendly error messages | No linter config |
+| 9 | High-Throughput Merge | Advisory only (Phase 3) | — | — |
+| 10 | Plans as Artifacts | `docs/plans/` has plan files | Directory exists but empty | No plans directory |
+| 11 | Garbage Collection | Advisory only (Phase 3) | — | — |
+| 12 | Ralph Wiggum Loop | Advisory only (Phase 3) | — | — |
+| 13 | Fewer Tools | Advisory only (Phase 3) | — | — |
+| 14 | See Like an Agent | Advisory only (Phase 3) | — | — |
+| 15 | Simple Patterns | Advisory only (Phase 3) | — | — |
+
+**MVP scoring:** Principles with concrete checks (1, 3, 4, 7, 8, 10) produce pass/warn/fail. Advisory-only principles display guidance text with a "not yet enforced" label. Score is `N/M` where M = number of actively checked principles.
+
+## Dashboard Serving Mechanism
+
+The dashboard is a **generated static HTML file**, not a running server:
+
+1. `/harness board` skill runs a script that:
+   - Reads `issues/`, `docs/decisions/`, `docs/plans/`, `.harness/config.yaml`
+   - Runs compliance checks
+   - Generates a single self-contained HTML file (CSS + JS + data embedded)
+   - Writes to `.harness/board.html`
+   - Opens in default browser via `open` (macOS) / `xdg-open` (Linux)
+2. No background process needed. No port conflicts.
+3. To refresh: re-run `/harness board`.
+4. Phase 2+ may add a watch mode with a lightweight server if static proves insufficient.
+
+## Scope Clarification
+
+**Phase 2 and Phase 3 are explicitly out of scope for implementation planning.** The plan should cover Phase 1 (MVP) only. Phase 2/3 items are listed for directional context but should not influence MVP architecture decisions beyond keeping the design extensible.
+
+## PostToolUse(Bash) Hook Scope
+
+The PostToolUse(Bash) hook for linter error message checking is **Phase 3** (moved from the hooks table to align with Principle 8's Phase 3 timeline).
