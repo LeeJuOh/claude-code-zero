@@ -27,10 +27,33 @@ Search these files:
 - `.claude/CLAUDE.md` (if exists)
 - `.claude/settings.json` and `.claude/settings.local.json`
 - Any `.claude/rules/*.md` files
+- `.mcp.json` (project root — MCP server config)
+- `.claude/.mcp.json` (if exists)
 
-## Notes
+## MCP Config Notes
+
+MCP config files (`.mcp.json`) commonly contain hardcoded secrets in the `env` field:
+
+```json
+{
+  "mcpServers": {
+    "slack": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-slack"],
+      "env": {
+        "SLACK_TOKEN": "xoxb-actual-token-here"
+      }
+    }
+  }
+}
+```
+
+MCP secrets require different handling than CLAUDE.md secrets — see SKILL.md Phase 4 for details.
+
+## General Notes
 
 - Use Grep with each pattern against the scan targets.
 - AWS secret keys (`[A-Za-z0-9/+=]{40}`) are high false-positive — only flag when adjacent to an `AKIA` access key ID.
 - UUIDs are only suspicious when near context words like `key`, `token`, `secret`, `credential`.
 - Present findings in a table with masked values so the user can confirm which are real secrets vs documentation examples.
+- For MCP configs, also flag any literal string value in `env` fields that looks like a token or key, even if it doesn't match the regex patterns above.
