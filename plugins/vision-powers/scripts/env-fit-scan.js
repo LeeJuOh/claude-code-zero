@@ -124,34 +124,40 @@ function parseFrontmatter(content) {
   return { description: desc, disabled };
 }
 
-/** Load disabled plugin names from all settings scopes */
-function getDisabledPlugins() {
-  const disabled = new Set();
+/** Load plugin enable/disable state by merging enabledPlugins across all settings scopes.
+ *  Scopes are applied in order: user → project → local. Later scopes override earlier ones.
+ *  Returns { enabled: Set<string>, disabled: Set<string> }. */
+function getPluginStates() {
+  const state = {}; // name → true/false, later scopes override
   const settingsFiles = [
-    expandHome("~/.claude/settings.json"),
-    ".claude/settings.json",
-    ".claude/settings.local.json",
+    expandHome("~/.claude/settings.json"),   // user scope
+    ".claude/settings.json",                  // project scope
+    ".claude/settings.local.json",            // local scope
   ];
   for (const sf of settingsFiles) {
     try {
       const data = JSON.parse(fs.readFileSync(sf, "utf-8"));
-      // Check enabledPlugins dict: { "name@marketplace": true/false }
-      if (data.enabledPlugins && typeof data.enabledPlugins === "object") {
-        for (const [key, enabled] of Object.entries(data.enabledPlugins)) {
-          if (enabled === false) {
-            const name = String(key).split("@")[0];
-            if (name) disabled.add(name);
-          }
-        }
-      }
-      // Legacy: also check disabledPlugins array
+      // Legacy: disabledPlugins array (processed first; enabledPlugins can override)
       for (const entry of data.disabledPlugins || []) {
         const name = String(entry).split("@")[0];
-        if (name) disabled.add(name);
+        if (name) state[name] = false;
+      }
+      // enabledPlugins dict: { "name@marketplace": true/false }
+      if (data.enabledPlugins && typeof data.enabledPlugins === "object") {
+        for (const [key, value] of Object.entries(data.enabledPlugins)) {
+          const name = String(key).split("@")[0];
+          if (name) state[name] = value;
+        }
       }
     } catch { /* skip */ }
   }
-  return disabled;
+  const enabled = new Set();
+  const disabled = new Set();
+  for (const [name, value] of Object.entries(state)) {
+    if (value === false) disabled.add(name);
+    else enabled.add(name);
+  }
+  return { enabled, disabled };
 }
 
 /** Load active install paths from installed_plugins.json */
@@ -184,7 +190,7 @@ function scanInstallStatus(pluginName) {
   return "NOT_INSTALLED";
 }
 
-function scanInstalledPlugins() {
+function scanInstalledPlugins(enabledPlugins) {
   const cacheBase = expandHome("~/.claude/plugins/cache");
   const allPluginJsons = findFiles(
     cacheBase,
@@ -195,6 +201,7 @@ function scanInstalledPlugins() {
   const plugins = [];
 
   for (const [name, pjPath] of Object.entries(groups).sort()) {
+    if (!enabledPlugins.has(name)) continue;
     try {
       const data = JSON.parse(fs.readFileSync(pjPath, "utf-8"));
       plugins.push({ name, description: data.description || "" });
@@ -205,7 +212,7 @@ function scanInstalledPlugins() {
   return plugins;
 }
 
-function scanInstalledSkills(disabledPlugins, activeInstallPaths) {
+function scanInstalledSkills(enabledPlugins, activeInstallPaths) {
   const cacheBase = expandHome("~/.claude/plugins/cache");
   const allSkills = findFiles(cacheBase, (full, name) => name === "SKILL.md");
 
@@ -214,7 +221,7 @@ function scanInstalledSkills(disabledPlugins, activeInstallPaths) {
   for (const smd of allSkills) {
     const pluginName = pluginNameFromCachePath(smd);
     if (!pluginName) continue;
-    if (disabledPlugins.has(pluginName)) continue;
+    if (!enabledPlugins.has(pluginName)) continue;
     // Filter: only include skills under active install paths
     if (activeInstallPaths && !isUnderActivePath(smd, activeInstallPaths)) continue;
     const parts = smd.split("/");
@@ -257,7 +264,7 @@ function scanInstalledSkills(disabledPlugins, activeInstallPaths) {
   return { skills, total_desc_chars: totalChars, disabled_count: disabledCount };
 }
 
-function scanInstalledCommands(disabledPlugins, activeInstallPaths) {
+function scanInstalledCommands(enabledPlugins, activeInstallPaths) {
   const cacheBase = expandHome("~/.claude/plugins/cache");
   const allCmds = findFiles(cacheBase, (full, name) =>
     name.endsWith(".md") && full.includes("/commands/"),
@@ -267,7 +274,7 @@ function scanInstalledCommands(disabledPlugins, activeInstallPaths) {
   for (const cmd of allCmds) {
     const pluginName = pluginNameFromCachePath(cmd);
     if (!pluginName) continue;
-    if (disabledPlugins.has(pluginName)) continue;
+    if (!enabledPlugins.has(pluginName)) continue;
     if (activeInstallPaths && !isUnderActivePath(cmd, activeInstallPaths)) continue;
     const cmdName = path.basename(cmd, ".md");
     const key = `${pluginName}/${cmdName}`;
@@ -397,7 +404,7 @@ function scanLocalSkills() {
   return { skills, total_desc_chars: totalChars, disabled_count: disabledCount };
 }
 
-function scanHookInventory() {
+function scanHookInventory(enabledPlugins) {
   let total = 0;
   const typeCounts = { command: 0, http: 0, prompt: 0, agent: 0 };
   const projectHooks = [];
@@ -420,12 +427,13 @@ function scanHookInventory() {
     /* no local settings */
   }
 
-  // Plugin hooks (deduplicated)
+  // Plugin hooks (deduplicated, filtered by enabled plugins)
   const cacheBase = expandHome("~/.claude/plugins/cache");
   const hookFiles = findFiles(cacheBase, (full, name) => name === "hooks.json" && full.includes("/hooks/"));
   const groups = deduplicateByPlugin(hookFiles, pluginNameFromCachePath);
 
   for (const [plugin, hfPath] of Object.entries(groups).sort()) {
+    if (!enabledPlugins.has(plugin)) continue;
     try {
       const data = JSON.parse(fs.readFileSync(hfPath, "utf-8"));
       for (const [event, entries] of Object.entries(data)) {
@@ -451,15 +459,20 @@ function scanHookInventory() {
 }
 
 function scanContextMetrics() {
-  let mcpServers = 0;
-  try {
-    const data = JSON.parse(fs.readFileSync(".claude/settings.local.json", "utf-8"));
-    const s = data.mcpServers || data.enabledMcpjsonServers || {};
-    mcpServers = typeof s === "object" ? Object.keys(s).length : 0;
-  } catch {
-    /* no settings */
+  const mcpNames = new Set();
+  const settingsFiles = [
+    expandHome("~/.claude/settings.json"),   // user scope
+    ".claude/settings.json",                  // project scope
+    ".claude/settings.local.json",            // local scope
+  ];
+  for (const sf of settingsFiles) {
+    try {
+      const data = JSON.parse(fs.readFileSync(sf, "utf-8"));
+      for (const key of Object.keys(data.mcpServers || {})) mcpNames.add(key);
+      for (const key of Object.keys(data.enabledMcpjsonServers || {})) mcpNames.add(key);
+    } catch { /* skip */ }
   }
-  return { mcp_servers: mcpServers };
+  return { mcp_servers: mcpNames.size };
 }
 
 // ---------------------------------------------------------------------------
@@ -472,16 +485,16 @@ function main() {
     process.exit(2);
   }
 
-  const disabledPlugins = getDisabledPlugins();
+  const { enabled: enabledPlugins, disabled: disabledPlugins } = getPluginStates();
   const activeInstallPaths = getActiveInstallPaths();
 
   const result = {
     install_status: scanInstallStatus(args.pluginName),
-    installed_plugins: scanInstalledPlugins(),
-    installed_skills: scanInstalledSkills(disabledPlugins, activeInstallPaths),
-    installed_commands: scanInstalledCommands(disabledPlugins, activeInstallPaths),
+    installed_plugins: scanInstalledPlugins(enabledPlugins),
+    installed_skills: scanInstalledSkills(enabledPlugins, activeInstallPaths),
+    installed_commands: scanInstalledCommands(enabledPlugins, activeInstallPaths),
     local_skills: scanLocalSkills(),
-    hook_inventory: scanHookInventory(),
+    hook_inventory: scanHookInventory(enabledPlugins),
     context_metrics: scanContextMetrics(),
     disabled_plugins: [...disabledPlugins],
   };
