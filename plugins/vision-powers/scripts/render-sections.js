@@ -160,7 +160,7 @@ function renderMermaidWrap(title, mermaidCode, size) {
   <div class="mermaid-wrap${sizeClass}">
     <div class="zoom-controls">
       <button class="zoom-btn zoom-in" title="Zoom in">+</button>
-      <span class="zoom-level">140%</span>
+      <span class="zoom-level">100%</span>
       <button class="zoom-btn zoom-out" title="Zoom out">&minus;</button>
       <button class="zoom-btn zoom-reset" title="Reset">&#8635;</button>
     </div>

@@ -11,7 +11,9 @@ Analyze agent extensions (plugins, skills, commands, hooks, agents, MCP servers)
 ```
 analyze ./plugins/my-plugin
 analyze github.com/owner/repo
+analyze github.com/owner/repo/tree/main/plugins/foo
 analyze ./plugins/my-plugin --format md
+analyze ./plugins/my-plugin --lang ko
 security audit ./plugins/my-plugin
 overview ./plugins/my-plugin
 ```
@@ -75,6 +77,16 @@ All reports are saved to:
 ```
 ${CLAUDE_PLUGIN_DATA}/reports/
 ```
+
+## Report Interaction
+
+All HTML reports include interactive features:
+
+- **Zoom**: `+`/`-` buttons or `Ctrl+scroll` on diagrams
+- **Pan**: Click and drag to move around zoomed diagrams
+- **Fullscreen**: Expand any diagram to full screen (`Esc` to exit)
+- **PNG Export**: Download any diagram as a high-resolution PNG
+- **Feedback**: Click ✎ on any section to write feedback, then **Copy to Clipboard** at the bottom bar and paste the JSON into Claude Code for targeted fixes
 
 ## Architecture
 

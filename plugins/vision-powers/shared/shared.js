@@ -1,34 +1,96 @@
 /* ===== Zoom Controls ===== */
-var INITIAL_ZOOM = 1.4;
+var INITIAL_ZOOM = 1.0;
+
 function applyZoom(wrap, level) {
-  var target = wrap.querySelector('.mermaid');
-  target.dataset.zoom = level;
-  target.style.transform = 'scale(' + level + ')';
-  var svg = target.querySelector('svg');
-  if (svg) { var rect = svg.getBoundingClientRect(); target.style.width = (rect.width / level * level) + 'px'; target.style.height = (rect.height / level * level) + 'px'; }
+  var svg = wrap.querySelector('svg');
+  if (!svg) return;
+  /* Store original SVG dimensions once from viewBox */
+  if (!wrap.dataset.origW) {
+    var vb = svg.viewBox.baseVal;
+    var w = (vb && vb.width) || svg.clientWidth || 800;
+    var h = (vb && vb.height) || svg.clientHeight || 400;
+    wrap.dataset.origW = w;
+    wrap.dataset.origH = h;
+  }
+  wrap.dataset.zoom = level;
+  var origW = parseFloat(wrap.dataset.origW);
+  var origH = parseFloat(wrap.dataset.origH);
+  svg.style.width = Math.round(origW * level) + 'px';
+  svg.style.height = Math.round(origH * level) + 'px';
+  svg.style.maxWidth = 'none';
+  svg.style.minWidth = 'unset';
   var indicator = wrap.querySelector('.zoom-level');
   if (indicator) indicator.textContent = Math.round(level * 100) + '%';
 }
-function zoomDiagram(btn, factor) { var wrap = btn.closest('.mermaid-wrap'); var target = wrap.querySelector('.mermaid'); var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM); applyZoom(wrap, Math.min(Math.max(current * factor, 0.3), 30)); }
-function resetZoom(btn) { applyZoom(btn.closest('.mermaid-wrap'), INITIAL_ZOOM); }
-function toggleFullscreen(btn) { var wrap = btn.closest('.mermaid-wrap'); wrap.classList.toggle('is-fullscreen'); document.body.style.overflow = wrap.classList.contains('is-fullscreen') ? 'hidden' : ''; }
-document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { var fs = document.querySelector('.mermaid-wrap.is-fullscreen'); if (fs) { fs.classList.remove('is-fullscreen'); document.body.style.overflow = ''; } } });
 
+function zoomDiagram(btn, factor) {
+  var wrap = btn.closest('.mermaid-wrap');
+  var current = parseFloat(wrap.dataset.zoom || INITIAL_ZOOM);
+  var next = Math.min(Math.max(current * factor, 0.3), 20);
+  applyZoom(wrap, next);
+}
+
+function resetZoom(btn) { applyZoom(btn.closest('.mermaid-wrap'), INITIAL_ZOOM); }
+
+function toggleFullscreen(btn) {
+  var wrap = btn.closest('.mermaid-wrap');
+  wrap.classList.toggle('is-fullscreen');
+  document.body.style.overflow = wrap.classList.contains('is-fullscreen') ? 'hidden' : '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var fs = document.querySelector('.mermaid-wrap.is-fullscreen');
+    if (fs) { fs.classList.remove('is-fullscreen'); document.body.style.overflow = ''; }
+  }
+});
+
+/* ===== Wheel Zoom (Ctrl/Cmd + scroll) ===== */
 document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
-  wrap.addEventListener('wheel', function(e) { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); var target = wrap.querySelector('.mermaid'); var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM); var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15; applyZoom(wrap, Math.min(Math.max(current * factor, 0.3), 30)); }, { passive: false });
-  var startX, startY, scrollLeft, scrollTop;
-  wrap.addEventListener('mousedown', function(e) { if (e.target.closest('.zoom-controls')) return; wrap.classList.add('is-panning'); startX = e.pageX - wrap.offsetLeft; startY = e.pageY - wrap.offsetTop; scrollLeft = wrap.scrollLeft; scrollTop = wrap.scrollTop; });
-  wrap.addEventListener('mousemove', function(e) { if (!wrap.classList.contains('is-panning')) return; e.preventDefault(); wrap.scrollLeft = scrollLeft - (e.pageX - wrap.offsetLeft - startX); wrap.scrollTop = scrollTop - (e.pageY - wrap.offsetTop - startY); });
+  wrap.addEventListener('wheel', function(e) {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    var current = parseFloat(wrap.dataset.zoom || INITIAL_ZOOM);
+    var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    applyZoom(wrap, Math.min(Math.max(current * factor, 0.3), 20));
+  }, { passive: false });
+});
+
+/* ===== Mouse Drag Panning ===== */
+document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+  wrap.addEventListener('mousedown', function(e) {
+    if (e.target.closest('.zoom-controls')) return;
+    wrap.classList.add('is-panning');
+    wrap._startX = e.clientX;
+    wrap._startY = e.clientY;
+    wrap._scrollL = wrap.scrollLeft;
+    wrap._scrollT = wrap.scrollTop;
+  });
+  wrap.addEventListener('mousemove', function(e) {
+    if (!wrap.classList.contains('is-panning')) return;
+    e.preventDefault();
+    wrap.scrollLeft = wrap._scrollL - (e.clientX - wrap._startX);
+    wrap.scrollTop = wrap._scrollT - (e.clientY - wrap._startY);
+  });
   document.addEventListener('mouseup', function() { wrap.classList.remove('is-panning'); });
 });
-document.addEventListener('keydown', function(e) { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; var wrap = document.querySelector('.mermaid-wrap:hover'); if (!wrap) return; if (e.key === '+' || e.key === '=') { e.preventDefault(); var t = wrap.querySelector('.mermaid'); applyZoom(wrap, Math.min(parseFloat(t.dataset.zoom || INITIAL_ZOOM) * 1.3, 30)); } else if (e.key === '-') { e.preventDefault(); var t = wrap.querySelector('.mermaid'); applyZoom(wrap, Math.max(parseFloat(t.dataset.zoom || INITIAL_ZOOM) / 1.3, 0.3)); } });
+
+/* ===== Keyboard Zoom (+/-) ===== */
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  var wrap = document.querySelector('.mermaid-wrap:hover');
+  if (!wrap) return;
+  var current = parseFloat(wrap.dataset.zoom || INITIAL_ZOOM);
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); applyZoom(wrap, Math.min(current * 1.3, 20)); }
+  else if (e.key === '-') { e.preventDefault(); applyZoom(wrap, Math.max(current / 1.3, 0.3)); }
+});
 
 /* ===== Touch Gestures: pinch-to-zoom + touch drag ===== */
 document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
   wrap.addEventListener('touchstart', function(e) {
     if (e.touches.length === 2) {
       wrap._pinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-      wrap._pinchZoom = parseFloat(wrap.querySelector('.mermaid').dataset.zoom || INITIAL_ZOOM);
+      wrap._pinchZoom = parseFloat(wrap.dataset.zoom || INITIAL_ZOOM);
     } else if (e.touches.length === 1) {
       wrap._touchX = e.touches[0].pageX; wrap._touchY = e.touches[0].pageY;
       wrap._touchSL = wrap.scrollLeft; wrap._touchST = wrap.scrollTop;
@@ -38,7 +100,7 @@ document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
     if (e.touches.length === 2 && wrap._pinchDist) {
       e.preventDefault();
       var dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-      applyZoom(wrap, Math.min(Math.max(wrap._pinchZoom * (dist / wrap._pinchDist), 0.3), 30));
+      applyZoom(wrap, Math.min(Math.max(wrap._pinchZoom * (dist / wrap._pinchDist), 0.3), 20));
     } else if (e.touches.length === 1 && wrap._touchX !== undefined) {
       wrap.scrollLeft = wrap._touchSL - (e.touches[0].pageX - wrap._touchX);
       wrap.scrollTop = wrap._touchST - (e.touches[0].pageY - wrap._touchY);
@@ -50,7 +112,7 @@ document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
 /* ===== PNG Export ===== */
 function exportDiagramPng(btn) {
   var wrap = btn.closest('.mermaid-wrap');
-  var svgEl = wrap.querySelector('.mermaid svg');
+  var svgEl = wrap.querySelector('svg');
   if (!svgEl) return;
   var scale = 4;
   var clone = svgEl.cloneNode(true);
@@ -74,8 +136,9 @@ function exportDiagramPng(btn) {
   };
   img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
 }
+
+/* ===== Zoom Button Delegation ===== */
 document.querySelectorAll('.zoom-controls').forEach(function(controls) {
-  /* Bind zoom/reset/fullscreen clicks via event delegation — works regardless of onclick attributes */
   controls.addEventListener('click', function(e) {
     var btn = e.target.closest('button');
     if (!btn || btn.classList.contains('export-png')) return;
@@ -97,7 +160,6 @@ function fixMermaidViewBox(svg) {
   try {
     var vb = svg.viewBox.baseVal;
     if (!vb || vb.width === 0) return;
-    // Crop viewBox to actual content bounds
     var bbox = svg.getBBox();
     if (bbox.width > 0 && bbox.height > 0) {
       var pad = Math.max(bbox.width, bbox.height) * 0.04;
@@ -108,30 +170,21 @@ function fixMermaidViewBox(svg) {
           (bbox.x - pad) + ' ' + (bbox.y - pad) + ' ' + newW + ' ' + newH);
       }
     }
-    // For large diagrams: set minimum SVG width so text stays readable
-    var finalVb = svg.viewBox.baseVal;
-    if (finalVb.width > 4000) {
-      var minWidth = Math.ceil(finalVb.width * 0.7);
-      svg.style.width = minWidth + 'px';
-      svg.style.maxWidth = 'none';
-      svg.style.height = 'auto';
-    }
   } catch(e) { /* getBBox can throw if SVG is not yet in DOM */ }
 }
 
 /* ===== Initial Zoom: apply after Mermaid renders SVGs ===== */
-/* Watch .mermaid-wrap (not .mermaid) because Mermaid v11 replaces the <pre> node entirely.
-   Delay viewBox correction to run after Mermaid fully finishes rendering. */
 document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
   new MutationObserver(function(mutations, obs) {
     var svg = wrap.querySelector('svg');
     if (svg) {
       obs.disconnect();
+      fixMermaidViewBox(svg);
       applyZoom(wrap, INITIAL_ZOOM);
     }
   }).observe(wrap, { childList: true, subtree: true });
 });
-/* Run viewBox correction after all Mermaid rendering completes */
+/* Fallback: run after Mermaid rendering completes */
 setTimeout(function() {
   document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
     var svg = wrap.querySelector('svg');
@@ -178,18 +231,18 @@ setTimeout(function() {
     sec.appendChild(trigger);
 
     var form = el('div', 've-feedback-form');
+
     var textarea = el('textarea');
     textarea.placeholder = 'Write feedback for this section...';
     form.appendChild(textarea);
 
     var actions = el('div', 've-feedback-actions');
-    var btnOk = el('button', 've-feedback-btn ve-feedback-btn--ok', 'OK');
-    btnOk.dataset.action = 'ok';
-    var btnSave = el('button', 've-feedback-btn', 'Save');
+    var btnSave = el('button', 've-feedback-btn ve-feedback-btn--save', 'Save');
     btnSave.dataset.action = 'save';
-    var btnClear = el('button', 've-feedback-btn', 'Clear');
+    btnSave.title = 'Save feedback for this section';
+    var btnClear = el('button', 've-feedback-btn ve-feedback-btn--clear', 'Clear');
     btnClear.dataset.action = 'clear';
-    actions.appendChild(btnOk);
+    btnClear.title = 'Remove feedback for this section';
     actions.appendChild(btnSave);
     actions.appendChild(btnClear);
     form.appendChild(actions);
@@ -203,7 +256,6 @@ setTimeout(function() {
 
     if (feedback[sec.id]) {
       textarea.value = feedback[sec.id].text || '';
-      if (feedback[sec.id].status === 'ok') trigger.classList.add('marked-ok');
       if (feedback[sec.id].text) trigger.classList.add('has-feedback');
     }
 
@@ -213,28 +265,23 @@ setTimeout(function() {
     });
 
     textarea.addEventListener('input', function() {
-      save(sec.id, textarea.value, feedback[sec.id] ? feedback[sec.id].status : '');
-      updateTrigger(trigger, textarea.value, feedback[sec.id] ? feedback[sec.id].status : '');
+      save(sec.id, textarea.value, textarea.value ? 'issue' : '');
+      updateTrigger(trigger, textarea.value);
       updateBar();
     });
 
-    [btnOk, btnSave, btnClear].forEach(function(btn) {
+    [btnSave, btnClear].forEach(function(btn) {
       btn.addEventListener('click', function() {
         var action = btn.dataset.action;
-        if (action === 'ok') {
-          save(sec.id, textarea.value, 'ok');
-          trigger.classList.add('marked-ok');
-          trigger.classList.remove('has-feedback');
-          form.classList.remove('is-open');
-        } else if (action === 'save') {
+        if (action === 'save') {
           save(sec.id, textarea.value, textarea.value ? 'issue' : '');
-          updateTrigger(trigger, textarea.value, textarea.value ? 'issue' : '');
+          updateTrigger(trigger, textarea.value);
           form.classList.remove('is-open');
         } else if (action === 'clear') {
           textarea.value = '';
           delete feedback[sec.id];
           localStorage.setItem(STORAGE_KEY, JSON.stringify(feedback));
-          trigger.classList.remove('has-feedback', 'marked-ok');
+          trigger.classList.remove('has-feedback');
           form.classList.remove('is-open');
         }
         updateBar();
@@ -247,43 +294,45 @@ setTimeout(function() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(feedback));
   }
 
-  function updateTrigger(trigger, text, status) {
+  function updateTrigger(trigger, text) {
     trigger.classList.toggle('has-feedback', !!text);
-    trigger.classList.toggle('marked-ok', status === 'ok');
   }
 
   function updateBar() {
     var keys = Object.keys(feedback);
     var issues = keys.filter(function(k) { return feedback[k].status === 'issue'; }).length;
-    var oks = keys.filter(function(k) { return feedback[k].status === 'ok'; }).length;
-    var total = keys.length;
-    if (total > 0) {
+    if (issues > 0) {
       bar.classList.add('is-visible');
-      summaryEl.textContent = total + ' reviewed | ' + oks + ' OK | ' + issues + ' issues';
+      summaryEl.textContent = issues + ' issue' + (issues > 1 ? 's' : '');
     } else {
       bar.classList.remove('is-visible');
     }
   }
 
+  function buildExportData() {
+    var data = {
+      report_path: location.pathname,
+      report_title: document.title,
+      exported_at: new Date().toISOString(),
+      sections: []
+    };
+    sections.forEach(function(sec) {
+      var heading = sec.querySelector('h2');
+      var entry = feedback[sec.id] || { text: '', status: '', timestamp: '' };
+      data.sections.push({
+        id: sec.id,
+        title: heading ? heading.textContent.trim() : sec.id,
+        status: entry.status || 'not-reviewed',
+        feedback: entry.text || '',
+        timestamp: entry.timestamp || ''
+      });
+    });
+    return data;
+  }
+
   window._veFeedback = {
     export: function() {
-      var data = {
-        report_path: location.pathname,
-        report_title: document.title,
-        exported_at: new Date().toISOString(),
-        sections: []
-      };
-      sections.forEach(function(sec) {
-        var heading = sec.querySelector('h2');
-        var entry = feedback[sec.id] || { text: '', status: '', timestamp: '' };
-        data.sections.push({
-          id: sec.id,
-          title: heading ? heading.textContent.trim() : sec.id,
-          status: entry.status || 'not-reviewed',
-          feedback: entry.text || '',
-          timestamp: entry.timestamp || ''
-        });
-      });
+      var data = buildExportData();
       var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -292,6 +341,18 @@ setTimeout(function() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
+    },
+    copyToClipboard: function() {
+      var data = buildExportData();
+      var text = JSON.stringify(data, null, 2);
+      navigator.clipboard.writeText(text).then(function() {
+        var btn = document.querySelector('.ve-feedback-bar__copy');
+        if (btn) {
+          var orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(function() { btn.textContent = orig; }, 1500);
+        }
+      });
     }
   };
 

@@ -150,10 +150,10 @@
     @media (prefers-reduced-motion: no-preference) { *, *::before, *::after { transition-duration: 0.15s; } }
 
     /* ===== MERMAID ===== */
-    .mermaid-wrap { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px 24px; overflow: auto; display: flex; justify-content: center; align-items: center; min-height: 400px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; cursor: grab; }
+    .mermaid-wrap { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px 24px; overflow: auto; min-height: 400px; max-height: 80vh; scrollbar-width: thin; scrollbar-color: var(--border) transparent; cursor: grab; text-align: center; }
     .mermaid-wrap::-webkit-scrollbar { width: 6px; height: 6px; } .mermaid-wrap::-webkit-scrollbar-track { background: transparent; } .mermaid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    .mermaid-wrap .mermaid { max-width: 100%; overflow: hidden; }
-    .mermaid-wrap .mermaid svg { max-width: 100%; height: auto; }
+    .mermaid-wrap .mermaid { display: inline-block; overflow: visible; }
+    .mermaid-wrap .mermaid svg { height: auto; }
     .mermaid .nodeLabel { color: var(--text) !important; font-family: var(--font-body) !important; font-size: 16px !important; }
     .mermaid .edgeLabel { color: var(--text-dim) !important; background-color: var(--bg) !important; font-family: var(--font-mono) !important; font-size: 13px !important; }
     .mermaid .edgeLabel rect { fill: var(--bg) !important; }
@@ -200,7 +200,7 @@
     /* ===== REPORT: Section 2 — Overview ===== */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
     .kpi-card { padding: 1.25rem; border-radius: 12px; text-align: center; }
-    .kpi-value { display: block; font-size: 2rem; font-weight: 700; font-family: var(--font-mono); }
+    .kpi-value { display: block; font-size: clamp(1.2rem, 4vw, 2rem); font-weight: 700; font-family: var(--font-mono); word-break: keep-all; white-space: nowrap; }
     .kpi-label { display: block; font-size: 0.85rem; opacity: 0.7; margin-top: 0.25rem; }
     .kpi-card--success { background: color-mix(in srgb, var(--success) 12%, var(--surface)); color: var(--success); }
     .kpi-card--danger { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger); }
@@ -337,7 +337,8 @@
 <!-- Feedback bar -->
 <div class="ve-feedback-bar" id="feedbackBar">
   <span class="ve-feedback-bar__summary" id="feedbackSummary"></span>
-  <button class="ve-feedback-bar__export" onclick="window._veFeedback.export()">Export Feedback</button>
+  <button class="ve-feedback-bar__copy" onclick="window._veFeedback.copyToClipboard()">Copy to Clipboard</button>
+  <button class="ve-feedback-bar__export" onclick="window._veFeedback.export()">Download JSON</button>
 </div>
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';

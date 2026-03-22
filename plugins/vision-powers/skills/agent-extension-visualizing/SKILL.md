@@ -392,13 +392,17 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
    Use `AskUserQuestion` with the `file://` URL embedded in the question text itself:
    ```
-   Report generated: file://{output-path}
+   Report generated: [Open Report](file://{output-path})
 
-   Please review the report. Any changes needed, or should I clean up temporary files?
+   Review the report. Each section has a ✎ button — write feedback and click **Save**.
+   When done, click **"Copy to Clipboard"** at the bottom bar and paste here.
+   Or just tell me what to change directly.
    ```
-   (Translate to output language. `{output-path}` is the actual path determined in step 1. The `file://` URL must always be included — it is how the user opens the report.)
+   (Translate to output language. `{output-path}` is the actual path determined in step 1. Always include the `file://` URL as a markdown link — this is how the user opens the report.)
 
-   - If the user requests changes → apply modifications to the HTML file, then ask again with the same URL
+   - If the user pastes exported feedback JSON → parse it and apply changes to sections with `status: "issue"`. Do NOT read the full HTML file — only Edit the specific sections that need changes. This prevents context bloat.
+   - If the user describes changes in natural language → apply modifications via targeted Edit calls on the HTML file
+   - After applying changes, ask again with the same URL
    - If the user confirms completion → proceed to Phase 7
 
 #### Phase 7: Cleanup
@@ -441,6 +445,9 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **LLM schema mismatches handled by normalize**: The `render-sections.js` normalize function auto-corrects 15 common LLM output variations. Do NOT write Python fixup scripts in Bash — the normalize layer handles these deterministically. Key patterns: `features` as `[{title, description}]` → `string[]`, `recommendations` as `[{priority, text}]` → `string[]`, `keywords` as array → comma-separated string, `installation_status` as string → `{status, detail}`, `dependency_check` missing `status`/`severity`, `philosophy` cards with empty `name`, chart labels by purpose instead of extension type, `workflow_trace` title leading numbers stripped, and `context_budget` empty budget columns filled with official doc values.
 - **Architecture diagrams with large plugins**: Plugins with 15+ components cause the LLM to list all nodes individually, producing broken Mermaid layouts or "...N more" truncation. The schema now instructs showing 3-5 representatives per architectural layer with total counts, keeping under 25 nodes per diagram.
 - **Overview chart must use extension types**: The chart labels must be extension types (Skills, Agents, Commands, Hooks, MCP, LSP) not purpose categories (Scaffolding, Automation, etc.). The normalize function auto-corrects this by counting from the components section, but the schema also instructs this explicitly.
+- **Never Read the full HTML report for feedback**: The generated HTML report can be 10,000+ tokens. Reading it into context for feedback processing causes context bloat and slow responses. Instead, use the Export Feedback JSON (a few hundred tokens) or have the user describe changes verbally. When edits are needed, use targeted Edit calls on specific line ranges — never Read the entire file.
+- **Do not edit Mermaid diagrams directly in the final HTML**: Mermaid code in the assembled HTML is inside `<pre class="mermaid">` blocks. Editing these directly risks syntax errors that break rendering (e.g., missing quotes on node labels, invalid subgraph syntax). If a diagram needs changes, edit the `sections-data.json` source and re-run render-sections.js + assemble-report.js instead.
+- **Discovery phase must use Glob only, never Bash**: Phase 2 file discovery must use Glob calls exclusively. Bash calls like `ls` or `find` are not in `allowed-tools` and trigger a user permission prompt that blocks execution (observed: 185s wait). All file listing needs are covered by Glob patterns — there is no case where Bash is needed for discovery.
 
 ### Reference Files
 

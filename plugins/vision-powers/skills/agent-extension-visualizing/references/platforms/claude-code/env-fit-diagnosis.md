@@ -27,7 +27,7 @@ Extract these from the feature-architect output:
 Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name})
 ```
 
-Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. The script outputs JSON with: `install_status`, `installed_plugins`, `installed_skills` (with `total_desc_chars`, `disabled_count`), `installed_commands` (with `total_desc_chars`, `disabled_count`), `local_skills` (includes both skills and commands), `hook_inventory` (with `total`, `type_counts`), `context_metrics` (with `mcp_servers`), and `disabled_plugins` (list of disabled plugin names filtered from settings).
+Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. The script merges `enabledPlugins` across all three settings scopes (user → project → local) with later scopes overriding earlier ones, then filters all scan results to only include plugins enabled for the current project context. It outputs JSON with: `install_status`, `installed_plugins` (enabled only), `installed_skills` (with `total_desc_chars`, `disabled_count`), `installed_commands` (with `total_desc_chars`, `disabled_count`), `local_skills` (includes both skills and commands), `hook_inventory` (with `total`, `type_counts`; plugin hooks filtered by enabled), `context_metrics` (with `mcp_servers` from all 3 settings scopes), and `disabled_plugins` (list of explicitly disabled plugin names from merged settings).
 
 If the plugin has external requirements (from Step 1), also check them with simple commands:
 
