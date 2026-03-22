@@ -323,7 +323,7 @@ For rigorous A/B comparison, read `${CLAUDE_SKILL_DIR}/agents/comparator.md` and
 
 ### Autonomous Optimization (Advanced)
 
-If the user wants hands-off optimization instead of the manual review loop above, suggest `/autoresearch`. It runs the skill dozens of times, scores outputs with binary evals, mutates the prompt, and keeps only improvements -- all autonomously. Best for skills that already work but need to go from 70% to 95%+.
+If the user wants hands-off optimization instead of the manual review loop above, suggest `/auto-optimize`. It runs the skill dozens of times, scores outputs with binary evals, mutates the prompt, and keeps only improvements -- all autonomously. Best for skills that already work but need to go from 70% to 95%+.
 
 ---
 

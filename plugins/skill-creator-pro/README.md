@@ -30,7 +30,7 @@ Built on the official [skill-creator](https://github.com/anthropics/claude-code-
 | Skill | Description |
 |-------|-------------|
 | `skill-creator-pro` | Full skill creation workflow (Understand → Design → Test → Improve → Polish) |
-| `autoresearch` | Autonomous optimization — runs a skill dozens of times, scores with binary evals, mutates the prompt, keeps only improvements |
+| `auto-optimize` | Autonomous optimization — runs a skill dozens of times, scores with binary evals, mutates the prompt, keeps only improvements |
 
 ## Usage
 
