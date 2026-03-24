@@ -1,0 +1,7 @@
+{
+  "name": "rubber-duck-tutor",
+  "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Interactive learning sessions for plan review, code verification, and PR review, with auto-hooks that suggest sessions after commits and plan creation.",
+  "author": { "name": "LeeJuOh" },
+  "license": "MIT",
+  "keywords": ["rubber-duck", "tutor", "learning", "code-review", "rubber-stamping", "skill-development"]
+}

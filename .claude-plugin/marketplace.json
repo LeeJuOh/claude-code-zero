@@ -43,6 +43,12 @@
       "source": "./plugins/codex-advisor",
       "version": "1.0.0",
       "description": "Integrate OpenAI Codex CLI for code review and verification with Claude's critical evaluation. Auto-suggests review after commits and verification after task completion."
+    },
+    {
+      "name": "rubber-duck-tutor",
+      "source": "./plugins/rubber-duck-tutor",
+      "version": "1.0.0",
+      "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Interactive learning sessions for plan review, code verification, and PR review, with auto-hooks for post-commit and post-plan suggestions."
     }
   ]
 }
