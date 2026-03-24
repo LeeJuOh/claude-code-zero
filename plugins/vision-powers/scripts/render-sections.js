@@ -1253,6 +1253,37 @@ function validateSectionsData(input) {
       warnings.push("architecture.diagrams is empty — no architecture diagrams will render");
   }
 
+  // Feature deep dive checks
+  if (s.feature_deep_dive) {
+    const mechs = s.feature_deep_dive.mechanisms || [];
+    let emptyWhyMatters = 0;
+    let emptyStepTexts = 0;
+    for (const m of mechs) {
+      if (!m.why_matters || !m.why_matters.trim()) emptyWhyMatters++;
+      for (const step of (m.steps || [])) {
+        if (!step.text || !step.text.trim()) emptyStepTexts++;
+      }
+    }
+    if (emptyWhyMatters > 0)
+      warnings.push(`feature_deep_dive.mechanisms: ${emptyWhyMatters} card(s) with empty 'why_matters' — will render as blank paragraphs`);
+    if (emptyStepTexts > 0)
+      warnings.push(`feature_deep_dive.mechanisms: ${emptyStepTexts} step(s) with empty 'text' — will render as blank list items`);
+
+    const scenarios = s.feature_deep_dive.tutorial_scenarios || [];
+    let emptyUserAction = 0;
+    let emptyBehindScenes = 0;
+    for (const sc of scenarios) {
+      for (const step of (sc.steps || [])) {
+        if (!step.user_action || !step.user_action.trim()) emptyUserAction++;
+        if (!step.behind_scenes || !step.behind_scenes.trim()) emptyBehindScenes++;
+      }
+    }
+    if (emptyUserAction > 0)
+      warnings.push(`feature_deep_dive.tutorial_scenarios: ${emptyUserAction} step(s) with empty 'user_action'`);
+    if (emptyBehindScenes > 0)
+      warnings.push(`feature_deep_dive.tutorial_scenarios: ${emptyBehindScenes} step(s) with empty 'behind_scenes'`);
+  }
+
   // Security audit checks
   if (s.security_audit) {
     if (typeof s.security_audit.risk_summary === "object")

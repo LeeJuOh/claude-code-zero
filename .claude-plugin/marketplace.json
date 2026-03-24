@@ -23,7 +23,7 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "2.12.0",
+      "version": "2.12.1",
       "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, and report management with interactive diagrams and curated design system"
     },
     {
@@ -41,8 +41,8 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "0.1.0",
-      "description": "Invoke OpenAI Codex CLI for code analysis (review, security, performance, architecture) with Claude's critical evaluation"
+      "version": "1.0.0",
+      "description": "Integrate OpenAI Codex CLI for code review and verification with Claude's critical evaluation. Auto-suggests review after commits and verification after task completion."
     }
   ]
 }

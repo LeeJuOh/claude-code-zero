@@ -8,6 +8,7 @@
  *   3. Section content — every <section> must have meaningful text
  *   4. Mermaid blocks — must contain a valid diagram-type keyword
  *   5. Chart.js — data arrays must not be empty
+ *   6. Empty inline elements — detects blank <li>, <p>, <td> tags in sections
  *
  * Usage:
  *   node validate-report.js <report.html> [--expected-sections N]
@@ -159,6 +160,29 @@ function checkChartJs(html) {
   return { issues, count };
 }
 
+function checkEmptyElements(html) {
+  const issues = [];
+  // Extract feature-deep-dive section specifically — highest risk for empty content
+  const sectionMatch = html.match(/<section[^>]*id="feature-deep-dive"[^>]*>([\s\S]*?)<\/section>/);
+  if (!sectionMatch) return issues;
+
+  const sectionHtml = sectionMatch[1];
+
+  // Count empty inline elements: <li></li>, <p></p>, <td></td> (whitespace-only counts as empty)
+  const emptyTags = sectionHtml.match(/<(li|p|td)>\s*<\/\1>/g);
+  if (emptyTags && emptyTags.length > 0) {
+    issues.push(`Section "feature-deep-dive" has ${emptyTags.length} empty element(s) (${emptyTags.slice(0, 3).join(", ")}${emptyTags.length > 3 ? "..." : ""})`);
+  }
+
+  // Check for arrow-only step-hood divs: <div class="step-hood">&rarr; </div>
+  const emptyHoods = sectionHtml.match(/<div\s+class="step-hood">\s*&rarr;\s*<\/div>/g);
+  if (emptyHoods && emptyHoods.length > 0) {
+    issues.push(`Section "feature-deep-dive" has ${emptyHoods.length} empty tutorial step description(s)`);
+  }
+
+  return issues;
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -196,7 +220,10 @@ function main() {
   const charts = checkChartJs(html);
   allIssues.push(...charts.issues);
 
-  // 6. Expected section count (optional)
+  // 6. Empty inline elements
+  allIssues.push(...checkEmptyElements(html));
+
+  // 7. Expected section count (optional)
   if (args.expectedSections && sections.count !== args.expectedSections) {
     allIssues.push(`Expected ${args.expectedSections} sections, found ${sections.count}`);
   }

@@ -170,17 +170,17 @@ Passed through from the orchestrator. Used for generating source links on compon
 | Field | Type | Description |
 |-------|------|-------------|
 | `title` | string | "{Principle}: {How It's Enforced}" |
-| `why_matters` | string | Problem without this mechanism |
+| `why_matters` | string | Problem without this mechanism. ⚠️ Must be non-empty — empty strings render as blank paragraphs. |
 | `steps` | array | Implementation chain steps |
 | `code_pattern` | object | Optional code snippet |
-| `in_practice` | string | Real usage scenario |
-| `best_practice` | string | Tip for users |
+| `in_practice` | string | Real usage scenario. ⚠️ Must be non-empty. |
+| `best_practice` | string | Tip for users. ⚠️ Must be non-empty. |
 
 ### mechanisms[].steps[]
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `text` | string | Step description |
+| `text` | string | Step description. ⚠️ Must be non-empty — empty strings render as blank list items. |
 | `source_link` | object | Optional: `{ "path": "relative/path", "label": "display text" }` |
 
 ### mechanisms[].code_pattern
@@ -203,7 +203,7 @@ Passed through from the orchestrator. Used for generating source links on compon
 | Field | Type | Description |
 |-------|------|-------------|
 | `title` | string | Scenario title |
-| `steps` | array | `[{ "user_action": "...", "behind_scenes": "..." }]` |
+| `steps` | array | `[{ "user_action": "...", "behind_scenes": "..." }]`. ⚠️ Both `user_action` and `behind_scenes` must be non-empty — empty strings render as blank elements. |
 | `tips` | string[] | Best practice tips |
 
 ---

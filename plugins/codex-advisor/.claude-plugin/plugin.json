@@ -1,7 +1,7 @@
 {
   "name": "codex-advisor",
-  "description": "Invoke OpenAI Codex CLI for code analysis: review, security audit, performance check, architecture review, or custom prompts with Claude's critical evaluation",
+  "description": "Integrate OpenAI Codex CLI for code review and verification with Claude's critical evaluation. Auto-suggests review after commits and verification after task completion.",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
-  "keywords": ["codex", "code-review", "security", "performance", "architecture", "analysis"]
+  "keywords": ["codex", "code-review", "verification", "double-check", "analysis"]
 }
