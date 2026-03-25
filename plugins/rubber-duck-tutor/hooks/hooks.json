@@ -18,6 +18,15 @@
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-plan.sh"
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-write-plan.sh"
+          }
+        ]
       }
     ]
   }
