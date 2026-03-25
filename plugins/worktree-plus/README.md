@@ -8,7 +8,7 @@ Claude Code's built-in worktree (`claude -w`) differs from native `git worktree`
 
 | | Default `claude -w` | worktree-plus (native git) |
 |---|---|---|
-| **Branch base** | Default remote branch (origin/main) | HEAD (current commit) |
+| **Branch base** | Default remote branch (origin/main) | HEAD (default), or selectable via `name@base` |
 | **Remote tracking** | None | `--guess-remote` support |
 | **Branch prefix** | `worktree-` (fixed) | Configurable |
 | **Gitignored files** | Not copied | `.worktreeinclude` copy / `.worktreelink` symlink |
@@ -19,6 +19,7 @@ This plugin replaces the `WorktreeCreate` and `WorktreeRemove` hooks to provide 
 
 - **`.worktreeinclude`** file for specifying which gitignored files/directories to copy
 - **`.worktreelink`** file for specifying which gitignored files/directories to symlink (for large/heavy content)
+- **Base branch selection** via `name@base` syntax, env var, or git config
 - **`WORKTREE_BRANCH_PREFIX`** env var for custom branch naming
 - **Remote branch tracking** — controlled by `git config worktree.guessRemote` (default: `true`)
 - **Worktree cleanup** — `git worktree remove` + branch deletion on session exit
@@ -71,14 +72,37 @@ export WORKTREE_BRANCH_PREFIX=""       # No prefix, just <name>
 # Unset = default "worktree-<name>"
 ```
 
-### 3. (Optional) Configure remote tracking
+### 3. (Optional) Select base branch
+
+By default, new branches are created from HEAD. Use `name@base` to specify a different starting point:
+
+```bash
+claude -w feature@develop     # New branch from develop
+claude -w hotfix@main         # New branch from main
+claude -w hotfix@v1.0.0       # New branch from a tag
+claude -w my-task             # New branch from HEAD (default)
+```
+
+For a persistent default, set an env var or git config:
+
+```bash
+# Per-session: env var
+export WORKTREE_BASE_BRANCH="develop"
+
+# Per-repo: git config
+git config worktreeplus.baseBranch develop
+```
+
+**Priority**: `name@base` > `WORKTREE_BASE_BRANCH` env var > `worktreeplus.baseBranch` git config > HEAD
+
+### 4. (Optional) Configure remote tracking
 
 ```bash
 # Disable automatic remote branch tracking (default: true)
 git config worktree.guessRemote false
 ```
 
-### 4. Use as normal
+### 5. Use as normal
 
 ```bash
 claude -w              # Creates worktree with gitignored files included
@@ -91,9 +115,9 @@ When creating a worktree, branches are resolved in order:
 
 1. **Local branch exists** → reuse it
 2. **`guessRemote=true` + remote branch exists on `origin`** → fetch and create a tracking branch
-3. **No branch found** → create a new branch from HEAD
+3. **No branch found** → create a new branch from base (`name@base` > env var > git config > HEAD)
 
-This means `claude -w my-feature` will automatically track `origin/my-feature` if it exists remotely, even if there's no local branch yet.
+This means `claude -w my-feature` will automatically track `origin/my-feature` if it exists remotely, even if there's no local branch yet. And `claude -w my-feature@develop` will create a new branch from `develop` if no existing branch is found.
 
 ## Creation Log
 
@@ -109,6 +133,7 @@ Example log:
 Created: 2026-03-10 14:32:01
 Name:    my-feature
 Branch:  worktree-my-feature
+Base:    develop
 Source:  /home/user/my-project
 ---
 Processing .worktreeinclude...

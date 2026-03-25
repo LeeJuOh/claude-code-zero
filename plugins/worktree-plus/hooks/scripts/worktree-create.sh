@@ -6,8 +6,20 @@ set -eu
 # Output (stdout): absolute worktree path
 
 INPUT=$(cat)
-NAME=$(echo "$INPUT" | jq -r '.name')
+RAW_NAME=$(echo "$INPUT" | jq -r '.name')
 CWD=$(echo "$INPUT" | jq -r '.cwd')
+
+# Parse base branch from name (name@base convention, last @ wins)
+# e.g., "feature@develop" -> NAME=feature, WORKTREE_BASE=develop
+#        "feature"         -> NAME=feature, WORKTREE_BASE="" (no override)
+#        "feat@v2@main"    -> NAME=feat@v2, WORKTREE_BASE=main
+WORKTREE_BASE=""
+if [[ "$RAW_NAME" == *@* ]]; then
+  WORKTREE_BASE="${RAW_NAME##*@}"  # after last @
+  NAME="${RAW_NAME%@*}"            # before last @
+else
+  NAME="$RAW_NAME"
+fi
 
 if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
   echo "Error: name not provided" >&2
@@ -84,9 +96,11 @@ else
     fi
   fi
   if [ "$TRACKED" = false ]; then
-    # 3. No branch found -> new from HEAD
-    echo "Creating new branch '${BRANCH}' from HEAD" >&2
-    git -C "$PROJECT_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" HEAD >&2
+    # 3. No branch found -> new from base
+    # Priority: name@base > WORKTREE_BASE_BRANCH env var > worktreeplus.baseBranch git config > HEAD
+    BASE="${WORKTREE_BASE:-${WORKTREE_BASE_BRANCH:-$(git -C "$PROJECT_ROOT" config --get worktreeplus.baseBranch 2>/dev/null || echo HEAD)}}"
+    echo "Creating new branch '${BRANCH}' from ${BASE}" >&2
+    git -C "$PROJECT_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" "$BASE" >&2
   fi
 fi
 
@@ -98,6 +112,7 @@ log() { echo "$1" >&2; echo "$1" >> "$LOG_FILE"; }
   echo "Created: $(date '+%Y-%m-%d %H:%M:%S')"
   echo "Name:    $NAME"
   echo "Branch:  $BRANCH"
+  echo "Base:    ${BASE:-auto}"
   echo "Source:  $PROJECT_ROOT"
   echo "---"
 } > "$LOG_FILE"
