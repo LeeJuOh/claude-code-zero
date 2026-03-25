@@ -19,6 +19,9 @@ fi
 # Shared session state with post-tool-use.sh
 STATE_DIR="${CLAUDE_PLUGIN_DATA:-${TMPDIR:-/tmp}}/sessions"
 mkdir -p "$STATE_DIR"
+
+# Clean up state files older than 24 hours
+find "$STATE_DIR" -name "duck_auto_*.state" -mtime +0 -delete 2>/dev/null || true
 STATE_FILE="${STATE_DIR}/duck_auto_${SESSION_ID//[^a-zA-Z0-9_-]/_}.state"
 
 offers=0

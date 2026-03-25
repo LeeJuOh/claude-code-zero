@@ -47,9 +47,9 @@ Wait for their response before continuing.
 3. **Wrong** — be direct: "Actually, [correct behavior]. What made you think that?" Then explore the gap — this is the highest-value learning moment
 4. Do not attribute understanding they didn't demonstrate. If they described WHAT but not WHY, acknowledge the what without crediting causal understanding.
 
-## When to Offer (Auto-hook Only)
+## When to Offer
 
-This section applies only to **unsolicited suggestions** from the auto-hook. When the user explicitly invokes `/duck`, always run the session regardless of these criteria.
+This section applies to **unsolicited suggestions** — both from auto-hooks and from Claude's own judgment. When the user explicitly invokes `/duck`, always run the session regardless of these criteria.
 
 Offer a duck session after work that involves real decisions — not every small edit. Good moments:
 - New files or modules created
@@ -57,10 +57,13 @@ Offer a duck session after work that involves real decisions — not every small
 - Architecture decisions or significant refactors
 - Unfamiliar patterns or libraries introduced
 - User asked "why" questions during development
+- **AI completed a large automated implementation** (subagents, batch execution, or any workflow where the user was mostly approving rather than writing code) — this is the highest rubber-stamping risk
+- **Returning to a previous session's work** — a quick retrieval question ("What do you remember about how [component] handles [scenario]?") reactivates prior understanding before diving back in
 
 Do not offer when:
 - User declined this session
 - Trivial changes (typos, formatting, config tweaks)
+- User is actively debugging or in a flow state (mid-implementation, mid-conversation about a specific problem)
 
 ## Mode Selection
 
@@ -79,21 +82,6 @@ Parse `$ARGUMENTS`:
 2. Uncommitted changes exist (`git diff --stat`) → PR/Change Review
 3. Files recently created/modified in session → Code Verification
 4. None of the above → ask the user what they want to review
-
----
-
-## Retrieval Check-in (Session Start)
-
-At the start of a new session on an ongoing project, run a quick retrieval exercise before diving into work. This activates the spacing effect — the brain reconstructs knowledge from memory, strengthening long-term retention.
-
-> **Your turn:** Quick check — what do you remember about how [previous component from last session] handles [specific scenario]?
-
-After their response, fill gaps or confirm, then proceed with the session's work. This takes 30 seconds and sets the tone for engaged work.
-
-Only do this when:
-- The project has prior session history
-- The user is returning to work they touched before
-- It's the start of a session (not mid-flow)
 
 ---
 

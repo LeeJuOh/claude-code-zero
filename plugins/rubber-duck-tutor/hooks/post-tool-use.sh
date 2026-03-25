@@ -24,6 +24,9 @@ fi
 # Session state: track offers
 STATE_DIR="${CLAUDE_PLUGIN_DATA:-${TMPDIR:-/tmp}}/sessions"
 mkdir -p "$STATE_DIR"
+
+# Clean up state files older than 24 hours
+find "$STATE_DIR" -name "duck_auto_*.state" -mtime +0 -delete 2>/dev/null || true
 STATE_FILE="${STATE_DIR}/duck_auto_${SESSION_ID//[^a-zA-Z0-9_-]/_}.state"
 
 offers=0
@@ -39,7 +42,7 @@ fi
 echo $(( offers + 1 )) > "$STATE_FILE"
 
 cat <<'HOOK_JSON'
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] The user just committed code. Per the duck skill, consider whether this is a good moment to offer a quick duck session. If the committed work involved new files, schema changes, architectural decisions, refactors, or unfamiliar patterns, ask the user (one short sentence) if they'd like a quick review — e.g. 'Quick duck check on that commit? 30 seconds.' Do not start the session until they confirm. If they decline, do not offer again this session."}}
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] The user just committed code. Offer a duck session ONLY if the commit involved: new files/modules, schema or data model changes, architecture decisions or significant refactors, unfamiliar patterns or libraries. Do NOT offer for: typos, formatting, config tweaks, dependency bumps, or trivial changes. If offering, use one short sentence — e.g. 'Quick duck check on that commit? 30 seconds.' Do not start the session until they confirm. If they decline, do not offer again this session."}}
 HOOK_JSON
 
 exit 0
