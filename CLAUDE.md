@@ -58,6 +58,7 @@ hooks/                        # Hooks (hooks.json + scripts)
 .mcp.json                    # MCP server configuration (optional)
 .lsp.json                    # LSP server configuration (optional)
 settings.json                # Default settings, e.g. { "agent": "name" } (optional)
+.evals/                      # Test/eval artifacts (gitignored — not distributed)
 ```
 
 ### Skill Design Principles
@@ -157,6 +158,8 @@ See `docs/reference/env-and-data-paths.md` — `${CLAUDE_PLUGIN_ROOT}`, `${CLAUD
 **Plugin agent security restrictions**: Plugin-defined agents (`agents/*.md`) silently ignore `permissionMode`, `hooks`, and `mcpServers` frontmatter fields. Only `tools`, `disallowedTools`, `model`, `maxTurns` work. To use permissionMode, the agent file must be in `.claude/agents/` or `~/.claude/agents/`, not in a plugin. (Source: sub-agents docs)
 
 **Plugin settings.json limitations**: Plugin `settings.json` only supports the `agent` field. `permissions`, `hooks`, and other settings are NOT supported. A plugin cannot grant its subagents permission to read paths outside the project directory — there is no workaround within the plugin itself.
+
+**Eval artifacts**: Test and autoresearch results go in `plugins/<plugin-name>/.evals/` (gitignored). Never place eval artifacts directly in the plugin root — they get distributed with marketplace installs.
 
 **Skill allowed-tools**:
 - Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not.

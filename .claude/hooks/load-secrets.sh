@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Load secrets into Claude Code session via CLAUDE_ENV_FILE
+# Triggered by SessionStart hook
+
+ENV_FILE="$CLAUDE_PROJECT_DIR/.env.local"
+
+if [ ! -f "$ENV_FILE" ]; then
+  exit 0  # No env file yet — skip silently
+fi
+
+if [ -z "${CLAUDE_ENV_FILE:-}" ]; then
+  exit 0  # No CLAUDE_ENV_FILE provided — skip
+fi
+
+# Read each non-comment, non-empty line and export it
+while IFS= read -r line || [ -n "$line" ]; do
+  # Skip comments and empty lines
+  [[ "$line" =~ ^[[:space:]]*# ]] && continue
+  [[ -z "${line// }" ]] && continue
+
+  # Split into key=value and quote the value to handle spaces/special chars
+  key="${line%%=*}"
+  value="${line#*=}"
+  printf 'export %s="%s"\n' "$key" "$value" >> "$CLAUDE_ENV_FILE"
+done < "$ENV_FILE"
+
+exit 0
