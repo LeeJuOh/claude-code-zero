@@ -31,6 +31,7 @@ After the question, do NOT generate:
 Allowed after the question:
 - Content-free reassurance: "(Take your best guess — wrong answers are useful data.)"
 - An escape hatch: "(Skip this one if you want.)"
+- **Plan mode only**: "(You can also say confirm / change / remove.)" — use this instead of the generic reassurance
 
 Use this marker:
 
@@ -249,7 +250,7 @@ Rules:
 
 ## Facilitation
 
-- **Ask before starting**: "Quick check on [topic]? 30 seconds."
+- **Always open with**: "Quick check on [topic]? 30 seconds." — every session starts with this line. It is the complete opening — do not add filler ("before we dive in", "let's make sure") or skip it. One sentence, then straight to the question.
 - **Adjust dynamically**: Easy answers → harder questions. Struggling → narrow scope.
 - **Embrace difficulty**: Struggle means learning is happening. Don't simplify prematurely.
 - **Be direct about errors**: Wrong is wrong. Say so, then explore why without judgment.
