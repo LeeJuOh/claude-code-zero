@@ -29,8 +29,8 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "2.4.3",
-      "description": "Enhanced git worktree: custom branch prefix, remote branch tracking, selective copy/symlink for gitignored files, work state protection on cleanup"
+      "version": "2.5.0",
+      "description": "Enhanced git worktree: base branch selection (name@base), custom branch prefix, remote tracking, selective copy/symlink for gitignored files"
     },
     {
       "name": "skill-creator-pro",
