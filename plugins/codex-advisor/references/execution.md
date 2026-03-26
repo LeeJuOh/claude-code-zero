@@ -38,12 +38,15 @@ If NOT_FOUND: "Codex CLI required. Install: `npm install -g @openai/codex`"
 ### For `codex review` (built-in review subcommand)
 
 ```bash
-codex review [SCOPE_FLAGS] -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex review [SCOPE_FLAGS] -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
 ```
 
-Add `-m <MODEL>` only if config specifies a non-default model.
+Omit `-c 'model="..."'` if model is `"default"`.
 
-`codex review` does NOT accept `-s` or `--sandbox`. It has its own sandbox defaults.
+**`codex review` restricted flags — these are NOT accepted:**
+- `-m` / `--model` — use `-c 'model="..."'` instead
+- `-s` / `--sandbox` — has its own sandbox defaults
+- `--json` — not supported
 
 ### For `codex exec` (custom prompt execution)
 
@@ -51,13 +54,15 @@ Add `-m <MODEL>` only if config specifies a non-default model.
 codex exec "$(cat tmp/codex-advisor-prompt.txt)" -m <MODEL> -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
 ```
 
-| Flag | Purpose |
-|------|---------|
-| `-m <MODEL>` | Model from saved config |
-| `-s read-only` | Read-only sandbox (safe default) |
-| `-c 'model_reasoning_effort="<REASONING>"'` | Reasoning depth from saved config |
-| `--enable web_search_cached` | Allow Codex to look up docs and APIs |
-| `2>tmp/codex-stderr.txt` | Capture stderr for error diagnosis |
+### Flag comparison
+
+| Flag | `codex review` | `codex exec` |
+|------|:-:|:-:|
+| `-m <MODEL>` | **NO** — use `-c 'model="..."'` | YES |
+| `-s read-only` | **NO** — own sandbox | YES |
+| `-c 'key="val"'` | YES | YES |
+| `--enable <feature>` | YES | YES |
+| `2>tmp/codex-stderr.txt` | YES | YES |
 
 ## Prompt Passing
 
@@ -71,6 +76,17 @@ rm -f tmp/codex-advisor-prompt.txt tmp/codex-stderr.txt
 ```
 
 Timeout: 300000ms (5 minutes) for all codex commands.
+
+## Background Execution
+
+When running codex commands in background (Bash with `run_in_background`), stdout may appear empty in the task output notification. This is normal — codex writes its results to stdout which the background task manager may not fully capture.
+
+**Recovery pattern:**
+1. If task output is empty, check stderr file first: `cat tmp/codex-stderr.txt 2>/dev/null`
+2. If stderr shows the actual review output (codex sometimes writes results to stderr), use that
+3. If both are empty, re-run the command in foreground
+
+**Recommendation:** Prefer foreground execution (without `run_in_background`) for codex commands. The 5-minute timeout is sufficient for most reviews. Only use background execution if you need to do other work in parallel.
 
 ## Error Handling
 

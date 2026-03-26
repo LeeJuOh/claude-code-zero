@@ -38,10 +38,12 @@ Fallback to `main`.
 ## Step 2: Build & Execute
 
 ```bash
-codex review [SCOPE] [FOCUS_INSTRUCTION] -m <MODEL> -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex review [SCOPE] [FOCUS_INSTRUCTION] -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
 ```
 
-Model and reasoning come from `${CLAUDE_PLUGIN_DATA}/config.json`. Omit `-m` if model is `"default"`.
+Model and reasoning come from `${CLAUDE_PLUGIN_DATA}/config.json`. Omit `-c 'model="..."'` if model is `"default"`.
+
+**`codex review` does NOT accept `-m`, `-s`, or `--json`.** Model must be set via `-c 'model="..."'`.
 
 Timeout: 300000ms. Capture stderr to file, not `/dev/null`.
 
