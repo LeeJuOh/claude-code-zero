@@ -53,8 +53,8 @@
     {
       "name": "e2e-test-runner",
       "source": "./plugins/e2e-test-runner",
-      "version": "0.1.0",
-      "description": "Run E2E browser tests using natural language test definitions powered by Claude Code SDK and Playwright MCP"
+      "version": "0.2.0",
+      "description": "Run E2E browser tests using natural language test definitions powered by Claude Code SDK and agent-browser with video recording"
     }
   ]
 }
