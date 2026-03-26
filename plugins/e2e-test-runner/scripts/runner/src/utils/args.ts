@@ -10,6 +10,11 @@ interface CLIOptions {
     maxTurns: number;
     screenshots: boolean;
     model?: string;
+    run?: string;
+    port?: number;
+    url?: string;
+    headed: boolean;
+    baseline?: string;
 }
 
 const program = new Command()
@@ -19,6 +24,11 @@ const program = new Command()
     .option("-s, --screenshots", "Take screenshots of the browser at each step.")
     .option("--maxTurns <turns>", "Maximum number of turns Claude Code can take for each test case.", "30")
     .option("-m, --model <model>", "The model to use for the test run.")
+    .option("--run <command>", "Dev server start command (e.g. 'npm run dev'). Auto-detected if omitted.")
+    .option("--port <port>", "Dev server port. If omitted, auto-detected from framework or defaults to 3000.")
+    .option("--url <url>", "Override the URL to open instead of http://localhost:<port>.")
+    .option("--headed", "Show the browser window (default: headless).")
+    .option("--baseline <path>", "Path to baseline results for visual regression diff.")
     .parse(process.argv);
 
 const args = program.opts<CLIOptions>();
@@ -35,6 +45,7 @@ try {
 const inputs: CLIOptions & { testCases: TestCase[] } = {
     ...args,
     maxTurns: Number(args.maxTurns),
+    port: args.port ? Number(args.port) : undefined,
     testCases,
 };
 
