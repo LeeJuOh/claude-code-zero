@@ -93,7 +93,7 @@ else
 fi
 
 # --- Logging ---
-LOG_FILE="${WORKTREE_DIR}/.worktree-create.log"
+LOG_FILE="${WORKTREE_DIR}/.worktree.log"
 log() { echo "$1" >&2; echo "$1" >> "$LOG_FILE"; }
 
 {

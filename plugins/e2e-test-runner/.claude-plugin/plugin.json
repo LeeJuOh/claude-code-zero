@@ -1,0 +1,10 @@
+{
+  "name": "e2e-test-runner",
+  "description": "Run E2E browser tests using natural language test definitions powered by Claude Code SDK and agent-browser with video recording",
+  "author": {
+    "name": "LeeJuOh"
+  },
+  "repository": "https://github.com/leejuoh/claude-code-zero",
+  "license": "MIT",
+  "keywords": ["e2e", "testing", "agent-browser", "browser", "automation", "video"]
+}

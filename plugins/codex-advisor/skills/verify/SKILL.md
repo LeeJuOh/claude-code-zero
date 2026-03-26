@@ -34,7 +34,7 @@ Parse $ARGUMENTS and context to determine what to verify:
 Use `codex review` with a verification-focused instruction:
 
 ```bash
-codex review [SCOPE] "You are an independent reviewer verifying another developer's implementation. Focus on: logic errors and unhandled edge cases, missing error handling or validation, security vulnerabilities introduced by changes, performance regressions, inconsistencies with existing codebase patterns, missing or inadequate tests. Verdict: PASS (no blocking issues) or FAIL (blocking issues found)." -m <MODEL> -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex review [SCOPE] "You are an independent reviewer verifying another developer's implementation. Focus on: logic errors and unhandled edge cases, missing error handling or validation, security vulnerabilities introduced by changes, performance regressions, inconsistencies with existing codebase patterns, missing or inadequate tests. Verdict: PASS (no blocking issues) or FAIL (blocking issues found)." -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
 ```
 
 ### Plan Verification
@@ -113,7 +113,7 @@ Inform user: "Resume this session with `/verify resume [follow-up]`."
 ## Gotchas
 
 - **Claude has bias reviewing its own work.** Be extra honest. Don't rationalize away valid Codex findings.
-- **Plan verification uses `codex exec`, code verification uses `codex review`.** Different commands for different inputs.
+- **Plan verification uses `codex exec`, code verification uses `codex review`.** Different commands, different flags. `codex review` does NOT accept `-m`, `-s`, or `--json` — model must be set via `-c 'model="..."'`.
 - **Scope matters.** If Claude changed 3 files, verify those 3 — don't let Codex wander into unrelated code.
 - **PASS doesn't mean perfect.** It means no blocking issues. Always note recommendations.
 - **Never `2>/dev/null`.** Capture stderr for error diagnosis.

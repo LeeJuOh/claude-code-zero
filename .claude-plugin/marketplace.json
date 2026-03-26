@@ -29,8 +29,8 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "2.5.0",
-      "description": "Enhanced git worktree: base branch selection (name@base), custom branch prefix, remote tracking, selective copy/symlink for gitignored files"
+      "version": "2.6.0",
+      "description": "Enhanced git worktree: base branch selection (name@base), custom branch prefix, remote tracking, selective copy/symlink for gitignored files, dirty check on removal"
     },
     {
       "name": "skill-creator-pro",
@@ -41,7 +41,7 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Integrate OpenAI Codex CLI for code review and verification with Claude's critical evaluation. Auto-suggests review after commits and verification after task completion."
     },
     {
@@ -49,6 +49,12 @@
       "source": "./plugins/rubber-duck-tutor",
       "version": "1.1.1",
       "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Interactive learning sessions for plan review, code verification, and PR review, with auto-hooks for post-commit and post-plan suggestions."
+    },
+    {
+      "name": "e2e-test-runner",
+      "source": "./plugins/e2e-test-runner",
+      "version": "0.2.0",
+      "description": "Run E2E browser tests using natural language test definitions powered by Claude Code SDK and agent-browser with video recording"
     }
   ]
 }
