@@ -80,8 +80,9 @@ Applies to all plugin work: creation, modification, improvement, and refactoring
 1. **Docs** — Fetch https://code.claude.com/docs/llms.txt, identify relevant pages, and fetch them. Also consult `docs/reference/skill-building-guide.md` (spec) and `docs/reference/skill-lessons-from-anthropic.md` (practical patterns). This step is **mandatory** for: new plugins, new components (skills, agents, hooks, MCP), schema or config changes. May be **skipped** for: minor text edits, bug fixes within existing logic, or changes that don't touch plugin structure.
 2. **Analysis** — User provides the goal and specific reference files to read. Read ONLY those files.
 3. **Implementation** — Create or modify files under `plugins/`. Never modify files in `references/`.
-4. **Registration** — Add the plugin entry to `.claude-plugin/marketplace.json` (new plugins only).
-5. **Validation** — Run the validation command below.
+4. **Documentation** — If plugin behavior changed, update `README.md` to reflect the change.
+5. **Registration** — Add the plugin entry to `.claude-plugin/marketplace.json` (new plugins only).
+6. **Validation** — Run the validation command below.
 
 ### Validation
 

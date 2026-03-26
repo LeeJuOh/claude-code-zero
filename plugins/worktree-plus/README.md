@@ -114,13 +114,20 @@ When creating a worktree, branches are resolved in order:
 
 This means `claude -w my-feature` will automatically track `origin/my-feature` if it exists remotely, even if there's no local branch yet.
 
-## Creation Log
+## Worktree Log
 
-Each worktree creation generates a `.worktree-create.log` file inside the worktree directory (`<worktree-path>/.worktree-create.log`). The log contains:
+Each worktree has a `.worktree.log` file (`<worktree-path>/.worktree.log`) that records its full lifecycle — creation, removal blocks, and removal.
 
-- **Creation metadata** — timestamp, worktree name, branch name, source project root
-- **`.worktreeinclude` results** — which files/directories were copied, skipped, or failed
-- **`.worktreelink` results** — which files/directories were symlinked, skipped, or failed
+**Creation entries** include:
+
+- Timestamp, worktree name, branch name, source project root
+- `.worktreeinclude` results — which files/directories were copied, skipped, or failed
+- `.worktreelink` results — which files/directories were symlinked, skipped, or failed
+
+**Removal entries** include:
+
+- `BLOCKED` — dirty check failed, listing uncommitted changes and/or unpushed commits
+- `REMOVED` — worktree was clean and successfully deleted
 
 Example log:
 
@@ -137,15 +144,26 @@ Processing .worktreeinclude...
 Processing .worktreelink...
   linked: references/ -> /home/user/my-project/references
   linked: node_modules/ -> /home/user/my-project/node_modules
+--- BLOCKED ---
+Time:     2026-03-10 16:05:33
+Path:     /home/user/my-project/.claude/worktrees/my-feature
+Branch:   worktree-my-feature
+Changes:  staged: 1  unstaged: 2
+  M  src/main.ts
+   M src/utils.ts
+  ?? src/new-file.ts
 ```
-
-This log is useful for verifying which gitignored files were included and for debugging setup issues. The log is created inside the worktree, so it is automatically cleaned up when the worktree is removed.
 
 ## Worktree Cleanup
 
-Claude Code has built-in work state protection: when a worktree session ends with uncommitted changes, Claude Code asks the user whether to **Keep** or **Remove** the worktree before calling the `WorktreeRemove` hook. This means the hook only fires when the user explicitly chose removal (or the worktree is clean).
+The `WorktreeRemove` hook runs a **dirty check** before deleting:
 
-The `WorktreeRemove` hook performs the actual cleanup:
+1. **Uncommitted changes** — staged, unstaged, and untracked files (`git status --porcelain`)
+2. **Unpushed commits** — commits ahead of the upstream tracking branch
+
+If any of these exist, removal is **blocked** (`exit 1`) and the details are logged to `.worktree.log`. The worktree and branch are preserved.
+
+If clean, the hook performs cleanup:
 - `git worktree remove --force` to delete the worktree directory
 - `git branch -D` to delete the associated branch
 - Falls back to `rm -rf` + `git worktree prune` if the first method fails
