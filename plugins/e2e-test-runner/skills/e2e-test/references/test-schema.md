@@ -99,3 +99,12 @@ E2E tests are defined as JSON arrays of test cases. Each test case contains natu
 - **Include expected outcomes**: "Verify the page shows 'Order confirmed' text" not just "Check the result"
 - **One action per step**: Split complex actions into multiple steps for better error reporting
 - **Credentials in steps**: Write credentials directly in the step description. Keep test files out of version control if they contain sensitive data.
+
+## Dev Server Integration
+
+If your test cases omit `baseUrl`, the runner uses `http://localhost:<port>` where port comes from:
+1. `--port` CLI flag (explicit override)
+2. Auto-detected port from framework detection (e.g., Vite → 5173, Next.js → 3000)
+3. Fallback: 3000
+
+For projects with a `package.json`, the runner auto-detects frameworks (Next.js, Vite, Remix, Astro, CRA, Nuxt, SvelteKit, Angular) and infers the correct port.

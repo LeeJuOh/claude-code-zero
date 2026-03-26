@@ -7,6 +7,11 @@
             "type": "command",
             "command": "diff -q \"${CLAUDE_PLUGIN_ROOT}/scripts/runner/package.json\" \"${CLAUDE_PLUGIN_DATA}/package.json\" >/dev/null 2>&1 || (cd \"${CLAUDE_PLUGIN_DATA}\" && cp \"${CLAUDE_PLUGIN_ROOT}/scripts/runner/package.json\" . && npm install --production 2>&1) || rm -f \"${CLAUDE_PLUGIN_DATA}/package.json\"",
             "timeout": 120000
+          },
+          {
+            "type": "command",
+            "command": "command -v agent-browser >/dev/null 2>&1 || echo '[e2e-test-runner] agent-browser not found. Install: npm install -g agent-browser && agent-browser install'",
+            "timeout": 5000
           }
         ]
       }
