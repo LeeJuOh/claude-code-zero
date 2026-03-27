@@ -21,7 +21,7 @@
 | # | Project | Stars | Key Pattern |
 |---|---------|------:|-------------|
 | 7 | [SakanaAI/AI-Scientist](https://github.com/SakanaAI/AI-Scientist) | 12,760 | Full automatic scientific discovery (idea → experiment → paper → review) |
-| 8 | [SamuelSchmidgall/AgentLaboratory](https://github.com/SamuelSchmidgall/AgentLaboratory) | 5,421 | 5 specialist agents, autonomous/co-pilot mode |
+| 8 | [SamuelSchmidgall/AgentLaboratory](https://github.com/SamuelSchmidgall/AgentLaboratory) | 5,421 | 6 agents (5 specialist + reviewer ensemble), autonomous/co-pilot mode |
 | 9 | [HKUDS/AI-Researcher](https://github.com/HKUDS/AI-Researcher) | 4,968 | 7 agents, NeurIPS 2025 Spotlight, Judge Agent 1:1 verification |
 
 Local clones: `references/{AI-Research-SKILLs,ClawTeam,gepa,pi-autoresearch,uditgoenka-autoresearch,ADAS,AI-Scientist,AgentLaboratory,AI-Researcher}/`
@@ -332,8 +332,8 @@ Adding a new domain = adding template files, not modifying the pipeline.
 
 ```
 references/AI-Research-SKILLs/
-  skills/0-autoresearch-skill/SKILL.md              # Orchestrator skill
-  skills/0-autoresearch-skill/references/            # Loop protocols, routing, continuity
+  0-autoresearch-skill/SKILL.md                      # Orchestrator skill
+  0-autoresearch-skill/references/                    # Loop protocols, routing, continuity
 
 references/ClawTeam/
   clawteam/team/manager.py                           # Swarm coordination
