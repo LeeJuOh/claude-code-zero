@@ -149,7 +149,19 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 | `agent` | Subagent type when `context: fork` is set (e.g., `Explore`, `Plan`) |
 | `hooks` | On-demand hooks active during skill execution |
 | `disable-model-invocation` | `true` = manual-only (user invokes with `/name`) |
+| `paths` | YAML list of globs — skill only triggers for matching file paths (e.g., `["src/**/*.ts"]`) |
 | `user-invocable` | `false` = hidden from `/` menu, Claude-only background knowledge |
+
+**String substitutions** available in SKILL.md body:
+
+| Variable | Resolves to |
+|----------|-------------|
+| `$ARGUMENTS` | Text the user typed after the slash command (e.g., `/my-skill fix the login bug` → `fix the login bug`) |
+| `${CLAUDE_SKILL_DIR}` | Absolute path to this skill's folder — use to reference bundled files (`${CLAUDE_SKILL_DIR}/references/api.md`) |
+| `${CLAUDE_PLUGIN_ROOT}` | Plugin root directory — use for hook script paths |
+| `${CLAUDE_PLUGIN_DATA}` | Persistent data directory that survives plugin upgrades — use for config, logs, databases |
+
+`${CLAUDE_SKILL_DIR}` is the most important for skill authors. Use it whenever your SKILL.md body tells Claude to read a bundled file — it resolves correctly regardless of where the plugin is installed.
 
 ### Structure the Folder
 
@@ -173,12 +185,14 @@ assets/            # Templates, icons, fonts for output
 - `references/` -- API docs, detailed specifications. Split by variant for multi-framework support (e.g., `references/aws.md`, `references/gcp.md`).
 - `assets/` -- Output templates, image files. If the output is a markdown file, include a template.
 
-Reference files from SKILL.md with when-to-read guidance:
+Reference files from SKILL.md using `${CLAUDE_SKILL_DIR}` with when-to-read guidance:
 ```markdown
 ## Additional Resources
-- For API details: see [references/api.md](references/api.md)
-- For output template: copy [assets/report-template.md](assets/report-template.md)
+- For API details: read `${CLAUDE_SKILL_DIR}/references/api.md`
+- For output template: copy `${CLAUDE_SKILL_DIR}/assets/report-template.md`
 ```
+
+Using `${CLAUDE_SKILL_DIR}` ensures paths resolve correctly regardless of where the plugin is installed. Relative markdown links (`[text](references/api.md)`) also work for Read tool access, but `${CLAUDE_SKILL_DIR}` is more reliable across different invocation contexts.
 
 ### Setup Pattern (Optional)
 
@@ -197,7 +211,11 @@ Skills can register hooks that activate only during the skill's session. Use the
 
 Consider adding hooks when the skill touches production data, involves destructive operations, or needs directory boundaries.
 
-When designing hooks, verify the supported events and matcher syntax against the official docs (`hooks.md`, `hooks-guide.md`) -- the available events and hook types evolve across releases.
+**Hook types:** `command` (run a shell script), `prompt` (inject a model prompt), `http` (POST JSON to a URL), or `agent` (spawn a subagent). HTTP hooks are useful for integrations that don't need shell access.
+
+**Conditional filtering:** Hooks support an `if` field using permission rule syntax (e.g., `Bash(git *)`) to narrow when they fire, reducing overhead from process spawning.
+
+**Available events:** `PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `StopFailure`, `SessionEnd`, `CwdChanged`, `FileChanged`, `TaskCreated`, `PostCompact`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify syntax against official docs (`hooks.md`, `hooks-guide.md`) -- hook events and types evolve across releases.
 
 ### Memory & Data Persistence (Optional)
 
@@ -364,6 +382,7 @@ Before packaging, verify:
 - [ ] Persistent data uses `${CLAUDE_PLUGIN_DATA}`, not skill directory
 - [ ] Tested triggering on obvious + paraphrased requests
 - [ ] Tested NOT triggering on related-but-different requests
+- [ ] `claude plugin validate .` passes (checks frontmatter schema and hooks.json)
 
 ### Troubleshooting
 
