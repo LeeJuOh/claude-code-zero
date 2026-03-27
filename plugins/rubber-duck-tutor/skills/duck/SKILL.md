@@ -1,7 +1,7 @@
 ---
 name: duck
 description: Rubber duck tutor that prevents rubber-stamping in AI-assisted workflows. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", wants to verify their own comprehension of AI-generated code or plans, or mentions rubber-stamping, skill degradation, or learning while coding. Do NOT trigger for general code explanations, debugging help, code reviews, or teaching — this tests the DEVELOPER's comprehension, not the CODE's correctness.
-argument-hint: "[plan|verify|review]"
+argument-hint: "[plan|verify|review|orient]"
 ---
 
 # Rubber Duck Tutor
@@ -28,6 +28,7 @@ This skill does NOT apply to:
 
 - For the learning science (WHY these techniques work): [references/learning-science.md](references/learning-science.md)
 - For exercise execution patterns and code exploration techniques (HOW to run exercises): [references/exercise-patterns.md](references/exercise-patterns.md)
+- For repo orientation generation methodology (HOW to explore and document a codebase): [references/orientation-guide.md](references/orientation-guide.md)
 
 ## Core Principle: Wait for Their Answer
 
@@ -86,6 +87,8 @@ Parse `$ARGUMENTS`:
 | `plan` | Plan Review | After a plan/design doc is created |
 | `verify` | Code Verification | After implementation, before testing |
 | `review` | PR/Change Review | Before commit/merge/PR approval |
+| `orient` | Orientation | New to a codebase or onboarding |
+| `orient refresh` | Orientation (regenerate) | Force regenerate orientation doc |
 | (empty) | Auto-detect | Check context and choose |
 
 ### Auto-detect (no argument)
@@ -212,6 +215,37 @@ Prioritize: debug this, trace the path, error analysis, pair finding. See [exerc
 ### Techniques
 
 Prioritize: teach-back, generation then comparison, concrete to abstract. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
+
+---
+
+## Orientation Mode
+
+**Purpose**: Generate a repo orientation document, then run interactive exercises from it. For developers new to a codebase or returning after a long break.
+
+**Storage**: `.claude/orientation.md` in the project root. Can be committed and shared with teammates.
+
+### Flow
+
+1. **Check for `.claude/orientation.md`**
+
+2. **If not found** (or argument is `orient refresh`):
+   - Explore the repo following the methodology in [references/orientation-guide.md](references/orientation-guide.md)
+   - Generate `.claude/orientation.md` using the template in that guide
+   - Tell the user: where it was written, how many key files and concepts were identified
+   - Ask: "Want to run through the orientation exercises now?"
+   - If they decline, stop. If they accept, continue to step 3.
+
+3. **If found** (and not refreshing):
+   - Read `.claude/orientation.md`
+   - Summarize what it covers in one sentence, ask if they want to proceed
+   - Run through the **Suggested exercise sequence** section
+   - Apply all standard duck techniques: one question at a time, wait for answer, fading scaffolding
+   - After exercises: "What's one thing about this codebase that surprised you or that you want to dig into further?"
+   - Use their answer to offer a relevant follow-up exercise or file to explore
+
+### Techniques
+
+Prioritize: prediction, teach-back, fading scaffolding. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
 
 ---
 

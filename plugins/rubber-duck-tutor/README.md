@@ -14,15 +14,16 @@ This plugin builds that questioning habit into your workflow.
 
 The duck asks you questions about the code you just wrote (or approved), then waits. No hints, no teaching, no "think about..." — just a question and silence. You explain. If you can't, you've found a gap. That gap is where the learning happens.
 
-Three modes map to the moments where rubber-stamping is most dangerous:
+Four modes map to the moments where rubber-stamping is most dangerous:
 
 | Mode | When | What it checks |
 |---|---|---|
 | `/duck plan` | After a plan is created | Do you understand the decisions and trade-offs? |
 | `/duck verify` | After implementation | Can you explain the code and find edge cases? |
 | `/duck review` | Before commit/merge | Can you justify every change in the diff? |
+| `/duck orient` | New to a codebase | Can you navigate and explain the repo structure? |
 
-`/duck` with no argument auto-detects the right mode from context.
+`/duck` with no argument auto-detects the right mode from context. `/duck orient refresh` regenerates the orientation document.
 
 ### What makes this different from code review
 
@@ -62,6 +63,8 @@ apt-get install jq # Debian/Ubuntu
 /duck plan         # Review a plan
 /duck verify       # Verify implementation
 /duck review       # Review changes before commit
+/duck orient       # Codebase orientation (generates + exercises)
+/duck orient refresh  # Regenerate orientation document
 ```
 
 ## Multi-Plugin Environments
