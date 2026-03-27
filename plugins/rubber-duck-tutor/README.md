@@ -64,6 +64,20 @@ apt-get install jq # Debian/Ubuntu
 /duck review       # Review changes before commit
 ```
 
+## Multi-Plugin Environments
+
+This plugin coexists with popular plugins like everything-claude-code, superpowers, oh-my-claudecode, and gstack. Here's how responsibilities divide:
+
+| Concern | rubber-duck-tutor | Other plugins |
+|---|---|---|
+| **Plan review** | Tests if *you* understand the decisions | gstack: structural quality analysis (report) |
+| **Code review** | Tests if *you* can explain the code | superpowers/gstack: checks if the *code* is correct |
+| **Learning** | Active exercises (explain, predict, debug) | ECC: passive observation and instinct extraction |
+
+The duck checks the **developer**. Other plugins check the **code**. They complement each other.
+
+Auto-hooks include anti-collision logic: if another plugin already suggested a review or learning exercise in the same response, the duck stays quiet.
+
 ## The Science
 
 The techniques are grounded in learning science research: the generation effect (producing answers beats reading them), desirable difficulties (struggle strengthens memory), the fluency illusion (readable code feels understood even when it isn't), and spaced retrieval (returning to concepts over time). Full details in the skill's bundled references.

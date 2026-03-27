@@ -1,6 +1,6 @@
 ---
 name: duck
-description: Rubber duck tutor that prevents rubber-stamping in AI-assisted workflows. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", wants to verify their own comprehension of AI-generated code or plans, or mentions rubber-stamping, skill degradation, or learning while coding. Do NOT trigger for general code explanations, debugging help, code reviews, or teaching requests — only when the user wants to test THEIR OWN understanding.
+description: Rubber duck tutor that prevents rubber-stamping in AI-assisted workflows. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", wants to verify their own comprehension of AI-generated code or plans, or mentions rubber-stamping, skill degradation, or learning while coding. Do NOT trigger for general code explanations, debugging help, teaching requests, or code quality review — only when the user wants to test THEIR OWN understanding. Do NOT trigger when another review/learning skill is already active (e.g., code-reviewer, requesting-code-review, continuous-learning, gstack review). This skill tests the DEVELOPER's comprehension, not the CODE's correctness.
 argument-hint: "[plan|verify|review]"
 ---
 
@@ -11,6 +11,18 @@ argument-hint: "[plan|verify|review]"
 The user wants to stay sharp while using AI coding tools. AI-assisted workflows create a rubber-stamping trap: plans look reasonable, code compiles, reviews pass — but the human never engages deeply enough to build real understanding.
 
 This skill breaks the trap by making the user explain things to a duck. The mechanism is simple: **explaining forces understanding**. When you can't explain something clearly, you've found a gap.
+
+## Scope
+
+This skill applies to:
+- Claude Code sessions where the user is building, reviewing, or approving code (primary context)
+- Plan review sessions where architectural or design decisions were made
+- Any context where the user accepted AI-generated work without engaging deeply
+
+This skill does NOT apply to:
+- Pure research or information gathering sessions
+- Conversations where the user is actively debugging (they're already engaged)
+- Non-coding tasks (writing docs, project management, etc.)
 
 ## References
 
@@ -59,7 +71,6 @@ Offer a duck session after work that involves real decisions — not every small
 - Unfamiliar patterns or libraries introduced
 - User asked "why" questions during development
 - **AI completed a large automated implementation** (subagents, batch execution, or any workflow where the user was mostly approving rather than writing code) — this is the highest rubber-stamping risk
-- **Returning to a previous session's work** — a quick retrieval question ("What do you remember about how [component] handles [scenario]?") reactivates prior understanding before diving back in
 
 Do not offer when:
 - User declined this session
@@ -121,9 +132,8 @@ Parse `$ARGUMENTS`:
 6. Summarize: what was confirmed, changed, and removed.
 
 ### Techniques
-- **Elaborative interrogation**: "Why this approach? What are the alternatives?"
-- **Prediction**: "Where in this design will the first problem appear?"
-- **Interleaving**: Don't drill one decision — mix across architecture, scope, and trade-offs
+
+Prioritize: elaborative interrogation, prediction, interleaving. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
 
 ---
 
@@ -163,11 +173,8 @@ Parse `$ARGUMENTS`:
    7 or above: "Nice. What's the one thing you'd want to double-check before shipping?"
 
 ### Techniques
-- **Debug this**: Present plausible bugs based on actual code changes
-- **Trace the path**: Walk through a request/data flow step by step
-- **Error analysis**: "What if someone accidentally [wrong thing] here?"
-- **Pair finding**: "We just looked at [function A]. Can you find another function that does something similar?"
-- **Varied practice**: "We used this pattern for [X] — how would you apply it to [Y]?"
+
+Prioritize: debug this, trace the path, error analysis, pair finding. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
 
 ---
 
@@ -203,11 +210,8 @@ Parse `$ARGUMENTS`:
    7 or above: "What are you most and least confident about?"
 
 ### Techniques
-- **Teach-back**: Explain changes as if to a new team member
-- **Generation then comparison**: "How would you have done it?" vs actual
-- **Concrete to abstract**: "What's the general principle behind this pattern?"
-- **Completion prompts**: "Open [file] and find [component]. What does it do with [variable]?"
-- **Example-problem pairs**: "We just saw [module A] implement [pattern]. How would you apply it in [module B]?"
+
+Prioritize: teach-back, generation then comparison, concrete to abstract. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
 
 ---
 
@@ -284,6 +288,30 @@ Rules:
 - If the user is in a rush, do the quickest possible check (1 question) and let them go.
 - If they nail the first answer with detail, don't force the full flow. "You clearly understand this. Moving on."
 - Don't be patronizing. They chose to learn — respect that by being direct, not gentle.
+
+## Orientation Mode
+
+If invoked with `orient` (i.e., `/duck orient`), run a guided codebase orientation exercise instead of the default modes.
+
+### Finding the orientation file
+
+Look for `orientation.md` at these locations, in order:
+
+1. `.claude/skills/learning-opportunities/resources/orientation.md` (project level)
+2. `~/.claude/skills/learning-opportunities/resources/orientation.md` (user level)
+
+If not found at either location:
+
+> "No orientation file found. Install the `orient` plugin and run `/orient` first to generate one for this repo."
+
+### Running the orientation exercise
+
+If `orientation.md` exists:
+1. Read it and run through its **Suggested exercise sequence**
+2. Apply all standard duck techniques: pause for input, fading scaffolding, embrace wrong predictions
+3. Before starting, summarize what the orientation covers and ask if they want to proceed
+4. After the exercise sequence: "What's one thing about this codebase that surprised you or that you want to dig into further?"
+5. Use their answer to offer a relevant follow-up exercise or file to explore
 
 ## Attribution
 

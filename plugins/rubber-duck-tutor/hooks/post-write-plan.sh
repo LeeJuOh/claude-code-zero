@@ -23,7 +23,7 @@ fi
 duck__check_rate_limit
 
 cat <<'HOOK_JSON'
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] A markdown document was just written. If — based on conversation context — this document is a plan, spec, or design document (not a README, changelog, or minor doc), suggest a duck plan review. Use one short sentence — e.g. 'Duck check on this plan before we go? 30 seconds.' Do not start the session until they confirm. If they decline, do not offer again this session."}}
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] A markdown document was just written. If — based on conversation context — this document is a plan, spec, or design document (not a README, changelog, or minor doc), suggest a duck plan review. IMPORTANT: If another plugin has already suggested a review or learning exercise in this response, do NOT add a duplicate suggestion — skip silently. Use one short sentence — e.g. 'Duck check on this plan before we go? 30 seconds.' Do not start the session until they confirm. If they decline, do not offer again this session."}}
 HOOK_JSON
 
 exit 0
