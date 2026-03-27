@@ -12,9 +12,11 @@ Count components by type from the plugin's file structure:
 | Reference Skills | SKILL.md with none of the above — pure knowledge documents |
 | Agents | `.md` files in `agents/` |
 | Commands | `.md` files in `commands/` |
+| Rules | `.md` files in `rules/` or root-level `RULE.md` |
 | Hooks | Entries in `hooks/hooks.json` or `hooks/*.json` |
 | MCP Servers | Entries in `.mcp.json` |
 | LSP Servers | Entries in `.lsp.json` |
+| Config | `settings.json` at plugin root (only `agent` field supported) |
 
 ## Documentation Checklist
 
@@ -139,7 +141,8 @@ Comprehensive assessment of whether a plugin should be installed in the user's c
 6. MCP tool surface would exceed 10% cap in the user's context scenario → at least CONDITIONAL; exceeded in both → CONFLICTING
 7. Cross-plugin component dependency MISSING → at least CONDITIONAL
 8. Projected hooks > 15 or hook context injection HIGH → at least CONDITIONAL
-9. All clear → RECOMMENDED
+9. Scope conflicts: plugin hooks/MCP collide with project-level configs on same event/name → at least CONDITIONAL
+10. All clear → RECOMMENDED
 
 ### Dependency Check
 
@@ -164,11 +167,20 @@ Dependency verdict:
 
 ### Context Budget
 
-Evaluate the plugin's impact on the Claude Code context window. Because the context window varies by model (200K default vs 1M extended), present both scenarios. Use the scenario matching the user's current session model for the overall severity.
+Evaluate the plugin's impact on the Claude Code context window using the **always-loaded vs deferred** model. This mirrors how Claude Code actually injects context — some items consume tokens at session start, others are loaded on-demand.
 
 > **Important**: When scanning `~/.claude/plugins/cache/`, multiple versions of the same plugin may be cached. Claude Code loads only the active version, so deduplicate by plugin name (keeping the latest by file mtime) to avoid inflated counts.
 
-#### Skill Description Budget
+> **Research context**: Academic analysis of 857 production sessions (Tony Mason, UBC — arXiv 2603.09023) found 21.8% structural waste in context windows. Context budget awareness directly impacts model performance — the "Lost in the Middle" effect shows that fuller context correlates with lower accuracy on retrieval tasks.
+
+#### Always-Loaded vs Deferred
+
+| Category | Loading | Examples |
+|----------|---------|----------|
+| **Always-loaded** | Injected at session start, consumes tokens immediately | Skill/command descriptions, Rules (without `paths:`), CLAUDE.md + @imports, agent/command definitions |
+| **Deferred** | Reserved but loaded on-demand | MCP tool schemas (~90% of MCP tokens), memory files, Rules with `paths:`, skills with `disable-model-invocation` |
+
+#### Skill Description Budget (Always-Loaded)
 
 Claude loads all skill and command descriptions (from those without `disable-model-invocation: true`) at session start. Official budget (source: [Skills docs](https://code.claude.com/docs/en/skills#troubleshooting)): **2% of context window, with 16,000 character fallback** when context window size cannot be determined. Overridable via `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var.
 
@@ -181,7 +193,15 @@ Skills and commands with `disable-model-invocation: true` have zero always-on co
 
 > **Note**: Both skills (`skills/*/SKILL.md`) and commands (`commands/*.md`) consume context budget. The env-fit-scan.js script counts both. If `SLASH_COMMAND_TOOL_CHAR_BUDGET` is set, use that value instead of the calculated budget.
 
-#### MCP Tool Surface
+#### Rules Context Cost (Always-Loaded / Deferred)
+
+Rules without `paths:` frontmatter load their full content at session start (always-loaded). Rules with `paths:` only load when matching file paths are in context (deferred — zero always-on cost). Estimate: `file_size_bytes / 4` tokens per rule.
+
+#### CLAUDE.md @import Chain (Always-Loaded)
+
+If the plugin includes a CLAUDE.md, trace `@import` directives (up to 5 hops). Each imported file is always-loaded. Report total files in chain and estimated token cost (`total_bytes / 4`).
+
+#### MCP Tool Surface (Deferred)
 
 MCP tool definitions load at session start, capped at 10% of context. Excess tools are deferred until needed.
 
@@ -192,7 +212,7 @@ MCP tool definitions load at session start, capped at 10% of context. Excess too
 
 Estimation heuristic (not from official docs): ~200 tokens per tool definition, ~25 tools per MCP server. Actual values vary by server — treat as rough approximation.
 
-#### Hook Context Injection
+#### Hook Context Injection (Per-Event)
 
 Hooks with `type: command` that return `additionalContext` in their JSON output inject data into the main context. Hooks with `type: prompt` or `type: agent` trigger separate LLM calls (API cost, not context pollution, but worth noting).
 
@@ -252,3 +272,29 @@ Analyze cross-plugin references where the analyzed plugin's components depend on
 | AVAILABLE | Referenced component exists in user's environment |
 | MISSING | Referenced component not found — functionality will break |
 | INTERNAL | Reference is within the same plugin — no external dependency |
+
+### Scope Impact
+
+Assess how the plugin distributes effects across Claude Code's three scope levels.
+
+| Scope | Location | Implication |
+|-------|----------|-------------|
+| Global | `~/.claude/` | Plugin applies to ALL projects. Hooks fire everywhere. |
+| Workspace | `{repo}/.claude/` (parent) | Inherited by child projects in the repo. |
+| Project | `{repo}/.claude/` (leaf) or `~/.claude/projects/` | Most specific, highest priority. |
+
+Check for:
+- **Scope appropriateness**: Is a globally-installed plugin truly useful across all projects? Framework-specific plugins (React, Django) may be better suited for project-level activation.
+- **Scope conflicts**: Plugin hooks/MCP/skills that collide with project-level configurations.
+- **Inheritance implications**: Whether plugin effects propagate to child projects unintentionally.
+
+### Bundle Source
+
+Identify the plugin's installation provenance for transparency.
+
+| Source | Detection | Badge |
+|--------|-----------|-------|
+| Marketplace | `skills-lock.json` entry with marketplace identifier, or cache path pattern | `scope-badge--info` |
+| Local | Symlinked cache entry, or source in current working directory | `scope-badge--success` |
+| GitHub | `repository` field in plugin.json pointing to github.com | `scope-badge--warning` |
+| Unknown | No definitive signal | `scope-badge--low` |

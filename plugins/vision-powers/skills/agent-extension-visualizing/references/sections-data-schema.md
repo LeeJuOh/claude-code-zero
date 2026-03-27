@@ -224,14 +224,45 @@ Standalone diagnosis section. When verdict is RECOMMENDED with no findings, prov
 | `trigger_collisions` | array | Trigger collision findings |
 | `hook_impact` | object | Hook impact analysis |
 | `component_deps` | array | Component dependency findings |
+| `scope_impact` | object | Scope hierarchy impact analysis (see below) |
+| `bundle_source` | object | Optional: `{ "type": "marketplace"|"local"|"github", "identifier": "..." }` — installation origin |
 | `recommendations` | string[] | ⚠️ Plain strings only — NOT objects like `{priority, text}`. Each item is one recommendation sentence. |
+
+### scope_impact
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `installation_scope` | string | Plugin's installation scope: `"global"` (default for marketplace plugins) |
+| `affected_scopes` | string[] | Scopes affected by this plugin: `["global"]`, `["global", "workspace"]`, etc. |
+| `scope_conflicts` | array | `[{ "type", "this_component", "existing_component", "scope", "detail" }]` |
+| `appropriateness` | string | 1-2 sentence assessment of whether the plugin's scope is appropriate |
 
 ### context_budget
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `always_loaded` | object | Always-loaded token breakdown (see below) |
+| `deferred` | object | Deferred token breakdown (see below) |
 | `rows` | array | `[{ "resource", "current", "adding", "budget_200k", "budget_1m", "severity" }]` |
 | `note` | string | Optional context budget notes |
+
+#### always_loaded
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `skill_descriptions` | object | `{ "tokens": number, "items": number }` — skill/command description token cost |
+| `rules` | object | `{ "tokens": number, "items": number, "always": number, "on_demand": number }` — rules with/without `paths:` |
+| `claude_md` | object | `{ "tokens": number, "import_chain": number }` — CLAUDE.md + @import chain token cost |
+| `total_tokens` | number | Sum of all always-loaded token costs |
+
+#### deferred
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `mcp_tools` | object | `{ "tokens": number, "servers": number }` — estimated MCP tool schema tokens |
+| `zero_cost_skills` | number | Count of skills with `disable-model-invocation: true` |
+| `on_demand_rules` | number | Count of rules with `paths:` (deferred loading) |
+| `total_tokens` | number | Sum of all deferred token costs |
 
 ### dependency_check
 
@@ -282,9 +313,11 @@ Tab-based component listing. The render script generates the tab UI automaticall
 | `skills` | object | `{ "active": ComponentCard[], "reference": ComponentCard[] }` |
 | `agents` | ComponentCard[] | Agent component cards |
 | `commands` | ComponentCard[] | Command component cards |
+| `rules` | ComponentCard[] | Rule component cards |
 | `hooks` | ComponentCard[] | Hook component cards |
 | `mcp` | ComponentCard[] | MCP server cards |
 | `lsp` | ComponentCard[] | LSP server cards |
+| `config` | object | Optional: `{ "agent": string, "raw": string }` — plugin settings.json content |
 
 ### ComponentCard
 

@@ -235,6 +235,29 @@ Standalone diagnosis of whether this plugin should be installed in the user's cu
   <!-- Context Budget Analysis -->
   <div class="env-fit-item">
     <h4>Context Budget</h4>
+    <!-- Always-loaded vs Deferred visual bar -->
+    <div class="context-budget-bar">
+      <div class="budget-bar-segment budget-bar--always" style="width: {always_pct}%" title="Always-loaded: {always_tokens} tokens">
+        <span class="budget-bar-label">Always-loaded: {always_tokens} tok</span>
+      </div>
+      <div class="budget-bar-segment budget-bar--deferred" style="width: {deferred_pct}%" title="Deferred: {deferred_tokens} tokens">
+        <span class="budget-bar-label">Deferred: {deferred_tokens} tok</span>
+      </div>
+    </div>
+    <div class="budget-breakdown">
+      <div class="budget-breakdown-item">
+        <span class="scope-badge scope-badge--info">Always-loaded</span>
+        Skill descriptions ({n} items): ~{n} tok &middot;
+        Rules ({n} always / {n} on-demand): ~{n} tok &middot;
+        CLAUDE.md + @imports ({n} files): ~{n} tok
+      </div>
+      <div class="budget-breakdown-item">
+        <span class="scope-badge scope-badge--low">Deferred</span>
+        MCP tools ({n} servers): ~{n} tok &middot;
+        Zero-cost skills: {n} &middot;
+        On-demand rules: {n}
+      </div>
+    </div>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Resource</th><th>Current</th><th>Adding</th><th>Budget (200K)</th><th>Budget (1M)</th><th>Severity</th></tr></thead>
@@ -248,6 +271,14 @@ Standalone diagnosis of whether this plugin should be installed in the user's cu
             <td><span class="risk-badge risk-badge--{low|medium|high}">{severity}</span></td>
           </tr>
           <tr>
+            <td>Rules (always-loaded)</td>
+            <td>{n} rules</td>
+            <td>+{n} rules</td>
+            <td>~{n} tokens</td>
+            <td>~{n} tokens</td>
+            <td><span class="risk-badge risk-badge--{low|medium|high}">{severity}</span></td>
+          </tr>
+          <tr>
             <td>MCP Tools</td>
             <td>{n} servers</td>
             <td>+{n} servers</td>
@@ -258,7 +289,7 @@ Standalone diagnosis of whether this plugin should be installed in the user's cu
         </tbody>
       </table>
     </div>
-    <p class="env-fit-note">{context budget notes — e.g. N skills use disable-model-invocation (zero always-on cost), N hooks may inject additionalContext}</p>
+    <p class="env-fit-note">{context budget notes — e.g. N skills use disable-model-invocation (zero always-on cost), N hooks may inject additionalContext, @import chain depth}</p>
   </div>
   <!-- Dependency Check (only if requirements exist) -->
   <div class="env-fit-item">
@@ -342,6 +373,36 @@ Standalone diagnosis of whether this plugin should be installed in the user's cu
       </table>
     </div>
   </div>
+  <!-- Scope Impact (only if scope_conflicts exist or appropriateness note) -->
+  <div class="env-fit-item">
+    <h4>Scope Impact</h4>
+    <div class="scope-impact-grid">
+      <div class="scope-impact-card">
+        <h5><span class="scope-badge scope-badge--info">Global</span></h5>
+        <ul>
+          <li>{component}: {effect}</li>
+        </ul>
+      </div>
+      <div class="scope-impact-card">
+        <h5><span class="scope-badge scope-badge--warning">Workspace</span></h5>
+        <ul>
+          <li>{component}: {effect}</li>
+        </ul>
+      </div>
+      <div class="scope-impact-card">
+        <h5><span class="scope-badge scope-badge--danger">Project</span></h5>
+        <ul>
+          <li>{component}: {effect}</li>
+        </ul>
+      </div>
+    </div>
+    <p class="env-fit-note">{appropriateness assessment}</p>
+  </div>
+  <!-- Bundle Source (only if detected) -->
+  <div class="env-fit-item">
+    <h4>Installation Source</h4>
+    <p><span class="scope-badge scope-badge--{info|success|warning}">{marketplace|local|github}</span> {identifier}</p>
+  </div>
   <!-- Recommendations (only if not RECOMMENDED) -->
   <div class="env-fit-recommendations">
     <h4>Recommendations</h4>
@@ -400,6 +461,7 @@ Tab-based UI switching between component types. Tab JS and concept tooltip JS ar
     <button class="tab-btn tab-btn--active" data-tab="skills">Skills ({n})</button>
     <button class="tab-btn" data-tab="agents">Agents ({n})</button>
     <button class="tab-btn" data-tab="commands">Commands ({n})</button>
+    <button class="tab-btn" data-tab="rules">Rules ({n})</button>
     <button class="tab-btn" data-tab="hooks">Hooks ({n})</button>
     <button class="tab-btn" data-tab="mcp">MCP ({n})</button>
     <button class="tab-btn" data-tab="lsp">LSP ({n})</button>
@@ -426,7 +488,7 @@ Tab-based UI switching between component types. Tab JS and concept tooltip JS ar
     </div>
     <!-- Reference Skills: same card structure -->
   </div>
-  <!-- Repeat tab-panel pattern for: agents (model, maxTurns, permissionMode, tools), commands, hooks (event, matcher, script), mcp, lsp -->
+  <!-- Repeat tab-panel pattern for: agents (model, maxTurns, permissionMode, tools), commands, rules (paths, always-loaded vs on-demand), hooks (event, matcher, script), mcp, lsp -->
 </section>
 ```
 

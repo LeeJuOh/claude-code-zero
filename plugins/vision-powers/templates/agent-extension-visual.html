@@ -306,6 +306,17 @@
     .env-fit-recommendations h4 { margin: 0 0 0.5rem 0; font-size: 0.95rem; }
     .env-fit-recommendations ul { margin: 0; padding-left: 1.2rem; }
     .env-fit-note { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem; }
+    .context-budget-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 0.75rem 0; border: 1px solid var(--border); }
+    .budget-bar-segment { display: flex; align-items: center; justify-content: center; min-width: 60px; transition: width 0.3s ease; }
+    .budget-bar--always { background: color-mix(in srgb, var(--accent) 25%, var(--surface)); border-right: 1px solid var(--border); }
+    .budget-bar--deferred { background: repeating-linear-gradient(45deg, transparent, transparent 4px, color-mix(in srgb, var(--accent) 8%, transparent) 4px, color-mix(in srgb, var(--accent) 8%, transparent) 8px); }
+    .budget-bar-label { font-size: 0.75rem; font-weight: 500; white-space: nowrap; }
+    .budget-breakdown { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0.5rem 0 1rem 0; font-size: 0.85rem; }
+    .budget-breakdown-item { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .scope-impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
+    .scope-impact-card { padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); }
+    .scope-impact-card h5 { margin: 0 0 0.4rem 0; font-size: 0.9rem; }
+    .scope-impact-card ul { margin: 0; padding-left: 1.2rem; font-size: 0.85rem; }
 
     /* ===== REPORT: Section 11 — Footer ===== */
     .footer-content { text-align: center; font-size: 0.85rem; opacity: 0.7; }
