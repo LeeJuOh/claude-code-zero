@@ -171,7 +171,7 @@ Evaluate the plugin's impact on the Claude Code context window using the **alway
 
 > **Important**: When scanning `~/.claude/plugins/cache/`, multiple versions of the same plugin may be cached. Claude Code loads only the active version, so deduplicate by plugin name (keeping the latest by file mtime) to avoid inflated counts.
 
-> **Research context**: Academic analysis of 857 production sessions (Tony Mason, UBC — arXiv 2603.09023) found 21.8% structural waste in context windows. Context budget awareness directly impacts model performance — the "Lost in the Middle" effect shows that fuller context correlates with lower accuracy on retrieval tasks.
+> **Research context**: Empirical estimates suggest ~20% structural waste in production context windows from unused tools, duplicates, and stale results. Context budget awareness directly impacts model performance — the "Lost in the Middle" effect shows that fuller context correlates with lower accuracy on retrieval tasks.
 
 #### Always-Loaded vs Deferred
 

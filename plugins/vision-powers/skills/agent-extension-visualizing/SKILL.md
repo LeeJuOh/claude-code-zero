@@ -239,17 +239,24 @@ Diagnose whether this plugin is a good fit for the user's current environment �
 
 **Full procedure**: Read `references/platforms/claude-code/env-fit-diagnosis.md` for the detailed 5-step process covering:
 1. Extract plugin characteristics from feature-architect output (including rules, CLAUDE.md @imports, bundle source)
-2. Run the environment scan script (`env-fit-scan.js`)
-3. Perform eight diagnostic analyses (installation status, dependency check, context budget with always-loaded/deferred breakdown, functional overlap, hook impact, scope impact, bundle source detection, component dependencies)
+2. Run the environment scan script (`env-fit-scan.js`) — collects installed plugins, skills, commands, hooks, MCP servers, context metrics
+3. Perform eight diagnostic analyses:
+   - **Via script data** (steps 3A-3E, 3H): installation status, dependency check, context budget, functional overlap, hook impact, component dependencies
+   - **Via orchestrator** (steps 3C extras, 3F, 3G): rules context cost (from feature-architect's rules analysis), CLAUDE.md @import chain, scope impact analysis, bundle source detection (from Phase 1 source context and plugin cache inspection)
 4. Determine overall verdict (RECOMMENDED / CONDITIONAL / REDUNDANT / CONFLICTING)
-5. Build diagnosis data structure for Phase 5/5R (includes scope_impact, bundle_source, and enhanced context_budget)
+5. Build diagnosis data structure for Phase 5/5R (includes scope_impact, bundle_source, and enhanced context_budget with always-loaded/deferred breakdown)
 
-The environment scan script:
+The environment scan script provides baseline data:
 ```
 Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name})
 ```
 
-Save the resulting `environment_fit` data for Phase 5/5R. Omit empty categories.
+The orchestrator then supplements with:
+- **Rules context cost**: Count rules from feature-architect output, classify as always-loaded (no `paths:`) or on-demand (`paths:` present), estimate tokens as `file_size / 4`
+- **Scope impact**: All marketplace plugins install globally; check for framework-specific hooks/MCP that may warrant per-project activation
+- **Bundle source**: Determine from Phase 1 `source_type` (local/github) or plugin cache path patterns (marketplace/symlink)
+
+Save the combined `environment_fit` data for Phase 5/5R. Omit empty categories.
 
 #### Phase 5: Report Assembly (inline markdown)
 
@@ -343,7 +350,8 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
        context_budget: {
          always_loaded: { skill_descriptions, rules, claude_md, total_tokens },
          deferred: { mcp_tools, zero_cost_skills, on_demand_rules, total_tokens },
-         skill_desc, mcp_tools, hook_injection, zero_cost_skills },
+         rows (backward compat — render script uses always_loaded/deferred when available),
+         hook_injection },
        dependency_check, overlap_findings, trigger_collisions,
        hook_impact: { current, adding, projected, types, event_collisions, severity },
        component_deps,
@@ -459,7 +467,7 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **Plugin settings.json only supports `agent` field**: A plugin's `settings.json` at the root level only supports the `agent` field for setting a default agent. It does NOT support `permissions`, `hooks`, or other settings — these are silently ignored. Don't report unsupported settings as features.
 - **Bundle source detection is best-effort**: `skills-lock.json` may not exist in older installations, and cache path patterns can vary. Always fall back to plugin.json `repository` field or mark as `unknown`. Don't report missing provenance as a security issue.
 - **Scope impact for marketplace plugins**: All marketplace-installed plugins operate at the global scope. Their hooks fire for every project. If the plugin is highly framework-specific (e.g., React, Django), note this as a scope appropriateness concern — the user may want to conditionally disable it for non-matching projects.
-- **Context budget research citation**: The 21.8% structural waste figure comes from Tony Mason (UBC) arXiv 2603.09023, analyzing 857 production sessions. Cite this in the environment fit section to ground recommendations in empirical data, but note it's a general finding — individual plugin impact varies.
+- **Context budget empirical grounding**: Context budget recommendations reference empirical estimates of ~20% structural waste in production sessions (unused tools, duplicates, stale results). Use this as motivation for context-aware recommendations, but note it's a general finding — individual plugin impact varies.
 
 ### Reference Files
 

@@ -38,7 +38,7 @@ You receive from the orchestrator skill:
 - **Output language**
 - **Analysis mode**
 
-Read the actual component files (SKILL.md, agent.md, command.md, hooks.json, etc.) yourself.
+Read the actual component files (SKILL.md, agent.md, command.md, rules/*.md, hooks.json, settings.json, etc.) yourself.
 
 ## Analysis Procedure
 
@@ -146,6 +146,16 @@ For each component, determine:
 **MCP Servers (.mcp.json)**:
 - Purpose: What external service does it connect to?
 - Tools provided: What tools does it add?
+
+**Rules (rules/*.md or root-level RULE.md)**:
+- Purpose: What behavior does this rule enforce or guide?
+- Loading type: Does it have a `paths:` field in frontmatter? (`paths:` present → on-demand/deferred, no `paths:` → always-loaded at session start)
+- Scope: What files or contexts does it apply to? (from `paths:` globs if present)
+- Content size: Approximate token cost (file size / 4) — relevant for always-loaded rules
+
+**Config (settings.json at plugin root)**:
+- Default agent: Does it set a `agent` field? (the only supported field)
+- Note: Plugin settings.json only supports the `agent` field. `permissions`, `hooks`, and other settings are silently ignored — do not report unsupported fields as features.
 
 **LSP Servers (.lsp.json)**:
 - Purpose: What language support does it provide?
@@ -426,7 +436,7 @@ Return your analysis in this exact structure:
 - **How**: {1 sentence — how it works at a high level}
 - **Unique**: {1 sentence — what makes it different or noteworthy}
 
-**Components**: {n} skills ({n} active, {n} reference), {n} agents, {n} commands, {n} hooks
+**Components**: {n} skills ({n} active, {n} reference), {n} agents, {n} commands, {n} rules, {n} hooks
 **Primary Pattern**: {orchestrator / standalone / library / hybrid}
 **Target Users**: {e.g., "Full-stack developers using AI coding agents for TypeScript/Go projects"}
 
@@ -466,11 +476,21 @@ Return your analysis in this exact structure:
 |---------|---------|-----------|--------|---------|
 | {name} | {1-line description} | {argument-hint or "none"} | {relative path} | {redirect/model/etc.} |
 
+### Rules (if present)
+
+| Rule | Purpose | Loading | Paths | Size |
+|------|---------|---------|-------|------|
+| {name} | {1-line} | {always-loaded / on-demand} | {paths globs or "all"} | ~{n} tokens |
+
 ### Hooks
 
 | Event | Type | Script | Effect |
 |-------|------|--------|--------|
 | {event} | {cmd/prompt/agent} | {file} | {1-line} |
+
+### Config (if settings.json exists)
+
+Default agent: `{agent-name}` (or "none")
 
 ### MCP / LSP (if present)
 
@@ -608,9 +628,11 @@ Rules:
 | Reference Skills | {n} |
 | Agents | {n} |
 | Commands | {n} |
+| Rules | {n} ({n} always-loaded, {n} on-demand) |
 | Hooks | {n} |
 | MCP Servers | {n} |
 | LSP Servers | {n} |
+| Config | {settings.json present: default agent / "none"} |
 
 ### Documentation
 | Item | Status |
@@ -650,8 +672,8 @@ Rules:
 
 ## Raw Content Excerpts
 
-{Include frontmatter from active skills and agents as fenced code blocks.
- Exclude reference skills. Include hooks.json content if present.}
+{Include frontmatter from active skills, agents, and rules as fenced code blocks.
+ Exclude reference skills. Include hooks.json and settings.json content if present.}
 
 ### {component-type}: {component-name}
 \`\`\`yaml

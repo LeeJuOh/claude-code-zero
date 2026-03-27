@@ -57,7 +57,7 @@ If no requirements block existed → READY.
 
 Calculate the plugin's context footprint using the **always-loaded vs deferred** model. This distinction mirrors how Claude Code actually injects context — some items consume tokens at session start (always-loaded), while others are loaded on-demand (deferred).
 
-> **Research context**: Academic research (Tony Mason, UBC — arXiv 2603.09023) analyzing 857 production sessions found **21.8% structural waste** in context windows: 11% unused tools, 2.2% duplicates, 8.7% stale results. This makes context budget awareness critical for plugin recommendations.
+> **Research context**: Empirical analysis of production sessions estimates **~20% structural waste** in context windows from unused tools, duplicates, and stale results. The "Lost in the Middle" effect shows that fuller context correlates with lower accuracy on retrieval tasks. This makes context budget awareness critical for plugin recommendations.
 
 #### Always-loaded items (consume tokens at session start)
 
