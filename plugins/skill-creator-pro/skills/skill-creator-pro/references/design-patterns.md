@@ -298,6 +298,32 @@ hooks:
           command: "${CLAUDE_PLUGIN_ROOT}/scripts/lint.sh"
 ```
 
+### Hook Types
+
+Four types are available:
+- **`command`** — Run a shell script. Most common for linting, logging, validation.
+- **`prompt`** — Inject a model prompt. Good for safety checks that need reasoning.
+- **`http`** — POST JSON to a URL. Useful for external integrations without shell access (e.g., webhooks, logging services).
+- **`agent`** — Spawn a subagent for complex evaluation.
+
+### Conditional Filtering with `if`
+
+Hooks support an `if` field using permission rule syntax to narrow when they fire. This reduces process spawning overhead:
+
+```yaml
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "${CLAUDE_PLUGIN_ROOT}/scripts/check_destructive.sh"
+          if: "Bash(rm *)"  # Only fire for rm commands
+```
+
+### Available Hook Events
+
+`PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `StopFailure`, `SessionEnd`, `CwdChanged`, `FileChanged`, `TaskCreated`, `PostCompact`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify against official docs — events evolve across releases.
+
 ### Examples
 
 **Safety guard (`/careful`):**
@@ -406,6 +432,12 @@ Strong signal: During testing, all subagents independently write a similar helpe
 - Set execute permission (`chmod +x`)
 - Use `${CLAUDE_PLUGIN_ROOT}` for paths in hook scripts
 - Keep scripts focused on one task for composability
+
+---
+
+## MCP Server Considerations
+
+If your skill includes an MCP server (`.mcp.json`), keep tool descriptions and server instructions under **2KB each** — the platform truncates anything longer. Write concise descriptions and put detailed docs in `references/` files instead.
 
 ---
 

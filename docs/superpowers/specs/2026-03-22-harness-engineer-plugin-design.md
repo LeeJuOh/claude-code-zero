@@ -6,44 +6,50 @@
 
 ### Problem
 
-OpenAI's "Harness Engineering" blog (Feb 2026) described a comprehensive approach to agent-first development. Cassie Kozyrkov distilled it into [12 actionable rules](https://www.youtube.com/watch?v=BabEnt6VjtE). Anthropic's Claude Code team shared [4 complementary lessons](https://x.com/trq212/status/2027463795355095314) in "Seeing Like an Agent." Together these 16 principles represent the most comprehensive framework for making AI coding agents reliable at scale.
+OpenAI's ["Harness Engineering"](https://openai.com/index/harness-engineering/) blog (Feb 2026) described a comprehensive, narrative approach to agent-first development. Cassie Kozyrkov reorganized the blog's concepts into [12 discrete rules](https://www.youtube.com/watch?v=BabEnt6VjtE) (her own structuring, not OpenAI's official taxonomy). Anthropic's Claude Code team shared [4 complementary lessons](https://x.com/trq212/status/2027463795355095314) in "Seeing Like an Agent."
 
-However, **no existing tool comprehensively scores and guides these principles**. Analysis of the 47+ projects across all categories in [awesome-agent-harness](https://github.com/anthropics/awesome-agent-harness) reveals:
+**This plugin synthesizes these three sources into a unified 16-principle framework.** The individual sources do not define this exact set — it is our own integration, designed to be comprehensive and actionable for Claude Code users.
+
+However, **no existing tool scores and guides these principles as a unified set**. Analysis of the 47+ projects across all categories in [awesome-agent-harness](https://github.com/anthropics/awesome-agent-harness) reveals:
 
 - **Orchestrators** (Vibe Kanban, Emdash, Composio) — execute agents in parallel worktrees but don't enforce harness principles
 - **Task runners** (Symphony, Baton) — automate issue→PR pipeline but depend on external trackers
-- **Frameworks** (Harness Kit, DeerFlow) — provide patterns and some runtime enforcement (Harness Kit has 19 tenets with DAG orchestration) but don't score against a unified principle set
+- **Frameworks** (Harness Kit, DeerFlow) — provide patterns and some runtime enforcement (Harness Kit enforces its own 19 tenets via DAG orchestration) but don't score against a cross-source principle set
 - **Issue managers** (Backlog.md) — repo-native markdown issues with web UI and decisions support, but no harness principle scoring
 
-The gap: **no tool combines repo-native issue management with unified harness principle scoring and remediation guidance**.
+The gap: **no tool combines repo-native issue management with cross-source harness principle scoring and remediation guidance**.
 
 ### The 16 Principles
 
-**Kozyrkov's 12 Rules (derived from [OpenAI's Harness Engineering blog](https://openai.com/index/harness-engineering/)):**
+**Kozyrkov's 12 Rules** — Cassie Kozyrkov's [discrete structuring](https://www.youtube.com/watch?v=BabEnt6VjtE) of concepts from [OpenAI's Harness Engineering blog](https://openai.com/index/harness-engineering/). The blog describes these narratively across sections; the numbered rules and names below are Kozyrkov's organization. Source mapping shows which blog section each rule draws from.
 
-Note: The OpenAI blog describes these concepts narratively; Cassie Kozyrkov organized them into 12 discrete rules.
-
-1. **Humans Steer, Agents Execute** — Engineers design environments, agents implement
-2. **No Manually-Written Code** — Improve agent tools/context instead of hand-fixing
-3. **Repository Knowledge as System of Record** — All context lives in the repo as markdown
-4. **AGENTS.md as Table of Contents** — Small entry point (map) pointing to deeper context
-5. **Application Legibility** — Agent can "see" the app (screenshots, DevTools, etc.)
-6. **Ephemeral Observability Stacks** — Per-branch/worktree observability
-7. **Rigid Architectural Boundaries** — Strict, predictable layered architecture
-8. **Mechanical Enforcement of Taste** — Linters with agent-friendly error messages
-9. **High-Throughput Merge Philosophy** — Corrections cheap, waiting expensive
-10. **Plans as First-Class Artifacts** — Execution plans checked into repo
-11. **Continuous Garbage Collection** — Background agents clean technical debt
-12. **The Ralph Wiggum Loop** — Agent self-review + agent peer review before human
+| # | Rule | Blog Section | Notes |
+|---|------|-------------|-------|
+| 1 | **Humans Steer, Agents Execute** | "We started with an empty git repository" / "Redefining the role of the engineer" | Core framing of the blog |
+| 2 | **No Manually-Written Code** | "We started with an empty git repository" | Blog's forcing function: humans steer, agents write all code |
+| 3 | **Repository Knowledge as System of Record** | "We made repository knowledge the system of record" / "Agent legibility is the goal" | Direct blog section |
+| 4 | **AGENTS.md as Table of Contents** | "We made repository knowledge the system of record" | Blog describes "small stable entry point" pattern |
+| 5 | **Application Legibility** | "Increasing application legibility" | Direct blog section |
+| 6 | **Ephemeral Observability Stacks** | "Increasing application legibility" | Blog mentions per-worktree app instances |
+| 7 | **Rigid Architectural Boundaries** | "Enforcing architecture and taste" | Direct blog section |
+| 8 | **Mechanical Enforcement of Taste** | "Enforcing architecture and taste" | Blog: linter error messages as agent context |
+| 9 | **High-Throughput Merge Philosophy** | "Throughput changes the merge philosophy" | Direct blog section |
+| 10 | **Plans as First-Class Artifacts** | "Increasing levels of autonomy" | Blog: end-to-end loop with validation; Kozyrkov names this as discrete rule |
+| 11 | **Continuous Garbage Collection** | "Entropy and garbage collection" | Direct blog section |
+| 12 | **The Ralph Wiggum Loop** | "Increasing levels of autonomy" | Blog: agent self-review loop; Kozyrkov's naming |
 
 **From Anthropic — [Seeing Like an Agent](https://x.com/trq212/status/2027463795355095314) (Claude Code team, 4 lessons):**
 
-13. **Fewer Tools, More Expressiveness** — Composable primitives beat sprawling toolkits
-14. **Progressive Disclosure** — Agents recursively discover context across layers rather than loading everything upfront
-15. **See Like an Agent** — Observe where agents struggle, improve the harness
-16. **Harness Evolves with the Model** — Remove tools that become obstacles as model capabilities grow
+| # | Lesson | Notes |
+|---|--------|-------|
+| 13 | **Fewer Tools, More Expressiveness** | Composable primitives beat sprawling toolkits |
+| 14 | **Progressive Disclosure** | Agents recursively discover context across layers rather than loading everything upfront |
+| 15 | **See Like an Agent** | Observe where agents struggle, improve the harness |
+| 16 | **Harness Evolves with the Model** | Remove tools that become obstacles as model capabilities grow |
 
-Note: "Simple composable patterns > complex frameworks" from [Building Effective Agents](https://www.anthropic.com/research/building-effective-agents) is a guiding philosophy that informs the overall approach rather than a discrete principle to check.
+**Guiding philosophy** (not a discrete checkable principle): "Simple composable patterns > complex frameworks" from [Building Effective Agents](https://www.anthropic.com/research/building-effective-agents).
+
+**Relation to other principle sets:** The [agent-harness](https://github.com/MattMagg/agent-harness) governance repo defines its own 7 principles, which overlap with but differ from this set. This plugin's 16 principles are a superset synthesis — not a direct mapping of any single source.
 
 ### References
 
@@ -82,7 +88,7 @@ Creates the harness-compliant repo structure:
 
 ```
 .harness/
-  config.yaml                      # Which principles to enforce, architecture rules
+  config.yaml                      # Which principles to enforce, thresholds
   architecture.yaml                # Layer boundary definitions (Principle 7)
 
 issues/                            # Issues/tasks as markdown (Principle 3)
@@ -95,26 +101,48 @@ docs/
 AGENTS.md                          # Agent entry point — table of contents (Principles 4, 14)
 ```
 
+**`.harness/config.yaml` schema:**
+
+```yaml
+# Which principles to actively check (others show advisory guidance)
+enabled_principles: [1, 3, 4, 7, 8, 10, 14]
+
+# Thresholds (configurable per-repo)
+agents_md_max_lines: 200           # Principle 4: warn threshold
+min_context_files: 2               # Principle 14: minimum separate context files
+
+# Issue management
+issue_prefix: "ISSUE"              # Prefix for auto-generated issue IDs
+issue_dir: "issues"                # Issue directory location
+
+# Architecture (points to separate file for complex configs)
+architecture_file: "architecture.yaml"
+```
+
 ### 2. `/harness check` — Compliance Scoring
 
-Scans the repo and scores compliance against all 16 principles:
+Scans the repo and scores compliance against the 16 principles. MVP checks 7 principles with concrete criteria; the remaining 9 display advisory guidance.
 
 ```
 $ /harness check
 
-[Principle 3] Repository as System of Record
+[Principle 3] Repository as System of Record          [checked]
   ✓ issues/ directory exists with 3 issues
   ✓ docs/decisions/ has 2 decision records
   ✗ No docs/plans/ found
 
-[Principle 4] AGENTS.md as Table of Contents
+[Principle 4] AGENTS.md as Table of Contents           [checked]
   ✓ AGENTS.md exists
   ✗ AGENTS.md is 450 lines — should be a map, not an encyclopedia
 
-[Principle 7] Rigid Architectural Boundaries
+[Principle 5] Application Legibility                   [advisory]
+  ℹ Not yet enforced. Tip: Make your app runnable per worktree
+    and integrate UI inspection (e.g., Chrome DevTools Protocol).
+
+[Principle 7] Rigid Architectural Boundaries           [checked]
   ✗ No .harness/architecture.yaml found
 
-Score: 8/16 principles passing
+Checked: 4/7 passing | Advisory: 9 principles (not yet enforced)
 ```
 
 Each check produces:
@@ -223,18 +251,19 @@ plugins/harness-engineer/
     harness-init/SKILL.md
     harness-check/SKILL.md
     harness-issue/SKILL.md
-    harness-board/SKILL.md
-    harness-decide/SKILL.md        # Phase 2
-    harness-plan/SKILL.md          # Phase 2
-    harness-run/SKILL.md           # Phase 2
+    harness-board/SKILL.md          # Phase 1.5
+    harness-decide/SKILL.md         # Phase 2
+    harness-plan/SKILL.md           # Phase 2
+    harness-run/SKILL.md            # Phase 2
   hooks/
     hooks.json
     session-start.sh
-    pre-write-check.sh             # Phase 2
+    pre-write-check.sh              # Phase 2
   agents/
     compliance-checker.md
   scripts/
-    board-generator/                 # Static HTML dashboard generator
+    check/                           # Deterministic compliance check scripts
+    board-generator/                 # Static HTML dashboard generator (Phase 1.5)
 ```
 
 ## MVP Scope (Phase 1)
@@ -242,10 +271,17 @@ plugins/harness-engineer/
 | Feature | Principles | Rationale |
 |---------|-----------|-----------|
 | `/harness init` | 3, 4, 10, 14 | Prerequisite for everything else |
-| `/harness check` | All 16 | Core value — makes enforcement real |
+| `/harness check` | All 16 (7 checked, 9 advisory) | Core value — makes enforcement real |
 | `/harness issue` | 3 | Most tangible "repo = SoR" feature |
-| `/harness board` (Tab 1, 2) | 3 | Humans need visibility |
 | SessionStart hook | 3, 4, 14 | Agent gets context automatically |
+
+## Phase 1.5 — Dashboard
+
+Separated from MVP to reduce initial scope. Can ship immediately after Phase 1.
+
+| Feature | Principles | Rationale |
+|---------|-----------|-----------|
+| `/harness board` (Tab 1: Kanban, Tab 2: Scoreboard) | 3 | Humans need visibility; significant engineering (HTML generator with embedded CSS/JS/data) |
 
 ## Phase 2
 
@@ -277,17 +313,19 @@ plugins/harness-engineer/
 | Issue management | DB-based | Repo markdown | External (Linear) | Own backend | DAG tasks | **Repo markdown** |
 | Agent dispatch | O | X | O | O | O (Odin CLI) | **Phase 2** |
 | Dashboard | O | O (Web + TUI) | O (optional) | O | O (TaskIt) | **O** |
-| Principle enforcement | X | X | X | X | O (19 tenets) | **Core (16 principles)** |
+| Principle enforcement | X | X | X | X | O (own 19 tenets) | **O (synthesized 16 principles)** |
 | Repo = SoR | X | O | X | X | Partial | **O** |
 | Knowledge accumulation | X | Decisions (ADR) | X | Partial | O (breadcrumbs) | **O** |
 
-**Differentiator**: No existing tool combines repo-native markdown issue management with unified scoring against the 16 harness engineering principles and actionable remediation guidance. Harness Kit enforces its own 19 tenets through DAG orchestration; harness-engineer scores against the canonical OpenAI + Anthropic principles as a Claude Code plugin with zero infrastructure dependencies.
+**Differentiator**: No existing tool combines repo-native markdown issue management with cross-source harness principle scoring and remediation guidance. Harness Kit is the closest competitor — it enforces its own 19 tenets via DAG orchestration and includes a CLI (Odin) and dashboard (TaskIt). The key differences: (1) harness-engineer synthesizes principles from OpenAI + Anthropic sources rather than defining its own; (2) it runs as a zero-dependency Claude Code plugin rather than requiring a separate framework; (3) it focuses on scoring and guidance rather than orchestration.
+
+**Note on competitive data**: Tool capabilities listed above are based on README/documentation review as of March 2026. Verify before citing in external materials, as these projects evolve rapidly.
 
 ## Design Decisions
 
 1. **Plugin name** — `harness-engineer`. Describes what it does (engineer the harness).
 2. **Dashboard tech** — Static HTML generation. No runtime dependency (no Node/Python/Bun server required). The skill generates an HTML file with embedded data and opens it in the browser. Regenerated on each `/harness board` invocation. For Phase 2+, may upgrade to a lightweight local server if real-time updates prove necessary.
-3. **Issue ID format** — Auto-increment with prefix: `ISSUE-001`, `ISSUE-002`. Simple, readable, sortable. The prefix distinguishes from decision (`DEC-`) and plan (`PLAN-`) IDs.
+3. **Issue ID format** — Auto-increment with prefix: `ISSUE-001`, `ISSUE-002`. Simple, readable, sortable. The prefix distinguishes from decision (`DEC-`) and plan (`PLAN-`) IDs. **Concurrency**: The `create` command scans existing `ISSUE-*` filenames to determine the next number. If two agents create simultaneously and collide, the second write detects the conflict (file already exists) and retries with the next available number. This is sufficient for the target use case (solo developer / small team).
 4. **Config format** — YAML (`.harness/config.yaml`). Consistent with the rest of the ecosystem (AGENTS.md, architecture files). Human-readable. Agent-readable.
 5. **Backlog.md differentiation** — Backlog.md is a mature, full-featured task manager (web UI, TUI kanban, decisions/ADR, subtasks, dependencies, Definition of Done). We don't replicate its breadth. Instead, we design a lighter format optimized for harness engineering: agent execution logs, principle tags, compliance integration. The key differentiator is that harness-engineer scores issues against the 16 principles — Backlog.md manages tasks without harness awareness.
 6. **Issues directory location** — `issues/` at repo root (not `.harness/issues/`). Maximizes agent discoverability and follows the "repo knowledge is the system of record" principle — issues are first-class repo content, not hidden config.
@@ -325,26 +363,32 @@ The check validates that files in each layer only import from allowed layers. Vi
 
 Each principle has concrete, scannable criteria for pass/warn/fail:
 
-| # | Principle | Pass | Warn | Fail |
-|---|-----------|------|------|------|
-| 1 | Humans Steer | `issues/` has issues with `assignee: agent` | — | No issues directory |
-| 2 | No Manual Code | Advisory only (Phase 3) | — | — |
-| 3 | Repo = SoR | `issues/` + `docs/decisions/` + `docs/plans/` all exist with content | Some directories empty | Missing directories |
-| 4 | AGENTS.md as ToC | `AGENTS.md` exists and < 200 lines | `AGENTS.md` exists but > 200 lines | No `AGENTS.md` |
-| 5 | App Legibility | Advisory only (Phase 3) | — | — |
-| 6 | Ephemeral Observability | Advisory only (Phase 3) | — | — |
-| 7 | Rigid Boundaries | `.harness/architecture.yaml` exists and no violations found | Config exists but violations detected | No architecture config |
-| 8 | Mechanical Enforcement | Linter config detected in repo (`.eslintrc`, `ruff.toml`, etc.) | Linter exists but no agent-friendly error messages | No linter config |
-| 9 | High-Throughput Merge | Advisory only (Phase 3) | — | — |
-| 10 | Plans as Artifacts | `docs/plans/` has plan files | Directory exists but empty | No plans directory |
-| 11 | Garbage Collection | Advisory only (Phase 3) | — | — |
-| 12 | Ralph Wiggum Loop | Advisory only (Phase 3) | — | — |
-| 13 | Fewer Tools | Advisory only (Phase 3) | — | — |
-| 14 | Progressive Disclosure | Context layered across files (skill files, docs/) rather than monolithic | — | All context in single file |
-| 15 | See Like an Agent | Advisory only (Phase 3) | — | — |
-| 16 | Harness Evolves | Advisory only (Phase 3) | — | — |
+| # | Principle | Method | Pass | Warn | Fail |
+|---|-----------|--------|------|------|------|
+| 1 | Humans Steer | Deterministic | `issues/` has issues with `assignee: agent` | — | No issues directory |
+| 2 | No Manual Code | *Advisory* | — | — | — |
+| 3 | Repo = SoR | Deterministic | `issues/` + `docs/decisions/` + `docs/plans/` all exist with content | Some directories empty | Missing directories |
+| 4 | AGENTS.md as ToC | Deterministic | `AGENTS.md` exists and ≤ 200 lines (see note below) | `AGENTS.md` exists but > 200 lines | No `AGENTS.md` |
+| 5 | App Legibility | *Advisory* | — | — | — |
+| 6 | Ephemeral Observability | *Advisory* | — | — | — |
+| 7 | Rigid Boundaries | Deterministic | `.harness/architecture.yaml` exists and no violations found | Config exists but violations detected | No architecture config |
+| 8 | Mechanical Enforcement | Deterministic | Linter config detected in repo (`.eslintrc`, `ruff.toml`, etc.) | Linter exists but no agent-friendly error messages | No linter config |
+| 9 | High-Throughput Merge | *Advisory* | — | — | — |
+| 10 | Plans as Artifacts | Deterministic | `docs/plans/` has plan files | Directory exists but empty | No plans directory |
+| 11 | Garbage Collection | *Advisory* | — | — | — |
+| 12 | Ralph Wiggum Loop | *Advisory* | — | — | — |
+| 13 | Fewer Tools | *Advisory* | — | — | — |
+| 14 | Progressive Disclosure | Deterministic | `AGENTS.md` or `CLAUDE.md` exists AND 2+ additional `.md` context files in `docs/` or skill directories | — | All agent context lives in a single file (e.g., one monolithic `AGENTS.md` with no external references) |
+| 15 | See Like an Agent | *Advisory* | — | — | — |
+| 16 | Harness Evolves | *Advisory* | — | — | — |
 
-**MVP scoring:** Principles with concrete checks (1, 3, 4, 7, 8, 10, 14) produce pass/warn/fail. Advisory-only principles display guidance text with a "not yet enforced" label. Score is `N/M` where M = number of actively checked principles.
+**Method column:**
+- **Deterministic** — Implemented as a script (shell/Python) that checks file existence, line counts, import patterns. Results are reproducible and cacheable.
+- **Advisory** — No automated check in MVP. Displays guidance text with remediation tips. Planned for Phase 2/3.
+
+**AGENTS.md line threshold:** The 200-line limit is a heuristic derived from the OpenAI blog's guidance that the entry point should be "a small stable entry point" (map), not "a huge instruction dump." 200 lines approximates the threshold where a file transitions from navigational map to monolithic reference. Configurable via `.harness/config.yaml`.
+
+**MVP scoring:** 7 principles produce pass/warn/fail (deterministic checks). 9 principles are advisory-only. Score displays as `N/7 checked | 9 advisory`.
 
 ## Dashboard Serving Mechanism
 
@@ -363,7 +407,7 @@ The dashboard is a **generated static HTML file**, not a running server:
 
 ## Scope Clarification
 
-**Phase 2 and Phase 3 are explicitly out of scope for implementation planning.** The plan should cover Phase 1 (MVP) only. Phase 2/3 items are listed for directional context but should not influence MVP architecture decisions beyond keeping the design extensible.
+**Phase 1.5, Phase 2, and Phase 3 are explicitly out of scope for implementation planning.** The plan should cover Phase 1 (MVP) only: `init`, `check`, `issue`, and the SessionStart hook. Phase 1.5 (dashboard) and later phases are listed for directional context but should not influence MVP architecture decisions beyond keeping the design extensible.
 
 ## PostToolUse(Bash) Hook Scope
 

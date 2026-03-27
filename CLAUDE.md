@@ -34,6 +34,10 @@ Key pages: plugins.md, plugins-reference.md, plugin-marketplaces.md, discover-pl
 
 See **Workflow step 1 (Docs)** for when consultation is required.
 
+### Codex (OpenAI) Documentation
+
+When working on Codex-related tasks (cross-platform compatibility, AGENTS.md for Codex, Codex tool mappings), consult https://developers.openai.com/llms.txt for up-to-date Codex documentation.
+
 ## Reference Materials
 
 Key references for structural plugin work:
@@ -108,6 +112,7 @@ claude plugin enable  <plugin-name>@claude-code-zero   # after testing
 ## references/ Folder
 
 - Git-ignored. External open-source code stored here for local reference only.
+- When cloning external repos for research, always clone into `references/<repo-name>`.
 - Read files ONLY when the user explicitly specifies them using `@references/...` syntax.
 - Never explore this folder on your own. Never modify files in it.
 

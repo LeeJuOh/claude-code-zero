@@ -188,6 +188,14 @@ This is the core autoresearch loop. Once started, run autonomously until stopped
    - Simplify rigid step sequences into flexible guidance — skills are reused across many situations
    - Split a section that serves two audiences into variant files (e.g., `references/aws.md` vs `references/gcp.md`)
 
+   Good mutations (structural — change how the skill is organized, not just what it says):
+   - Move a repeated code pattern into `scripts/` and reference it — if all test runs independently generate similar helper code, bundle it
+   - Use `${CLAUDE_SKILL_DIR}/references/detail.md` for large reference content instead of inlining it — reduces SKILL.md body noise
+   - Add `effort: high` or `effort: max` to frontmatter — gives the model more thinking budget for complex skills
+   - Add `paths: ["src/**/*.ts"]` to frontmatter — narrows triggering to relevant file contexts
+   - Add on-demand hooks for guardrails — if the skill repeatedly makes destructive mistakes, a PreToolUse hook is more reliable than a text instruction
+   - Bundle a validation script in `scripts/` — replace "check that X is correct" prose with a deterministic script that actually checks
+
    Bad mutations:
    - Rewriting the entire skill from scratch
    - Adding 10 new rules at once
@@ -264,6 +272,22 @@ autoresearch-[skill-name]/
 ```
 
 Plus the improved SKILL.md saved back to its original location.
+
+---
+
+## Example Run: Optimizing a Diagram Skill
+
+Baseline: 32/40 (80%) — 4 evals x 10 runs. Common failures: numbered steps, bright colors, illegible text.
+
+| # | Mutation | Score | Result |
+|---|---------|-------|--------|
+| 1 | Added "NEVER include step numbers or ordinals" | 35/40 (87%) | **keep** — numbering failures 3→1 |
+| 2 | Added "minimum 14px font size" | 34/40 (85%) | **discard** — legibility +1 but color -2 |
+| 3 | Replaced vague "pastel colors" with specific hex codes | 37/40 (92%) | **keep** — color eval 8/10→10/10 |
+| 4 | Added anti-pattern for neon colors | 37/40 (92%) | **discard** — hex codes already solved it, unnecessary complexity |
+| 5 | Added worked example showing correct label formatting | 39/40 (97%) | **keep** — hit ceiling |
+
+**Result:** 80% → 97.5% in 5 experiments (3 kept, 2 discarded). Key insight: specific values (hex codes) beat vague descriptions ("pastel"); examples beat rules.
 
 ---
 
