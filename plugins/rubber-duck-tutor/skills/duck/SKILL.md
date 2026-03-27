@@ -1,6 +1,6 @@
 ---
 name: duck
-description: Rubber duck tutor that prevents rubber-stamping in AI-assisted workflows. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", wants to verify their own comprehension of AI-generated code or plans, or mentions rubber-stamping, skill degradation, or learning while coding. Do NOT trigger for general code explanations, debugging help, teaching requests, or code quality review — only when the user wants to test THEIR OWN understanding. Do NOT trigger when another review/learning skill is already active (e.g., code-reviewer, requesting-code-review, continuous-learning, gstack review). This skill tests the DEVELOPER's comprehension, not the CODE's correctness.
+description: Rubber duck tutor that prevents rubber-stamping in AI-assisted workflows. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", wants to verify their own comprehension of AI-generated code or plans, or mentions rubber-stamping, skill degradation, or learning while coding. Do NOT trigger for general code explanations, debugging help, code reviews, or teaching — this tests the DEVELOPER's comprehension, not the CODE's correctness.
 argument-hint: "[plan|verify|review]"
 ---
 
@@ -288,30 +288,6 @@ Rules:
 - If the user is in a rush, do the quickest possible check (1 question) and let them go.
 - If they nail the first answer with detail, don't force the full flow. "You clearly understand this. Moving on."
 - Don't be patronizing. They chose to learn — respect that by being direct, not gentle.
-
-## Orientation Mode
-
-If invoked with `orient` (i.e., `/duck orient`), run a guided codebase orientation exercise instead of the default modes.
-
-### Finding the orientation file
-
-Look for `orientation.md` at these locations, in order:
-
-1. `.claude/skills/learning-opportunities/resources/orientation.md` (project level)
-2. `~/.claude/skills/learning-opportunities/resources/orientation.md` (user level)
-
-If not found at either location:
-
-> "No orientation file found. Install the `orient` plugin and run `/orient` first to generate one for this repo."
-
-### Running the orientation exercise
-
-If `orientation.md` exists:
-1. Read it and run through its **Suggested exercise sequence**
-2. Apply all standard duck techniques: pause for input, fading scaffolding, embrace wrong predictions
-3. Before starting, summarize what the orientation covers and ask if they want to proceed
-4. After the exercise sequence: "What's one thing about this codebase that surprised you or that you want to dig into further?"
-5. Use their answer to offer a relevant follow-up exercise or file to explore
 
 ## Attribution
 

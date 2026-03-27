@@ -20,6 +20,15 @@ if [[ -z "$FILE_PATH" ]] || [[ "$FILE_PATH" != *.md ]]; then
   exit 0
 fi
 
+# Skip known non-plan markdown files to reduce unnecessary hook output
+BASENAME=$(basename "$FILE_PATH" | tr '[:upper:]' '[:lower:]')
+case "$BASENAME" in
+  readme.md|changelog.md|contributing.md|license.md|code_of_conduct.md|\
+  security.md|agents.md|claude.md|gemini.md|memory.md|skill.md)
+    exit 0
+    ;;
+esac
+
 duck__check_rate_limit
 
 cat <<'HOOK_JSON'
