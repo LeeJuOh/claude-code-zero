@@ -14,15 +14,16 @@ This plugin builds that questioning habit into your workflow.
 
 The duck asks you questions about the code you just wrote (or approved), then waits. No hints, no teaching, no "think about..." — just a question and silence. You explain. If you can't, you've found a gap. That gap is where the learning happens.
 
-Three modes map to the moments where rubber-stamping is most dangerous:
+Four modes map to the moments where rubber-stamping is most dangerous:
 
 | Mode | When | What it checks |
 |---|---|---|
 | `/duck plan` | After a plan is created | Do you understand the decisions and trade-offs? |
 | `/duck verify` | After implementation | Can you explain the code and find edge cases? |
 | `/duck review` | Before commit/merge | Can you justify every change in the diff? |
+| `/duck orient` | New to a codebase | Can you navigate and explain the repo structure? |
 
-`/duck` with no argument auto-detects the right mode from context.
+`/duck` with no argument auto-detects the right mode from context. `/duck orient refresh` regenerates the orientation document.
 
 ### What makes this different from code review
 
@@ -46,6 +47,15 @@ claude plugin install rubber-duck-tutor@claude-code-zero
 
 Auto-hooks (suggestions after commits and plan creation) are included by default.
 
+### Recommended: install jq
+
+The auto-hooks use [`jq`](https://jqlang.github.io/jq/) for reliable JSON parsing. Without it, hooks fall back to regex extraction which works for common cases but may fail on unusual input.
+
+```bash
+brew install jq    # macOS
+apt-get install jq # Debian/Ubuntu
+```
+
 ## Usage
 
 ```
@@ -53,7 +63,23 @@ Auto-hooks (suggestions after commits and plan creation) are included by default
 /duck plan         # Review a plan
 /duck verify       # Verify implementation
 /duck review       # Review changes before commit
+/duck orient       # Codebase orientation (generates + exercises)
+/duck orient refresh  # Regenerate orientation document
 ```
+
+## Multi-Plugin Environments
+
+This plugin coexists with popular plugins like everything-claude-code, superpowers, oh-my-claudecode, and gstack. Here's how responsibilities divide:
+
+| Concern | rubber-duck-tutor | Other plugins |
+|---|---|---|
+| **Plan review** | Tests if *you* understand the decisions | gstack: structural quality analysis (report) |
+| **Code review** | Tests if *you* can explain the code | superpowers/gstack: checks if the *code* is correct |
+| **Learning** | Active exercises (explain, predict, debug) | ECC: passive observation and instinct extraction |
+
+The duck checks the **developer**. Other plugins check the **code**. They complement each other.
+
+Auto-hooks include anti-collision logic: if another plugin already suggested a review or learning exercise in the same response, the duck stays quiet.
 
 ## The Science
 

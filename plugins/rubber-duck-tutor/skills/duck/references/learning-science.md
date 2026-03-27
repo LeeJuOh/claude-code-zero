@@ -7,6 +7,14 @@ Licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Origin
 
 ---
 
+## Core Insight: We're Often Wrong About What Helps Us Learn
+
+Misconceptions about learning are common and predict long-term performance differences. Our minds confuse the *experience of effort* with *actual learning*, and the *experience of fluency* with *actual knowledge*. Strategies that feel high-effort often aren't productive, while strategies that feel easy can work better than expected. At the same time, productive struggle is more valuable than we realize — learners need mistakes and feedback to progress.
+
+Focusing on long-term learning outcomes, rather than short-term performance, helps learners. This is why the duck skill feels uncomfortable at first — it's working.
+
+---
+
 ## The Generation Effect
 
 **Finding:** People encode information better when they produce it rather than passively consume it. Testing produces better delayed retention than passive review, even when immediate performance is worse.
@@ -33,7 +41,7 @@ Licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Origin
 
 **Finding:** Distributing learning over time produces better retention than cramming into a single session.
 
-**Learner misconception:** Spacing feels easier than cramming, so people rarely believe it works better.
+**Learner misconception:** Spacing feels easier than cramming, so people rarely believe it works better. In studies, spacing produces better performance for the majority of participants, yet most believe massing had been more effective.
 
 **Risk in AI-assisted work:** Machine velocity pushes into constant "cram" — completing work in large pushes without returning to reflect.
 
@@ -44,6 +52,8 @@ Licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Origin
 ## The Worked Example Effect
 
 **Finding:** Studying worked examples (complete solutions with steps shown) produces better initial learning than problem-solving, particularly for novices. This reverses for experts, where shown steps become redundant ("expertise reversal effect").
+
+**Learner misconception:** Learners often do not seek out enough examples, but those who study worked examples outperform those who spend equivalent time problem-solving with no example exposure.
 
 **In practice:** AI-generated solutions function like worked examples — beneficial for building initial schemas, but if learners never transition to generating solutions themselves, they miss retrieval practice and stay in "novice mode."
 
@@ -66,7 +76,9 @@ Licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Origin
 
 ## Fluency Illusion
 
-**Finding:** When information feels easy to process, we overestimate how well we've learned it.
+**Finding:** When information feels easy to process or easy to look up, we overestimate how well we've learned it.
+
+**Learner misconception:** Smooth reading or easy recognition creates a sense of familiarity that we mistake for durable knowledge.
 
 **Risk in AI-assisted work:** Generated code that compiles and looks clean creates the illusion of understanding. The fluency of the output masks gaps in the mental model.
 
@@ -77,6 +89,8 @@ Licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Origin
 ## Effort Illusion
 
 **Finding:** People mistake the *feeling* of working hard for actual learning. High output can coexist with skill stagnation.
+
+**Learner misconception:** Grinding through tasks creates a sense of productivity that may not correspond to skill development.
 
 **Risk in AI-assisted work:** Shipping lots of AI-generated code feels like growth even when you're not building transferable understanding. Production velocity and burnout can decrease the ability to verify and self-monitor.
 
@@ -115,7 +129,12 @@ Licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Origin
 
 ## Metacognition
 
-**Finding:** Learners who monitor their own learning strategies outperform those who don't, independent of raw ability.
+**Finding:** Learners who monitor and adjust their own learning strategies outperform those who don't, independent of raw ability. Experts learn to harness strategic metacognitive practices to transcend their original cognitive constraints.
+
+**Key capabilities:**
+- Monitoring: knowing when you understand vs. when you don't
+- Control: adjusting strategies based on that monitoring
+- Calibration: accurately judging your own competence
 
 **Risk in AI-assisted work:** Constant production velocity suppresses metacognitive monitoring. Users who don't pause to ask "am I actually learning this?" may not notice skill degradation.
 
@@ -140,12 +159,19 @@ The rubber duck tutor counteracts these by reintroducing: active generation (exp
 
 ## Sources
 
-- Bjork, R. A., Dunlosky, J., & Kornell, N. (2013). Self-regulated learning: Beliefs, techniques, and illusions.
-- Dunlosky, J. et al. (2013). Improving students' learning with effective learning techniques.
-- Giebl, S. et al. (2021). Answer first or Google first?
-- Hicks, C. M., Lee, C. S., & Foster-Marks, K. (2025). The New Developer: AI Skill Threat.
-- Kalyuga, S. (2007). Expertise reversal effect and its implications for learner-tailored instruction.
-- Roediger III, H. L., & Karpicke, J. D. (2006). The power of testing memory.
-- Soderstrom, N. C., & Bjork, R. A. (2015). Learning versus performance.
-- Sweller, J., & Cooper, G. A. (1985). The use of worked examples as a substitute for problem solving in learning algebra.
-- Tankelevitch, L. et al. (2024). The metacognitive demands and opportunities of generative AI.
+- Bjork, R. A., Dunlosky, J., & Kornell, N. (2013). Self-regulated learning: Beliefs, techniques, and illusions. *Annual Review of Psychology*, 64(1), 417-444.
+- Dunlosky, J., Rawson, K. A., Marsh, E. J., Nathan, M. J., & Willingham, D. T. (2013). Improving students' learning with effective learning techniques. *Psychological Science in the Public Interest*, 14(1), 4-58.
+- Ericsson, K. A., Hoffman, R. R., & Kozbelt, A. (Eds.). (2018). *The Cambridge Handbook of Expertise and Expert Performance*. Cambridge University Press.
+- Giebl, S., Mena, S., Storm, B. C., Bjork, E. L., & Bjork, R. A. (2021). Answer first or Google first? *Psychology Learning & Teaching*, 20(1), 58-75.
+- Hicks, C. M., Lee, C. S., & Foster-Marks, K. (2025). The New Developer: AI Skill Threat. https://doi.org/10.31234/osf.io/2gej5_v2
+- Hicks, C. (2025). Cognitive helmets for the AI bicycle: Part 1. *Fight for the Human*. https://www.fightforthehuman.com/cognitive-helmets-for-the-ai-bicycle-part-1/
+- Kalyuga, S. (2007). Expertise reversal effect and its implications for learner-tailored instruction. *Educational Psychology Review*, 19(4), 509-539.
+- Kang, S. H. (2016). Spaced repetition promotes efficient and effective learning. *Policy Insights from the Behavioral and Brain Sciences*, 3(1), 12-19.
+- Kornell, N. (2009). Optimising learning using flashcards: Spacing is more effective than cramming. *Applied Cognitive Psychology*, 23(9), 1297-1317.
+- Murphy, D. H., Little, J. L., & Bjork, E. L. (2023). The value of using tests in education as tools for learning. *Educational Psychology Review*, 35(3), 89.
+- Roediger III, H. L., & Karpicke, J. D. (2006). The power of testing memory. *Perspectives on Psychological Science*, 1(3), 181-210.
+- Rohrer, D., & Taylor, K. (2007). The shuffling of mathematics problems improves learning. *Instructional Science*, 35(6), 481-498.
+- Skulmowski, A., & Xu, K. M. (2022). Understanding cognitive load in digital and online learning. *Educational Psychology Review*, 34(1), 171-196.
+- Soderstrom, N. C., & Bjork, R. A. (2015). Learning versus performance. *Perspectives on Psychological Science*, 10(2), 176-199.
+- Sweller, J., & Cooper, G. A. (1985). The use of worked examples as a substitute for problem solving in learning algebra. *Cognition and Instruction*, 2(1), 59-89.
+- Tankelevitch, L. et al. (2024). The metacognitive demands and opportunities of generative AI. *CHI Conference on Human Factors in Computing Systems*, 1-24.

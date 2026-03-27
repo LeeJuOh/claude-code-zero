@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # rubber-duck-tutor: shared hook library
 #
-# Provides: stdin reading with timeout, subagent detection,
-# JSON field extraction, and session rate limiting.
+# Provides: stdin reading, subagent detection, JSON field extraction,
+# and session rate limiting.
 #
 # Usage from hook scripts:
 #   source "$(dirname "$0")/lib.sh"
@@ -11,21 +11,21 @@
 
 set -uo pipefail
 
-# --- stdin with timeout ---
+# --- JSON field extraction ---
+# Use jq if available (robust), fall back to regex (fragile but zero-dep)
 
-duck__read_stdin() {
-  local buf=""
-  while IFS= read -r -t 3 line; do
-    buf="${buf}${line}"
-  done
-  echo "$buf"
-}
-
-# --- JSON field extraction (no jq dependency) ---
-
-duck__extract_field() {
-  echo "$1" | grep -oE "\"$2\" *: *\"[^\"]*\"" | head -1 | sed "s/\"$2\" *: *\"//;s/\"$//"
-}
+if command -v jq &>/dev/null; then
+  duck__get() {
+    echo "$DUCK_INPUT" | jq -r "$1 // empty"
+  }
+else
+  duck__get() {
+    # Fallback: regex for simple string fields only.
+    # Supports .field and .parent.field (extracts leaf field name).
+    local field="${1##*.}"
+    echo "$DUCK_INPUT" | grep -oE "\"$field\" *: *\"[^\"]*\"" | head -1 | sed "s/\"$field\" *: *\"//;s/\"$//"
+  }
+fi
 
 # --- Globals set by duck__init ---
 
@@ -33,22 +33,22 @@ DUCK_INPUT=""
 DUCK_SESSION_ID=""
 
 duck__init() {
-  DUCK_INPUT=$(duck__read_stdin)
+  DUCK_INPUT=$(cat)
 
-  # Empty input (timeout or pipe error) — bail silently
+  # Empty input (pipe error) — bail silently
   if [[ -z "$DUCK_INPUT" ]]; then
     exit 0
   fi
 
   # Subagent detection: agent_type field exists → not the user's session
   local agent_type
-  agent_type=$(duck__extract_field "$DUCK_INPUT" "agent_type")
+  agent_type=$(duck__get '.agent_type')
   if [[ -n "$agent_type" ]]; then
     exit 0
   fi
 
   # Extract session ID for rate limiting
-  DUCK_SESSION_ID=$(duck__extract_field "$DUCK_INPUT" "session_id")
+  DUCK_SESSION_ID=$(duck__get '.session_id')
   if [[ -z "$DUCK_SESSION_ID" ]]; then
     exit 0
   fi

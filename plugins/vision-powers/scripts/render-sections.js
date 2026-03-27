@@ -334,9 +334,68 @@ function renderEnvironmentFit(d) {
   }
 
   // Context budget
-  if (d.context_budget && d.context_budget.rows && d.context_budget.rows.length > 0) {
-    const rows = d.context_budget.rows.map(r =>
-      `          <tr>
+  if (d.context_budget) {
+    const cb = d.context_budget;
+    let budgetHtml = "";
+
+    // Always-loaded vs Deferred visual bar
+    const al = cb.always_loaded;
+    const df = cb.deferred;
+    if (al && df) {
+      const totalTok = (al.total_tokens || 0) + (df.total_tokens || 0);
+      const alPct = totalTok > 0 ? Math.round(((al.total_tokens || 0) / totalTok) * 100) : 50;
+      const dfPct = 100 - alPct;
+      const alTok = (al.total_tokens || 0).toLocaleString();
+      const dfTok = (df.total_tokens || 0).toLocaleString();
+
+      budgetHtml += `
+    <div class="context-budget-bar">
+      <div class="budget-bar-segment budget-bar--always" style="width: ${alPct}%" title="Always-loaded: ${alTok} tokens">
+        <span class="budget-bar-label">Always-loaded: ${alTok} tok</span>
+      </div>
+      <div class="budget-bar-segment budget-bar--deferred" style="width: ${dfPct}%" title="Deferred: ${dfTok} tokens">
+        <span class="budget-bar-label">Deferred: ${dfTok} tok</span>
+      </div>
+    </div>
+    <div class="budget-breakdown">`;
+
+      // Always-loaded breakdown
+      const sdItems = al.skill_descriptions ? al.skill_descriptions.items || 0 : 0;
+      const sdTok = al.skill_descriptions ? (al.skill_descriptions.tokens || 0).toLocaleString() : "0";
+      const rulesAlways = al.rules ? al.rules.always || 0 : 0;
+      const rulesOnDemand = al.rules ? al.rules.on_demand || 0 : 0;
+      const rulesTok = al.rules ? (al.rules.tokens || 0).toLocaleString() : "0";
+      const cmdFiles = al.claude_md ? al.claude_md.import_chain || 0 : 0;
+      const cmdTok = al.claude_md ? (al.claude_md.tokens || 0).toLocaleString() : "0";
+
+      budgetHtml += `
+      <div class="budget-breakdown-item">
+        ${scopeBadge("Always-loaded", "info")}
+        Skill descriptions (${sdItems} items): ~${sdTok} tok &middot;
+        Rules (${rulesAlways} always / ${rulesOnDemand} on-demand): ~${rulesTok} tok &middot;
+        CLAUDE.md + @imports (${cmdFiles} files): ~${cmdTok} tok
+      </div>`;
+
+      // Deferred breakdown
+      const mcpServers = df.mcp_tools ? df.mcp_tools.servers || 0 : 0;
+      const mcpTok = df.mcp_tools ? (df.mcp_tools.tokens || 0).toLocaleString() : "0";
+      const zeroCost = df.zero_cost_skills || 0;
+      const odRules = df.on_demand_rules || 0;
+
+      budgetHtml += `
+      <div class="budget-breakdown-item">
+        ${scopeBadge("Deferred", "low")}
+        MCP tools (${mcpServers} servers): ~${mcpTok} tok &middot;
+        Zero-cost skills: ${zeroCost} &middot;
+        On-demand rules: ${odRules}
+      </div>
+    </div>`;
+    }
+
+    // Budget table rows
+    if (cb.rows && cb.rows.length > 0) {
+      const rows = cb.rows.map(r =>
+        `          <tr>
             <td>${esc(r.resource)}</td>
             <td>${esc(r.current)}</td>
             <td>${esc(r.adding)}</td>
@@ -344,12 +403,8 @@ function renderEnvironmentFit(d) {
             <td>${esc(r.budget_1m)}</td>
             <td>${riskBadge(r.severity)}</td>
           </tr>`
-    ).join("\n");
-    const note = d.context_budget.note
-      ? `\n    <p class="env-fit-note">${esc(d.context_budget.note)}</p>`
-      : "";
-    parts.push(`  <div class="env-fit-item">
-    <h4>Context Budget</h4>
+      ).join("\n");
+      budgetHtml += `
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Resource</th><th>Current</th><th>Adding</th><th>Budget (200K)</th><th>Budget (1M)</th><th>Severity</th></tr></thead>
@@ -357,7 +412,15 @@ function renderEnvironmentFit(d) {
 ${rows}
         </tbody>
       </table>
-    </div>${note}
+    </div>`;
+    }
+
+    const note = cb.note
+      ? `\n    <p class="env-fit-note">${esc(cb.note)}</p>`
+      : "";
+
+    parts.push(`  <div class="env-fit-item">
+    <h4>Context Budget</h4>${budgetHtml}${note}
   </div>`);
   }
 
@@ -470,6 +533,61 @@ ${rows}
         </tbody>
       </table>
     </div>
+  </div>`);
+  }
+
+  // Scope impact
+  if (d.scope_impact) {
+    const si = d.scope_impact;
+    let scopeHtml = "";
+    const scopeColors = { global: "info", workspace: "warning", project: "danger" };
+    const affectedScopes = si.affected_scopes || ["global"];
+
+    if (si.scope_conflicts && si.scope_conflicts.length > 0) {
+      const conflictRows = si.scope_conflicts.map(c =>
+        `          <tr>
+            <td>${esc(c.type)}</td>
+            <td>${esc(c.this_component)}</td>
+            <td>${esc(c.existing_component)}</td>
+            <td>${scopeBadge(c.scope, scopeColors[c.scope] || "info")}</td>
+            <td>${esc(c.detail)}</td>
+          </tr>`
+      ).join("\n");
+      scopeHtml += `
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Type</th><th>This Plugin</th><th>Existing</th><th>Scope</th><th>Detail</th></tr></thead>
+        <tbody>
+${conflictRows}
+        </tbody>
+      </table>
+    </div>`;
+    } else {
+      const scopeCards = affectedScopes.map(s =>
+        `      <div class="scope-impact-card">
+        <h5>${scopeBadge(s.charAt(0).toUpperCase() + s.slice(1), scopeColors[s] || "info")}</h5>
+        <p>Plugin components available at this scope</p>
+      </div>`
+      ).join("\n");
+      scopeHtml += `\n    <div class="scope-impact-grid">\n${scopeCards}\n    </div>`;
+    }
+
+    if (si.appropriateness) {
+      scopeHtml += `\n    <p class="env-fit-note">${esc(si.appropriateness)}</p>`;
+    }
+
+    parts.push(`  <div class="env-fit-item">
+    <h4>Scope Impact</h4>${scopeHtml}
+  </div>`);
+  }
+
+  // Bundle source
+  if (d.bundle_source) {
+    const bs = d.bundle_source;
+    const bsColors = { marketplace: "info", local: "success", github: "warning" };
+    parts.push(`  <div class="env-fit-item">
+    <h4>Installation Source</h4>
+    <p>${scopeBadge(bs.type, bsColors[bs.type] || "info")} ${esc(bs.identifier || "")}</p>
   </div>`);
   }
 
@@ -1167,6 +1285,7 @@ function normalizeSectionsData(input) {
       const skillCount = ((comp.skills?.active || []).length + (comp.skills?.reference || []).length) || 0;
       const agentCount = (comp.agents || []).length;
       const commandCount = (comp.commands || []).length;
+      const ruleCount = (comp.rules || []).length;
       const hookCount = (comp.hooks || []).length;
       const mcpCount = (comp.mcp || []).length;
       const lspCount = (comp.lsp || []).length;
@@ -1175,6 +1294,7 @@ function normalizeSectionsData(input) {
       if (skillCount > 0) { newLabels.push("Skills"); newData.push(skillCount); }
       if (agentCount > 0) { newLabels.push("Agents"); newData.push(agentCount); }
       if (commandCount > 0) { newLabels.push("Commands"); newData.push(commandCount); }
+      if (ruleCount > 0) { newLabels.push("Rules"); newData.push(ruleCount); }
       if (hookCount > 0) { newLabels.push("Hooks"); newData.push(hookCount); }
       if (mcpCount > 0) { newLabels.push("MCP"); newData.push(mcpCount); }
       if (lspCount > 0) { newLabels.push("LSP"); newData.push(lspCount); }
@@ -1198,6 +1318,41 @@ function normalizeSectionsData(input) {
         if (!r.budget_200k) { r.budget_200k = "~20,000 tokens"; fixes.push("context_budget: filled budget_200k for MCP"); }
         if (!r.budget_1m) { r.budget_1m = "~100,000 tokens"; fixes.push("context_budget: filled budget_1m for MCP"); }
       }
+    }
+  }
+
+  // 16. context_budget: ensure always_loaded/deferred objects exist (fallback from rows)
+  if (s.environment_fit && s.environment_fit.context_budget) {
+    const cb = s.environment_fit.context_budget;
+    if (!cb.always_loaded) {
+      cb.always_loaded = {
+        skill_descriptions: { tokens: 0, items: 0 },
+        rules: { tokens: 0, items: 0, always: 0, on_demand: 0 },
+        claude_md: { tokens: 0, import_chain: 0 },
+        total_tokens: 0
+      };
+      // Try to infer from rows if available
+      if (Array.isArray(cb.rows)) {
+        for (const r of cb.rows) {
+          const res = (r.resource || "").toLowerCase();
+          if (res.includes("skill") || res.includes("description")) {
+            const addingStr = String(r.adding || "0").replace(/[^0-9]/g, "");
+            cb.always_loaded.skill_descriptions.tokens = Math.round(parseInt(addingStr || "0", 10) / 4);
+          }
+        }
+        cb.always_loaded.total_tokens = cb.always_loaded.skill_descriptions.tokens + cb.always_loaded.rules.tokens + cb.always_loaded.claude_md.tokens;
+      }
+      fixes.push("context_budget: created always_loaded from rows fallback");
+    }
+    if (!cb.deferred) {
+      const mcpServers = cb.mcp_tools ? (cb.mcp_tools.adding_servers || 0) : 0;
+      cb.deferred = {
+        mcp_tools: { tokens: mcpServers * 25 * 200, servers: mcpServers },
+        zero_cost_skills: cb.zero_cost_skills || 0,
+        on_demand_rules: 0,
+        total_tokens: mcpServers * 25 * 200
+      };
+      fixes.push("context_budget: created deferred from mcp_tools fallback");
     }
   }
 

@@ -1,7 +1,7 @@
 ---
 name: duck
-description: Rubber duck tutor that prevents rubber-stamping in AI-assisted workflows. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", wants to verify their own comprehension of AI-generated code or plans, or mentions rubber-stamping, skill degradation, or learning while coding. Do NOT trigger for general code explanations, debugging help, code reviews, or teaching requests — only when the user wants to test THEIR OWN understanding.
-argument-hint: "[plan|verify|review]"
+description: Rubber duck tutor that prevents rubber-stamping in AI-assisted workflows. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", wants to verify their own comprehension of AI-generated code or plans, or mentions rubber-stamping, skill degradation, or learning while coding. Do NOT trigger for general code explanations, debugging help, code reviews, or teaching — this tests the DEVELOPER's comprehension, not the CODE's correctness.
+argument-hint: "[plan|verify|review|orient]"
 ---
 
 # Rubber Duck Tutor
@@ -12,10 +12,23 @@ The user wants to stay sharp while using AI coding tools. AI-assisted workflows 
 
 This skill breaks the trap by making the user explain things to a duck. The mechanism is simple: **explaining forces understanding**. When you can't explain something clearly, you've found a gap.
 
+## Scope
+
+This skill applies to:
+- Claude Code sessions where the user is building, reviewing, or approving code (primary context)
+- Plan review sessions where architectural or design decisions were made
+- Any context where the user accepted AI-generated work without engaging deeply
+
+This skill does NOT apply to:
+- Pure research or information gathering sessions
+- Conversations where the user is actively debugging (they're already engaged)
+- Non-coding tasks (writing docs, project management, etc.)
+
 ## References
 
 - For the learning science (WHY these techniques work): [references/learning-science.md](references/learning-science.md)
 - For exercise execution patterns and code exploration techniques (HOW to run exercises): [references/exercise-patterns.md](references/exercise-patterns.md)
+- For repo orientation generation methodology (HOW to explore and document a codebase): [references/orientation-guide.md](references/orientation-guide.md)
 
 ## Core Principle: Wait for Their Answer
 
@@ -59,7 +72,6 @@ Offer a duck session after work that involves real decisions — not every small
 - Unfamiliar patterns or libraries introduced
 - User asked "why" questions during development
 - **AI completed a large automated implementation** (subagents, batch execution, or any workflow where the user was mostly approving rather than writing code) — this is the highest rubber-stamping risk
-- **Returning to a previous session's work** — a quick retrieval question ("What do you remember about how [component] handles [scenario]?") reactivates prior understanding before diving back in
 
 Do not offer when:
 - User declined this session
@@ -75,6 +87,8 @@ Parse `$ARGUMENTS`:
 | `plan` | Plan Review | After a plan/design doc is created |
 | `verify` | Code Verification | After implementation, before testing |
 | `review` | PR/Change Review | Before commit/merge/PR approval |
+| `orient` | Orientation | New to a codebase or onboarding |
+| `orient refresh` | Orientation (regenerate) | Force regenerate orientation doc |
 | (empty) | Auto-detect | Check context and choose |
 
 ### Auto-detect (no argument)
@@ -121,9 +135,8 @@ Parse `$ARGUMENTS`:
 6. Summarize: what was confirmed, changed, and removed.
 
 ### Techniques
-- **Elaborative interrogation**: "Why this approach? What are the alternatives?"
-- **Prediction**: "Where in this design will the first problem appear?"
-- **Interleaving**: Don't drill one decision — mix across architecture, scope, and trade-offs
+
+Prioritize: elaborative interrogation, prediction, interleaving. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
 
 ---
 
@@ -163,11 +176,8 @@ Parse `$ARGUMENTS`:
    7 or above: "Nice. What's the one thing you'd want to double-check before shipping?"
 
 ### Techniques
-- **Debug this**: Present plausible bugs based on actual code changes
-- **Trace the path**: Walk through a request/data flow step by step
-- **Error analysis**: "What if someone accidentally [wrong thing] here?"
-- **Pair finding**: "We just looked at [function A]. Can you find another function that does something similar?"
-- **Varied practice**: "We used this pattern for [X] — how would you apply it to [Y]?"
+
+Prioritize: debug this, trace the path, error analysis, pair finding. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
 
 ---
 
@@ -203,11 +213,39 @@ Parse `$ARGUMENTS`:
    7 or above: "What are you most and least confident about?"
 
 ### Techniques
-- **Teach-back**: Explain changes as if to a new team member
-- **Generation then comparison**: "How would you have done it?" vs actual
-- **Concrete to abstract**: "What's the general principle behind this pattern?"
-- **Completion prompts**: "Open [file] and find [component]. What does it do with [variable]?"
-- **Example-problem pairs**: "We just saw [module A] implement [pattern]. How would you apply it in [module B]?"
+
+Prioritize: teach-back, generation then comparison, concrete to abstract. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
+
+---
+
+## Orientation Mode
+
+**Purpose**: Generate a repo orientation document, then run interactive exercises from it. For developers new to a codebase or returning after a long break.
+
+**Storage**: `.claude/orientation.md` in the project root. Can be committed and shared with teammates.
+
+### Flow
+
+1. **Check for `.claude/orientation.md`**
+
+2. **If not found** (or argument is `orient refresh`):
+   - Explore the repo following the methodology in [references/orientation-guide.md](references/orientation-guide.md)
+   - Generate `.claude/orientation.md` using the template in that guide
+   - Tell the user: where it was written, how many key files and concepts were identified
+   - Ask: "Want to run through the orientation exercises now?"
+   - If they decline, stop. If they accept, continue to step 3.
+
+3. **If found** (and not refreshing):
+   - Read `.claude/orientation.md`
+   - Summarize what it covers in one sentence, ask if they want to proceed
+   - Run through the **Suggested exercise sequence** section
+   - Apply all standard duck techniques: one question at a time, wait for answer, fading scaffolding
+   - After exercises: "What's one thing about this codebase that surprised you or that you want to dig into further?"
+   - Use their answer to offer a relevant follow-up exercise or file to explore
+
+### Techniques
+
+Prioritize: prediction, teach-back, fading scaffolding. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
 
 ---
 
@@ -274,6 +312,11 @@ Rules:
 - Every question must require engaging with the actual codebase. Don't ask things answerable from general knowledge.
 - Bug scenarios should be plausible and based on real patterns from the diff, not contrived toy examples.
 - One question at a time. One answer. One feedback loop. Never batch.
+
+### Shallow Responses
+- Users who say "yeah I get it", "makes sense", or "looks fine" without demonstrating understanding — treat these as non-answers: "Show me — what does [specific thing] do?"
+- Users who copy-paste from the code or parrot variable names instead of explaining in their own words — ask them to close the file and explain from memory: "Without looking — what's the flow?"
+- "I think it does X" without specifics → "Walk me through the steps. What happens first?"
 
 ### User Experience
 - If the user is in a rush, do the quickest possible check (1 question) and let them go.

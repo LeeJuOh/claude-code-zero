@@ -9,8 +9,7 @@ description: >
   "tell me about this extension", "break down this plugin", or "generate a report
   for this plugin". Also triggers on GitHub plugin URLs or local plugin paths.
   Default output is an interactive HTML report; use --format md for inline markdown.
-argument-hint: "<path-or-url> [--format html|md] [--lang <code>]"
-compatibility: "Requires gh CLI for GitHub URL analysis"
+argument-hint: "path-or-url [--format html|md] [--lang code]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
 ---
 
@@ -142,9 +141,11 @@ Then run targeted Glob on discovered directories (e.g., `skills/**/*`, `agents/*
 | Skill auxiliary | `skills/*/*` (non-SKILL.md) |
 | Agent | `agents/*.md` |
 | Command | `commands/*.md` |
+| Rule | `rules/*.md` or root-level `RULE.md` |
 | Hook config | `hooks/hooks.json` or `hooks/*.json` |
 | MCP config | `.mcp.json` |
 | LSP config | `.lsp.json` |
+| Config | `settings.json` (plugin root) |
 | Plugin manifest | `**/plugin.json` |
 
 Build a component inventory with counts and file lists.
@@ -236,18 +237,25 @@ Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 Diagnose whether this plugin is a good fit for the user's current environment — not just "can it run?" but "should it be installed here?"
 
 **Full procedure**: Read `references/platforms/claude-code/env-fit-diagnosis.md` for the detailed 5-step process covering:
-1. Extract plugin characteristics from feature-architect output
-2. Run the environment scan script (`env-fit-scan.js`)
-3. Perform six diagnostic analyses (installation status, dependency check, context budget, functional overlap, hook impact, component dependencies)
+1. Extract plugin characteristics from feature-architect output (including rules, CLAUDE.md @imports, bundle source)
+2. Run the environment scan script (`env-fit-scan.js`) — collects installed plugins, skills, commands, hooks, MCP servers, context metrics
+3. Perform eight diagnostic analyses:
+   - **Via script data** (steps 3A-3E, 3H): installation status, dependency check, context budget, functional overlap, hook impact, component dependencies
+   - **Via orchestrator** (steps 3C extras, 3F, 3G): rules context cost (from feature-architect's rules analysis), CLAUDE.md @import chain, scope impact analysis, bundle source detection (from Phase 1 source context and plugin cache inspection)
 4. Determine overall verdict (RECOMMENDED / CONDITIONAL / REDUNDANT / CONFLICTING)
-5. Build diagnosis data structure for Phase 5/5R
+5. Build diagnosis data structure for Phase 5/5R (includes scope_impact, bundle_source, and enhanced context_budget with always-loaded/deferred breakdown)
 
-The environment scan script:
+The environment scan script provides baseline data:
 ```
 Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name})
 ```
 
-Save the resulting `environment_fit` data for Phase 5/5R. Omit empty categories.
+The orchestrator then supplements with:
+- **Rules context cost**: Count rules from feature-architect output, classify as always-loaded (no `paths:`) or on-demand (`paths:` present), estimate tokens as `file_size / 4`
+- **Scope impact**: All marketplace plugins install globally; check for framework-specific hooks/MCP that may warrant per-project activation
+- **Bundle source**: Determine from Phase 1 `source_type` (local/github) or plugin cache path patterns (marketplace/symlink)
+
+Save the combined `environment_fit` data for Phase 5/5R. Omit empty categories.
 
 #### Phase 5: Report Assembly (inline markdown)
 
@@ -338,10 +346,16 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      aesthetic hint: "Editorial",
      source context: { source_type, source_base, github_url (if applicable) },
      environment fit diagnosis: { verdict, verdict_summary, installation_status,
-       context_budget: { skill_desc, mcp_tools, hook_injection, zero_cost_skills },
+       context_budget: {
+         always_loaded: { skill_descriptions, rules, claude_md, total_tokens },
+         deferred: { mcp_tools, zero_cost_skills, on_demand_rules, total_tokens },
+         rows (backward compat — render script uses always_loaded/deferred when available),
+         hook_injection },
        dependency_check, overlap_findings, trigger_collisions,
        hook_impact: { current, adding, projected, types, event_collisions, severity },
        component_deps,
+       scope_impact: { installation_scope, affected_scopes, scope_conflicts, appropriateness },
+       bundle_source: { type, identifier },
        recommendations } (from Phase 4.5; when RECOMMENDED with no findings, pass minimal verdict-only data),
      skill design quality: { category_distribution, design_assessment[], summary }
        (from feature-architect's Skill Design Quality output; include in Plugin Profile section)
@@ -426,6 +440,7 @@ This is informational — just a brief suggestion, not an automatic invocation.
 
 ### Gotchas
 
+- **GitHub URL analysis requires `gh` CLI**: `gh repo clone` is used for source acquisition from GitHub URLs. If `gh` is not installed or not authenticated, GitHub URL analysis will fail. Local path and installed plugin analysis work without `gh`.
 - **`$()` command substitution triggers security prompt**: The `Bash(echo $(date))` pattern causes Claude Code to show a separate permission dialog regardless of `allowed-tools`. Use literal values or `Bash(date)` with separate processing instead.
 - **GitHub rate limiting**: `gh repo clone` and `gh api` calls can fail silently with HTTP 403 when the user's token is rate-limited. If clone fails, check `gh auth status` before retrying.
 - **Plugin cache has multiple versions**: `~/.claude/plugins/cache/` stores every installed version (e.g., `2.6.0/`, `2.7.1/`). Phase 4.5 uses the session context directly (not cache scanning), but if you ever need to inspect the cache manually, always pick the latest version per plugin to avoid counting stale entries.
@@ -448,6 +463,11 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **Never Read the full HTML report for feedback**: The generated HTML report can be 10,000+ tokens. Reading it into context for feedback processing causes context bloat and slow responses. Instead, use the Export Feedback JSON (a few hundred tokens) or have the user describe changes verbally. When edits are needed, use targeted Edit calls on specific line ranges — never Read the entire file.
 - **Do not edit Mermaid diagrams directly in the final HTML**: Mermaid code in the assembled HTML is inside `<pre class="mermaid">` blocks. Editing these directly risks syntax errors that break rendering (e.g., missing quotes on node labels, invalid subgraph syntax). If a diagram needs changes, edit the `sections-data.json` source and re-run render-sections.js + assemble-report.js instead.
 - **Discovery phase must use Glob only, never Bash**: Phase 2 file discovery must use Glob calls exclusively. Bash calls like `ls` or `find` are not in `allowed-tools` and trigger a user permission prompt that blocks execution (observed: 185s wait). All file listing needs are covered by Glob patterns — there is no case where Bash is needed for discovery.
+- **Rules with `paths:` frontmatter are deferred**: Rules that have a `paths:` field in frontmatter are NOT always-loaded — they only activate when matching file paths are in context. Treat them as zero always-on cost in context budget analysis. Rules WITHOUT `paths:` load their full content at session start.
+- **Plugin settings.json only supports `agent` field**: A plugin's `settings.json` at the root level only supports the `agent` field for setting a default agent. It does NOT support `permissions`, `hooks`, or other settings — these are silently ignored. Don't report unsupported settings as features.
+- **Bundle source detection is best-effort**: `skills-lock.json` may not exist in older installations, and cache path patterns can vary. Always fall back to plugin.json `repository` field or mark as `unknown`. Don't report missing provenance as a security issue.
+- **Scope impact for marketplace plugins**: All marketplace-installed plugins operate at the global scope. Their hooks fire for every project. If the plugin is highly framework-specific (e.g., React, Django), note this as a scope appropriateness concern — the user may want to conditionally disable it for non-matching projects.
+- **Context budget empirical grounding**: Context budget recommendations reference empirical estimates of ~20% structural waste in production sessions (unused tools, duplicates, stale results). Use this as motivation for context-aware recommendations, but note it's a general finding — individual plugin impact varies.
 
 ### Reference Files
 

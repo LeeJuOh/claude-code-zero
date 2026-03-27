@@ -47,8 +47,8 @@ You receive from the orchestrator:
 - **Report title** (e.g., "Agent Extension Visual: plugin-name")
 - **Aesthetic hint** (optional — one of: Blueprint, Editorial, Paper-ink, Monochrome)
 - **Source context** (optional — `source_type`, `source_base`, `github_url`)
-- **Environment fit diagnosis** (optional — verdict, context budget, dependency check, etc.)
-- **Skill design quality** (optional — from feature-architect output)
+- **Environment fit diagnosis** (optional — verdict, context budget with always-loaded/deferred breakdown, dependency check, scope impact, bundle source, etc.)
+- **Skill design quality** (optional — from feature-architect output, includes rules analysis)
 
 ### Workflow (JSON mode)
 
@@ -60,6 +60,13 @@ What you produce:
 - `metadata`: font_link, css_variables, css_variables_dark (you select the font pairing)
 - `source_context`: pass through from orchestrator input
 - `sections`: structured data for all 11 sections following the schema
+
+**New fields in the schema** (check `sections-data-schema.md` for full details):
+- `environment_fit.context_budget.always_loaded` / `.deferred`: Use these instead of flat `skill_desc`/`mcp_tools` fields. The render script displays a visual bar showing always-loaded vs deferred token distribution.
+- `environment_fit.scope_impact`: Include `installation_scope`, `affected_scopes`, `scope_conflicts[]`, and `appropriateness`. The render script renders scope cards or a conflict table.
+- `environment_fit.bundle_source`: Include `type` (marketplace/local/github/unknown) and `identifier`. Rendered as a badge.
+- `components.rules`: Array of ComponentCard objects for rules. Include `loading` (always-loaded/on-demand) and `paths` info. The render script adds a "Rules" tab.
+- `components.config`: Object with `agent` field from plugin's settings.json (if present).
 
 What the render script produces (you do NOT produce these):
 - HTML section files with correct CSS class names
@@ -118,7 +125,9 @@ You receive from the orchestrator skill:
   - `verdict_summary`: 1-2 sentence diagnosis
   - `installation_status`, `dependency_check`, `overlap_findings`, `trigger_collisions`
   - `hook_impact`: `{ current, adding, projected, types: {command, prompt, agent}, event_collisions[], severity }`
-  - `context_budget`: `{ skill_desc, mcp_tools, hook_injection, zero_cost_skills }`
+  - `context_budget`: `{ always_loaded: { skill_descriptions, rules, claude_md, total_tokens }, deferred: { mcp_tools, zero_cost_skills, on_demand_rules, total_tokens }, rows (legacy), hook_injection }`
+  - `scope_impact`: `{ installation_scope, affected_scopes, scope_conflicts[], appropriateness }`
+  - `bundle_source`: `{ type, identifier }`
   - `component_deps`: `[{ source, target, dep_type, status }]`
   - `recommendations`
   - When RECOMMENDED with no findings, generate a minimal verdict-only card (no empty subsections)
