@@ -9,8 +9,7 @@ description: >
   "tell me about this extension", "break down this plugin", or "generate a report
   for this plugin". Also triggers on GitHub plugin URLs or local plugin paths.
   Default output is an interactive HTML report; use --format md for inline markdown.
-argument-hint: "<path-or-url> [--format html|md] [--lang <code>]"
-compatibility: "Requires gh CLI for GitHub URL analysis"
+argument-hint: "path-or-url [--format html|md] [--lang code]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
 ---
 
@@ -441,6 +440,7 @@ This is informational — just a brief suggestion, not an automatic invocation.
 
 ### Gotchas
 
+- **GitHub URL analysis requires `gh` CLI**: `gh repo clone` is used for source acquisition from GitHub URLs. If `gh` is not installed or not authenticated, GitHub URL analysis will fail. Local path and installed plugin analysis work without `gh`.
 - **`$()` command substitution triggers security prompt**: The `Bash(echo $(date))` pattern causes Claude Code to show a separate permission dialog regardless of `allowed-tools`. Use literal values or `Bash(date)` with separate processing instead.
 - **GitHub rate limiting**: `gh repo clone` and `gh api` calls can fail silently with HTTP 403 when the user's token is rate-limited. If clone fails, check `gh auth status` before retrying.
 - **Plugin cache has multiple versions**: `~/.claude/plugins/cache/` stores every installed version (e.g., `2.6.0/`, `2.7.1/`). Phase 4.5 uses the session context directly (not cache scanning), but if you ever need to inspect the cache manually, always pick the latest version per plugin to avoid counting stale entries.
