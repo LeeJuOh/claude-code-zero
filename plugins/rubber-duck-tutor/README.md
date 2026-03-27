@@ -46,6 +46,15 @@ claude plugin install rubber-duck-tutor@claude-code-zero
 
 Auto-hooks (suggestions after commits and plan creation) are included by default.
 
+### Recommended: install jq
+
+The auto-hooks use [`jq`](https://jqlang.github.io/jq/) for reliable JSON parsing. Without it, hooks fall back to regex extraction which works for common cases but may fail on unusual input.
+
+```bash
+brew install jq    # macOS
+apt-get install jq # Debian/Ubuntu
+```
+
 ## Usage
 
 ```

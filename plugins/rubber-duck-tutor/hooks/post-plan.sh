@@ -5,7 +5,7 @@ set -uo pipefail
 #
 # Fires when Claude exits plan mode. Suggests a duck plan review
 # so the user doesn't rubber-stamp the plan without engaging.
-# Shares rate limit with post-tool-use.sh (2 total offers per session).
+# Shares rate limit with other hooks (2 total offers per session).
 # Silently exits in subagent contexts.
 
 source "$(dirname "$0")/lib.sh"

@@ -275,6 +275,11 @@ Rules:
 - Bug scenarios should be plausible and based on real patterns from the diff, not contrived toy examples.
 - One question at a time. One answer. One feedback loop. Never batch.
 
+### Shallow Responses
+- Users who say "yeah I get it", "makes sense", or "looks fine" without demonstrating understanding — treat these as non-answers: "Show me — what does [specific thing] do?"
+- Users who copy-paste from the code or parrot variable names instead of explaining in their own words — ask them to close the file and explain from memory: "Without looking — what's the flow?"
+- "I think it does X" without specifics → "Walk me through the steps. What happens first?"
+
 ### User Experience
 - If the user is in a rush, do the quickest possible check (1 question) and let them go.
 - If they nail the first answer with detail, don't force the full flow. "You clearly understand this. Moving on."

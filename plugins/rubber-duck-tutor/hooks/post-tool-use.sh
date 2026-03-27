@@ -5,7 +5,7 @@ set -uo pipefail
 #
 # Fires after every Bash tool use. Detects git commit commands and
 # suggests a duck session. Rate-limited to 2 suggestions per session.
-# Silently exits in subagent contexts (e.g. GSD executor, OMC git-master).
+# Silently exits in subagent contexts.
 
 source "$(dirname "$0")/lib.sh"
 
@@ -13,7 +13,7 @@ duck__init
 
 # Only trigger on git commit commands (check BEFORE rate limit so
 # non-commit Bash calls don't consume offer slots)
-COMMAND=$(duck__extract_field "$DUCK_INPUT" "command")
+COMMAND=$(duck__get '.tool_input.command')
 if ! echo "$COMMAND" | grep -qE '^\s*git\s+commit'; then
   exit 0
 fi

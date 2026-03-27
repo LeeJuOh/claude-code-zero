@@ -5,9 +5,8 @@ set -uo pipefail
 #
 # Fires after every Write tool use. Checks if the written file is a
 # markdown document and delegates plan/spec detection to Claude via
-# additionalContext. No file-path or content pattern matching — Claude
-# judges from conversation context whether the document warrants a
-# duck session.
+# additionalContext. No content pattern matching — Claude judges from
+# conversation context whether the document warrants a duck session.
 # Shares rate limit with other hooks (2 total offers per session).
 # Silently exits in subagent contexts.
 
@@ -16,7 +15,7 @@ source "$(dirname "$0")/lib.sh"
 duck__init
 
 # Only trigger for .md files
-FILE_PATH=$(duck__extract_field "$DUCK_INPUT" "file_path")
+FILE_PATH=$(duck__get '.tool_input.file_path')
 if [[ -z "$FILE_PATH" ]] || [[ "$FILE_PATH" != *.md ]]; then
   exit 0
 fi
