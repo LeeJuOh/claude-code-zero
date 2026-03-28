@@ -33,14 +33,14 @@ Run `/plugin` and check the **Installed** tab.
 
 | Plugin | Description |
 |--------|-------------|
-| [vision-powers](plugins/vision-powers/README.md) | PLACEHOLDER |
-| [worktree-plus](plugins/worktree-plus/README.md) | PLACEHOLDER |
-| [toolbox](plugins/toolbox/README.md) | PLACEHOLDER |
-| [notebooklm-connector](plugins/notebooklm-connector/README.md) | PLACEHOLDER |
-| [skill-creator-pro](plugins/skill-creator-pro/README.md) | PLACEHOLDER |
-| [rubber-duck-tutor](plugins/rubber-duck-tutor/README.md) | PLACEHOLDER |
-| [e2e-test-runner](plugins/e2e-test-runner/README.md) | PLACEHOLDER |
-| [codex-advisor](plugins/codex-advisor/README.md) | PLACEHOLDER |
+| [vision-powers](plugins/vision-powers/README.md) | Interactive HTML reports — diffs, plans, project recaps, and wiki analysis with Mermaid diagrams and Chart.js |
+| [worktree-plus](plugins/worktree-plus/README.md) | Native git worktree behavior with gitignored file support (`.worktreeinclude` / `.worktreelink`) |
+| [toolbox](plugins/toolbox/README.md) | Developer utilities — sitemap extraction, Gemini web fetch, handoff docs, config audit, secret management |
+| [notebooklm-connector](plugins/notebooklm-connector/README.md) | Query Google NotebookLM notebooks from Claude Code — source-grounded answers via Chrome automation |
+| [skill-creator-pro](plugins/skill-creator-pro/README.md) | Create, test, and optimize Claude Code skills with category-aware design and autonomous benchmarking |
+| [rubber-duck-tutor](plugins/rubber-duck-tutor/README.md) | Protect your coding skills — interactive comprehension exercises after plans, code, and commits |
+| [e2e-test-runner](plugins/e2e-test-runner/README.md) | Browser tests in plain English — natural language steps with video recording and visual regression |
+| [codex-advisor](plugins/codex-advisor/README.md) | Cross-model code analysis — OpenAI Codex review and verification with Claude's critical evaluation |
 
 ## Plugin Management
 
