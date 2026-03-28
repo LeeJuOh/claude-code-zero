@@ -33,15 +33,39 @@ Pay attention to context cues about the user's technical level. Terms like "eval
 
 ## Phase 1: Understand
 
-### Capture Intent
+### Choose Your Entry Path
 
-Start by understanding the user's intent. If the current conversation already contains a workflow to capture (e.g., "turn this into a skill"), extract context from the conversation history -- tools used, sequence of steps, corrections made, input/output formats observed. The user may need to fill gaps, and should confirm before proceeding.
+Most effective skills start small. At Anthropic, "most of ours began as a few lines and a single gotcha, and got better because people kept adding to them as Claude hit new edge cases." Choose the path that fits:
+
+**Path A: Extract** — "Turn this into a skill" / "Make what we just did reusable"
+
+1. Extract from the current conversation: tools used, sequence of steps, corrections made, input/output formats
+2. Identify the 1-2 key gotchas that made this workflow non-obvious
+3. Write a minimal SKILL.md (instructions + gotchas) — skip ahead to Phase 2
+4. Test on the original task first, then expand to variations
+
+**Path B: Greenfield** — "I want to make a skill for X"
+
+Start with one concrete, challenging task. Get Claude to succeed on that single task, then extract the winning approach into a skill. Don't try to design for every scenario upfront — iterate on one task before expanding.
+
+### Capture Intent
 
 1. What should this skill enable Claude to do?
 2. When should this skill trigger? (what user phrases/contexts)
 3. What's the expected output format?
 4. Should we set up test cases? Skills with objectively verifiable outputs (file transforms, data extraction, code generation, fixed workflow steps) benefit from tests. Skills with subjective outputs (writing style, art direction) often don't. Suggest the appropriate default, but let the user decide.
-5. How will we know this skill is working? (trigger accuracy, output quality, token efficiency -- pick what matters most for this skill. This feeds directly into eval design in Phase 3.)
+5. How will we know this skill is working? Use the metrics below to pick what matters most — this feeds directly into eval design in Phase 3.
+
+**Success metrics reference:**
+
+| Type | Metric | How to measure |
+|------|--------|----------------|
+| Quantitative | Triggers on 90%+ of relevant queries | Run 10-20 test queries, track auto vs manual trigger rate |
+| Quantitative | Completes workflow in fewer tool calls | Compare tool call count with-skill vs without-skill |
+| Quantitative | 0 failed API/MCP calls per workflow | Monitor MCP server logs for retry rates and error codes |
+| Qualitative | Users don't need to prompt about next steps | During testing, note how often you need to redirect or clarify |
+| Qualitative | Workflows complete without user correction | Run the same request 3-5 times, compare structural consistency |
+| Qualitative | Consistent results across sessions | Can a new user accomplish the task on first try with minimal guidance? |
 
 ### Interview and Research
 
@@ -152,6 +176,7 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 | `paths` | YAML list of globs — skill only triggers for matching file paths (e.g., `["src/**/*.ts"]`) |
 | `skills` | List of skill names to auto-load when subagents execute this skill |
 | `user-invocable` | `false` = hidden from `/` menu, Claude-only background knowledge |
+| `shell` | Shell for inline `!`command`` blocks: `bash` (default) or `powershell` |
 
 **String substitutions** available in SKILL.md body:
 
@@ -227,6 +252,13 @@ For skills that benefit from history (standup posts, recurring reports):
 - Simple: append-only log files, JSON files
 - Advanced: SQLite databases
 - Reference previous outputs to detect what changed since last run
+
+### Gotchas
+
+- **Don't use other testing skills during Phase 3.** `/skill-test` or similar skills will conflict with this skill's eval workflow. Run evals using the steps in Phase 3 directly.
+- **Snapshot before improving.** Always `cp -r` the skill before making changes in Phase 4. Without a snapshot, you can't run a meaningful baseline comparison — the "before" is gone.
+- **Kill the eval viewer.** The viewer process stays alive after review. If you forget `kill $VIEWER_PID`, subsequent launches may fail on port conflicts or you'll accumulate zombie processes.
+- **Don't over-design upfront.** The biggest time sink is spending 30 minutes on a perfect SKILL.md that turns out to need rewriting after the first eval. Write the minimum, test, then improve.
 
 ---
 
@@ -383,8 +415,10 @@ Before packaging, verify:
 - [ ] No bare numbers for `name` or `description` (wrap in quotes: `name: "3000"`)
 - [ ] No colons in `description` without quoting (YAML parses `description: Triggers: X, Y` incorrectly — use quotes)
 - [ ] No YAML sequence syntax in `argument-hint` (e.g., `[topic: foo | bar]` — use a plain string)
+- [ ] Skill name does not contain "claude" or "anthropic" (reserved, will be rejected)
+- [ ] No README.md inside the skill folder (all documentation goes in SKILL.md or references/)
 - [ ] Gotchas section exists with at least 2-3 entries
-- [ ] SKILL.md under 500 lines (body budget scales to ~2% of context window)
+- [ ] SKILL.md under 500 lines / 5,000 words (body budget scales to ~2% of context window)
 - [ ] Reference files linked with when-to-read guidance
 - [ ] Scripts have execute permission and shebang lines
 - [ ] Persistent data uses `${CLAUDE_PLUGIN_DATA}`, not skill directory
@@ -394,12 +428,13 @@ Before packaging, verify:
 
 ### Troubleshooting
 
-If `claude plugin validate .` fails or the skill doesn't trigger/behave as expected:
+For common issues during skill development (doesn't trigger, triggers too often, instructions not followed, large context, frontmatter errors), read `${CLAUDE_SKILL_DIR}/references/troubleshooting-guide.md`.
+
+If `claude plugin validate .` fails or the issue isn't covered in the troubleshooting guide:
 
 1. Fetch `https://code.claude.com/docs/llms.txt` to get the docs index
 2. Identify the relevant page (e.g., `skills.md` for frontmatter errors, `hooks.md` for hook failures, `plugins-reference.md` for manifest issues)
 3. Fetch that page and compare your skill against the current spec
-4. Common causes: deprecated frontmatter fields, changed hook event names, unsupported allowed-tools patterns
 
 The bundled references in this skill cover design principles and eval methodology, but **platform spec** (what fields exist, what syntax is valid) lives in the official docs and may have changed since these references were written.
 
@@ -418,6 +453,7 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 | `references/skill-categories.md` | 9 categories with templates, examples, and improvement patterns |
 | `references/design-patterns.md` | Gotchas patterns, progressive disclosure, hooks, setup, composability |
 | `references/schemas.md` | JSON schemas for evals, grading, benchmark, comparison |
+| `references/troubleshooting-guide.md` | 5 symptoms: doesn't trigger, triggers too often, instructions not followed, large context, frontmatter errors |
 | `agents/grader.md` | Evaluate assertions against outputs |
 | `agents/comparator.md` | Blind A/B comparison between two outputs |
 | `agents/analyzer.md` | Analyze benchmark patterns and comparison results |

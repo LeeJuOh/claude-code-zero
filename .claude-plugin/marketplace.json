@@ -17,7 +17,7 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.9.0",
+      "version": "1.10.0",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -35,7 +35,7 @@
     {
       "name": "skill-creator-pro",
       "source": "./plugins/skill-creator-pro",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "description": "Create, test, measure, and iteratively improve Claude Code skills with category-aware design, gotchas-driven development, progressive disclosure coaching, and automated description optimization"
     },
     {
