@@ -142,7 +142,7 @@ Agreement rate: X% (N/M unique findings overlap)
 ## Session Resume
 
 After any `codex exec` invocation, inform the user:
-> "Resume this Codex session: `/review resume [follow-up]` or `/verify resume [follow-up]`"
+> "Resume this Codex session: `/codex-review resume [follow-up]` or `/codex-verify resume [follow-up]`"
 
 Resume syntax:
 ```bash

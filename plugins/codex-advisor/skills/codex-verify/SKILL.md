@@ -1,5 +1,5 @@
 ---
-name: verify
+name: codex-verify
 description: Verify implementation or plan using Codex as an independent reviewer. Use when the user asks "codex 검수", "검수해줘", "verify", "codex double-check", "코덱스로 확인", "플랜 검수", wants Codex to verify completed work, or says "확인해줘" after implementation. Also triggered by hook suggestion after task completion.
 argument-hint: [path to plan file | --uncommitted | --base BRANCH | resume PROMPT]
 ---
@@ -108,7 +108,7 @@ Save to `codex-reviews/verify-<YYYYMMDD-HHMMSS>.md` using format from execution.
 rm -f tmp/codex-advisor-prompt.txt tmp/codex-stderr.txt
 ```
 
-Inform user: "Resume this session with `/verify resume [follow-up]`."
+Inform user: "Resume this session with `/codex-verifyresume [follow-up]`."
 
 ## Gotchas
 

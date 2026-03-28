@@ -12,8 +12,8 @@ This plugin runs OpenAI's Codex CLI for code review or verification, then has Cl
 
 | Skill | Description |
 |-------|-------------|
-| `/review` | Code review — supports `--uncommitted`, `--base BRANCH`, focus modes (security, perf, arch) |
-| `/verify` | Independent verification — PASS/FAIL verdict on implementation or plan documents |
+| `/codex-review` | Code review — supports `--uncommitted`, `--base BRANCH`, focus modes (security, perf, arch) |
+| `/codex-verify` | Independent verification — PASS/FAIL verdict on implementation or plan documents |
 
 Auto-hooks suggest review after commits and verification after task completion.
 
@@ -30,13 +30,13 @@ Auto-hooks suggest review after commits and verification after task completion.
 ## Usage
 
 ```
-/review                              # auto-detect scope
-/review --uncommitted                # review uncommitted changes
-/review --base develop               # review branch diff
-/review security focus               # security-focused review
-/verify                              # verify implementation
-/verify docs/my-plan.md              # verify a plan document
-/review resume "what about X?"       # continue previous session
+/codex-review                              # auto-detect scope
+/codex-review --uncommitted                # review uncommitted changes
+/codex-review --base develop               # review branch diff
+/codex-review security focus               # security-focused review
+/codex-verify                              # verify implementation
+/codex-verify docs/my-plan.md              # verify a plan document
+/codex-review resume "what about X?"       # continue previous session
 ```
 
 ## License

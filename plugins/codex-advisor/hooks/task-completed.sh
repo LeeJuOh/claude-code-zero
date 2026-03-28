@@ -15,7 +15,7 @@ fi
 
 if [ "$HAS_CHANGES" = "true" ]; then
   jq -n '{
-    "additionalContext": "Task completed with code changes detected. You can suggest running /verify for Codex verification if appropriate."
+    "additionalContext": "Task completed with code changes detected. You can suggest running /codex-verify for Codex verification if appropriate."
   }'
 fi
 
