@@ -322,7 +322,7 @@ hooks:
 
 ### Available Hook Events
 
-`PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `StopFailure`, `SessionEnd`, `CwdChanged`, `FileChanged`, `TaskCreated`, `PostCompact`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify against official docs — events evolve across releases.
+`PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop`, `StopFailure`, `SessionEnd`, `SubagentStart`, `UserPromptSubmit`, `PreCompact`, `PostCompact`, `Notification`, `PermissionRequest`, `Setup`, `ConfigChange`, `CwdChanged`, `FileChanged`, `TaskCreated`, `TeammateIdle`, `TaskCompleted`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify against official docs — events evolve across releases.
 
 ### Examples
 
@@ -490,6 +490,12 @@ When a session starts, Claude builds a listing of every skill with its descripti
 ```
 [What to use it for] + [Specific trigger contexts] + [What NOT to use it for (optional)]
 ```
+
+### Display Cap and Character Budget
+
+The `/skills` listing truncates descriptions to **250 characters** — front-load key trigger phrases. The full description is still used for triggering, but users can't see past the cap in the menu.
+
+The skill body budget scales to ~2% of the context window. With 1M context, that's ~20K characters; with 200K, ~4K. Keep SKILL.md lean and push detail to reference files.
 
 ### Make It "Pushy"
 
