@@ -144,12 +144,13 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 | `argument-hint` | Hint shown during autocomplete (e.g., `[issue-number]`) |
 | `allowed-tools` | Restrict tools (e.g., `Read, Grep, Bash(git *)`) |
 | `model` | Model override when this skill is active |
-| `effort` | Effort level override (`low`, `medium`, `high`, `max`) |
+| `effort` | Effort level override (`low`, `medium`, `high`) |
 | `context` | `fork` to run in isolated subagent |
 | `agent` | Subagent type when `context: fork` is set (e.g., `Explore`, `Plan`) |
 | `hooks` | On-demand hooks active during skill execution |
 | `disable-model-invocation` | `true` = manual-only (user invokes with `/name`) |
 | `paths` | YAML list of globs — skill only triggers for matching file paths (e.g., `["src/**/*.ts"]`) |
+| `skills` | List of skill names to auto-load when subagents execute this skill |
 | `user-invocable` | `false` = hidden from `/` menu, Claude-only background knowledge |
 
 **String substitutions** available in SKILL.md body:
@@ -157,9 +158,11 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 | Variable | Resolves to |
 |----------|-------------|
 | `$ARGUMENTS` | Text the user typed after the slash command (e.g., `/my-skill fix the login bug` → `fix the login bug`) |
+| `$ARGUMENTS[N]` | Nth individual argument (0-indexed). E.g., `/my-skill foo bar` → `$ARGUMENTS[0]` = `foo` |
 | `${CLAUDE_SKILL_DIR}` | Absolute path to this skill's folder — use to reference bundled files (`${CLAUDE_SKILL_DIR}/references/api.md`) |
 | `${CLAUDE_PLUGIN_ROOT}` | Plugin root directory — use for hook script paths |
 | `${CLAUDE_PLUGIN_DATA}` | Persistent data directory that survives plugin upgrades — use for config, logs, databases |
+| `${CLAUDE_SESSION_ID}` | Current session ID — use for per-session tracking or logging |
 
 `${CLAUDE_SKILL_DIR}` is the most important for skill authors. Use it whenever your SKILL.md body tells Claude to read a bundled file — it resolves correctly regardless of where the plugin is installed.
 
@@ -215,7 +218,7 @@ Consider adding hooks when the skill touches production data, involves destructi
 
 **Conditional filtering:** Hooks support an `if` field using permission rule syntax (e.g., `Bash(git *)`) to narrow when they fire, reducing overhead from process spawning.
 
-**Available events:** `PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `StopFailure`, `SessionEnd`, `CwdChanged`, `FileChanged`, `TaskCreated`, `PostCompact`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify syntax against official docs (`hooks.md`, `hooks-guide.md`) -- hook events and types evolve across releases.
+**Available events:** `PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop`, `StopFailure`, `SessionEnd`, `SubagentStart`, `UserPromptSubmit`, `PreCompact`, `PostCompact`, `Notification`, `PermissionRequest`, `Setup`, `ConfigChange`, `CwdChanged`, `FileChanged`, `TaskCreated`, `TeammateIdle`, `TaskCompleted`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify syntax against official docs (`hooks.md`, `hooks-guide.md`) -- hook events and types evolve across releases.
 
 ### Memory & Data Persistence (Optional)
 
@@ -351,6 +354,8 @@ If the user wants hands-off optimization instead of the manual review loop above
 
 The description field is the primary triggering mechanism. It's not a summary -- it's a trigger condition written for the model. Write it to be slightly "pushy" to combat undertriggering.
 
+**Display cap:** The `/skills` listing truncates descriptions to 250 characters. The full description is still used for triggering, but front-load the most important trigger phrases so they're visible in the menu.
+
 **Step 1: Generate 20 trigger eval queries**
 
 Mix of should-trigger (8-10) and should-not-trigger (8-10). Queries must be realistic with specific details -- file paths, personal context, typos, casual speech. For should-not-trigger, focus on near-misses that share keywords but actually need something different.
@@ -375,8 +380,11 @@ Before packaging, verify:
 - [ ] Skill fits cleanly into one category
 - [ ] Description includes WHAT and WHEN (trigger conditions)
 - [ ] No XML angle brackets (`<` `>`) in frontmatter
+- [ ] No bare numbers for `name` or `description` (wrap in quotes: `name: "3000"`)
+- [ ] No colons in `description` without quoting (YAML parses `description: Triggers: X, Y` incorrectly — use quotes)
+- [ ] No YAML sequence syntax in `argument-hint` (e.g., `[topic: foo | bar]` — use a plain string)
 - [ ] Gotchas section exists with at least 2-3 entries
-- [ ] SKILL.md under 500 lines
+- [ ] SKILL.md under 500 lines (body budget scales to ~2% of context window)
 - [ ] Reference files linked with when-to-read guidance
 - [ ] Scripts have execute permission and shebang lines
 - [ ] Persistent data uses `${CLAUDE_PLUGIN_DATA}`, not skill directory
@@ -421,3 +429,7 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 **Cowork / headless:** Use `--static <output_path>` for eval viewer. Feedback downloads as `feedback.json`.
 
 **Claude.ai:** No subagents -- run test cases inline, one at a time. Skip baselines and benchmarking. Focus on qualitative feedback. Description optimization requires `claude` CLI -- skip if unavailable.
+
+## Compatibility
+
+Written and tested against **Claude Code v2.1.86**. Key platform features used: `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_SESSION_ID}`, `effort` frontmatter, `skills` frontmatter, `paths` frontmatter, HTTP hooks, conditional `if` on hooks, `context: fork`. If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.

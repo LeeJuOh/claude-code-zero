@@ -37,7 +37,7 @@ Run `/plugin` and check the **Installed** tab.
 | worktree-plus | v2.4.3 | Enhanced git worktree with selective copy/symlink for gitignored files | [README](plugins/worktree-plus/README.md) |
 | toolbox | v1.9.0 | Developer utility skills — sitemap extraction, web fetching, handoff, health audit, secret management | [README](plugins/toolbox/README.md) |
 | notebooklm-connector | v1.3.1 | Query NotebookLM notebooks directly from Claude Code via Chrome automation | [README](plugins/notebooklm-connector/README.md) |
-| skill-creator-pro | v1.2.0 | Create, test, benchmark, and optimize Claude Code skills | [README](plugins/skill-creator-pro/README.md) |
+| skill-creator-pro | v1.5.0 | Create, test, benchmark, and optimize Claude Code skills | [README](plugins/skill-creator-pro/README.md) |
 | codex-advisor | v0.1.0 | OpenAI Codex CLI integration for cross-model code analysis | — |
 
 **6 plugins, 20 skills, 5 agents**

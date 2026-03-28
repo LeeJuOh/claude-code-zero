@@ -15,7 +15,8 @@ Built on the official [skill-creator](https://github.com/anthropics/claude-code-
 - **Eval writing guide** — How to write binary evals that produce reliable scores instead of false confidence
 - **Quality gate checklist** — 10-item verification before packaging
 - **Official docs consultation** — Fetches current platform spec for frontmatter, hooks, and allowed-tools to avoid outdated patterns
-- **Complete frontmatter reference** — All 11 supported fields including `argument-hint`, `model`, `effort`, `agent`, `user-invocable`
+- **Complete frontmatter reference** — All 13 supported fields including `argument-hint`, `model`, `effort`, `agent`, `skills`, `user-invocable`
+- **CC version tracking** — Documents which Claude Code version the plugin was written against for easier maintenance
 
 **Retained from skill-creator:**
 - Eval system with parallel with-skill / baseline runs
@@ -43,3 +44,7 @@ Or invoke when you already have a draft:
 ```
 /skill-creator-pro improve this skill @path/to/skill
 ```
+
+## Compatibility
+
+Written and tested against **Claude Code v2.1.86**.
