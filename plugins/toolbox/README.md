@@ -1,80 +1,39 @@
 # toolbox
 
-Personal utility commands and tools for Claude Code.
+> Developer utility skills that fill the gaps in Claude Code's built-in capabilities.
 
-## Installation
+## Why
 
-### 1. Add the marketplace
+Claude Code doesn't come with everything. WebFetch gets blocked by bot detection. Handoff between sessions loses context. Secrets get hardcoded into config files. XML sitemaps need manual parsing. Reference repos drift out of date.
 
-```shell
-/plugin marketplace add LeeJuOh/claude-code-zero
-```
+toolbox is a collection of small, focused skills — each solves one specific friction point.
 
-### 2. Install the plugin
+## Features
+
+| Skill | Description |
+|-------|-------------|
+| `fetch-sitemap` | Extract URLs from XML sitemaps with optional regex filtering |
+| `gemini-fetch` | Fetch web content via Gemini CLI when WebFetch is blocked (403, bot-detection) |
+| `handoff` | Write or update a handoff document for the next agent session |
+| `health` | Audit Claude Code config drift and collaboration issues |
+| `secret-setup` | Extract hardcoded secrets into a gitignored env file with auto-loading hook |
+| `sync-references` | Pull latest changes for all git repos under a directory |
+
+## Install
 
 ```shell
 /plugin install toolbox@claude-code-zero
 ```
 
-Install with a specific scope:
-
-```shell
-# User scope (default, available across all projects)
-/plugin install toolbox@claude-code-zero --scope user
-
-# Project scope (shared with team via version control)
-/plugin install toolbox@claude-code-zero --scope project
-```
-
-### 3. Verify installation
-
-Run `/plugin` and check the **Installed** tab to confirm.
-
-### Plugin management
-
-```shell
-/plugin disable toolbox@claude-code-zero    # Disable
-/plugin enable toolbox@claude-code-zero     # Re-enable
-/plugin update toolbox@claude-code-zero     # Update
-/plugin uninstall toolbox@claude-code-zero  # Uninstall
-```
-
-## Commands
-
-### `/fetch-sitemap`
-
-Extract URLs from an XML sitemap with optional regex filtering.
-
-**Usage:**
+## Usage
 
 ```
-/fetch-sitemap <sitemap-url> [pattern]
-```
-
-**Examples:**
-
-```
-/fetch-sitemap https://example.com/sitemap.xml
-/fetch-sitemap https://example.com/sitemap.xml en
-/fetch-sitemap https://example.com/sitemap.xml 'skills|hooks'
-```
-
-### `/handoff`
-
-Write or update a handoff document so the next agent with fresh context can continue this work.
-
-**Usage:**
-
-```
-/handoff [path]
-```
-
-**Examples:**
-
-```
-/handoff                          # defaults to HANDOFF.md
-/handoff handoffs/auth-refactor.md
-/handoff handoffs/api-migration.md
+/fetch-sitemap https://example.com/sitemap.xml 'docs|blog'
+/gemini-fetch https://reddit.com/r/ClaudeAI/top
+/handoff
+/health
+/secret-setup
+/sync-references references/
 ```
 
 ## License
