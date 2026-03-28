@@ -1,127 +1,44 @@
-# Vision Powers
+# vision-powers
 
-Visual report generation suite for Claude Code: plugin wiki analysis, git diff visualization, implementation plan review, project recap, and fact-checking. All outputs are self-contained interactive HTML reports with responsive navigation, Mermaid diagrams, Chart.js dashboards, and a curated design system.
+> Turn Claude Code's text output into self-contained interactive HTML reports.
 
-## Skills
+## Why
 
-### agent-extension-visual
+Claude Code works in text. Plans, diffs, project analysis — all text. When complexity grows, text becomes hard to navigate. You lose the big picture in walls of terminal output.
 
-Analyze agent extensions (plugins, skills, commands, hooks, agents, MCP servers) and generate HTML wiki reports with security audit and plugin profiles.
+vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js dashboards, and a curated design system. Every report is a single self-contained file you can open in any browser, share with teammates, or archive.
 
-```
-analyze ./plugins/my-plugin
-analyze github.com/owner/repo
-analyze github.com/owner/repo/tree/main/plugins/foo
-analyze ./plugins/my-plugin --format md
-analyze ./plugins/my-plugin --lang ko
-security audit ./plugins/my-plugin
-overview ./plugins/my-plugin
-```
+## Features
 
-### diff-visual
+| Skill | Description |
+|-------|-------------|
+| `agent-extension-visual` | Analyze plugins/skills/hooks and generate wiki reports with security audit |
+| `diff-visual` | Visualize git diffs with architecture diagrams and code review cards |
+| `plan-visual` | Review implementation plans with blast radius analysis and risk assessment |
+| `project-recap` | Rebuild mental model — recent activity, key decisions, cognitive debt hotspots |
+| `fact-check` | Verify document accuracy against the actual codebase and git history |
+| `report-manager` | List, open, delete, and search generated reports |
 
-Visualize git diffs as interactive HTML reports with architecture diagrams, KPI dashboards, code review cards, and side-by-side comparisons.
+4 specialized agents: `visual-report-writer`, `feature-architect`, `security-auditor`, `coherence-reviewer`
 
-```
-visualize diff HEAD
-review changes on feature/auth
-visualize PR #123
-diff review abc1234
+## Install
+
+```shell
+/plugin install vision-powers@claude-code-zero
 ```
 
-### plan-visual
-
-Review implementation plans as interactive HTML reports with architecture diagrams, blast radius analysis, risk assessment, and gap detection.
+## Usage
 
 ```
-review plan ~/.claude/plans/my-plan.md
-evaluate plan ./docs/auth-redesign.md
+analyze ./plugins/my-plugin          # wiki report
+visualize diff HEAD                  # diff report
+review plan docs/my-plan.md          # plan review
+recap this project                   # project recap
+fact-check the last report           # verify accuracy
+list reports                         # manage reports
 ```
 
-### project-recap
-
-Generate a visual project recap — rebuild mental model of a project's current state, recent activity, key decisions, and cognitive debt hotspots.
-
-```
-recap this project
-project recap 30d
-project snapshot 3m --lang ko
-catch me up on this project
-```
-
-### fact-check
-
-Verify factual accuracy of a document against the actual codebase and git history. Corrects inaccuracies in place and adds a verification summary.
-
-```
-fact-check ${CLAUDE_PLUGIN_DATA}/reports/my-report.html
-verify this report
-validate the last report
-```
-
-### report-manager
-
-Manage vision-powers reports: list, open in browser, delete, and search by name or content.
-
-```
-list reports
-open the latest report
-delete reports --type diff-visual
-delete reports --before 30d
-search reports auth
-```
-
-## Report Location
-
-All reports are saved to:
-```
-${CLAUDE_PLUGIN_DATA}/reports/
-```
-
-## Report Interaction
-
-All HTML reports include interactive features:
-
-- **Zoom**: `+`/`-` buttons or `Ctrl+scroll` on diagrams
-- **Pan**: Click and drag to move around zoomed diagrams
-- **Fullscreen**: Expand any diagram to full screen (`Esc` to exit)
-- **PNG Export**: Download any diagram as a high-resolution PNG
-- **Feedback**: Click ✎ on any section to write feedback, then **Copy to Clipboard** at the bottom bar and paste the JSON into Claude Code for targeted fixes
-
-## Architecture
-
-```mermaid
-graph TD
-    S1["agent-extension-visual<br/>(orchestrator)"] -->|delegates| A1["feature-architect"]
-    S1 -->|delegates| A2["security-auditor"]
-    S1 -->|delegates<br/>HTML mode| A4["visual-report-writer"]
-
-    S2["diff-visual<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
-    S3["plan-visual<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
-    S4["project-recap<br/>(orchestrator)"] -->|delegates<br/>HTML| A4
-
-    S5["fact-check<br/>(standalone)"]
-    S6["report-manager<br/>(standalone)"] -->|reads| R["reports/"]
-
-    A4 -->|reads| DS["design-system/"]
-    A4 -->|reads| SS1["agent-extension-visual<br/>section-structure"]
-    A4 -->|reads| SS2["diff-visual<br/>section-structure"]
-    A4 -->|reads| SS3["plan-visual<br/>section-structure"]
-    A4 -->|reads| SS4["project-recap<br/>section-structure"]
-```
-
-### Shared Design System
-
-All report generators share a modular design system (`references/design-system/`):
-
-| File | Content |
-|------|---------|
-| `css-patterns.md` | Theme variables, depth tiers, cards, backgrounds, animations |
-| `font-system.md` | 12 curated font pairings with rotation rules |
-| `mermaid-patterns.md` | Mermaid theming, zoom controls, fullscreen |
-| `navigation.md` | Responsive sidebar TOC + mobile horizontal bar |
-| `libraries.md` | CDN references (Mermaid, Chart.js, Google Fonts) |
-| `anti-slop-rules.md` | Forbidden patterns, approved aesthetics, quality checklist |
+Reports are saved to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback.
 
 ## License
 

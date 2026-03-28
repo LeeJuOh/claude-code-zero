@@ -1,5 +1,5 @@
 ---
-name: review
+name: codex-review
 description: Run Codex code review with Claude's critical evaluation. Use when the user asks for "codex review", "codex 리뷰", "코드 리뷰", wants Codex to review code changes, diff, branch, or commit. Also triggered by hook suggestion after git commit.
 argument-hint: [--uncommitted | --base BRANCH | security focus | perf focus | resume PROMPT]
 ---
@@ -51,11 +51,11 @@ Timeout: 300000ms. Capture stderr to file, not `/dev/null`.
 
 If user requests a focus (security, perf, arch), pass it as the instruction argument to `codex review`:
 
-- `/review security focus` → `codex review --uncommitted "Focus on security: injection vulnerabilities, auth gaps, hardcoded secrets, OWASP Top 10"`
-- `/review perf focus` → `codex review --uncommitted "Focus on performance: N+1 queries, memory leaks, missing caching, blocking I/O"`
-- `/review arch focus` → `codex review --uncommitted "Focus on architecture: module boundaries, coupling, circular dependencies, separation of concerns"`
+- `/codex-reviewsecurity focus` → `codex review --uncommitted "Focus on security: injection vulnerabilities, auth gaps, hardcoded secrets, OWASP Top 10"`
+- `/codex-reviewperf focus` → `codex review --uncommitted "Focus on performance: N+1 queries, memory leaks, missing caching, blocking I/O"`
+- `/codex-reviewarch focus` → `codex review --uncommitted "Focus on architecture: module boundaries, coupling, circular dependencies, separation of concerns"`
 
-User can also pass any custom instruction: `/review "focus on error handling"`.
+User can also pass any custom instruction: `/codex-review"focus on error handling"`.
 
 ### Session Resume
 
@@ -79,7 +79,7 @@ Save to `codex-reviews/review-<YYYYMMDD-HHMMSS>.md` using format from execution.
 rm -f tmp/codex-stderr.txt
 ```
 
-Inform user: "Resume this session with `/review resume [follow-up]`."
+Inform user: "Resume this session with `/codex-reviewresume [follow-up]`."
 
 ## Gotchas
 

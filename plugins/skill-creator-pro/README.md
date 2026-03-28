@@ -1,41 +1,37 @@
 # skill-creator-pro
 
-The official [skill-creator](https://github.com/anthropics/claude-code-plugins/tree/main/plugins/skill-creator) teaches Claude how to create skills. This plugin teaches it how to create **good** skills.
+> The official skill-creator teaches Claude how to create skills. This plugin teaches it how to create **good** skills.
 
-## Philosophy
+## Why
 
-Built on skill-creator's eval framework ([blog post](https://claude.com/blog/improving-skill-creator-test-measure-and-refine-agent-skills)), with design philosophy distilled from two Anthropic sources:
+Making a skill is easy. Making one that triggers reliably, follows instructions consistently, and improves over time is hard. The official [skill-creator](https://github.com/anthropics/claude-code-plugins/tree/main/plugins/skill-creator) provides the eval framework — this plugin layers on design philosophy distilled from Anthropic's production experience:
 
-- [Lessons from Building Claude Code: How We Use Skills](https://x.com/trq212/status/2027463795355095314) — Anthropic's internal lessons from running hundreds of skills in production
-- [The Complete Guide to Building Skills for Claude](https://claude.com/blog/complete-guide-to-building-skills-for-claude) — Official guide covering planning, design, testing, and troubleshooting
+- [Lessons from Building Claude Code: How We Use Skills](https://x.com/trq212/status/2027463795355095314) — internal lessons from running hundreds of skills
+- [The Complete Guide to Building Skills for Claude](https://claude.com/blog/complete-guide-to-building-skills-for-claude) — planning, design, testing, troubleshooting
 
-The core insight from these sources: knowing how to make a skill is easy, knowing how to make one that **triggers reliably, follows instructions consistently, and improves over time** is hard. This plugin embeds that knowledge into the creation flow.
+It adds a 9-category taxonomy, gotchas-driven design, and an autonomous optimization loop inspired by Karpathy's [autoresearch](https://github.com/karpathy/autoresearch).
 
-## What it adds to skill-creator
-
-- **9-category taxonomy** — Categorize your skill (Library & API, Product Verification, Runbooks, etc.) to apply category-specific design and improvement patterns
-- **Gotchas-driven design** — Treats gotchas as the highest-ROI content; guides building them from real failure points
-- **Start Small + Extract** — Two entry paths: build from scratch with one task first, or extract a skill from an existing conversation
-- **Success metrics** — Quantitative (trigger rate, tool calls, API errors) and qualitative (user corrections, cross-session consistency) measurement framework
-- **Troubleshooting guide** — 5 symptom-based diagnosis flows for common skill failures (doesn't trigger, instructions not followed, etc.)
-- **Auto-optimize** — Inspired by Andrej Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) methodology. Autonomous optimization loop: run repeatedly, score with binary evals, reflect on failures to diagnose root causes, mutate the prompt, keep only improvements
-
-Retained from skill-creator: parallel eval runs with baselines, benchmarking, blind A/B comparison, description optimization loop, eval viewer.
-
-## Skills
+## Features
 
 | Skill | Description |
 |-------|-------------|
-| `skill-creator-pro` | Understand → Design → Test → Improve → Polish |
-| `auto-optimize` | Autonomous optimization with reflection-driven mutation |
+| `skill-creator-pro` | Full creation workflow: Understand → Design → Test → Improve → Polish |
+| `auto-optimize` | Autonomous optimization — run repeatedly, score with binary evals, mutate the prompt, keep improvements |
+
+## Install
+
+```shell
+/plugin install skill-creator-pro@claude-code-zero
+```
 
 ## Usage
 
 ```
 /skill-creator-pro I want to make a skill for X
 /skill-creator-pro improve this skill @path/to/skill
+/auto-optimize @path/to/skill
 ```
 
-## Compatibility
+## License
 
-Written and tested against **Claude Code v2.1.86**.
+MIT
