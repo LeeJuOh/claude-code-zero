@@ -6,7 +6,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.sh"
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-pr.sh",
+            "if": "Bash(gh *)"
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-pr.sh",
+            "if": "Bash(glab *)"
           }
         ]
       },
@@ -25,6 +31,16 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-write-plan.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session-end.sh"
           }
         ]
       }

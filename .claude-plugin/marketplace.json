@@ -47,8 +47,8 @@
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "1.3.0",
-      "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Interactive learning sessions for plan review, code verification, and PR review, with auto-hooks for post-commit and post-plan suggestions."
+      "version": "1.4.0",
+      "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Duck character (🦆) with structured question frameworks (assumptions/blindspots/tradeoffs). Auto-hooks at workflow checkpoints: plan creation, spec documents, PR/MR, session end."
     },
     {
       "name": "e2e-test-runner",
