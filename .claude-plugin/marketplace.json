@@ -59,8 +59,8 @@
     {
       "name": "lab-harness-zero",
       "source": {
-        "source": "github",
-        "repo": "LeeJuOh/harness-zero",
+        "source": "url",
+        "url": "https://github.com/LeeJuOh/harness-zero.git",
         "ref": "develop"
       },
       "description": "[Lab] Install once, repo becomes agent-friendly. Scaffolds structure, organizes docs, enforces principles via hooks, prepares evaluator separation.",
