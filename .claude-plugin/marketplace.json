@@ -55,6 +55,16 @@
       "source": "./plugins/e2e-test-runner",
       "version": "0.2.0",
       "description": "Run E2E browser tests using natural language test definitions powered by Claude Code SDK and agent-browser with video recording"
+    },
+    {
+      "name": "lab-harness-zero",
+      "source": {
+        "source": "github",
+        "repo": "LeeJuOh/harness-zero",
+        "ref": "develop"
+      },
+      "description": "[Lab] Install once, repo becomes agent-friendly. Scaffolds structure, organizes docs, enforces principles via hooks, prepares evaluator separation.",
+      "category": "lab"
     }
   ]
 }

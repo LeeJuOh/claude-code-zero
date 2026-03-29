@@ -11,7 +11,9 @@ Personal marketplace for Claude Code plugins. Plugins are developed under `plugi
 
 ```
 .claude-plugin/marketplace.json   # Marketplace definition (plugin registry)
-plugins/<plugin-name>/            # Plugin source code (git-committed)
+plugins/<plugin-name>/            # Local plugin source code (git-committed)
+# External repo plugins registered via GitHub source object in marketplace.json
+# Lab/beta plugins use `lab-` name prefix (e.g., lab-harness-zero)
 references/                       # External reference materials (git-ignored)
 docs/                             # Knowledge base and reference materials
   reference/                      # Skill, hooks, env-var specs
@@ -47,35 +49,44 @@ Key references for structural plugin work:
 
 Both are required reading for new plugins and structural changes. See **Workflow step 1 (Docs)**.
 
-## Plugin Development
+## Marketplace Management
 
-### Plugin Component Structure
+### marketplace.json Schema
 
-Standard plugin layout inside `plugins/<plugin-name>/`:
+Location: `.claude-plugin/marketplace.json`
 
-```
-.claude-plugin/plugin.json   # Plugin manifest (no version — version lives in marketplace.json)
-commands/                     # Slash commands (legacy; use skills/ for new skills)
-skills/                       # Skills with SKILL.md
-agents/                       # Sub-agents (*.md)
-hooks/                        # Hooks (hooks.json + scripts)
-.mcp.json                    # MCP server configuration (optional)
-.lsp.json                    # LSP server configuration (optional)
-settings.json                # Default settings, e.g. { "agent": "name" } (optional)
-.evals/                      # Test/eval artifacts (gitignored — not distributed)
-```
+**Top-level fields:**
 
-### Skill Design Principles
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Marketplace identifier (kebab-case) |
+| `owner` | Yes | `{ "name": "...", "email": "..." }` |
+| `plugins` | Yes | Array of plugin entries |
+| `metadata.description` | No | Marketplace description |
+| `metadata.pluginRoot` | No | Base path prepended to relative plugin sources |
 
-See `docs/reference/skill-lessons-from-anthropic.md` — description-as-trigger, gotchas-driven design, progressive disclosure, on-demand hooks, 9 skill categories.
+**Plugin entry fields:**
 
-### SKILL.md Quick Reference
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | kebab-case identifier |
+| `source` | Yes | `"./path"` (local) or source object (external) |
+| `version` | No | SemVer — set here for local, in plugin.json for external |
+| `description` | No | One-line summary |
+| `category` | No | e.g., `"lab"` for experimental plugins |
+| `tags` | No | Array of keyword strings |
 
-See `docs/reference/skill-md-reference.md` — 10 frontmatter fields (name, description, allowed-tools, context, hooks, ...) and 5 string substitutions ($ARGUMENTS, ${CLAUDE_SKILL_DIR}, ...).
+**Source types:**
 
-### Hooks Quick Reference
+- **Local**: `"./plugins/foo"` — must start with `./`, no `../`
+- **GitHub**: `{"source": "github", "repo": "owner/repo", "ref": "branch", "sha": "..."}`
+- **Git URL**: `{"source": "url", "url": "https://...", "ref": "...", "sha": "..."}`
+- **Git subdirectory**: `{"source": "git-subdir", "url": "...", "path": "subdir/path"}`
+- **npm**: `{"source": "npm", "package": "...", "version": "...", "registry": "..."}`
 
-See `docs/reference/hooks-reference.md` — 7 events (SessionStart, PreToolUse, PostToolUse, ...), 4 hook types (command, http, prompt, agent), JSON schema with matcher patterns.
+### Plugin Development
+
+Plugin creation (skills, hooks, agents, SKILL.md, evals) is handled by the **skill-creator-pro** plugin. Invoke `/skill-creator-pro` for all plugin development work.
 
 ### Workflow
 
@@ -143,39 +154,36 @@ claude plugin enable  <plugin-name>@claude-code-zero   # after testing
 
 See `docs/release-workflow.md` — 7-step process: compare branches → bump versions → merge to main → tag → push.
 
-## Environment Variables & Data Paths
-
-See `docs/reference/env-and-data-paths.md` — `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, path resolution, legacy paths.
-
-**Critical:** Data in the plugin directory is deleted on upgrade — always use `${CLAUDE_PLUGIN_DATA}` for persistent storage.
-
 ## Gotchas
 
 **Component location**: commands/, agents/, skills/, hooks/ go in the **plugin root**, not inside `.claude-plugin/`. Putting them inside `.claude-plugin/` silently fails to load.
 
-**source path**: `marketplace.json` source must start with `./` (relative path). `../` is not supported.
+**source path**: `marketplace.json` source must start with `./` (local) or be a source object (external). `../` is not supported.
 
-**Version priority**: If both `plugin.json` and `marketplace.json` define `version`, `plugin.json` wins. Set in one place only — this repo uses `marketplace.json` exclusively.
+**Version priority**: If both `plugin.json` and `marketplace.json` define `version`, `plugin.json` wins silently. Local plugins: set version in `marketplace.json` only. External repo plugins: set version in `plugin.json` only.
 
-**Hook scripts**: Must have execute permission (`chmod +x`) and a shebang line. Use `${CLAUDE_PLUGIN_ROOT}` for paths.
+**Version bump required**: Changing plugin code without bumping version means existing users won't see the update — cached copies persist until version changes.
+
+**Plugin name format**: Names must be kebab-case only (lowercase, digits, hyphens). Spaces or brackets like `[Lab] my-plugin` fail validation. Use `lab-` prefix for experimental plugins.
+
+**Plugin data persistence**: Data in the plugin directory is deleted on upgrade — always use `${CLAUDE_PLUGIN_DATA}` for persistent storage. See `docs/reference/env-and-data-paths.md`.
 
 **Installed plugin isolation**: Installed plugins are cached copies — they cannot reference files outside their own directory.
 
-**Plugin agent security restrictions**: Plugin-defined agents (`agents/*.md`) silently ignore `permissionMode`, `hooks`, and `mcpServers` frontmatter fields. Only `tools`, `disallowedTools`, `model`, `maxTurns` work. To use permissionMode, the agent file must be in `.claude/agents/` or `~/.claude/agents/`, not in a plugin. (Source: sub-agents docs)
+**Plugin agent security**: Plugin agents (`agents/*.md`) silently ignore `permissionMode`, `hooks`, and `mcpServers` frontmatter. Supported: `tools`, `disallowedTools`, `model`, `maxTurns`, `skills`, `memory`, `background`, `isolation`.
 
-**Plugin settings.json limitations**: Plugin `settings.json` only supports the `agent` field. `permissions`, `hooks`, and other settings are NOT supported. A plugin cannot grant its subagents permission to read paths outside the project directory — there is no workaround within the plugin itself.
+**Plugin settings.json**: Only the `agent` field is supported. `permissions`, `hooks`, and other settings are silently ignored.
 
-**Eval artifacts**: Test and autoresearch results go in `plugins/<plugin-name>/.evals/` (gitignored). Never place eval artifacts directly in the plugin root — they get distributed with marketplace installs.
+**Eval artifacts**: Results go in `plugins/<plugin-name>/.evals/` (gitignored). Never place eval artifacts in the plugin root — they get distributed with marketplace installs.
 
-**Skill allowed-tools**:
-- Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not.
-- `$()` command substitution triggers a separate security prompt regardless of allowed-tools.
-- Skills inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow).
+**Research double-check**: Always verify web search / LLM research results against actual code and READMEs in `references/` before writing into spec or design documents. Research outputs can fabricate product features entirely (confirmed: HarnessKit features were completely mischaracterized).
+
+**Skill allowed-tools**: Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not. `$()` command substitution triggers a separate security prompt regardless of allowed-tools.
 
 ## Coding Style
 
 - **Language**: All plugin deliverables in English (SKILL.md, agent.md, README.md, comments, descriptions, code). All development conversation (plans, discussions, questions) in Korean.
 - **Plugin names**: kebab-case (e.g., `notebook-researcher`, `code-reviewer`)
-- **Versioning**: Semantic Versioning (e.g., `1.0.0`). Version is set only in `marketplace.json`, not in individual `plugin.json` files (all plugins use relative-path sources).
+- **Versioning**: Semantic Versioning (e.g., `1.0.0`). Local plugins (`./` source): version in `marketplace.json` only. External repo plugins (GitHub source): version in `plugin.json` only.
 - **Descriptions**: Clear and concise
 - **Line endings**: Always Unix LF (`\n`), never Windows CRLF (`\r\n`). CRLF in shell scripts causes `command\r: not found` errors (e.g., `set -o pipefail\r`). When creating or editing any file — especially `.sh`, `.json`, `.md` — ensure LF-only line endings. If in doubt, verify with `file <path>` or `cat -A <path>` (CRLF shows as `^M$`).
