@@ -32,20 +32,34 @@
 
 핵심 깨달음: **사용자가 원한 건 점수화가 아니라, 설치하면 레포가 에이전트 친화적으로 굴러가는 것**이었다.
 
+### 시장 검증
+
+2026년 초 "Harness Engineering"이 독립 엔지니어링 분야로 확립됐다. OpenAI 블로그(2026-02) 이후 [Martin Fowler 사이트에 Birgitta Böckeler가 글](https://martinfowler.com/articles/exploring-gen-ai/harness-engineering.html)을 쓰고, [agent-engineering.dev](https://www.agent-engineering.dev/) 같은 전문 사이트가 등장했다. **"에이전트가 느린 건 환경 탓"이라는 명제가 업계 컨센서스**.
+
 ### 진짜 차별점
 
-기존 도구들의 공통적 빈자리:
+기존 도구들은 각각 다른 문제를 풀고 있다:
 
 | 도구 | 하는 일 | 안 하는 일 |
 |------|---------|-----------|
-| harness-kit | 자기만의 교리를 강제 | 레포 자체를 에이전트 친화적으로 안 만듦 |
-| compound-engineering | 워크플로우 순서를 강제 | 레포 구조, 컨텍스트 관리를 안 함 |
-| Backlog.md | 이슈 관리를 훌륭하게 | 원칙 인식 없음 |
-| gstack, superpowers | 개발 사이클을 강제 | 레포가 에이전트에게 읽기 좋은지 안 봄 |
+| **harness-kit** (deepklarity) | 19개 원칙 기반 DAG 오케스트레이션 + Odin CLI + TaskIt 칸반. 8 provider 지원, 비용 인식 위임, 리플렉션 감사(5항목 구조화 리뷰) | **레포 환경 자체**를 분석/개선하지 않음. 에이전트 "작업"을 오케스트레이팅하는 도구 |
+| **everything-claude-code** (affaan-m) | Anthropic 해커톤 우승. 28에이전트+125스킬+60명령. hook profiles (minimal/standard/strict), 인스팅트 시스템. CC+Codex+OpenCode+Cursor 크로스플랫폼 | 평가자 분리(3층) 없음. 에이전트 "성능"을 최적화하는 도구 |
+| **compound-engineering** (Every, Inc.) | Brainstorm→Plan→Work→Review→Compound 워크플로우. 35+ agents, 40+ skills, 15개 리뷰어 페르소나 병렬 스폰 | 레포 환경 분석/세팅 없음. 에이전트 "워크플로우"를 강제하는 도구 |
+| **Backlog.md** | 마크다운 네이티브 이슈 관리 + TUI/웹 칸반 | 원칙 인식 없음 |
 
-**빠져있는 것: 레포 자체를 에이전트가 잘 굴러가는 환경으로 만들고 유지하는 도구.**
+**경쟁 포지셔닝**:
 
-OpenAI Harness Engineering 블로그의 핵심 메시지: "에이전트가 느린 건 에이전트가 멍청해서가 아니라 **환경이 안 갖춰져서**." AGENTS.md가 너무 길어서, 아키텍처 경계가 없어서, 지식이 Slack에 있고 레포에 없어서.
+| 차원 | harness-kit | ECC | compound-eng | Harness Engineer |
+|------|-----------|-----|-------------|------------------|
+| **1층: 레포 세팅** | — | ⚠️ (install) | — | ✅ (분석→추천→승인) |
+| **2층: 훅 유지** | — | ✅ (hook profiles) | — | ✅ |
+| **3층: 평가자 분리** | ⚠️ (리플렉션) | — | ⚠️ (리뷰 페르소나) | ✅ **계약 기반** |
+| **4층: 대시보드** | ✅ (TaskIt) | — | — | ✅ |
+| 레포 환경 개선 | ❌ | ⚠️ | ❌ | ✅ **핵심** |
+
+harness-kit과 compound-engineering은 리뷰/리플렉션이 있지만, **사전 합의된 계약으로 1:1 원자적 검증하는 패턴(3층)**은 아님. ECC는 가장 가까운 Layer 1+2 구현체이지만 평가자 분리가 없음.
+
+**빠져있는 것: 레포 자체를 에이전트 친화적 환경으로 만들고 유지하면서, 계약 기반 평가자 분리로 작업 품질을 보장하는 도구.** [CodeRabbit 리포트](https://www.coderabbit.ai/blog/state-of-ai-vs-human-code-generation-report)(2025-12, 470 PR 분석)에 따르면 AI 코드는 1.7x 더 많은 이슈를 생성한다. 그런데 에이전트는 자기 출력을 일관되게 칭찬한다(Anthropic Labs 발견). **자가 평가 편향 + AI 코드 품질 문제 = 별도 평가자가 필수**인데, 이걸 플러그인으로 패키징한 곳이 없다.
 
 ---
 
@@ -66,7 +80,7 @@ OpenAI Harness Engineering 블로그의 핵심 메시지: "에이전트가 느�
 ├─────────────────────────────────────────────────────┤
 │  2. 유지       — 훅으로 원칙 실시간 강제/유도         │
 ├─────────────────────────────────────────────────────┤
-│  1. 세팅       — init으로 에이전트 친화적 레포 구조   │
+│  1. 세팅       — init + organize로 에이전트 친화적 레포│
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -76,7 +90,7 @@ OpenAI Harness Engineering 블로그의 핵심 메시지: "에이전트가 느�
 
 ## 3. 각 층의 상세 설계와 의도
 
-### 1층: 세팅 — `/harness init`
+### 1층: 세팅 — `/harness init` + `/harness organize`
 
 #### 의도
 
@@ -84,7 +98,7 @@ OpenAI Harness Engineering 블로그의 핵심 메시지: "에이전트가 느�
 
 #### 왜 이게 필요한가
 
-OpenAI 블로그에서 가장 강조한 것: "에이전트에게 1,000페이지 설명서가 아닌 **맵**을 제공해야 한다." 하지만 대부분의 레포는 이 구조가 없다. AGENTS.md가 없거나, 있어도 백과사전처럼 비대하거나, 아키텍처 경계가 정의되어 있지 않다.
+OpenAI 블로그에서 가장 강조한 것: "에이전트에게 1,000페이지 설명서가 아닌 **맵**을 제공해야 한다." 하지만 대부분의 레포는 이 구조가 없다. 레포 맵이 없거나, 있어도 백과사전처럼 비대하거나, 아키텍처 경계가 정의되어 있지 않다.
 
 #### 무엇을 하는가
 
@@ -96,17 +110,46 @@ OpenAI 블로그에서 가장 강조한 것: "에이전트에게 1,000페이지 
 #### 생성하는 것
 
 ```
-AGENTS.md                        ← 목차 (~100줄). 맵이지 백과사전이 아님.
+.harness/
+  map.md                         ← 레포 맵 소스 (~100줄, 플랫폼 무관). 맵이지 백과사전이 아님.
+  config.yaml                   ← 원칙별 활성화/비활성화, 임계값 설정
+  architecture.yaml             ← 레이어 경계 정의 (원칙 7)
+CLAUDE.md                        ← @.harness/map.md import (CC 자동 로딩 커넥터)
 docs/
   decisions/                     ← 설계 결정 기록 (원칙 3: 레포 = 기록의 원천)
   plans/                         ← 실행 계획 (원칙 10: 플랜을 일급 산출물로)
-.harness/
-  config.yaml                   ← 원칙별 활성화/비활성화, 임계값 설정
-  architecture.yaml             ← 레이어 경계 정의 (원칙 7)
 issues/                          ← 마크다운 이슈 (원칙 3)
 agents/
   reviewer.md                   ← 전용 평가자 에이전트 (원칙 12, 3층의 전제조건)
 ```
+
+**맵 아키텍처: agent-harness 부트스트랩 패턴**
+
+12개 참고 프로젝트 딥리서치 결과, "소스 1개 + 플랫폼 네이티브 자동 로딩"이 최적 패턴:
+
+- `.harness/map.md` = 소스 (플랫폼 무관, 유일한 진실)
+- `CLAUDE.md` = CC 자동 로딩 커넥터 (`@.harness/map.md` import 한 줄)
+- CC 공식 문서: *"CLAUDE.md fully survives compaction."* → 훅 주입 불필요, 네이티브로 영구
+- 기존 CLAUDE.md가 있으면 `<!-- harness:start/end -->` 마커로 harness 섹션만 추가 (사용자 영역 보존)
+- 마커는 HTML 주석이라 CC가 Claude에게 주입 시 제거되지만, `/harness sync` 도구가 섹션 관리에 사용
+
+크로스플랫폼은 Phase 1.5에서 확장:
+- `/harness export --codex` → AGENTS.md 생성
+- `/harness export --gemini` → GEMINI.md 생성
+- **방향**: gitagent의 어댑터 패턴을 참고하되, `.harness/map.md`를 유일한 소스로 유지. `@import`가 불가능한 플랫폼(Codex, Gemini)은 map.md 내용을 인라인 변환하여 각 플랫폼 네이티브 파일에 삽입.
+
+**왜 AGENTS.md를 직접 생성하지 않는가**: harness-engineer는 CC 플러그인이다. CC가 네이티브로 자동 로딩하는 건 CLAUDE.md이지 AGENTS.md가 아니다. 서브디렉토리 CLAUDE.md(`.harness/CLAUDE.md`)도 온디맨드라 자동 로딩 안 됨. `.claude/rules/`는 CC 전용. CLAUDE.md `@import`가 CC에서 자동 로딩 + 압축 생존 + 크로스플랫폼 확장 가능한 유일한 조합.
+
+**참고 프로젝트별 패턴 비교**:
+
+| 프로젝트 | 패턴 | harness-engineer 채택 여부 |
+|----------|------|--------------------------|
+| OpenAI (Codex) | AGENTS.md 직접 생성 (Codex 네이티브) | ✗ CC에서는 CLAUDE.md가 네이티브 |
+| gitagent | 소스 파일 → 어댑터가 플랫폼별 변환 (인라인 복사) | △ 소스 개념 채택, 인라인 대신 import |
+| agent-harness | 짧은 부트스트랩 + 상세 분리 | ✓ 핵심 패턴 채택 |
+| oh-my-claudecode | CLAUDE.md에 마커 영역 관리 | ✓ 마커 패턴 채택 |
+| superpowers | SessionStart 훅으로 컨텍스트 주입 | ✗ 압축 시 사라질 수 있음 |
+| everything-claude-code | AGENTS.md + CLAUDE.md 병행 | ✗ Phase 1에서는 CC 우선 |
 
 #### 의도: "사람이 작성"이 아니라 "사람이 승인"
 
@@ -132,6 +175,47 @@ $ /harness init
 검토하시겠습니까? (수정/승인)
 ```
 
+#### `/harness organize` — 도메인 지식 온보딩
+
+init이 만든 빈 구조에 사용자의 기존 도메인 지식을 배치한다. init이 "집을 짓는 것"이라면, organize는 "가구를 배치하는 것"이다.
+
+**왜 이게 필요한가**: init만으로는 빈 폴더만 생성된다. 사용자는 기존에 가지고 있는 설계 문서, 구현 계획, 결정 기록 등을 어디에 넣어야 할지 모른다. "빈 방에 이름표만 붙인 것"과 "실제로 필요한 물건이 제자리에 놓인 것"의 차이.
+
+**무엇을 하는가**:
+
+1. **구조 감지**: `.harness/` + 실제 디렉토리를 읽어서 동적 placement map 생성
+2. **지식 식별**: 레포 내부 스캔 또는 사용자가 지정한 외부 경로에서 문서 발견
+3. **콘텐츠 기반 분류**: 파일명이 아닌 내용을 읽어서 라이프사이클 기반으로 분류
+4. **사람 승인**: 분류 결과를 테이블로 제시, 승인/수정/취소
+5. **배치 실행**: 내부 파일은 `git mv`, 외부 파일은 `cp`
+6. **map.md 업데이트**: 정리 결과를 .harness/map.md에 반영 (CLAUDE.md는 @import라 자동 반영)
+
+**분류 체계** (문서 라이프사이클 기반, get-shit-done 참고):
+
+| 라이프사이클 | 하네스 위치 | 콘텐츠 시그널 |
+|-------------|------------|-------------|
+| 전략 (반정적) | `docs/specs/` | 설계, 아키텍처, 요구사항 — "왜, 무엇을" |
+| 실행 (일시적) | `docs/plans/` | 구현 태스크, 체크박스 — "어떻게, 언제" |
+| 기록 (불변) | `docs/decisions/` | ADR, 트레이드오프 — "X를 선택한 이유" |
+| 행동 (동적) | `issues/` | 버그, 기능요청 — 추적 가능한 작업 |
+| 운영 (에이전트) | `agents/` | 에이전트 페르소나, 평가 기준 |
+| 참고 (외부) | `docs/references/` | 외부 API 문서, llms.txt, 서드파티 레퍼런스 |
+
+**참고 프로젝트 인사이트**:
+
+- **get-shit-done**: 문서를 라이프사이클로 분류 (전략/실행/기록/행동/운영). `.planning/` 7종 상태 파일. SUMMARY.md 프론트매터를 머신리더블 인덱스로 활용
+- **OpenSpec**: artifact type progression (proposal→spec→design→tasks). 유동적 반복 — 위상 게이트 없음
+- **OpenViking**: L0→L1→L2 계층적 로딩 — 정리된 문서에 대한 요약(L1) 자동 생성으로 에이전트 탐색 효율화
+- **everything-claude-code**: `/harness-audit` 결정론적 감사 — "뭐가 빠졌는지" 스코어링. 인스팅트 시스템으로 패턴 학습→스킬화
+- **oh-my-claudecode**: prior artifact 존재 시 phase skip — `.omc/specs/` 존재하면 expansion 건너뜀
+- **claude-code-organizer**: 11개 카테고리 + scope hierarchy + validation before move + undo/restore
+- **planning-with-files**: 3개 영속 파일 (roadmap, knowledge base, session log) + 2-Action Rule로 지식 손실 방지
+- **Backlog.md**: file location = state (drafts→tasks→completed→archive). YAML 프론트매터 메타데이터 표준
+- **gstack**: artifact flow — `/office-hours` WRITES DESIGN.md → 다음 스킬이 READS. 스킬 간 산출물 공유
+- **superpowers**: hard gate + 명시적 successor 안내 (자동 체이닝 아닌 "다음은 X를 해라")
+
+**init과의 관계**: init은 Step 8에서 organize를 안내한다. 자동 체이닝은 하지 않는다 — 사용자에게 정리할 문서가 없을 수도 있다. organize는 `.harness/` 존재를 전제조건으로 확인하여 init 완료 여부를 감지한다. (superpowers의 "hard gate + 명시적 successor" 패턴)
+
 ---
 
 ### 2층: 유지 — 훅으로 원칙 실시간 강제/유도
@@ -142,7 +226,9 @@ $ /harness init
 
 #### 왜 이게 핵심 가치인가
 
-OpenAI 블로그: "단일 블롭은 기계적 점검에 적합하지 않으므로 드리프트는 불가피합니다." 시간이 지나면 AGENTS.md는 비대해지고, 아키텍처 경계는 무너지고, 문서는 노후화된다. **이걸 매번 사람이 `/harness check` 해서 확인하는 건 비현실적**이다. 훅이 실시간으로 잡아야 한다.
+OpenAI 블로그: "단일 블롭은 기계적 점검에 적합하지 않으므로 드리프트는 불가피합니다." 시간이 지나면 맵은 비대해지고, 아키텍처 경계는 무너지고, 문서는 노후화된다. **이걸 매번 사람이 `/harness check` 해서 확인하는 건 비현실적**이다. 훅이 실시간으로 잡아야 한다.
+
+OpenAI는 이를 "전용 린터와 CI 작업"으로 기계적으로 시행했다. CC에서의 등가물은 훅 시스템이다:
 
 #### 구체적 훅 설계
 
@@ -150,28 +236,63 @@ OpenAI 블로그: "단일 블롭은 기계적 점검에 적합하지 않으므�
 
 | 검사 | 메시지 예시 | 근거 원칙 |
 |------|-----------|----------|
-| AGENTS.md 토큰 초과 | "AGENTS.md: 4,200 토큰 (제한: 3,000). 맵이어야 합니다." | P4: AGENTS.md를 목차로 |
+| .harness/ 부재 | ".harness/가 없습니다. /harness init을 실행하세요." | — |
+| map.md 토큰 초과 | "map.md: 4,200 토큰 (제한: 3,000). 맵이어야 합니다." | P4: 맵을 목차로 |
 | 평가자 에이전트 부재 | "agents/에 전용 평가자가 없습니다. 자가 평가 편향 주의." | P12: 평가자 분리 |
-| 하네스 미검토 | "95일째 하네스를 검토하지 않았습니다. 불필요한 스캐폴딩이 있을 수 있습니다." | P16: 하네스는 모델과 진화 |
+| 하네스 미검토 | "95일째 미검토. 검토 제안: ① architecture.yaml — 모델이 자체적으로 경계를 지키는가? ② map.md 크기 제한 — 컨텍스트 윈도우가 커졌다면 한도를 올릴 수 있는가? ③ reviewer.md — 모델이 자체 달성하는 기준이 있는가?" | P16: 하네스는 모델과 진화 |
 | 미해결 이슈 요약 | "미해결 이슈 3개: ISSUE-001 (high), ..." | P3: 레포 = 기록의 원천 |
 | 컨텍스트 예산 경고 | "인스트럭션 토큰이 컨텍스트 윈도우의 18%를 소비합니다." | P14: 점진적 노출 |
 
-**PreToolUse(Write) 훅** — 파일 쓰기 시 자동 실행:
+**PreToolUse(Write|Edit) 훅** — 파일 쓰기 시 자동 실행:
+
+| 검사 | 동작 | 근거 원칙 | 훅 타입 | 출력 |
+|------|------|----------|---------|------|
+| map.md에 쓰기 시 토큰 확인 | tool call **차단** | P4 + P14 | command (Write/Edit 각각 `if`로 분리) | `permissionDecision: "deny"` |
+| architecture.yaml 경계 위반 | tool call **차단** | P7: 엄격한 경계 | command (파일 경로 패턴 매칭 + import grep) | `permissionDecision: "deny"` |
+
+**훅 강제 수준** — config.yaml의 `hook_strictness`에 따라:
+
+| 수준 | PreToolUse 동작 | Stop 동작 | 근거 |
+|------|----------------|-----------|------|
+| **strict** | `permissionDecision: "deny"` (차단) | agent QA 게이트 활성 | 위반 시 무조건 차단, 완료 시 자동 검증 |
+| **standard** (기본) | `permissionDecision: "deny"` (차단) | agent QA 게이트 활성 | 위반 시 차단, 완료 시 자동 검증 |
+| **lenient** | `permissionDecision: "ask"` (사용자에게 물어봄) | QA 게이트 **비활성** | 사용자가 override 가능, Stop 시 검증 안 함 |
+
+이전 버전의 훅은 `additionalContext`(경고)를 사용하여 에이전트가 무시할 수 있었다. 재설계에서는 CC 공식 문서가 지원하는 `permissionDecision: "deny"`를 사용하여 **tool call 자체를 차단**한다. gstack의 `/freeze` 패턴(permissionDecision: "deny"로 디렉토리 밖 편집 차단)이 이 메커니즘을 검증했다.
+
+**Stop 훅** — 작업 완료 시 자동 실행 (hook_strictness가 lenient이면 비활성):
 
 | 검사 | 동작 | 근거 원칙 |
 |------|------|----------|
-| AGENTS.md에 쓰기 시 토큰 확인 | "토큰 임계값을 초과합니다. docs/에 분리하세요." | P4 + P14 |
-| architecture.yaml 경계 위반 | "UI→Repo 직접 임포트 금지. Service를 거치세요." | P7: 엄격한 경계 |
+| 테스트/린터 통과 여부 | `ok: false` → Claude가 계속 작업 | P12: 평가자 분리 |
+| map.md ↔ 코드 구조 싱크 | map.md 업데이트 유도 | P4: 맵을 목차로 |
+
+훅 타입: **agent** (timeout: 120s). 단일 서브에이전트가 reviewer.md를 읽고 두 검사를 모두 수행한다 (서브에이전트 2개가 아닌 1개).
+
+Stop agent 훅은 서브에이전트를 스폰하여 `reviewer.md`의 기준에 따라 검증한다. **이것이 Phase 1에서 "생성자 ≠ 평가자" 원칙을 구현하는 핵심 메커니즘.** reviewer.md를 만들기만 하는 것이 아니라, Stop 시점에 자동으로 reviewer.md 기준에 따라 검증하고, 실패 시 Claude에게 계속 작업하도록 `ok: false`를 반환한다.
+
+Stop agent 훅은 반드시 `stop_hook_active` 필드를 체크하여 무한 루프를 방지해야 한다 (CC 공식 문서 명시).
+
+**훅 설계 원칙 (공식 문서 + 생태계 검수 결과)**:
+- PreToolUse `if` 필드는 파이프(`|`) 미지원 → Write/Edit 훅 엔트리를 각각 분리
+- 아키텍처 경계 검사는 command 훅으로 충분 (Agent 훅은 매 쓰기마다 서브에이전트 스폰으로 비현실적)
+- Stop 훅은 `stop_hook_active` 필드를 체크하지 않으면 무한 루프 발생 (공식 문서 명시)
+- HTML 마커(`<!-- harness:start/end -->`)는 CC가 Claude에게 주입 시 제거됨 → `/harness sync` 도구용으로만 사용
+- CC 훅은 4가지 타입 지원: command (셸 스크립트), http (외부 서비스), prompt (LLM 판단), agent (서브에이전트 검증)
+- PreToolUse의 `permissionDecision`은 `"allow"` | `"deny"` | `"ask"` 3가지 값 지원 (공식 문서 확인)
+- agent 타입 훅은 파일 읽기, 코드 검색, 도구 사용이 가능하여 실제 테스트 실행 가능 (timeout: 최대 10분)
 
 **PostToolUse(Bash) 훅** — 명령 실행 후:
 
 | 검사 | 동작 | 근거 원칙 |
 |------|------|----------|
-| 린터 에러 메시지 확인 | 에이전트 친화적 에러 메시지를 포함하는지 확인 | P8: 취향의 기계적 강제 |
+| 린터 에러 메시지 확인 | 에이전트 친화적 에러 메시지를 `additionalContext`로 주입 | P8: 취향의 기계적 강제 |
 
 #### 의도: "체크"가 아니라 "가드레일"
 
 기존 스펙의 `/harness check`는 사용자가 수동으로 실행하는 리포트였다. 2층의 훅은 **에이전트가 잘못된 방향으로 가려 할 때 실시간으로 막거나 유도**하는 가드레일이다. 사용자가 아무것도 안 해도 작동한다.
+
+PreToolUse 훅은 `permissionDecision: "deny"`로 tool call을 **차단**하고, Stop agent 훅은 `ok: false`로 작업 완료를 **차단**한다. 경고(additionalContext)는 PostToolUse에서만 사용 — 이미 실행된 결과에 대한 피드백이므로 차단이 불가능하기 때문이다.
 
 ---
 
@@ -222,6 +343,24 @@ autoresearch가 이 루프를 더 엄격하게 만드는 프로토콜을 추가�
 | **Guard 분리** | uditgoenka autoresearch | "기준을 충족하나?" (품질 검사)와 "다른 게 깨졌나?" (회귀 검사)를 분리. 다른 관심사를 섞지 않음 |
 | **Stuck 감지** | uditgoenka autoresearch | 연속 N회 실패 → 세부 수정이 아니라 접근 방식 자체를 재분석. 같은 실수 반복 방지 |
 | **커밋 후 검증** | uditgoenka, pi-autoresearch | git commit을 먼저 하고 검증. 실패 시 revert. 실패 이력이 보존되어 학습 가능 |
+
+#### 평가자 부트스트랩 — autoresearch 루프를 reviewer.md 자체에 적용
+
+Labs: "Out of the box, Claude is a poor QA agent... It took several rounds of this development loop before the evaluator was grading in a way that I found reasonable."
+
+reviewer.md는 생성 직후 평가 품질이 낮다. **Phase 1의 Stop agent 훅이 reviewer.md를 사용하기 시작하면 즉시** 아래 캘리브레이션 루프를 적용한다:
+
+```
+1. reviewer.md가 Stop 훅에서 리뷰 실행
+2. 사람이 리뷰 결과를 검토 ("이건 과잉 지적", "이건 놓침")
+3. 피드백을 reviewer.md에 반영 (수동 편집 또는 /harness calibrate)
+4. 다음 Stop 훅에서 개선된 reviewer.md가 리뷰
+5. 3~5회 반복 후 안정
+```
+
+**이 루프는 Phase 2를 기다리지 않는다.** Phase 1의 Stop agent 훅이 reviewer.md를 실행하는 순간부터 캘리브레이션이 시작된다. Phase 2에서 추가되는 것은 계약 기반 1:1 검증과 자동화된 캘리브레이션(사람이 "과잉 지적" 피드백을 주면 reviewer.md가 자동 패치되는 Hermes 패턴)이다.
+
+코드에 적용하는 루프와 구조가 동일하되, 대상이 평가자 프롬프트인 메타 레벨 캘리브레이션이다.
 
 #### 구체적 흐름
 
@@ -361,11 +500,11 @@ API 호출 중 토큰 만료가 처리되지 않음.
 
 이 블로그가 이 플러그인의 출발점이다. OpenAI가 5개월간 에이전트만으로 제품을 만들면서 발견한 것:
 
-- **AGENTS.md를 목차로**: "하나의 큰 AGENTS.md" 접근법은 (1) 컨텍스트 희소, (2) 과다 지침 = 무지침, (3) 급속 노후화, (4) 기계적 검증 불가로 실패한다. → 2층 훅이 AGENTS.md 크기를 실시간 감시
+- **맵을 목차로**: OpenAI는 "하나의 큰 AGENTS.md" 접근법이 실패함을 발견. (1) 컨텍스트 희소, (2) 과다 지침 = 무지침, (3) 급속 노후화, (4) 기계적 검증 불가. 우리는 `.harness/map.md`(소스) + `CLAUDE.md` @import(CC 자동 로딩)로 구현. → 2층 훅이 map.md 크기를 실시간 감시
 - **레포 = 기록의 원천**: 에이전트가 접근할 수 없는 지식은 존재하지 않는 것과 같다. Slack 토론, 사람의 머릿속 지식은 레포에 기록되어야 한다. → 1층이 docs/decisions/, docs/plans/, issues/ 구조를 세팅
-- **엄격한 아키텍처 경계**: 에이전트는 제약이 있어야 속도를 낸다. 맞춤형 린터로 레이어 경계를 기계적으로 강제. → 1층이 architecture.yaml 세팅, 2층 훅이 위반 감지
+- **엄격한 아키텍처 경계**: 에이전트는 제약이 있어야 속도를 낸다. OpenAI는 맞춤형 린터로, CC에서는 PreToolUse command 훅으로. → 1층이 architecture.yaml 세팅, 2층 훅이 위반 감지
 - **취향의 기계적 강제**: 린터 에러 메시지를 에이전트 컨텍스트에 수정 지침으로 활용. → 2층 PostToolUse 훅
-- **점진적 노출**: 에이전트가 작고 안정적인 진입점에서 시작하여 필요할 때 깊이 탐색. → 1층이 AGENTS.md(맵) + docs/(상세) 구조를 세팅, 2층이 컨텍스트 예산 감시
+- **점진적 노출**: 에이전트가 작고 안정적인 진입점에서 시작하여 필요할 때 깊이 탐색. → 1층이 CLAUDE.md(@import=진입점) + .harness/map.md(맵) + docs/(상세) 구조를 세팅, 2층이 컨텍스트 예산 감시
 - **가비지 컬렉션**: 정기적 편차 검사 + 자동 리팩터링. "기술 부채는 고금리 대출". → 향후 확장 영역
 - **하네스는 모델과 진화한다**: 모델이 개선되면 불필요한 스캐폴딩 제거. → 2층 SessionStart에서 "하네스 미검토" 경고
 
@@ -438,7 +577,7 @@ Labs의 생성자-평가자 패턴에 autoresearch의 기계적 루프 프로토
 | 1 | 사람이 조종, 에이전트가 실행 | 4 | 대시보드가 사람의 조종석 |
 | 2 | 수동 코드 금지 (실험적) | — | 강제 대상 아님. 선택 사항 |
 | 3 | 레포 = 기록의 원천 | 1, 4 | init이 구조 세팅 + 대시보드에서 이슈/결정/계획 관리 |
-| 4 | AGENTS.md를 목차로 | 1, 2 | init이 맵 생성 + 훅이 크기 감시 |
+| 4 | 맵을 목차로 | 1, 2 | init이 .harness/map.md 생성 + CLAUDE.md에 import + 훅이 크기 감시 |
 | 5 | 앱 가독성 | — | 가이드 텍스트 (프로젝트 맥락 의존적) |
 | 6 | 임시 관측성 | — | 가이드 텍스트 (프로젝트 맥락 의존적) |
 | 7 | 엄격한 경계 | 1, 2 | init이 architecture.yaml 세팅 + 훅이 위반 감지 |
@@ -448,7 +587,7 @@ Labs의 생성자-평가자 패턴에 autoresearch의 기계적 루프 프로토
 | 11 | 가비지 컬렉션 | — | 향후 확장 (자동 doc-gardening 에이전트) |
 | 12 | 평가자 분리 (랄프 위검) | 1, 3 | init이 reviewer.md 세팅 + 3층이 자동 평가 실행 |
 | 13 | 도구는 적게, 표현력은 크게 | — | 플러그인 설계 철학으로 반영 |
-| 14 | 점진적 노출 | 1, 2 | init이 맵+docs 구조 세팅 + 훅이 컨텍스트 예산 감시 |
+| 14 | 점진적 노출 | 1, 2 | init이 .harness/map.md(맵) + docs/(상세) 구조 세팅 + CLAUDE.md @import로 점진적 로딩 + 훅이 컨텍스트 예산 감시 |
 | 15 | 에이전트처럼 보기 | — | 가이드 텍스트 |
 | 16 | 하네스는 모델과 진화 | 2 | SessionStart에서 하네스 최신성 경고 |
 
@@ -462,9 +601,11 @@ Labs의 생성자-평가자 패턴에 autoresearch의 기계적 루프 프로토
 
 설치하면 자동으로 작동하는 최소 제품.
 
-- `/harness init` — 레포 분석 → 구조 추천 → 승인 → 스캐폴딩
-- SessionStart 훅 — AGENTS.md 크기, 평가자 부재, 하네스 최신성, 컨텍스트 예산
-- PreToolUse(Write) 훅 — AGENTS.md 비대화 방지, 아키텍처 경계 검사
+- `/harness init` — 레포 분석 → .harness/map.md 생성 → CLAUDE.md에 @import 추가 → 구조 추천 → 승인 → 스캐폴딩
+- `/harness organize` — 기존 도메인 지식을 하네스 구조에 온보딩
+- SessionStart 훅 — .harness/ 유무, map.md 크기, 평가자 부재, 하네스 최신성, 컨텍스트 예산
+- PreToolUse(Write|Edit) 훅 — map.md 비대화 시 **차단** (`permissionDecision: "deny"`), 아키텍처 경계 위반 시 **차단**
+- Stop agent 훅 — reviewer.md 기준으로 테스트/린터 검증 + map.md ↔ 코드 구조 싱크 (`stop_hook_active` 체크)
 
 ### Phase 2: 3층 (평가)
 
@@ -473,6 +614,9 @@ Labs의 생성자-평가자 패턴에 autoresearch의 기계적 루프 프로토
 - `/harness issue create` — AI가 계약 추천, 사람 승인
 - reviewer.md — 계약 기반 1:1 검증 + Guard + Stuck 감지
 - 평가 루프 통합
+- reviewer.md 자동 캘리브레이션 — 사람 피드백으로 reviewer.md 자동 패치 (Hermes 스킬 자가 수정 패턴)
+- SQLite 상태 영속 — `${CLAUDE_PLUGIN_DATA}/harness.db`에 위반 이력, 준수 추이, 세션별 메트릭 저장 (Mission-Control Trust scoring 참고)
+- LSP 번들링 — `.lsp.json`으로 Pyright/TypeScript-LS 번들, AST 수준 아키텍처 경계 검사 (CC 공식 문서에서 확인된 기능)
 
 ### Phase 3: 4층 (인터페이스)
 
@@ -481,6 +625,18 @@ Labs의 생성자-평가자 패턴에 autoresearch의 기계적 루프 프로토
 - `/harness board` — claude-code-organizer 패턴 웹 대시보드
 - 이슈 칸반 + 평가 결과 + 원칙 현황 + 이력 추이
 - Claude Code 대화에서의 조종 인터페이스
+
+### 향후 기술 로드맵
+
+Phase 1-3 범위 밖이지만 방향을 명시하여 설계 결정에 영향을 주는 기술들:
+
+| 기술 | 출처 | 시점 | 설명 |
+|------|------|------|------|
+| **학습 루프** | ECC 인스팅트 시스템 | Phase 3+ | PostToolUse 훅이 도구 사용을 `${CLAUDE_PLUGIN_DATA}/observations.jsonl`에 기록 → SessionStart에서 패턴 분석 → 자주 위반되는 경계를 사전 경고 |
+| **ACPX Flow 참고 평가 파이프라인** | ACPX | Phase 3+ | 3층 평가를 선언적 Flow 그래프로 구성: test(action) → lint(action) → review(agent) → checkpoint. 결정론적 단계와 비결정론적 단계를 명시적으로 분리 |
+| **크로스세션 검색** | Hermes FTS5 | Phase 3+ | SQLite FTS5로 과거 세션의 위반/수정 이력을 검색하여 학습 |
+
+**설계 영향**: Phase 1의 config.yaml은 flat YAML로 충분하지만, Phase 2에서 SQLite로 전환할 것을 고려하여 `harness__read_config` 함수를 추상화해둔다. Phase 1의 훅 스크립트는 출력 형식을 함수로 분리하여(`harness__deny`, `harness__allow`, `harness__ask`) Phase 2에서 HTTP 훅이나 agent 훅으로 전환 시 수정을 최소화한다.
 
 ---
 
@@ -507,3 +663,30 @@ Labs의 생성자-평가자 패턴에 autoresearch의 기계적 루프 프로토
 - 타겟 사용자 (Claude Code 사용자, 솔로/소규모 팀)
 - 레포 네이티브 마크다운 기반 접근
 - claude-code-organizer 패턴의 대시보드 기술
+
+---
+
+## 9. 2026-03-29 스펙 개선 — 생태계 리서치 기반
+
+### 개선 근거
+
+12개 참고 프로젝트 심층 분석(Symphony, ECC, Harness-Kit, Agent-Orchestrator, gitagent, gstack, Mission-Control, oh-my-claudecode, agent-harness, Hermes, ACPX, Walnut) + CC 공식 문서(hooks, hooks-guide, plugins-reference) 검수 결과.
+
+### 핵심 발견
+
+1. **CC 훅은 tool call을 차단할 수 있다** — `permissionDecision: "deny"` (공식 문서 확인, gstack `/freeze`가 실증)
+2. **CC 훅은 서브에이전트를 스폰할 수 있다** — `type: "agent"` (파일 읽기, 테스트 실행 가능)
+3. **CC 플러그인은 LSP 서버를 번들할 수 있다** — `.lsp.json` (AST 수준 코드 분석)
+4. **세션 내에서 OpenAI급 하네스 강제가 가능하다** — 불가능한 것은 상시 데몬과 CC 외부 강제뿐
+
+### 변경 요약
+
+| 섹션 | 변경 내용 |
+|------|----------|
+| 2층 PreToolUse 훅 | `additionalContext`(경고) → `permissionDecision: "deny"`(차단). hook_strictness별 동작 분류 추가 |
+| 2층 Stop 훅 | map.md sync만 → **agent 타입 QA 게이트 추가** (테스트/린터 검증 + map.md sync) |
+| 2층 훅 설계 원칙 | CC 훅 4가지 타입, permissionDecision 3가지 값, agent 훅 능력 명시 |
+| 3층 평가자 캘리브레이션 | "Phase 2 초반" → **Phase 1의 Stop agent 훅 시점부터 시작**. Hermes 자가 수정 패턴 참고 |
+| Phase 1 범위 | Stop agent 훅 (QA 게이트) 추가 |
+| Phase 2 범위 | SQLite 상태 영속, LSP 번들링, reviewer.md 자동 캘리브레이션 추가 |
+| 향후 로드맵 | 학습 루프(ECC), ACPX Flow 평가 파이프라인, 크로스세션 검색(Hermes) 방향 명시 |
