@@ -34,7 +34,7 @@ Parse $ARGUMENTS and context to determine what to verify:
 Use `codex review` with a verification-focused instruction:
 
 ```bash
-codex review [SCOPE] "You are an independent reviewer verifying another developer's implementation. Focus on: logic errors and unhandled edge cases, missing error handling or validation, security vulnerabilities introduced by changes, performance regressions, inconsistencies with existing codebase patterns, missing or inadequate tests. Verdict: PASS (no blocking issues) or FAIL (blocking issues found)." -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex review [SCOPE] "You are an independent reviewer verifying another developer's implementation. Focus on: logic errors and unhandled edge cases, missing error handling or validation, security vulnerabilities introduced by changes, performance regressions, inconsistencies with existing codebase patterns, missing or inadequate tests. Verdict: PASS (no blocking issues) or FAIL (blocking issues found)." -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 ### Plan Verification
@@ -42,7 +42,7 @@ codex review [SCOPE] "You are an independent reviewer verifying another develope
 Read the plan file content, then use `codex exec`:
 
 ```
-Write to tmp/codex-advisor-prompt.txt:
+Write to ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt:
 
 You are a brutally honest technical reviewer. Review this implementation plan for:
 - Logical gaps and unstated assumptions
@@ -60,13 +60,13 @@ THE PLAN:
 ```
 
 ```bash
-codex exec "$(cat tmp/codex-advisor-prompt.txt)" -m <MODEL> -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex exec "$(cat ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt)" -m <MODEL> -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 ### Session Resume
 
 ```bash
-codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 ## Step 3: Evaluate with Verdict
@@ -102,10 +102,10 @@ For each finding:
 
 ## Step 4: Save & Clean Up
 
-Save to `codex-reviews/verify-<YYYYMMDD-HHMMSS>.md` using format from execution.md, with the verdict section.
+Save to `${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>.md` using format from execution.md, with the verdict section. Create `${CLAUDE_PLUGIN_DATA}/reviews/` if it doesn't exist.
 
 ```bash
-rm -f tmp/codex-advisor-prompt.txt tmp/codex-stderr.txt
+rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt ${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 Inform user: "Resume this session with `/codex-verifyresume [follow-up]`."
