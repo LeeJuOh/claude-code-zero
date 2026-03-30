@@ -25,6 +25,14 @@ On first invocation, check if `${CLAUDE_PLUGIN_DATA}/config.json` exists.
 
 **Override:** User can pass `-m <model>` or `--reasoning <level>` as arguments to override for a single run. `--reset-config` deletes config.json and re-runs setup.
 
+## Directory Setup
+
+Ensure required directories exist before any command execution:
+
+```bash
+mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp ${CLAUDE_PLUGIN_DATA}/reviews
+```
+
 ## Preflight
 
 ```bash
@@ -38,7 +46,7 @@ If NOT_FOUND: "Codex CLI required. Install: `npm install -g @openai/codex`"
 ### For `codex review` (built-in review subcommand)
 
 ```bash
-codex review [SCOPE_FLAGS] -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex review [SCOPE_FLAGS] -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 Omit `-c 'model="..."'` if model is `"default"`.
@@ -51,7 +59,7 @@ Omit `-c 'model="..."'` if model is `"default"`.
 ### For `codex exec` (custom prompt execution)
 
 ```bash
-codex exec "$(cat tmp/codex-advisor-prompt.txt)" -m <MODEL> -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex exec "$(cat ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt)" -m <MODEL> -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 ### Flag comparison
@@ -62,17 +70,17 @@ codex exec "$(cat tmp/codex-advisor-prompt.txt)" -m <MODEL> -s read-only -c 'mod
 | `-s read-only` | **NO** — own sandbox | YES |
 | `-c 'key="val"'` | YES | YES |
 | `--enable <feature>` | YES | YES |
-| `2>tmp/codex-stderr.txt` | YES | YES |
+| `2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt` | YES | YES |
 
 ## Prompt Passing
 
 Write prompts to a temp file to avoid shell quoting issues:
 
 ```bash
-# 1. Write prompt using the Write tool -> tmp/codex-advisor-prompt.txt
+# 1. Write prompt using the Write tool -> ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt
 # 2. Execute with codex exec
 # 3. Clean up after evaluation:
-rm -f tmp/codex-advisor-prompt.txt tmp/codex-stderr.txt
+rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt ${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 Timeout: 300000ms (5 minutes) for all codex commands.
@@ -82,7 +90,7 @@ Timeout: 300000ms (5 minutes) for all codex commands.
 When running codex commands in background (Bash with `run_in_background`), stdout may appear empty in the task output notification. This is normal — codex writes its results to stdout which the background task manager may not fully capture.
 
 **Recovery pattern:**
-1. If task output is empty, check stderr file first: `cat tmp/codex-stderr.txt 2>/dev/null`
+1. If task output is empty, check stderr file first: `cat ${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt 2>/dev/null`
 2. If stderr shows the actual review output (codex sometimes writes results to stderr), use that
 3. If both are empty, re-run the command in foreground
 
@@ -93,7 +101,7 @@ When running codex commands in background (Bash with `run_in_background`), stdou
 After execution, if exit code is non-zero, check stderr:
 
 ```bash
-cat tmp/codex-stderr.txt 2>/dev/null
+cat ${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt 2>/dev/null
 ```
 
 | Pattern in stderr | Diagnosis | Action |
@@ -146,14 +154,14 @@ After any `codex exec` invocation, inform the user:
 
 Resume syntax:
 ```bash
-codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 `--last` resumes the most recent session. Config flags (model, reasoning) are inherited from the original session — do not re-apply them on resume.
 
 ## Save Results
 
-Write combined output to `codex-reviews/<type>-<YYYYMMDD-HHMMSS>.md`:
+Write combined output to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<YYYYMMDD-HHMMSS>.md`:
 
 ```markdown
 # Codex <Type> -- <date>
@@ -180,4 +188,4 @@ Write combined output to `codex-reviews/<type>-<YYYYMMDD-HHMMSS>.md`:
 - Agreed: N | Disputed: N | Additional by Claude: N
 ```
 
-Create `codex-reviews/` directory if it doesn't exist.
+Create `${CLAUDE_PLUGIN_DATA}/reviews/` and `${CLAUDE_PLUGIN_DATA}/tmp/` directories if they don't exist.

@@ -38,7 +38,7 @@ Fallback to `main`.
 ## Step 2: Build & Execute
 
 ```bash
-codex review [SCOPE] [FOCUS_INSTRUCTION] -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex review [SCOPE] [FOCUS_INSTRUCTION] -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 Model and reasoning come from `${CLAUDE_PLUGIN_DATA}/config.json`. Omit `-c 'model="..."'` if model is `"default"`.
@@ -60,7 +60,7 @@ User can also pass any custom instruction: `/codex-review"focus on error handlin
 ### Session Resume
 
 ```bash
-codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>tmp/codex-stderr.txt
+codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 Resume inherits original session config. Do not re-apply `-m`.
@@ -73,10 +73,10 @@ For each Codex finding, read the actual code before agreeing or disagreeing.
 
 ## Step 4: Save & Clean Up
 
-Save to `codex-reviews/review-<YYYYMMDD-HHMMSS>.md` using format from execution.md.
+Save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>.md` using format from execution.md. Create `${CLAUDE_PLUGIN_DATA}/reviews/` if it doesn't exist.
 
 ```bash
-rm -f tmp/codex-stderr.txt
+rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
 Inform user: "Resume this session with `/codex-reviewresume [follow-up]`."

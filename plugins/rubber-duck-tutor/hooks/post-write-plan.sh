@@ -3,12 +3,10 @@ set -uo pipefail
 
 # rubber-duck-tutor-auto: PostToolUse hook (matches Write)
 #
-# Fires after every Write tool use. Checks if the written file is a
-# markdown document and delegates plan/spec detection to Claude via
-# additionalContext. No content pattern matching — Claude judges from
-# conversation context whether the document warrants a duck session.
-# Shares rate limit with other hooks (2 total offers per session).
-# Silently exits in subagent contexts.
+# Fires after Write tool use. Checks if the written file is a markdown
+# document that could be a plan or spec. Uses deterministic filtering
+# only (extension check, known-skip list). No prompt-based judgment.
+# Rate-limited. Silently exits in subagent contexts.
 
 source "$(dirname "$0")/lib.sh"
 
@@ -20,7 +18,7 @@ if [[ -z "$FILE_PATH" ]] || [[ "$FILE_PATH" != *.md ]]; then
   exit 0
 fi
 
-# Skip known non-plan markdown files to reduce unnecessary hook output
+# Skip known non-plan markdown files (deterministic filter)
 BASENAME=$(basename "$FILE_PATH" | tr '[:upper:]' '[:lower:]')
 case "$BASENAME" in
   readme.md|changelog.md|contributing.md|license.md|code_of_conduct.md|\
@@ -32,7 +30,7 @@ esac
 duck__check_rate_limit
 
 cat <<'HOOK_JSON'
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] A markdown document was just written. If — based on conversation context — this document is a plan, spec, or design document (not a README, changelog, or minor doc), suggest a duck plan review. IMPORTANT: If another plugin has already suggested a review or learning exercise in this response, do NOT add a duplicate suggestion — skip silently. Use one short sentence — e.g. 'Duck check on this plan before we go? 30 seconds.' Do not start the session until they confirm. If they decline, do not offer again this session."}}
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] 🦆 A markdown document was just written that may be a plan or spec. Suggest a duck review in one short sentence using the duck character. Example tone: '🦆 꽥 — 문서 하나 나왔는데, 같이 한번 볼래?' Stay in character as a curious, strategically naive duck. Do not start the session until they confirm. If they decline, do not offer again. If another plugin has already suggested a review, skip silently."}}
 HOOK_JSON
 
 exit 0

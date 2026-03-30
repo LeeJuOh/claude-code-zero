@@ -117,12 +117,14 @@
 - **더블체크 발견**: **4층 평가 프레임워크** (output/trace/component/drift), Trust scoring 0-100, Skills Hub 보안 스캐너, Hook profiles (minimal/standard/strict), Agent SOUL 양방향 동기화
 - **기여 층**: 3층 (평가 프레임워크), 4층 (대시보드 기능 범위)
 
-#### [harness-kit] — 평가 + 교리 강제 참고
+#### [harness-kit] — 풀스택 에이전트 오케스트레이션 참고
 
-- **핵심**: DAG 기반 태스크 오케스트레이션 + 5교리 강제 + 11 엔지니어링 패턴
-- **CLI**: Odin (plan, assign, execute, reflect)
-- **더블체크 발견**: **Reflection 리포트 6-part** 구조, TDD 강제 프리셋 (test→implement→verify 게이트), 동적 비용 인식 에이전트 배정, Proof of Work 패턴
-- **기여 층**: 2층 (교리 강제), 3층 (평가/리플렉션)
+- **핵심**: DAG 기반 멀티에이전트 오케스트레이션 + 19개 원칙(Tenet) + TaskIt 칸반 UI
+- **CLI**: Odin (30+ 명령: plan, assign, exec, reflect, watch, logs, stop, attach 등)
+- **기술**: Python + Django + React/TypeScript + Celery. 8 provider 지원 (Claude, Gemini, Codex, Qwen, GLM, MiniMax, Kilo Code, OpenCode)
+- **더블체크 발견**: **19개 원칙** (Determinism, Pareto-Driven Delegation, Cost Visibility, Proof of Work, Reflection Loops 등), **Reflection 리포트 5-part** (Quality Assessment→Slop Detection→Improvements→Agent Optimization→Verdict), Wave DAG 병렬실행 (세마포어 4동시), **비용 인식 위임** (최저가 capable 에이전트 자동 배정), TaskIt MCP (blocking questions: 에이전트가 사람에게 질문하며 대기), TDD 강제 프리셋 (dk-test-writer 에이전트: 구현 컨텍스트 없이 행위 요구사항만 받음)
+- **기여 층**: 2층 (교리 강제, 비용 인식), 3층 (리플렉션 감사), 4층 (TaskIt 칸반+DAG 시각화)
+- **경쟁 관계**: 에이전트 "작업" 오케스트레이션 도구. 레포 환경 자체를 분석/개선하지 않으므로 Harness Engineer와 직접 경쟁보다는 보완 관계
 
 #### [agent-harness] — 거버넌스 골격
 
@@ -246,7 +248,7 @@
 
 | 프로젝트 | 기여 층 | 참고 포인트 |
 |----------|--------|------------|
-| [compound-engineering] | 2층 | CC 플러그인 훅 구현 패턴, 멀티 플랫폼 변환 |
+| [compound-engineering] | 2, 3층 | **★★★★ 상향**. 35+ agents, 40+ skills, 15개 리뷰어 페르소나 병렬 스폰, Brainstorm→Plan→Work→Review→Compound 워크플로우, 10+ 플랫폼 변환 (Codex, OpenCode, Droid, Pi, Gemini CLI, Copilot, Kiro, Windsurf, OpenClaw, Qwen) |
 | [Chorus] | 3층 | 제안→승인→실체화, @멘션, 요구사항 정교화 게이트 |
 | [DeerFlow] | 2층 | 점진적 스킬 로딩, 컨텍스트 요약, 스코프 격리 서브에이전트 |
 | [Symphony] | 3층 | WORKFLOW.md-as-policy, 워크스페이스 격리 |
@@ -328,7 +330,7 @@
 |----------|------|--------|----------|-------------|
 | [claude-code-organizer] | 독립 도구+MCP | 2, 4 | ★★★★★ | 유지 (토큰 분석 상세 추가) |
 | [mission-control] | 독립 웹앱 | 3, 4 | ★★★★★ | ★★★★→★★★★★ (4층 평가 프레임워크) |
-| [harness-kit] | 독립 프레임워크 | 2, 3 | ★★★★★ | ★★★★→★★★★★ (Reflection 리포트) |
+| [harness-kit] | 독립 프레임워크 | 2, 3, 4 | ★★★★★ | ★★★★→★★★★★ (19 Tenets, 8 provider, TaskIt) |
 | [agent-harness] | 문서 | 1, 2 | ★★★★★ | ★★★→★★★★★ (자율성 레벨 L0-L3) |
 | [Backlog.md] | 독립 CLI | 1, 4 | ★★★★★ | 유지 |
 | [agent-orchestrator] | 독립 오케스트레이터 | 3 | ★★★★★ | **신규** |
@@ -361,7 +363,7 @@
 
 ### 관련도 상향 (8개)
 - mission-control (★★★★→★★★★★): 4층 평가 프레임워크 발견
-- harness-kit (★★★★→★★★★★): Reflection 리포트 6-part
+- harness-kit (★★★★→★★★★★): 19 Tenets, 8 provider, TaskIt 칸반, 기여 층 2,3→2,3,4 확장
 - agent-harness (★★★→★★★★★): 자율성 레벨 L0-L3
 - claude-devtools (★★★★→★★★★★): 알림 트리거, 압축 감지
 - Understand-Anything (★★★→★★★★★): 멀티에이전트, 적응형 UI
@@ -369,12 +371,89 @@
 - get-shit-done (★★★→★★★★): .planning/ 상태 디렉토리
 - oh-my-claudecode (★★→★★★★): 재실행 루프, 모델 라우팅
 
+### 관련도 상향 (v2 → v2.1, 1개)
+- compound-engineering (★★★→★★★★): 35+ agents, 40+ skills, 15 리뷰어 페르소나, 10+ 플랫폼 변환. 기여 층 2→2,3 확장
+
+### 외부 시장 분석 추가 (v2.1)
+- 섹션 6 신설: AURA, Deep Agents, CodeRabbit/Codacy/CodeScene 외부 경쟁자 맵
+
+### 레포 맵/instruction 로딩 패턴 비교 추가 (v2.2)
+- 섹션 7 신설: 12개 프로젝트 딥리서치 결과 — "레포 컨텍스트 → 에이전트" 로딩 메커니즘 비교
+
+---
+
+## 7. 레포 맵/instruction 로딩 패턴 비교 (v2.2)
+
+> 12개 프로젝트 딥리서치를 통해 "레포 맵을 에이전트에게 어떻게 전달하는가" 패턴을 비교 분석.
+> harness-engineer의 `.harness/map.md` + CLAUDE.md `@import` 설계 결정의 근거.
+
+### 패턴 분류
+
+| 패턴 | 대표 프로젝트 | 메커니즘 | 영구성 | harness-engineer 채택 |
+|------|-------------|----------|:------:|:--------------------:|
+| **A. 플랫폼 네이티브 파일 직접 생성** | OpenAI (Codex), oh-my-claudecode, get-shit-done | 각 플랫폼이 자동 로딩하는 파일(CLAUDE.md/AGENTS.md)을 직접 생성 | ✅ | △ (CLAUDE.md에 @import 추가) |
+| **B. 소스 → 어댑터 변환** | gitagent | 플랫폼 무관 소스(SOUL.md+RULES.md) → 어댑터가 플랫폼별 파일로 인라인 변환 | ✅ | ✗ (sync 필요, 복잡) |
+| **C. 짧은 부트스트랩 + 상세 분리** | agent-harness | 플랫폼 파일은 짧은 포인터, 상세는 별도 디렉토리 | ✅ | **✓ 핵심 채택** |
+| **D. 훅 컨텍스트 주입** | superpowers | SessionStart 훅이 스킬 내용을 컨텍스트에 주입 | ⚠️ 압축 취약 | ✗ |
+| **E. 안 만듦 (읽기만)** | compound-engineering | 유저가 직접 관리하는 것을 전제 | — | ✗ |
+
+### 프로젝트별 상세
+
+| 프로젝트 | CLAUDE.md 생성? | AGENTS.md 생성? | 레포 맵 전략 | 핵심 인사이트 |
+|----------|:-:|:-:|------------|-------------|
+| **OpenAI (Codex)** | — | ✅ (자동) | Codex 네이티브 자동 로딩. ~100줄 목차 + docs/ 상세 | "기계적 시행: 전용 린터 + CI" |
+| **gitagent** | ✅ (어댑터) | ✅ (어댑터) | SOUL+RULES+DUTIES → 플랫폼별 인라인 변환 | 소스 1개 원칙. 12개 플랫폼 어댑터 |
+| **agent-harness** | ✅ (부트스트랩) | ✅ (부트스트랩) | 짧은 부트스트랩(~200줄) + docs/agent-harness/ 상세 | progressive disclosure + 기계적 강제 이중 구조 |
+| **oh-my-claudecode** | ✅ (setup 핵심) | 선택 (/deepinit) | CLAUDE.md에 `<!-- OMC:START/END -->` 마커 영역 관리 | 마커로 유저 영역 보존 |
+| **get-shit-done** | ✅ (자동생성) | ✗ | CLAUDE.md 6개 섹션 자동 생성+유지. `.planning/` 7개 분석 문서 | CLAUDE.md = 프로젝트 컨텍스트 |
+| **everything-claude-code** | ✅ | ✅ (자동) | AGENTS.md = 크로스플랫폼 범용, CLAUDE.md = CC 전용 | 병행 관리 |
+| **gstack** | ✅ (수동 추가) | 있음 | DESIGN.md가 핵심 산출물. CLAUDE.md에 스킬 목록 안내 | 산출물 간 체이닝 |
+| **superpowers** | ✗ (읽기만) | ✗ | SessionStart 훅이 스킬 라우팅 규칙 주입 | 훅 = 짧은 행동 규칙에 적합 |
+| **compound-engineering** | ✗ (읽기만) | ✗ (읽기만) | "read, don't write" 철학 | 10+ 플랫폼 변환기 |
+| **OpenViking** | ✗ | ✗ | L0(.abstract.md) → L1(.overview.md) → L2(원본) 계층적 로딩 | VLM 생성 요약, 검색 점수 기반 점진적 로딩 |
+| **aidlc-workflows** | ✗ | ✗ | `.aidlc-rule-details/` 플랫폼별 규칙 파일 + `aidlc-state.md` 상태 추적 | 적응형 검사 깊이, 워크플로우 시작 시 규칙 로딩 |
+| **claude-code-organizer** | ✗ (읽기만) | ✗ | 11카테고리 컨텍스트 예산 스캔. MCP 도구로 온디맨드 | ai-tokenizer ~99.8% 정확도, bytes/4 폴백 |
+
+### harness-engineer 설계 결정 근거
+
+1. **`.harness/map.md` 소스 분리 (agent-harness 패턴)**: map.md 수정 시 CLAUDE.md sync 불필요 (`@import`가 자동 반영). gitagent 인라인 패턴은 sync 필요.
+2. **CLAUDE.md `@import` (CC 공식 기능)**: 압축 생존 (공식 문서 확인), 서브디렉토리 CLAUDE.md는 온디맨드라 자동 로딩 안 됨, `.claude/rules/`는 CC 전용.
+3. **`<!-- harness:start/end -->` 마커 (oh-my-claudecode 패턴)**: 기존 CLAUDE.md 유저 영역 보존. HTML 주석은 CC가 Claude에게 주입 시 제거되지만 harness 도구가 섹션 관리에 사용.
+4. **크로스플랫폼은 Phase 1.5 (CC 우선)**: CC 플러그인이니까 CC 네이티브부터. AGENTS.md/GEMINI.md는 `/harness export`로 확장.
+
 ### 참고 불필요 확인 (v1과 동일)
 - bridle, Open Pencil, CodeWiki
 
 ---
 
-## 6. 이전 문서와의 관계
+## 6. 외부 시장 경쟁자 (references/ 밖)
+
+> 2026-03-28 시장 리서치 + 더블체크 결과. references/ 폴더에 없는 외부 제품/서비스.
+
+### 직접 경쟁 영역
+
+| 제품 | 형태 | Harness Engineer와의 관계 | 출처 |
+|------|------|--------------------------|------|
+| **AURA** (Mezmo) | Rust 기반 오픈소스 에이전트 프레임워크 | 프로덕션 에이전트 컴포지션 (TOML 선언적 설정, MCP, RAG, OTel, 5 provider). main은 single-agent, 오케스트레이션은 alpha 브랜치. 레포 환경이 아닌 에이전트 런타임 초점 → **레이어가 다름** | [github.com/mezmo/aura](https://github.com/mezmo/aura) |
+| **Deep Agents** (LangChain) | Python SDK + CLI | "batteries-included agent harness". 계획(write_todos), 파일시스템, 서브에이전트. 범용 에이전트 SDK로 코딩 에이전트 전용이 아님 → **레이어가 다름** | [github.com/langchain-ai/deepagents](https://github.com/langchain-ai/deepagents) |
+
+### AI 코드 품질 가드레일 시장 (3층 필요성의 시장 근거)
+
+| 제품 | 역할 | Harness Engineer 3층과의 차이 |
+|------|------|------------------------------|
+| **CodeRabbit** | AI 코드 리뷰. [AI 코드 1.7x 더 많은 이슈 리포트](https://www.coderabbit.ai/blog/state-of-ai-vs-human-code-generation-report) (2025-12, 470 PR 분석) 발행 | 코드 레벨 린팅. 작업별 계약 기반 평가가 아님 |
+| **Codacy Guardrails** | AI 생성 코드 품질 게이트 | PR 단위 품질 체크. 사전 합의된 평가 기준(계약) 없음 |
+| **CodeScene AI** | 코드 건강도 + AI 코드 가드레일 | 코드 복잡도/기술부채 초점. 에이전트 작업 품질 평가와 다른 관점 |
+
+### 시장 패턴 요약
+
+1. **"init 한 줄" 패턴**: HarnessKit(`odin init`), ECC(`install.sh`) 모두 원커맨드 세팅 지향. 1층의 진입 장벽을 극단적으로 낮춰야 함
+2. **평가자 분리가 최대 공백**: 리뷰/리플렉션은 여럿 있으나, 사전 계약 기반 1:1 원자적 검증을 플러그인으로 패키징한 제품은 부재
+3. **하네스 가비지 컬렉션 실전 확인**: Anthropic Labs가 Opus 4.5→4.6 전환 시 불필요해진 스프린트 분해를 제거. 하네스 구성요소의 생명주기 관리가 현실적 과제
+
+---
+
+## 7. 이전 문서와의 관계
 
 | 문서 | 용도 |
 |------|------|
