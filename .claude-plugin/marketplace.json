@@ -41,7 +41,7 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "description": "Integrate OpenAI Codex CLI for code review, document verification, and deep-dive research with Claude's critical evaluation. Auto-suggests review after commits and verification after task completion."
     },
     {
