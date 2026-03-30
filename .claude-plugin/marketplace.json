@@ -41,13 +41,13 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "description": "Integrate OpenAI Codex CLI for code review and verification with Claude's critical evaluation. Auto-suggests review after commits and verification after task completion."
     },
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "1.4.0",
+      "version": "2.0.0",
       "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Duck character (🦆) with structured question frameworks (assumptions/blindspots/tradeoffs). Auto-hooks at workflow checkpoints: plan creation, spec documents, PR/MR, session end."
     },
     {
