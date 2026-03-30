@@ -1,62 +1,54 @@
 ---
 name: codex-verify
-description: Verify implementation or plan using Codex as an independent reviewer. Use when the user asks "codex 검수", "검수해줘", "verify", "codex double-check", "코덱스로 확인", "플랜 검수", wants Codex to verify completed work, or says "확인해줘" after implementation. Also triggered by hook suggestion after task completion.
-argument-hint: [path to plan file | --uncommitted | --base BRANCH | resume PROMPT]
+description: "Verify a plan or document using Codex as an independent reviewer. Use when the user asks \"codex 검수\", \"검수해줘\", \"verify this plan\", \"codex double-check\", \"코덱스로 확인\", \"플랜 검수\", wants Codex to review a plan or spec document, or says \"확인해줘\" after writing a plan. Also triggered by hook suggestion after task completion."
+argument-hint: "path/to/document.md | resume PROMPT"
 ---
 
-# Codex Verification
+# Codex Document Verification
 
-Use Codex as an independent reviewer to verify Claude's implementation or review a plan document. This is the "second pair of eyes" pattern.
+Use Codex as an independent reviewer to verify plans, specs, and documents. This is the "second pair of eyes" pattern — Codex reviews the document, Claude evaluates Codex's findings, and produces a PASS/FAIL verdict.
+
+For code review, use `/codex-review` instead.
 
 ## Step 0: Setup & Preflight
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/execution.md` — Setup and Preflight sections.
+Read `${CLAUDE_PLUGIN_ROOT}/references/execution.md` — Setup, Directory Setup, and Preflight sections.
 
 Check `${CLAUDE_PLUGIN_DATA}/config.json` for saved settings. If missing, run first-time setup.
 
-## Step 1: Detect Input Type
+## Step 1: Determine Input
 
-Parse $ARGUMENTS and context to determine what to verify:
+Parse $ARGUMENTS:
 
-| Input | Type | Execution |
-|-------|------|-----------|
-| Path to `.md` file | Plan verification | `codex exec` with plan review persona |
-| `--uncommitted` / `--base` / `--commit` | Code verification | `codex review` with verification persona |
-| `resume [PROMPT]` | Session resume | `codex exec resume --last` |
-| (no args, uncommitted changes) | Code verification | Auto-detect scope |
-| (no args, on feature branch) | Code verification | `codex review --base <default-branch>` |
-| (no args, no changes) | Ask user | "What should I verify?" |
+| Input | Action |
+|-------|--------|
+| Path to a file (`.md`, `.txt`, etc.) | Read file, verify as document |
+| `resume [PROMPT]` | Resume previous Codex session |
+| (no args) | Ask user: "What document should I verify?" |
 
 ## Step 2: Execute
 
-### Code Verification
+### Document Verification
 
-Use `codex review` with a verification-focused instruction:
-
-```bash
-codex review [SCOPE] "You are an independent reviewer verifying another developer's implementation. Focus on: logic errors and unhandled edge cases, missing error handling or validation, security vulnerabilities introduced by changes, performance regressions, inconsistencies with existing codebase patterns, missing or inadequate tests. Verdict: PASS (no blocking issues) or FAIL (blocking issues found)." -c 'model="<MODEL>"' -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
-```
-
-### Plan Verification
-
-Read the plan file content, then use `codex exec`:
+Read the document content, then write a verification prompt:
 
 ```
 Write to ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt:
 
-You are a brutally honest technical reviewer. Review this implementation plan for:
+You are a brutally honest technical reviewer. Review this document for:
 - Logical gaps and unstated assumptions
 - Missing error handling or edge cases
 - Overcomplexity (is there a simpler approach?)
 - Feasibility risks (what could go wrong?)
 - Missing dependencies or sequencing issues
 - Whether the implementation order avoids build breaks
+- Internal contradictions or ambiguous requirements
 
 Be direct. No compliments. Just the problems.
 Verdict: PASS or FAIL with clear reasons.
 
-THE PLAN:
-<plan file content>
+THE DOCUMENT:
+<document content>
 ```
 
 ```bash
@@ -73,10 +65,10 @@ codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_e
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/execution.md` — Peer AI Evaluation section.
 
-Since Claude implemented the code (or wrote the plan), be **extra honest** about Codex's findings. Don't dismiss valid catches just because you authored the work.
+Since Claude may have authored the document, be **extra honest** about Codex's findings. Don't dismiss valid catches just because you wrote the plan.
 
 For each finding:
-- **Valid catch**: "Codex caught this. I missed it during implementation."
+- **Valid catch**: "Codex caught this. I missed it during planning."
 - **Already considered**: "I considered this — here's why the current approach is correct: [reason]"
 - **False positive**: "This is a false positive because [evidence]"
 
@@ -85,7 +77,7 @@ For each finding:
 ```markdown
 ## Verification Result: PASS / FAIL
 
-### Blocking Issues (P1 -- must fix before merge)
+### Blocking Issues (P1 -- must fix before proceeding)
 - [issue]: [why it's blocking]
 
 ### Recommendations (P2 -- non-blocking)
@@ -95,7 +87,7 @@ For each finding:
 - [finding]: [why it's not a real issue]
 
 ### Cross-Model Notes
-- [implementation intent vs Codex feedback]
+- [planning intent vs Codex feedback]
 ```
 
 **FAIL** if any P1 (blocking) issue exists. **PASS** if only P2 or no issues.
@@ -108,12 +100,12 @@ Save to `${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>.md` using format
 rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt ${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
 ```
 
-Inform user: "Resume this session with `/codex-verifyresume [follow-up]`."
+Inform user: "Resume this session with `/codex-verify resume [follow-up]`."
 
 ## Gotchas
 
 - **Claude has bias reviewing its own work.** Be extra honest. Don't rationalize away valid Codex findings.
-- **Plan verification uses `codex exec`, code verification uses `codex review`.** Different commands, different flags. `codex review` does NOT accept `-m`, `-s`, or `--json` — model must be set via `-c 'model="..."'`.
-- **Scope matters.** If Claude changed 3 files, verify those 3 — don't let Codex wander into unrelated code.
+- **This skill is for documents only.** If the user wants code review, redirect to `/codex-review`.
 - **PASS doesn't mean perfect.** It means no blocking issues. Always note recommendations.
 - **Never `2>/dev/null`.** Capture stderr for error diagnosis.
+- **Timeout is not failure.** Exit 124/137 = timeout, not "no findings."

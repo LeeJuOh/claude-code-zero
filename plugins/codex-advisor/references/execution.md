@@ -150,7 +150,7 @@ Agreement rate: X% (N/M unique findings overlap)
 ## Session Resume
 
 After any `codex exec` invocation, inform the user:
-> "Resume this Codex session: `/codex-review resume [follow-up]` or `/codex-verify resume [follow-up]`"
+> "Resume this Codex session: `/codex-review resume [follow-up]`, `/codex-verify resume [follow-up]`, or `/codex-research resume [follow-up]`"
 
 Resume syntax:
 ```bash
@@ -161,7 +161,11 @@ codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_e
 
 ## Save Results
 
-Write combined output to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<YYYYMMDD-HHMMSS>.md`:
+Write combined output to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<YYYYMMDD-HHMMSS>.md`.
+
+Types: `review` (code review), `verify` (document verification), `research` (deep-dive analysis).
+
+Default format (review/verify):
 
 ```markdown
 # Codex <Type> -- <date>
