@@ -1,7 +1,7 @@
 ---
 name: codex-review
 description: Run Codex code review with Claude's critical evaluation. Use when the user asks for "codex review", "codex 리뷰", "코드 리뷰", wants Codex to review code changes, diff, branch, or commit. Also triggered by hook suggestion after git commit.
-argument-hint: [--uncommitted | --base BRANCH | security focus | perf focus | resume PROMPT]
+argument-hint: [--uncommitted | --base BRANCH | adversarial | security focus | resume PROMPT]
 ---
 
 # Codex Code Review
@@ -24,6 +24,8 @@ Parse $ARGUMENTS to determine review scope:
 | `--base BRANCH` | `codex review --base BRANCH` |
 | `--commit SHA` | `codex review --commit SHA` |
 | `resume [PROMPT]` | See Session Resume below |
+| `adversarial` | Adversarial review via `codex exec` (see Adversarial Mode) |
+| `adversarial --base BRANCH` | Adversarial review of branch diff |
 | `security focus` / `perf focus` / `arch focus` | Pass as review instruction (see Focus Options) |
 | (no args, uncommitted changes) | Auto-detect: `codex review --uncommitted` |
 | (no args, on feature branch) | Auto-detect: `codex review --base <default-branch>` |
@@ -57,6 +59,28 @@ If user requests a focus (security, perf, arch), pass it as the instruction argu
 
 User can also pass any custom instruction: `/codex-review"focus on error handling"`.
 
+### Adversarial Mode
+
+When user passes `adversarial`, use `codex exec` with the adversarial prompt template instead of `codex review`.
+
+1. Determine scope (same as regular review: uncommitted, branch, or commit)
+2. Collect the diff:
+   - `--uncommitted` → `git diff && git diff --cached`
+   - `--base BRANCH` → `git diff BRANCH...HEAD`
+   - `--commit SHA` → `git show SHA`
+3. Read `${CLAUDE_PLUGIN_ROOT}/references/adversarial-prompt.md` for the template
+4. Write the prompt (with diff appended) to `${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt`
+5. Execute:
+
+```bash
+codex exec "$(cat ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt)" -m <MODEL> -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
+```
+
+6. Parse the JSON response against the schema in `${CLAUDE_PLUGIN_ROOT}/references/review-output-schema.json`
+7. Proceed to Step 3 (Evaluate) — apply Peer AI Evaluation to each finding
+
+The adversarial prompt requests structured JSON output with severity, confidence, file, and line for each finding. If Codex returns malformed JSON, fall back to treating the output as prose.
+
 ### Session Resume
 
 ```bash
@@ -84,7 +108,9 @@ Inform user: "Resume this session with `/codex-reviewresume [follow-up]`."
 ## Gotchas
 
 - **`codex review` is a subcommand, not `codex exec "review"`.** It has its own flags and does NOT accept `-s` or `--json`.
+- **Adversarial mode uses `codex exec`, not `codex review`.** It needs the custom prompt template for structured JSON output.
 - **Never `2>/dev/null`.** Always capture stderr to a file for error diagnosis.
 - **Timeout is not failure.** Exit 124/137 = timeout, not "no findings."
 - **Focus options are instructions, not separate modes.** They're passed as the text argument to `codex review`.
 - **Preserve Codex output verbatim.** Claude's evaluation comes after, not instead of.
+- **Do not auto-fix after review.** Present findings, then wait for user to request changes. See No Auto-Fix Rule in execution.md.

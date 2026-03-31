@@ -30,12 +30,14 @@ Parse $ARGUMENTS:
 
 ### Document Verification
 
-Read the document content, then write a verification prompt:
+Read the document content, then write a verification prompt using XML tag structure (see `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md`):
 
 ```
 Write to ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt:
 
-You are a brutally honest technical reviewer. Review this document for:
+<task>
+You are a brutally honest technical reviewer. Review the following document for material issues that would cause implementation failure.
+Focus areas:
 - Logical gaps and unstated assumptions
 - Missing error handling or edge cases
 - Overcomplexity (is there a simpler approach?)
@@ -43,12 +45,31 @@ You are a brutally honest technical reviewer. Review this document for:
 - Missing dependencies or sequencing issues
 - Whether the implementation order avoids build breaks
 - Internal contradictions or ambiguous requirements
+</task>
 
+<compact_output_contract>
+Return a structured verdict:
+1. PASS or FAIL (with clear reasons)
+2. Blocking issues (P1) — must fix before proceeding
+3. Recommendations (P2) — non-blocking improvements
 Be direct. No compliments. Just the problems.
-Verdict: PASS or FAIL with clear reasons.
+</compact_output_contract>
 
-THE DOCUMENT:
-<document content>
+<grounding_rules>
+Ground every finding in the document text.
+Do not speculate about issues not evidenced in the document.
+If a concern is an inference, label it clearly.
+</grounding_rules>
+
+<completeness_contract>
+Review the entire document before finalizing.
+Do not stop after finding the first issue.
+Check for interactions between sections that may create contradictions.
+</completeness_contract>
+
+<document>
+{{DOCUMENT_CONTENT}}
+</document>
 ```
 
 ```bash
@@ -109,3 +130,4 @@ Inform user: "Resume this session with `/codex-verify resume [follow-up]`."
 - **PASS doesn't mean perfect.** It means no blocking issues. Always note recommendations.
 - **Never `2>/dev/null`.** Capture stderr for error diagnosis.
 - **Timeout is not failure.** Exit 124/137 = timeout, not "no findings."
+- **Do not auto-fix after verification.** Present the verdict and wait for user to decide next steps. See No Auto-Fix Rule in execution.md.

@@ -12,11 +12,31 @@ This plugin runs OpenAI's Codex CLI, then has Claude critically evaluate the fin
 
 | Skill | Description |
 |-------|-------------|
-| `/codex-review` | Code review — supports `--uncommitted`, `--base BRANCH`, focus modes (security, perf, arch) |
+| `/codex-review` | Code review — supports `--uncommitted`, `--base BRANCH`, `adversarial` mode, focus modes (security, perf, arch) |
 | `/codex-verify` | Document/plan verification — PASS/FAIL verdict |
 | `/codex-research` | Deep-dive research, issue analysis, technical exploration |
 
-Auto-hooks suggest review after commits and verification after task completion.
+### Adversarial Review
+
+`/codex-review adversarial` runs a specialized adversarial prompt that actively tries to break confidence in the change. Findings include severity, confidence scores, and concrete recommendations in structured JSON format.
+
+### Stop Review Gate
+
+Optional hook that suggests Codex review when code changes are detected before session end. Enable in config:
+
+```json
+{ "stopGate": true }
+```
+
+### Auto-hooks
+
+- Post-commit: suggests review after `git commit`
+- Task completed: suggests verification when code changes detected
+- Stop gate: suggests review before session end (when enabled)
+
+### No Auto-Fix Policy
+
+Review and verification results are presented for human decision-making. Claude will not automatically fix findings — the user explicitly requests which changes to make.
 
 ## Prerequisites
 
@@ -34,6 +54,8 @@ Auto-hooks suggest review after commits and verification after task completion.
 /codex-review                              # auto-detect scope
 /codex-review --uncommitted                # review uncommitted changes
 /codex-review --base develop               # review branch diff
+/codex-review adversarial                  # adversarial review (structured JSON)
+/codex-review adversarial --base main      # adversarial review of branch diff
 /codex-review security focus               # security-focused review
 /codex-verify docs/my-plan.md             # verify a plan document
 /codex-research "React vs Svelte 비교"     # deep-dive research
