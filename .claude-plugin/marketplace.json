@@ -47,8 +47,8 @@
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "2.0.0",
-      "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Duck character (🦆) with structured question frameworks (assumptions/blindspots/tradeoffs). Auto-hooks at workflow checkpoints: plan creation, spec documents, PR/MR, session end."
+      "version": "2.0.1",
+      "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Duck character (🦆) with structured question frameworks (assumptions/blindspots/tradeoffs). Auto-hooks at workflow checkpoints: plan creation, spec documents, PR/MR."
     },
     {
       "name": "e2e-test-runner",
