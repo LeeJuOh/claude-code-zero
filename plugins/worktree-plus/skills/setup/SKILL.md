@@ -12,10 +12,11 @@ For detailed configuration (`.worktreeinclude`, `.worktreelink`, branch prefix, 
 
 ## What it does
 
-The setup script detects the install scope and configures hooks accordingly:
+The setup script scans `enabledPlugins` across all settings files to detect the actual install scope, then writes hooks to the matching file:
 
-- **Marketplace install** (`~/.claude/plugins/cache/...`) → writes to `~/.claude/settings.json`
-- **Local install** (`--plugin-dir`) → writes to `.claude/settings.local.json`
+- **user** → `~/.claude/settings.json`
+- **project** → `.claude/settings.json`
+- **local** → `.claude/settings.local.json`
 
 It handles three cases per hook: missing (adds), stale path (updates), already correct (skips). Existing hooks from other plugins are preserved.
 

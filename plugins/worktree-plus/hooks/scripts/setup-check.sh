@@ -4,11 +4,21 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Scope detection
-if [[ "$PLUGIN_ROOT" == "$HOME/.claude/plugins/cache/"* ]]; then
-  SETTINGS_FILE="$HOME/.claude/settings.json"
-else
-  SETTINGS_FILE="$PWD/.claude/settings.local.json"
+# Scope detection: find which settings file has worktree-plus in enabledPlugins
+SETTINGS_FILE=""
+for candidate in \
+  "$PWD/.claude/settings.local.json" \
+  "$PWD/.claude/settings.json" \
+  "$HOME/.claude/settings.json"; do
+  if [ -f "$candidate" ] && jq -e '.enabledPlugins // {} | keys | map(select(startswith("worktree-plus@"))) | length > 0' "$candidate" >/dev/null 2>&1; then
+    SETTINGS_FILE="$candidate"
+    break
+  fi
+done
+
+if [ -z "$SETTINGS_FILE" ]; then
+  # Plugin not found in any enabledPlugins — likely --plugin-dir dev mode, skip silently
+  exit 0
 fi
 
 # Check: do our hooks exist with current paths?
@@ -41,6 +51,26 @@ ACTUAL_CREATE=$(echo "$SETTINGS" | jq -r \
 ACTUAL_REMOVE=$(echo "$SETTINGS" | jq -r \
   '[.hooks.WorktreeRemove[]?.hooks[]?.command // empty] | map(select(contains("worktree-plus"))) | .[0] // empty' \
   2>/dev/null || true)
+
+# Clean up orphan hooks in other settings files
+for other in \
+  "$PWD/.claude/settings.local.json" \
+  "$PWD/.claude/settings.json" \
+  "$HOME/.claude/settings.json"; do
+  [ "$other" = "$SETTINGS_FILE" ] && continue
+  [ ! -f "$other" ] && continue
+
+  HAS_OURS=$(jq '[.hooks.WorktreeCreate[]?.hooks[]?.command // empty, .hooks.WorktreeRemove[]?.hooks[]?.command // empty] | map(select(contains("worktree-plus"))) | length' "$other" 2>/dev/null || echo "0")
+  if [ "$HAS_OURS" -gt 0 ]; then
+    jq '
+      (.hooks.WorktreeCreate // []) |= map(select(.hooks | all(.command | contains("worktree-plus") | not))) |
+      (.hooks.WorktreeRemove // []) |= map(select(.hooks | all(.command | contains("worktree-plus") | not))) |
+      if .hooks.WorktreeCreate == [] then del(.hooks.WorktreeCreate) else . end |
+      if .hooks.WorktreeRemove == [] then del(.hooks.WorktreeRemove) else . end
+    ' "$other" > "${other}.tmp.$$"
+    mv "${other}.tmp.$$" "$other"
+  fi
+done
 
 # Already up-to-date — exit silently
 if [[ "$ACTUAL_CREATE" == "$EXPECTED_CREATE" ]] && [[ "$ACTUAL_REMOVE" == "$EXPECTED_REMOVE" ]]; then
