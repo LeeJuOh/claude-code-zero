@@ -29,36 +29,54 @@ Parse $ARGUMENTS:
 
 ## Step 2: Build Research Prompt
 
-Craft a research prompt tailored to the input. The prompt should give Codex clear direction while leaving room for unexpected findings.
+Craft a research prompt tailored to the input using XML tag structure (see `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md`).
 
 ```
 Write to ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt:
 
+<task>
 You are a technical researcher conducting a deep investigation.
+Topic: {{USER_QUESTION_OR_TOPIC}}
+{{#if DOCUMENT}}
+Context document is provided below.
+{{/if}}
+Investigate thoroughly. Use web search if helpful.
+Surface non-obvious insights, not just the first answer you find.
+</task>
 
-TASK:
-<user's question or topic>
+<compact_output_contract>
+Return a structured analysis with clear sections.
+Separate: observed facts, reasoned inferences, and open questions.
+Identify risks, trade-offs, and alternative perspectives.
+</compact_output_contract>
 
-<if document provided>
-CONTEXT DOCUMENT:
-<document content>
-</if>
+<research_mode>
+Prefer breadth first, then go deeper only where the evidence changes the recommendation.
+</research_mode>
 
-INSTRUCTIONS:
-- Investigate thoroughly. Use web search if helpful.
-- Surface non-obvious insights, not just the first answer you find.
-- Identify risks, trade-offs, and alternative perspectives.
-- Cite sources when possible.
-- Be direct about uncertainty — say "I'm not sure" rather than guessing.
+<citation_rules>
+Cite sources when possible. Prefer primary sources.
+Be direct about uncertainty — say "I'm not sure" rather than guessing.
+</citation_rules>
 
-Provide a structured analysis with clear sections.
+<grounding_rules>
+Ground claims in evidence you can point to.
+Do not present inferences as facts.
+If a point is a hypothesis, label it clearly.
+</grounding_rules>
+
+{{#if DOCUMENT}}
+<context_document>
+{{DOCUMENT_CONTENT}}
+</context_document>
+{{/if}}
 ```
 
-Adapt the prompt based on context:
-- **Issue investigation**: Focus on root cause analysis, reproduction steps, related issues
-- **Technology comparison**: Focus on trade-offs, real-world adoption, gotchas
-- **Architecture question**: Focus on patterns, anti-patterns, scale considerations
-- **General research**: Focus on breadth first, then depth on interesting findings
+Adapt the `<task>` block based on context:
+- **Issue investigation**: "Focus on root cause analysis, reproduction steps, related issues"
+- **Technology comparison**: "Focus on trade-offs, real-world adoption, gotchas"
+- **Architecture question**: "Focus on patterns, anti-patterns, scale considerations"
+- **General research**: "Focus on breadth first, then depth on interesting findings"
 
 ## Step 3: Execute
 
@@ -122,3 +140,4 @@ Inform user: "Resume this session with `/codex-research resume [follow-up]`."
 - **Adapt the output format to the question.** A comparison table for "X vs Y", a pros/cons list for "should I use X", a root cause chain for "why does X happen". Don't force every research into the same rigid template.
 - **web_search_cached gives Codex web access.** It can find recent information that Claude may not have. Leverage this for questions about current ecosystem state.
 - **Never `2>/dev/null`.** Capture stderr for error diagnosis.
+- **Do not auto-fix after research.** Present findings and wait for user direction. See No Auto-Fix Rule in execution.md.

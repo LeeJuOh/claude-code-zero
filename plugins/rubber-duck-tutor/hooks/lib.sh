@@ -56,38 +56,6 @@ duck__init() {
 
 # --- Session rate limiting (shared across all hook triggers) ---
 
-# --- Stop event helpers ---
-
-duck__init_stop() {
-  DUCK_INPUT=$(cat)
-
-  if [[ -z "$DUCK_INPUT" ]]; then
-    exit 0
-  fi
-
-  # Prevent infinite loops: if stop hook already active, exit
-  local stop_active
-  stop_active=$(duck__get '.stop_hook_active')
-  if [[ "$stop_active" == "true" ]]; then
-    exit 0
-  fi
-
-  # Subagent detection
-  local agent_type
-  agent_type=$(duck__get '.agent_type')
-  if [[ -n "$agent_type" ]]; then
-    exit 0
-  fi
-
-  # Extract session ID for rate limiting
-  DUCK_SESSION_ID=$(duck__get '.session_id')
-  if [[ -z "$DUCK_SESSION_ID" ]]; then
-    exit 0
-  fi
-}
-
-# --- Session rate limiting (shared across all hook triggers) ---
-
 DUCK_MAX_OFFERS=2
 
 duck__check_rate_limit() {

@@ -19,7 +19,7 @@ This plugin builds that questioning habit into your workflow. The duck asks you 
 
 `/duck` with no argument auto-detects the right mode from context.
 
-Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents, PR/MR creation, and session end. The duck speaks in character (🦆 꽥). Rate-limited to 2 suggestions per session.
+Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents, and PR/MR creation. The duck speaks in character (🦆 꽥). Rate-limited to 2 suggestions per session.
 
 ## Prerequisites
 

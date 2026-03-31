@@ -25,6 +25,17 @@ On first invocation, check if `${CLAUDE_PLUGIN_DATA}/config.json` exists.
 
 **Override:** User can pass `-m <model>` or `--reasoning <level>` as arguments to override for a single run. `--reset-config` deletes config.json and re-runs setup.
 
+### Stop Review Gate
+
+Optional: `"stopGate": true` in config.json enables a Stop hook that suggests Codex review when code changes are detected before session end.
+
+Toggle via config:
+```json
+{ "model": "gpt-5.4", "reasoning": "high", "stopGate": true }
+```
+
+Default: disabled. When enabled, the hook fires on session Stop events and checks `git diff` for changes.
+
 ## Directory Setup
 
 Ensure required directories exist before any command execution:
@@ -85,6 +96,14 @@ rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt ${CLAUDE_PLUGIN_DATA}/t
 
 Timeout: 300000ms (5 minutes) for all codex commands.
 
+### GPT-5.4 Prompting Patterns
+
+All prompts written to the temp file should follow XML tag structure. See `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md` for the full guide.
+
+Key blocks: `<task>` (always), `<structured_output_contract>` or `<compact_output_contract>` (always), `<grounding_rules>` (for review/research), `<verification_loop>` (for correctness-critical tasks).
+
+Anti-pattern: raising `model_reasoning_effort` instead of tightening the prompt. Always improve the prompt contract first.
+
 ## Background Execution
 
 When running codex commands in background (Bash with `run_in_background`), stdout may appear empty in the task output notification. This is normal — codex writes its results to stdout which the background task manager may not fully capture.
@@ -115,6 +134,19 @@ cat ${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt 2>/dev/null
 **Fail-open principle:** On any error, report to user and continue. Never block or loop on errors.
 
 **Timeout is NOT failure.** Exit codes 124/137 mean the CLI was killed by timer, not that Codex found nothing.
+
+## No Auto-Fix Rule
+
+After presenting review, verification, or research results to the user, **do not automatically fix or modify code**. The user must explicitly request changes.
+
+This rule exists because:
+- The user is the decision maker, not Claude or Codex
+- Review findings may be false positives — auto-fixing wastes effort
+- Claude may have bias when reviewing code it wrote — auto-fixing bypasses human judgment
+
+Correct flow: present findings → wait for user → fix only what they ask for.
+
+Also acknowledge when reviewing your own code: "Note: I authored some of this code, so I may have blind spots in my evaluation."
 
 ## Peer AI Evaluation
 

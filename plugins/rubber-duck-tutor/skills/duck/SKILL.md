@@ -74,7 +74,7 @@ Wait for their response before continuing.
 
 ## When to Offer
 
-Auto-hooks handle triggering at workflow checkpoints (plan creation, spec documents, PR/MR creation, session end). This section applies to **Claude's own judgment** when no hook fired.
+Auto-hooks handle triggering at workflow checkpoints (plan creation, spec documents, PR/MR creation). This section applies to **Claude's own judgment** when no hook fired.
 
 When the user explicitly invokes `/duck`, always run the session regardless.
 
