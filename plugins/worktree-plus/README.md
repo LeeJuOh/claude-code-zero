@@ -30,6 +30,20 @@ worktree-plus replaces the worktree hooks to restore native git behavior, adds `
 
 After install, run `/worktree-plus:setup` to register hooks, then restart Claude Code.
 
+### Why setup is needed
+
+Claude Code's `WorktreeCreate` and `WorktreeRemove` hooks were not recognized from plugin `hooks.json` at the time of development. This may have been fixed in later versions, but until confirmed, setup explicitly registers them in your `settings.json`.
+
+`/worktree-plus:setup` automatically detects which `settings.json` the plugin is installed in (by scanning `enabledPlugins`) and writes hooks to the matching scope:
+
+| Install scope | Target settings file |
+|---------------|----------------------|
+| user (default) | `~/.claude/settings.json` |
+| project | `.claude/settings.json` |
+| local | `.claude/settings.local.json` |
+
+The setup is idempotent — running it again skips already-configured hooks or updates stale paths (e.g., after a plugin update). A `SessionStart` hook also runs this check automatically on each session.
+
 ## Usage
 
 ```bash

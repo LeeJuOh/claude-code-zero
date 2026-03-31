@@ -4,13 +4,28 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Scope detection
-if [[ "$PLUGIN_ROOT" == "$HOME/.claude/plugins/cache/"* ]]; then
-  SETTINGS_FILE="$HOME/.claude/settings.json"
-  SCOPE="user"
-else
-  SETTINGS_FILE="$PWD/.claude/settings.local.json"
-  SCOPE="project-local"
+# Scope detection: find which settings file has worktree-plus in enabledPlugins
+SETTINGS_FILE=""
+SCOPE=""
+for candidate in \
+  "$PWD/.claude/settings.local.json" \
+  "$PWD/.claude/settings.json" \
+  "$HOME/.claude/settings.json"; do
+  if [ -f "$candidate" ] && jq -e '.enabledPlugins // {} | keys | map(select(startswith("worktree-plus@"))) | length > 0' "$candidate" >/dev/null 2>&1; then
+    SETTINGS_FILE="$candidate"
+    case "$candidate" in
+      "$HOME/.claude/settings.json") SCOPE="user" ;;
+      "$PWD/.claude/settings.json") SCOPE="project" ;;
+      *) SCOPE="local" ;;
+    esac
+    break
+  fi
+done
+
+if [ -z "$SETTINGS_FILE" ]; then
+  echo "Error: worktree-plus not found in any settings file's enabledPlugins." >&2
+  echo "Install first: claude plugin install worktree-plus@claude-code-zero" >&2
+  exit 1
 fi
 
 echo "Plugin root: $PLUGIN_ROOT"
@@ -82,6 +97,27 @@ configure_hook "WorktreeRemove" "$EXPECTED_REMOVE"
 TEMP_FILE="${SETTINGS_FILE}.tmp.$$"
 echo "$SETTINGS" | jq '.' > "$TEMP_FILE"
 mv "$TEMP_FILE" "$SETTINGS_FILE"
+
+# Clean up orphan hooks in other settings files (from old path-based detection)
+for other in \
+  "$PWD/.claude/settings.local.json" \
+  "$PWD/.claude/settings.json" \
+  "$HOME/.claude/settings.json"; do
+  [ "$other" = "$SETTINGS_FILE" ] && continue
+  [ ! -f "$other" ] && continue
+
+  HAS_OURS=$(jq '[.hooks.WorktreeCreate[]?.hooks[]?.command // empty, .hooks.WorktreeRemove[]?.hooks[]?.command // empty] | map(select(contains("worktree-plus"))) | length' "$other" 2>/dev/null || echo "0")
+  if [ "$HAS_OURS" -gt 0 ]; then
+    jq '
+      (.hooks.WorktreeCreate // []) |= map(select(.hooks | all(.command | contains("worktree-plus") | not))) |
+      (.hooks.WorktreeRemove // []) |= map(select(.hooks | all(.command | contains("worktree-plus") | not))) |
+      if .hooks.WorktreeCreate == [] then del(.hooks.WorktreeCreate) else . end |
+      if .hooks.WorktreeRemove == [] then del(.hooks.WorktreeRemove) else . end
+    ' "$other" > "${other}.tmp.$$"
+    mv "${other}.tmp.$$" "$other"
+    echo "  Cleaned orphan hooks from $other"
+  fi
+done
 
 echo ""
 echo "Done. Restart Claude Code for changes to take effect."
