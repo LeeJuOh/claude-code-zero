@@ -32,7 +32,7 @@ After install, run `/worktree-plus:setup` to register hooks, then restart Claude
 
 ### Why setup is needed
 
-Claude Code's `WorktreeCreate` and `WorktreeRemove` hooks must be registered in your `settings.json` to override the built-in worktree behavior. Plugin `hooks.json` alone does not activate these hooks — they require explicit registration in the user's settings.
+Claude Code's `WorktreeCreate` and `WorktreeRemove` hooks were not recognized from plugin `hooks.json` at the time of development. This may have been fixed in later versions, but until confirmed, setup explicitly registers them in your `settings.json`.
 
 `/worktree-plus:setup` automatically detects which `settings.json` the plugin is installed in (by scanning `enabledPlugins`) and writes hooks to the matching scope:
 
