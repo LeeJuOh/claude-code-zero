@@ -56,8 +56,6 @@ duck__init() {
 
 # --- Session rate limiting (shared across all hook triggers) ---
 
-# --- Session rate limiting (shared across all hook triggers) ---
-
 DUCK_MAX_OFFERS=2
 
 duck__check_rate_limit() {
