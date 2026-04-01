@@ -38,6 +38,33 @@ Optional hook that suggests Codex review when code changes are detected before s
 
 Review and verification results are presented for human decision-making. Claude will not automatically fix findings — the user explicitly requests which changes to make.
 
+## vs OpenAI Official Plugin
+
+OpenAI publishes their own Codex plugin for Claude Code (`codex@openai-codex`). Both plugins wrap the same Codex CLI, but they solve different problems.
+
+### What's different
+
+| | **codex-advisor** | **codex (official)** |
+|---|---|---|
+| Architecture | Shell scripts + prompts — Claude orchestrates | 3,200+ lines Node.js — code orchestrates |
+| Runtime overhead | None — direct CLI calls | Persistent broker process (app-server) |
+| Review output | Claude critically evaluates each finding | Codex output presented as-is |
+| Document verification | `/codex-verify` with PASS/FAIL verdict | Not available |
+| Research | `/codex-research` — synthesizes both models | Not available |
+| Focus modes | Security, performance, architecture, custom | Adversarial focus text only |
+| Task delegation | Not available | `/codex:rescue` — delegate implementation work |
+| Background jobs | Not available | `/codex:status`, `/codex:result`, `/codex:cancel` |
+
+### Why this plugin
+
+The official plugin is a **task runner** — it sends work to Codex and returns the result. This plugin is a **cross-model reviewer** — it sends work to Codex, then has Claude critically evaluate every finding with agree/disagree/nuance backed by evidence.
+
+This matters because a second opinion you accept uncritically isn't a second opinion. The peer evaluation step catches false positives, fills gaps Codex missed, and produces a synthesis that neither model would reach alone.
+
+**Choose codex-advisor when** you want cross-model code review, document verification, or research synthesis.
+**Choose the official plugin when** you want to delegate implementation tasks to Codex or manage background jobs.
+**Use both** with role separation — see the [coexistence note](../../docs/) for details.
+
 ## Prerequisites
 
 - **[OpenAI Codex CLI](https://github.com/openai/codex)** installed and configured
