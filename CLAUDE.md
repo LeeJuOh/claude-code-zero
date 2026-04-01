@@ -187,3 +187,13 @@ See `docs/release-workflow.md` — 7-step process: compare branches → bump ver
 - **Versioning**: Semantic Versioning (e.g., `1.0.0`). Local plugins (`./` source): version in `marketplace.json` only. External repo plugins (GitHub source): version in `plugin.json` only.
 - **Descriptions**: Clear and concise
 - **Line endings**: Always Unix LF (`\n`), never Windows CRLF (`\r\n`). CRLF in shell scripts causes `command\r: not found` errors (e.g., `set -o pipefail\r`). When creating or editing any file — especially `.sh`, `.json`, `.md` — ensure LF-only line endings. If in doubt, verify with `file <path>` or `cat -A <path>` (CRLF shows as `^M$`).
+
+## Plugin README Style
+
+README는 **사용자 관점**으로 작성:
+1. **왜 필요한지** — 이 플러그인 없이 직접 할 때의 불편함을 먼저 설명
+2. **Quick Start** — 최소 단계로 시작하는 방법 (2-3줄)
+3. **Commands** — 커맨드 레퍼런스 테이블
+4. **Configuration** — 설정 파일 구조 (필요 시)
+
+금지: 구현 디테일 섹션 (`git rev-parse`, hash 알고리즘 등), 기능 bullet 나열만으로 구성된 Features 섹션
