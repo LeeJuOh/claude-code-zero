@@ -57,9 +57,9 @@
       "description": "Run E2E browser tests using natural language test definitions powered by Claude Code SDK and agent-browser with video recording"
     },
     {
-      "name": "lab-claw-mo",
+      "name": "claw-mo",
       "source": "./plugins/claw-mo",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Manage mo markdown viewer sessions: auto-start, browser integration, per-project watch patterns, port isolation",
       "category": "lab"
     },
