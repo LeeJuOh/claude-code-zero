@@ -1,0 +1,7 @@
+{
+  "name": "claw-mo",
+  "description": "Manage mo markdown viewer sessions: auto-start, browser integration, per-project watch patterns, port isolation",
+  "author": { "name": "LeeJuOh" },
+  "license": "MIT",
+  "keywords": ["mo", "markdown", "viewer", "documentation", "browser"]
+}
