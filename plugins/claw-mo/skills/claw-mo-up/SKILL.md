@@ -26,7 +26,7 @@ For config schema, port logic, groups, and browser opening: read `${PLUGIN_DIR}/
    mo --no-open -w 'pattern3' --target anotherGroup -p PORT
    ```
 8. Open browser:
-   - cmux (`$CMUX_SURFACE_ID` set): `cmux browser open "http://localhost:$PORT"`
+   - cmux (`$CMUX_SURFACE_ID` set): check if a mo browser surface already exists from a previous run. If yes, `cmux browser "$SURFACE_ID" navigate "http://localhost:$PORT"` to reuse it. If no, `cmux browser open "http://localhost:$PORT"`.
    - Non-cmux: `open "http://localhost:$PORT"`
 9. Report: which groups started, how many patterns, the URL
 

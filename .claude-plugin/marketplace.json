@@ -59,7 +59,7 @@
     {
       "name": "claw-mo",
       "source": "./plugins/claw-mo",
-      "version": "2.1.0",
+      "version": "2.1.1",
       "description": "Manage mo markdown viewer sessions with group-based organization: auto-start, browser integration, per-project watch patterns, port isolation",
       "category": "lab"
     },
