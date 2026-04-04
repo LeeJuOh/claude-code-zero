@@ -176,7 +176,7 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 | `paths` | YAML list of globs — skill only triggers for matching file paths (e.g., `["src/**/*.ts"]`) |
 | `skills` | List of skill names to auto-load when subagents execute this skill |
 | `user-invocable` | `false` = hidden from `/` menu, Claude-only background knowledge |
-| `shell` | Shell for inline `!`command`` blocks: `bash` (default) or `powershell` |
+| `shell` | Shell interpreter for inline shell execution blocks: `bash` (default) or `powershell` |
 
 **String substitutions** available in SKILL.md body:
 
@@ -269,7 +269,7 @@ For skills that benefit from history (standup posts, recurring reports):
 - **Snapshot before improving.** Always `cp -r` the skill before making changes in Phase 4. Without a snapshot, you can't run a meaningful baseline comparison — the "before" is gone.
 - **Kill the eval viewer.** The viewer process stays alive after review. If you forget `kill $VIEWER_PID`, subsequent launches may fail on port conflicts or you'll accumulate zombie processes.
 - **Don't over-design upfront.** The biggest time sink is spending 30 minutes on a perfect SKILL.md that turns out to need rewriting after the first eval. Write the minimum, test, then improve.
-- **Inline shell may be disabled.** Users can set `disableSkillShellExecution: true` in settings.json (v2.1.91+), which blocks all inline `` !`command` `` execution in skills. If your skill relies on inline shell, document it as a requirement and provide a fallback that uses the Bash tool directly.
+- **Inline shell may be disabled.** Users can set `disableSkillShellExecution: true` in settings.json (v2.1.91+), which blocks all inline shell execution in skills. If your skill relies on inline shell, document it as a requirement and provide a fallback that uses the Bash tool directly.
 
 ---
 
