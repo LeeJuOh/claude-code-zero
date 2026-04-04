@@ -35,7 +35,7 @@
     {
       "name": "skill-creator-pro",
       "source": "./plugins/skill-creator-pro",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "description": "Create, test, measure, and iteratively improve Claude Code skills with category-aware design, gotchas-driven development, progressive disclosure coaching, and automated description optimization"
     },
     {
@@ -59,8 +59,8 @@
     {
       "name": "claw-mo",
       "source": "./plugins/claw-mo",
-      "version": "1.2.0",
-      "description": "Manage mo markdown viewer sessions: auto-start, browser integration, per-project watch patterns, port isolation",
+      "version": "2.0.0",
+      "description": "Manage mo markdown viewer sessions with group-based organization: auto-start, browser integration, per-project watch patterns, port isolation",
       "category": "lab"
     },
     {
