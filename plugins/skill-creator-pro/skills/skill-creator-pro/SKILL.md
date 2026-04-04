@@ -206,12 +206,14 @@ SKILL.md           # Instructions and navigation (required)
 scripts/           # Executable code for deterministic tasks
 references/        # Docs loaded into context as needed
 assets/            # Templates, icons, fonts for output
+bin/               # Executables invocable as bare commands from Bash tool
 ```
 
 **When to use each:**
 - `scripts/` -- Helper functions, validation scripts, data fetchers. If during testing all subagents independently write a similar script, bundle it here.
 - `references/` -- API docs, detailed specifications. Split by variant for multi-framework support (e.g., `references/aws.md`, `references/gcp.md`).
 - `assets/` -- Output templates, image files. If the output is a markdown file, include a template.
+- `bin/` -- Standalone executables that the Bash tool can invoke by name without a full path. Useful for CLI wrappers, data processors, or any tool the skill needs to call repeatedly. Must have execute permission and shebang lines.
 
 Reference files from SKILL.md using `${CLAUDE_SKILL_DIR}` with when-to-read guidance:
 ```markdown
@@ -241,9 +243,17 @@ Consider adding hooks when the skill touches production data, involves destructi
 
 **Hook types:** `command` (run a shell script), `prompt` (inject a model prompt), `http` (POST JSON to a URL), or `agent` (spawn a subagent). HTTP hooks are useful for integrations that don't need shell access.
 
-**Conditional filtering:** Hooks support an `if` field using permission rule syntax (e.g., `Bash(git *)`) to narrow when they fire, reducing overhead from process spawning.
+**Conditional filtering:** Hooks support an `if` field using permission rule syntax (e.g., `Bash(git *)`) to narrow when they fire, reducing overhead from process spawning. Compound commands (`ls && git push`) and env-var-prefixed commands (`FOO=bar git push`) are matched correctly since v2.1.89.
 
-**Available events:** `PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop`, `StopFailure`, `SessionEnd`, `SubagentStart`, `UserPromptSubmit`, `PreCompact`, `PostCompact`, `Notification`, `PermissionRequest`, `Setup`, `ConfigChange`, `CwdChanged`, `FileChanged`, `TaskCreated`, `TeammateIdle`, `TaskCompleted`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify syntax against official docs (`hooks.md`, `hooks-guide.md`) -- hook events and types evolve across releases.
+**Permission decisions:** PreToolUse hooks can return `allow`, `deny`, or `defer`. The `defer` decision (v2.1.89+) pauses headless sessions at the tool call — useful for human-in-the-loop gates in `-p` pipelines, resumed with `-p --resume`.
+
+**Hook output limit:** Hook output exceeding 50K characters is saved to disk with a file path + preview instead of being injected directly into context. Design hooks to produce concise output; if your hook generates large results (e.g., lint reports), consider writing to a file and returning just the path.
+
+**`preventContinuation:true`:** For prompt-type hooks on non-Stop events, this flag stops the model from continuing after the hook fires (v2.1.92 restored semantics).
+
+**Available events:** `PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop`, `StopFailure`, `SessionEnd`, `SubagentStart`, `UserPromptSubmit`, `PreCompact`, `PostCompact`, `Notification`, `PermissionRequest`, `PermissionDenied`, `Setup`, `ConfigChange`, `CwdChanged`, `FileChanged`, `TaskCreated`, `TeammateIdle`, `TaskCompleted`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify syntax against official docs (`hooks.md`, `hooks-guide.md`) -- hook events and types evolve across releases.
+
+Notable event: `PermissionDenied` (v2.1.89+) fires after auto mode classifier denials — return `{retry: true}` to let the model retry. Useful for skills that need graceful recovery from permission blocks.
 
 ### Memory & Data Persistence (Optional)
 
@@ -259,6 +269,7 @@ For skills that benefit from history (standup posts, recurring reports):
 - **Snapshot before improving.** Always `cp -r` the skill before making changes in Phase 4. Without a snapshot, you can't run a meaningful baseline comparison — the "before" is gone.
 - **Kill the eval viewer.** The viewer process stays alive after review. If you forget `kill $VIEWER_PID`, subsequent launches may fail on port conflicts or you'll accumulate zombie processes.
 - **Don't over-design upfront.** The biggest time sink is spending 30 minutes on a perfect SKILL.md that turns out to need rewriting after the first eval. Write the minimum, test, then improve.
+- **Inline shell may be disabled.** Users can set `disableSkillShellExecution: true` in settings.json (v2.1.91+), which blocks all inline `` !`command` `` execution in skills. If your skill relies on inline shell, document it as a requirement and provide a fallback that uses the Bash tool directly.
 
 ---
 
@@ -468,4 +479,4 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 
 ## Compatibility
 
-Written and tested against **Claude Code v2.1.86**. Key platform features used: `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_SESSION_ID}`, `effort` frontmatter, `skills` frontmatter, `paths` frontmatter, HTTP hooks, conditional `if` on hooks, `context: fork`. If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.
+Written and tested against **Claude Code v2.1.92**. Key platform features used: `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_SESSION_ID}`, `effort` frontmatter, `skills` frontmatter, `paths` frontmatter, HTTP hooks, conditional `if` on hooks, `context: fork`, plugin `bin/` executables (v2.1.91+), `PermissionDenied` hook event (v2.1.89+), `defer` hook decision (v2.1.89+), `disableSkillShellExecution` setting (v2.1.91+). If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.
