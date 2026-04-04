@@ -24,20 +24,20 @@ Run in parallel:
 Present a clear overview:
 
 ```
-mo 서버 현황
+mo server status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-● project-a     :6342  실행 중  docs(12) plans(3) default(2)
-● project-b     :6367  실행 중  specs(5)
-○ project-c     :6315  중지됨
+● project-a     :6342  running  docs(12) plans(3) default(2)
+● project-b     :6367  running  specs(5)
+○ project-c     :6315  stopped
 
-현재 프로젝트: project-a (:6342)
+Current project: project-a (:6342)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-무엇을 할까요?
-1) 패턴 추가
-2) 패턴 제거
-3) 그룹 추가
-4) 그룹 제거
-5) 세션 초기화
+What would you like to do?
+1) Add pattern
+2) Remove pattern
+3) Add group
+4) Remove group
+5) Reset session
 ```
 
 Match config entries with running servers to show accurate status (● running / ○ stopped).
@@ -46,33 +46,33 @@ Match config entries with running servers to show accurate status (● running /
 
 Ask what the user wants to do. Handle based on choice:
 
-**패턴 추가**:
+**Add pattern**:
 1. Ask which group (show existing groups)
 2. Ask the glob pattern
 3. If server running → use HTTP API: `POST /_/api/patterns` with `{"pattern": "...", "group": "..."}`
 4. Update config file
 5. Confirm
 
-**패턴 제거**:
+**Remove pattern**:
 1. Show current patterns per group
 2. Ask which to remove
 3. If server running → use HTTP API: `DELETE /_/api/patterns?pattern=...&group=...`
 4. Update config file
 5. Confirm
 
-**그룹 추가**:
+**Add group**:
 1. Ask group name and patterns
 2. If server running → add patterns via API with new target group
 3. Update config file
 4. Confirm
 
-**그룹 제거**:
+**Remove group**:
 1. Show groups, ask which to remove
 2. If server running → remove all patterns for that group via API
 3. Update config file (remove group key)
 4. Confirm
 
-**세션 초기화**:
+**Reset session**:
 1. `echo "y" | mo --clear -p PORT`
 2. Confirm reset
 

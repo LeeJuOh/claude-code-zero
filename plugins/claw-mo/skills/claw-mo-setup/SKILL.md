@@ -38,20 +38,20 @@ For config schema, port logic, and groups: read `${PLUGIN_DIR}/references/shared
 
 6. **AskUserQuestion**: Present suggested groups and port together. Example:
    ```
-   프로젝트에서 이런 그룹을 감지했어요:
+   Detected these groups in your project:
    
    - docs: docs/**/*.md (23 files)
    - plans: plans/*.md (5 files)  
    - default: *.md (3 files)
    
-   포트: 6342 (경로 해시 기반 자동 할당)
+   Port: 6342 (auto-assigned from path hash)
    
-   이대로 진행할까요? 그룹이나 포트를 변경하고 싶으면 알려주세요.
+   Proceed with these? Let me know if you want to add, remove, or change anything.
    ```
 
 7. **Save config** to `${PLUGIN_DATA_DIR}/config.json` (create file if needed, merge if exists). Use v2 `groups` format.
 
-8. **Offer to start**: "설정 완료! `/claw-mo-up`으로 서버를 시작할까요?"
+8. **Offer to start**: "Setup complete! Want me to start the server with `/claw-mo-up`?"
 
 ## Gotchas
 
