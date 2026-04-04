@@ -14,7 +14,9 @@ For config schema, HTTP API, and groups: read `${PLUGIN_DIR}/references/shared.m
 
 ### 1. Gather State
 
-Run in parallel:
+Check prerequisite first: `command -v mo >/dev/null 2>&1` — if missing, tell user to install and stop.
+
+Then run in parallel:
 - `mo --status --json` — get all running servers
 - Read `${PLUGIN_DATA_DIR}/config.json` — get all configured projects
 - Get current project key: `git rev-parse --show-toplevel`

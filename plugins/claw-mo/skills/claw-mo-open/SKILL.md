@@ -2,7 +2,7 @@
 name: claw-mo-open
 description: "Open a specific file or directory in mo markdown viewer. Use when user wants to quickly view a markdown file, add a file to mo, or preview a specific document."
 allowed-tools: Bash, Read
-argument-hint: "<file-or-dir> [--group name]"
+argument-hint: "file-or-dir [--group name]"
 ---
 
 # claw-mo-open
@@ -39,7 +39,7 @@ For config schema, HTTP API, and browser opening: read `${PLUGIN_DIR}/references
 
 6. **If server is NOT running**:
    - Has config → start server with `/claw-mo-up` behavior first, then add the file/dir
-   - No config → quick-open without setup: `mo --no-open -p 6300 $(realpath <path>)` and open browser. Tell the user about `/claw-mo-setup` for persistent config.
+   - No config → quick-open without setup: auto-assign port using the hash method from shared.md (`6300 + hash % 100`), then `mo --no-open -p $PORT $(realpath <path>)` and open browser. Tell the user about `/claw-mo-setup` for persistent config.
 
 7. Open browser to the specific group: `http://localhost:$PORT/$GROUP`
 
