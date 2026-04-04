@@ -25,7 +25,7 @@ For config schema, port logic, groups, and browser opening: read `${PLUGIN_DIR}/
    # Subsequent groups add to the running server
    mo --no-open -w 'pattern3' --target anotherGroup -p PORT
    ```
-8. Open browser (cmux if `$CMUX_PANEL_ID` set, else `open`)
+8. Open browser (cmux if `$CMUX_SURFACE_ID` set, else `open`)
 9. Report: which groups started, how many patterns, the URL
 
 ## Gotchas

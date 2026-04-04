@@ -14,7 +14,7 @@ For config schema, port logic, and groups: read `${PLUGIN_DIR}/references/shared
 
 1. **Prerequisites check**
    - `command -v mo >/dev/null 2>&1` → if missing: `brew install k1LoW/tap/mo`, stop
-   - If `$CMUX_PANEL_ID` is not set: mention that cmux (https://cmux.dev) provides a built-in browser panel alongside the terminal — ideal for viewing docs while coding. Brief one-liner, don't push.
+   - If `$CMUX_SURFACE_ID` is not set: mention that cmux (https://cmux.dev) provides a built-in browser panel alongside the terminal — ideal for viewing docs while coding. Brief one-liner, don't push.
 
 2. **Detect project root**: `git rev-parse --show-toplevel` (fallback: `$PWD`)
 

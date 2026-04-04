@@ -102,10 +102,10 @@ Returns JSON with running servers, their ports, PIDs, groups, and file counts.
 
 ## Browser Opening
 
-Detect cmux by checking `$CMUX_PANEL_ID` (set by cmux in every terminal panel):
+Check cmux availability first, then fallback:
 
 ```bash
-if [ -n "$CMUX_PANEL_ID" ]; then
+if [ -n "$CMUX_SURFACE_ID" ]; then
   cmux browser open "http://localhost:$PORT"
 else
   open "http://localhost:$PORT"
@@ -131,4 +131,4 @@ URL="http://localhost:$PORT/GROUP_NAME"
 - **Group name = URL path**: Group names become URL segments (`/docs`, `/plans`). Keep them simple lowercase — no spaces or special chars.
 - **`--watch` and file arguments are mutually exclusive**: `mo --watch '*.md' README.md` fails. Use either `--watch` patterns or explicit file arguments, not both. Directory arguments are the exception — they work with `--watch`.
 - **mo auto-restores previous sessions**: When starting a new server, mo restores its backup (`$XDG_STATE_HOME/mo/backup/mo-<port>.json`) and merges with CLI-specified files. This means files from a previous manual `mo` invocation may reappear. Use `echo "y" | mo --clear -p $PORT` before starting if you need a clean slate.
-- **cmux detection**: Use `$CMUX_PANEL_ID` (not `$CMUX_SURFACE_ID` which doesn't exist). cmux also provides `cmux markdown open <path>` for viewing a single markdown file in a dedicated panel, but mo is better for multi-file watching.
+- **cmux also has `cmux markdown open <path>`**: For viewing a single markdown file in a dedicated cmux panel. mo is better for multi-file watching with groups.
