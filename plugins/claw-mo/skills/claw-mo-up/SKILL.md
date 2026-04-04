@@ -25,7 +25,9 @@ For config schema, port logic, groups, and browser opening: read `${PLUGIN_DIR}/
    # Subsequent groups add to the running server
    mo --no-open -w 'pattern3' --target anotherGroup -p PORT
    ```
-8. Open browser (cmux if `$CMUX_SURFACE_ID` set, else `open`)
+8. Open browser:
+   - cmux (`$CMUX_SURFACE_ID` set): `cmux browser open "http://localhost:$PORT"`
+   - Non-cmux: `open "http://localhost:$PORT"`
 9. Report: which groups started, how many patterns, the URL
 
 ## Gotchas
@@ -33,3 +35,4 @@ For config schema, port logic, groups, and browser opening: read `${PLUGIN_DIR}/
 - Always `--no-open` when starting mo — the skill controls browser opening separately
 - mo survives shell exit and uses single-instance detection — multiple starts are safe
 - Start groups sequentially, not in parallel — the first invocation must start the server before others can add to it
+- In cmux, `cmux browser open` creates a new browser surface each time. If the user already has mo open in a browser surface, prefer `cmux browser navigate` to reuse it instead of creating a duplicate tab. See shared.md for details.

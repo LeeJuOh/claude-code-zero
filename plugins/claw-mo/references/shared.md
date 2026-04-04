@@ -105,18 +105,23 @@ Returns JSON with running servers, their ports, PIDs, groups, and file counts.
 Check cmux availability first, then fallback:
 
 ```bash
+URL="http://localhost:$PORT"  # or http://localhost:$PORT/GROUP_NAME for a specific group
+
 if [ -n "$CMUX_SURFACE_ID" ]; then
-  cmux browser open "http://localhost:$PORT"
+  cmux browser open "$URL"
 else
-  open "http://localhost:$PORT"
+  open "$URL"
 fi
 ```
 
-To open a specific group tab:
+`cmux browser open` creates a **new browser surface** each time. To avoid duplicate browser tabs on repeated `/claw-mo-up` calls, prefer `cmux browser navigate` if a browser surface already exists:
 
 ```bash
-URL="http://localhost:$PORT/GROUP_NAME"
+# If you know the browser surface ID from a previous open:
+cmux browser "$BROWSER_SURFACE_ID" navigate "$URL"
 ```
+
+For first-time setup, `cmux browser open-split` opens the browser alongside the terminal in a split pane — useful for side-by-side coding + docs viewing.
 
 ## Gotchas
 
@@ -131,4 +136,5 @@ URL="http://localhost:$PORT/GROUP_NAME"
 - **Group name = URL path**: Group names become URL segments (`/docs`, `/plans`). Keep them simple lowercase — no spaces or special chars.
 - **`--watch` and file arguments are mutually exclusive**: `mo --watch '*.md' README.md` fails. Use either `--watch` patterns or explicit file arguments, not both. Directory arguments are the exception — they work with `--watch`.
 - **mo auto-restores previous sessions**: When starting a new server, mo restores its backup (`$XDG_STATE_HOME/mo/backup/mo-<port>.json`) and merges with CLI-specified files. This means files from a previous manual `mo` invocation may reappear. Use `echo "y" | mo --clear -p $PORT` before starting if you need a clean slate.
-- **cmux also has `cmux markdown open <path>`**: For viewing a single markdown file in a dedicated cmux panel. mo is better for multi-file watching with groups.
+- **cmux `browser open` creates a new surface each time**: Repeated `/claw-mo-up` calls will stack browser tabs. Use `cmux browser navigate` to reuse an existing browser surface when possible.
+- **cmux also has `cmux markdown open <path>`**: Opens a single markdown file in a dedicated cmux panel. mo is better for multi-file watching with groups.
