@@ -41,8 +41,8 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "3.0.0",
-      "description": "Integrate OpenAI Codex CLI for code review, adversarial review, document verification, and deep-dive research with Claude's critical evaluation. GPT-5.4 optimized prompts, structured JSON output, optional stop review gate."
+      "version": "4.0.1",
+      "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Review, adversarial, rescue, verify, research."
     },
     {
       "name": "rubber-duck-tutor",
@@ -61,6 +61,14 @@
       "source": "./plugins/claw-mo",
       "version": "2.1.1",
       "description": "Manage mo markdown viewer sessions with group-based organization: auto-start, browser integration, per-project watch patterns, port isolation",
+      "category": "lab"
+    },
+    {
+      "name": "claw-mux",
+      "source": "./plugins/claw-mux",
+      "version": "1.0.0",
+      "description": "cmux terminal integration: topology control, browser automation, markdown viewer, notifications",
+      "tags": ["cmux", "terminal", "browser-automation"],
       "category": "lab"
     },
     {

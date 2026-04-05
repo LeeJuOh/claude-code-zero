@@ -1,20 +1,15 @@
 ---
 name: codex-verify
-description: "Verify a plan or document using Codex as an independent reviewer. Use when the user asks \"codex 검수\", \"검수해줘\", \"verify this plan\", \"codex double-check\", \"코덱스로 확인\", \"플랜 검수\", wants Codex to review a plan or spec document, or says \"확인해줘\" after writing a plan. Also triggered by hook suggestion after task completion."
-argument-hint: "path/to/document.md | resume PROMPT"
+description: "Verify a plan or document using Codex as independent reviewer with Claude's double-check for PASS/FAIL verdict. Use when the user asks \"codex 검수\", \"검수해줘\", \"verify this plan\", \"codex double-check\", \"플랜 검수\"."
+argument-hint: "path/to/document.md"
+allowed-tools: ["Bash", "Read", "Grep", "Glob", "Write"]
 ---
 
-# Codex Document Verification
+# Codex Document Verification + Double-Check
 
-Use Codex as an independent reviewer to verify plans, specs, and documents. This is the "second pair of eyes" pattern — Codex reviews the document, Claude evaluates Codex's findings, and produces a PASS/FAIL verdict.
+Use Codex as an independent reviewer to verify plans, specs, and documents. Codex reviews via the companion task subcommand, Claude evaluates, produces a PASS/FAIL verdict.
 
-For code review, use `/codex-review` instead.
-
-## Step 0: Setup & Preflight
-
-Read `${CLAUDE_PLUGIN_ROOT}/references/execution.md` — Setup, Directory Setup, and Preflight sections.
-
-Check `${CLAUDE_PLUGIN_DATA}/config.json` for saved settings. If missing, run first-time setup.
+For code review, use `/codex-review`. For research, use `/codex-research`.
 
 ## Step 1: Determine Input
 
@@ -22,19 +17,19 @@ Parse $ARGUMENTS:
 
 | Input | Action |
 |-------|--------|
-| Path to a file (`.md`, `.txt`, etc.) | Read file, verify as document |
-| `resume [PROMPT]` | Resume previous Codex session |
+| Path to a file | Read file content |
+| `resume [follow-up]` | Pass `--resume-last "[follow-up]"` to companion task |
 | (no args) | Ask user: "What document should I verify?" |
 
-## Step 2: Execute
+## Step 2: Build Verification Prompt
 
-### Document Verification
+Read `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md` for XML tag structure.
 
-Read the document content, then write a verification prompt using XML tag structure (see `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md`):
+Write the verification prompt to `${CLAUDE_PLUGIN_DATA}/tmp/codex-verify-prompt.txt`.
+
+Compose the prompt by assembling these XML blocks. Replace the placeholder with the actual document content.
 
 ```
-Write to ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt:
-
 <task>
 You are a brutally honest technical reviewer. Review the following document for material issues that would cause implementation failure.
 Focus areas:
@@ -43,7 +38,6 @@ Focus areas:
 - Overcomplexity (is there a simpler approach?)
 - Feasibility risks (what could go wrong?)
 - Missing dependencies or sequencing issues
-- Whether the implementation order avoids build breaks
 - Internal contradictions or ambiguous requirements
 </task>
 
@@ -58,39 +52,41 @@ Be direct. No compliments. Just the problems.
 <grounding_rules>
 Ground every finding in the document text.
 Do not speculate about issues not evidenced in the document.
-If a concern is an inference, label it clearly.
 </grounding_rules>
 
 <completeness_contract>
 Review the entire document before finalizing.
-Do not stop after finding the first issue.
 Check for interactions between sections that may create contradictions.
 </completeness_contract>
 
 <document>
-{{DOCUMENT_CONTENT}}
+[INSERT DOCUMENT CONTENT HERE]
 </document>
 ```
 
-```bash
-codex exec "$(cat ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt)" -m <MODEL> -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
-```
+Create directory if needed: `mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp`
 
-### Session Resume
+## Step 3: Execute via Companion Script
 
 ```bash
-codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
 ```
 
-## Step 3: Evaluate with Verdict
+If resolve fails: direct to `/codex-setup`.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/execution.md` — Peer AI Evaluation section.
+```bash
+node "$CODEX_COMPANION" task --prompt-file "${CLAUDE_PLUGIN_DATA}/tmp/codex-verify-prompt.txt"
+```
 
-Since Claude may have authored the document, be **extra honest** about Codex's findings. Don't dismiss valid catches just because you wrote the plan.
+Timeout: 300000ms (5 minutes). Job is tracked and visible in `/codex:status`.
 
-For each finding:
+## Step 4: Double-Check with Verdict
+
+Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md` — Peer AI Evaluation and Self-Bias Awareness.
+
+Since Claude may have authored the document, be **extra honest**. For each finding:
 - **Valid catch**: "Codex caught this. I missed it during planning."
-- **Already considered**: "I considered this — here's why the current approach is correct: [reason]"
+- **Already considered**: "I considered this — here's why: [reason]"
 - **False positive**: "This is a false positive because [evidence]"
 
 ### Produce Verdict
@@ -98,36 +94,32 @@ For each finding:
 ```markdown
 ## Verification Result: PASS / FAIL
 
-### Blocking Issues (P1 -- must fix before proceeding)
+### Blocking Issues (P1 — must fix before proceeding)
 - [issue]: [why it's blocking]
 
-### Recommendations (P2 -- non-blocking)
+### Recommendations (P2 — non-blocking)
 - [suggestion]: [why it would be better]
 
 ### False Positives
 - [finding]: [why it's not a real issue]
 
-### Cross-Model Notes
-- [planning intent vs Codex feedback]
+### Agreement: <High|Partial|Disagreement> (N/M findings)
 ```
 
-**FAIL** if any P1 (blocking) issue exists. **PASS** if only P2 or no issues.
+**FAIL** if any P1 issue exists. **PASS** if only P2 or none.
 
-## Step 4: Save & Clean Up
+## Step 5: Save & Clean Up
 
-Save to `${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>.md` using format from execution.md, with the verdict section. Create `${CLAUDE_PLUGIN_DATA}/reviews/` if it doesn't exist.
+Save to `${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>.md`.
 
 ```bash
-rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt ${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
+rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-verify-prompt.txt
 ```
-
-Inform user: "Resume this session with `/codex-verify resume [follow-up]`."
 
 ## Gotchas
 
-- **Claude has bias reviewing its own work.** Be extra honest. Don't rationalize away valid Codex findings.
-- **This skill is for documents only.** If the user wants code review, redirect to `/codex-review`.
-- **PASS doesn't mean perfect.** It means no blocking issues. Always note recommendations.
-- **Never `2>/dev/null`.** Capture stderr for error diagnosis.
-- **Timeout is not failure.** Exit 124/137 = timeout, not "no findings."
-- **Do not auto-fix after verification.** Present the verdict and wait for user to decide next steps. See No Auto-Fix Rule in execution.md.
+- **Claude has bias reviewing its own work.** Be extra honest.
+- **For code review, redirect to `/codex-review`.**
+- **PASS doesn't mean perfect.** Always note recommendations.
+- **Do not auto-fix.** Present verdict, wait for user.
+- **Resume supported.** User can `/codex-verify resume [follow-up]` — pass `--resume-last` to companion.

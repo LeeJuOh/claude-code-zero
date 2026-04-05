@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Restructure codex-advisor into a wrapper around the Official Codex plugin that adds Claude's independent double-check evaluation to every interaction. Review/adversarial/rescue invoke Official commands via Skill tool. Verify/research (Official에 없는 기능) use a dedicated agent for Codex execution. All skills focus purely on evaluation logic.
+**Goal:** Restructure codex-advisor into a wrapper around the Official Codex plugin that adds Claude's independent double-check evaluation to every interaction. All skills call the Official companion script (`codex-companion.mjs`) directly via Bash — review/adversarial use their dedicated subcommands, rescue/verify/research use the `task` subcommand. All skills focus purely on evaluation logic.
 
-**Architecture:** 6 skills + 1 agent + 1 shared evaluation reference. Review/adversarial/rescue skills invoke Official plugin commands (Skill tool), gaining broker/job/lifecycle for free. Verify/research skills use a `codex-exec` agent for `codex exec` calls. Every skill ends with Claude's double-check evaluation. Official plugin is a required dependency.
+**Architecture:** 6 skills + 1 shared evaluation reference + 1 companion resolver script. All skills locate the Official companion script at runtime via `resolve-companion.sh` and call it directly via Bash. Review/adversarial use `review`/`adversarial-review` subcommands. Rescue/verify/research use the `task` subcommand (with `--prompt-file` for verify/research). Every skill ends with Claude's double-check evaluation. Official plugin is a required dependency.
 
 **Tech Stack:** SKILL.md (Markdown), agents/*.md, evaluation.md (shared reference)
 
@@ -15,6 +15,19 @@
 ### Why Official Wrapper?
 
 Official Codex plugin (`codex@openai-codex`) handles job lifecycle, background execution, retry, and 3,200+ lines of Node.js infrastructure. Replicating this independently is fighting a losing battle. Wrapping it and adding evaluation on top is the right positioning.
+
+### Why Companion Script Direct Call (Not Skill Tool)?
+
+Official plugin commands (`review`, `adversarial-review`, `rescue`, `setup`) all set `disable-model-invocation: true`. Per official docs: *"Use `disable-model-invocation: true` to block programmatic invocation."* This means the Skill tool **cannot** invoke them — only the user can trigger them directly.
+
+Instead, all skills call the Official companion script (`codex-companion.mjs`) directly via Bash. The companion script resolves its own root via `import.meta.url` (line 65: `path.resolve(fileURLToPath(new URL("..", import.meta.url)))`), so it needs no `CLAUDE_PLUGIN_ROOT` override. codex-advisor discovers the script path at runtime with `find ~/.claude/plugins -path "*/codex/scripts/codex-companion.mjs"`.
+
+Benefits over Skill tool approach:
+- Bypasses `disable-model-invocation` restriction
+- No intermediate `AskUserQuestion` prompts from Official commands
+- Direct control over `--wait`/`--json` flags
+- Job tracking still works (companion manages jobs visible in `/codex:status`)
+- verify/research get resume capability via `task --resume-last`
 
 ### What v3 Features Are Intentionally Removed
 
@@ -33,8 +46,8 @@ Official Codex plugin (`codex@openai-codex`) handles job lifecycle, background e
 | No independent evaluation of findings | Adversarial double-check on every result (evaluation.md) |
 | No `--model` on review commands | `codex-setup` configures `config.toml` defaults (applies to all commands) |
 | No `--effort` on review commands | Same — `codex-setup` sets `model_reasoning_effort` in config.toml |
-| No document verification | `codex-verify` skill via codex-exec agent |
-| No deep-dive research | `codex-research` skill via codex-exec agent |
+| No document verification | `codex-verify` skill via companion `task --prompt-file` |
+| No deep-dive research | `codex-research` skill via companion `task --prompt-file` |
 
 ---
 
@@ -44,15 +57,15 @@ Official Codex plugin (`codex@openai-codex`) handles job lifecycle, background e
 plugins/codex-advisor/
 ├── .claude-plugin/plugin.json
 ├── README.md
-├── agents/
-│   └── codex-exec.md                  # NEW: Codex exec agent (verify/research)
+├── scripts/
+│   └── resolve-companion.sh           # NEW: discover Official companion script path
 ├── skills/
 │   ├── codex-setup/SKILL.md           # NEW: preflight + dependency check
-│   ├── codex-review/SKILL.md          # REWRITE: invoke /codex:review → evaluate
-│   ├── codex-adversarial/SKILL.md     # NEW: invoke /codex:adversarial-review → evaluate
-│   ├── codex-rescue/SKILL.md          # NEW: invoke /codex:rescue → evaluate
-│   ├── codex-verify/SKILL.md          # REWRITE: codex-exec agent → PASS/FAIL evaluate
-│   └─��� codex-research/SKILL.md        # REWRITE: codex-exec agent → synthesis evaluate
+│   ├── codex-review/SKILL.md          # REWRITE: companion review → evaluate
+│   ├── codex-adversarial/SKILL.md     # NEW: companion adversarial-review → evaluate
+│   ├── codex-rescue/SKILL.md          # NEW: companion task → evaluate
+│   ├── codex-verify/SKILL.md          # REWRITE: companion task → PASS/FAIL evaluate
+│   └── codex-research/SKILL.md        # REWRITE: companion task → synthesis evaluate
 ├── references/
 │   ├── evaluation.md                  # NEW: double-check methodology
 │   └── gpt-prompting.md              # KEEP: prompt patterns for verify/research
@@ -183,72 +196,48 @@ Peer evaluation, self-bias awareness, agreement level, cross-model comparison."
 
 ---
 
-## Task 2: Create codex-exec Agent
+## Task 2: Create resolve-companion.sh
 
 **Files:**
-- Create: `plugins/codex-advisor/agents/codex-exec.md`
+- Create: `plugins/codex-advisor/scripts/resolve-companion.sh`
 
-Dedicated agent for running `codex exec` with structured prompts. Used by verify and research skills (Official has no equivalent commands for these).
+Shared helper that discovers the Official Codex plugin's companion script path at runtime. All skills call this before invoking companion subcommands.
 
-- [ ] **Step 1: Create agents directory and write agent**
-
-```bash
-mkdir -p plugins/codex-advisor/agents
-```
-
-Write `plugins/codex-advisor/agents/codex-exec.md`:
-
-```markdown
----
-tools: ["Bash", "Read"]
-model: haiku
-maxTurns: 3
----
-
-# Codex Exec Agent
-
-Execute a `codex exec` command with a prompt file and return the raw output.
-
-## Instructions
-
-You are a thin execution wrapper. Your only job is to run `codex exec` with the provided prompt and return the output unchanged.
-
-1. Read the prompt file at the path provided in the task description
-2. Create stderr capture directory if needed:
+- [ ] **Step 1: Create scripts directory and write helper**
 
 ```bash
-mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp
+mkdir -p plugins/codex-advisor/scripts
 ```
 
-3. Execute:
+Write `plugins/codex-advisor/scripts/resolve-companion.sh`:
 
 ```bash
-codex exec "$(cat PROMPT_FILE_PATH)" -s read-only 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-exec-stderr.txt
+#!/usr/bin/env bash
+# Resolve the Official Codex plugin's companion script path.
+# Outputs the absolute path on success, error message on stderr + exit 1 on failure.
+set -euo pipefail
+
+CODEX_COMPANION=$(find ~/.claude/plugins -path "*/codex/scripts/codex-companion.mjs" 2>/dev/null | head -1)
+
+if [ -z "$CODEX_COMPANION" ]; then
+  echo "Official Codex plugin not found. Install: /plugin install codex@openai-codex" >&2
+  exit 1
+fi
+
+echo "$CODEX_COMPANION"
 ```
 
-Timeout: 300000ms (5 minutes).
-
-4. If the command succeeds, return stdout verbatim
-5. If the command fails, return the error:
-   - Read `${CLAUDE_PLUGIN_DATA}/tmp/codex-exec-stderr.txt` for error details
-   - Report exit code and stderr content
-6. Clean up: `rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-exec-stderr.txt`
-
-## Rules
-
-- Do NOT interpret, summarize, or evaluate the output
-- Do NOT modify the prompt
-- Do NOT read any repository files beyond the prompt file
-- Return the raw Codex output exactly as received
+```bash
+chmod +x plugins/codex-advisor/scripts/resolve-companion.sh
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
-git add plugins/codex-advisor/agents/codex-exec.md
-git commit -m "feat(codex-advisor): add codex-exec agent
+git add plugins/codex-advisor/scripts/resolve-companion.sh
+git commit -m "feat(codex-advisor): add resolve-companion.sh
 
-Thin wrapper for codex exec calls, used by verify and research skills."
+Discovers Official Codex companion script path at runtime for all skills."
 ```
 
 ---
@@ -305,10 +294,19 @@ If auth error: "Authentication required. Run: `codex login`"
 
 ### Check Official Codex Plugin
 
-Try invoking `codex:setup` via the Skill tool. If it fails with "unknown skill":
-"Official Codex plugin required. Install: `/plugin install codex@openai-codex` then `/reload-plugins`"
+```bash
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+```
 
-If it succeeds, include its output in the status report.
+If exit code non-zero: show the error message ("Official Codex plugin not found. Install: `/plugin install codex@openai-codex` then `/reload-plugins`")
+
+If found, run setup check:
+
+```bash
+node "$CODEX_COMPANION" setup --json
+```
+
+Include the setup output in the status report.
 
 ## Configuration Management
 
@@ -391,7 +389,7 @@ Preflight check + config.toml configuration helper for model and effort."
 **Files:**
 - Create: `plugins/codex-advisor/skills/codex-review/SKILL.md`
 
-Invokes Official `/codex:review` via Skill tool, then applies evaluation.
+Calls companion `review` subcommand, then applies evaluation.
 
 - [ ] **Step 1: Write SKILL.md**
 
@@ -405,25 +403,30 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob"]
 
 # Codex Code Review + Double-Check
 
-Invoke the Official Codex plugin's review, then apply Claude's independent evaluation to every finding.
+Invoke the Official Codex companion's review, then apply Claude's independent evaluation to every finding.
 
-## Step 1: Execute via Official Plugin
+## Step 1: Execute via Companion Script
 
-Use the Skill tool to invoke `codex:review` with the user's arguments:
-
-```
-Skill: codex:review
-Args: $ARGUMENTS
+```bash
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
 ```
 
-If $ARGUMENTS is empty, pass no args — Official auto-detects scope (uncommitted or branch).
+If resolve fails: direct to `/codex-setup`.
 
-### If Skill tool fails:
+```bash
+node "$CODEX_COMPANION" review --wait $ARGUMENTS
+```
+
+If $ARGUMENTS is empty, pass no args — companion auto-detects scope (uncommitted or branch).
+
+Timeout: 300000ms (5 minutes).
+
+### If command fails:
 
 | Error | Action |
 |-------|--------|
-| "unknown skill" or "not found" | Official plugin not installed → direct to `/codex-setup` |
-| Codex CLI error (auth, timeout) | Show error details → suggest `/codex-setup --status` |
+| resolve-companion.sh exits 1 | Official plugin not installed → direct to `/codex-setup` |
+| "not authenticated" in stderr | Auth required → suggest `codex login` |
 | Other error | Show raw error, don't retry silently |
 
 ## Step 2: Double-Check
@@ -451,7 +454,8 @@ Save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>.md` using format
 
 - **Do not auto-fix.** Present findings, wait for user.
 - **Preserve Codex output verbatim.** Evaluation comes after.
-- **Official handles scope detection, background, retry.** Our job is evaluation only.
+- **Companion handles scope detection, job tracking, retry.** Our job is evaluation only.
+- **Always pass `--wait`.** Without it, companion prompts for foreground/background selection via AskUserQuestion, which disrupts our flow.
 ```
 
 - [ ] **Step 2: Commit**
@@ -460,7 +464,7 @@ Save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>.md` using format
 git add plugins/codex-advisor/skills/codex-review/SKILL.md
 git commit -m "feat(codex-advisor): add codex-review skill wrapping Official
 
-Invokes /codex:review via Skill tool, adds double-check evaluation."
+Calls companion script directly, adds double-check evaluation."
 ```
 
 ---
@@ -482,23 +486,28 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob"]
 
 # Codex Adversarial Review + Double-Check
 
-Invoke the Official Codex plugin's adversarial review, then apply Claude's critical evaluation. Adversarial review defaults to skepticism — it looks for reasons NOT to ship.
+Invoke the Official Codex companion's adversarial review, then apply Claude's critical evaluation. Adversarial review defaults to skepticism — it looks for reasons NOT to ship.
 
-## Step 1: Execute via Official Plugin
+## Step 1: Execute via Companion Script
 
-Use the Skill tool to invoke `codex:adversarial-review` with the user's arguments:
-
-```
-Skill: codex:adversarial-review
-Args: $ARGUMENTS
+```bash
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
 ```
 
-### If Skill tool fails:
+If resolve fails: direct to `/codex-setup`.
+
+```bash
+node "$CODEX_COMPANION" adversarial-review --wait $ARGUMENTS
+```
+
+Timeout: 300000ms (5 minutes).
+
+### If command fails:
 
 | Error | Action |
 |-------|--------|
-| "unknown skill" or "not found" | Official plugin not installed → direct to `/codex-setup` |
-| Codex CLI error (auth, timeout) | Show error details → suggest `/codex-setup --status` |
+| resolve-companion.sh exits 1 | Official plugin not installed → direct to `/codex-setup` |
+| "not authenticated" in stderr | Auth required → suggest `codex login` |
 | Other error | Show raw error, don't retry silently |
 
 ## Step 2: Double-Check
@@ -538,7 +547,7 @@ Save to `${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>.md`.
 git add plugins/codex-advisor/skills/codex-adversarial/SKILL.md
 git commit -m "feat(codex-advisor): add codex-adversarial skill wrapping Official
 
-Invokes /codex:adversarial-review, adds skeptical double-check evaluation."
+Calls companion adversarial-review directly, adds skeptical double-check evaluation."
 ```
 
 ---
@@ -560,7 +569,7 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob"]
 
 # Codex Task Delegation + Double-Check
 
-Hand off a task to Codex via the Official plugin's rescue command. When Codex finishes, Claude reviews what was done.
+Hand off a task to Codex via the Official companion's task subcommand. When Codex finishes, Claude reviews what was done.
 
 ## Step 1: Snapshot Before
 
@@ -571,23 +580,30 @@ git diff --stat
 git stash list | head -1
 ```
 
-## Step 2: Execute via Official Plugin
+## Step 2: Execute via Companion Script
 
-Use the Skill tool to invoke `codex:rescue` with the user's arguments:
-
-```
-Skill: codex:rescue
-Args: $ARGUMENTS
+```bash
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
 ```
 
-Pass through flags that Official supports: `--background`, `--write`, `--model`, `--effort`, `--resume`, `--resume-last`.
+If resolve fails: direct to `/codex-setup`.
 
-### If Skill tool fails:
+```bash
+node "$CODEX_COMPANION" task --write $ARGUMENTS
+```
+
+Pass through flags that companion supports: `--background`, `--write`, `--model`, `--effort`, `--resume-last`, `--fresh`.
+
+Default to `--write` (Codex needs write access to implement fixes). If user explicitly asks for read-only investigation, omit `--write`.
+
+Timeout: 300000ms (5 minutes) for foreground. Background tasks are tracked via `/codex:status`.
+
+### If command fails:
 
 | Error | Action |
 |-------|--------|
-| "unknown skill" or "not found" | Official plugin not installed → direct to `/codex-setup` |
-| Codex CLI error (auth, timeout) | Show error details → suggest `/codex-setup --status` |
+| resolve-companion.sh exits 1 | Official plugin not installed → direct to `/codex-setup` |
+| "not authenticated" in stderr | Auth required → suggest `codex login` |
 | Other error | Show raw error, don't retry silently |
 
 ## Step 3: Double-Check
@@ -646,17 +662,17 @@ Save to `${CLAUDE_PLUGIN_DATA}/reviews/rescue-<YYYYMMDD-HHMMSS>.md`.
 git add plugins/codex-advisor/skills/codex-rescue/SKILL.md
 git commit -m "feat(codex-advisor): add codex-rescue skill wrapping Official
 
-Invokes /codex:rescue, adds implementation review double-check."
+Calls companion task directly, adds implementation review double-check."
 ```
 
 ---
 
-## Task 7: Rewrite codex-verify Skill (Agent-based)
+## Task 7: Rewrite codex-verify Skill (Companion-based)
 
 **Files:**
 - Create: `plugins/codex-advisor/skills/codex-verify/SKILL.md`
 
-Uses `codex-exec` agent for execution (Official has no verify command).
+Uses companion `task --prompt-file` for execution (Official has no verify command).
 
 - [ ] **Step 1: Write SKILL.md**
 
@@ -665,12 +681,12 @@ Uses `codex-exec` agent for execution (Official has no verify command).
 name: codex-verify
 description: "Verify a plan or document using Codex as independent reviewer with Claude's double-check for PASS/FAIL verdict. Use when the user asks \"codex 검수\", \"검수해줘\", \"verify this plan\", \"codex double-check\", \"플랜 검수\"."
 argument-hint: "path/to/document.md"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "Write", "Agent"]
+allowed-tools: ["Bash", "Read", "Grep", "Glob", "Write"]
 ---
 
 # Codex Document Verification + Double-Check
 
-Use Codex as an independent reviewer to verify plans, specs, and documents. Codex reviews via the codex-exec agent, Claude evaluates, produces a PASS/FAIL verdict.
+Use Codex as an independent reviewer to verify plans, specs, and documents. Codex reviews via the companion task subcommand, Claude evaluates, produces a PASS/FAIL verdict.
 
 For code review, use `/codex-review`. For research, use `/codex-research`.
 
@@ -681,6 +697,7 @@ Parse $ARGUMENTS:
 | Input | Action |
 |-------|--------|
 | Path to a file | Read file content |
+| `resume [follow-up]` | Pass `--resume-last "[follow-up]"` to companion task |
 | (no args) | Ask user: "What document should I verify?" |
 
 ## Step 2: Build Verification Prompt
@@ -726,14 +743,19 @@ Check for interactions between sections that may create contradictions.
 
 Create directory if needed: `mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp`
 
-## Step 3: Execute via Agent
+## Step 3: Execute via Companion Script
 
-Dispatch the `codex-exec` agent with the prompt file path:
+```bash
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+```
 
+If resolve fails: direct to `/codex-setup`.
+
+```bash
+node "$CODEX_COMPANION" task --prompt-file "${CLAUDE_PLUGIN_DATA}/tmp/codex-verify-prompt.txt"
 ```
-Agent: codex-advisor:codex-exec
-Prompt: "Execute codex exec with prompt at ${CLAUDE_PLUGIN_DATA}/tmp/codex-verify-prompt.txt"
-```
+
+Timeout: 300000ms (5 minutes). Job is tracked and visible in `/codex:status`.
 
 ## Step 4: Double-Check with Verdict
 
@@ -777,20 +799,21 @@ rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-verify-prompt.txt
 - **For code review, redirect to `/codex-review`.**
 - **PASS doesn't mean perfect.** Always note recommendations.
 - **Do not auto-fix.** Present verdict, wait for user.
+- **Resume supported.** User can `/codex-verify resume [follow-up]` — pass `--resume-last` to companion.
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add plugins/codex-advisor/skills/codex-verify/SKILL.md
-git commit -m "feat(codex-advisor): rewrite codex-verify with agent-based execution
+git commit -m "feat(codex-advisor): rewrite codex-verify with companion task execution
 
-Uses codex-exec agent, adds agreement level, simplified structure."
+Uses companion task --prompt-file, adds agreement level and resume support."
 ```
 
 ---
 
-## Task 8: Rewrite codex-research Skill (Agent-based)
+## Task 8: Rewrite codex-research Skill (Companion-based)
 
 **Files:**
 - Create: `plugins/codex-advisor/skills/codex-research/SKILL.md`
@@ -802,12 +825,12 @@ Uses codex-exec agent, adds agreement level, simplified structure."
 name: codex-research
 description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when the user asks \"codex research\", \"codex 리서치\", \"codex 분석\", \"코덱스로 조사\", \"딥다이브\", \"이슈 분석해줘\". NOT for code review or plan verification."
 argument-hint: "topic or question | path/to/document.md"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "Write", "Agent"]
+allowed-tools: ["Bash", "Read", "Grep", "Glob", "Write"]
 ---
 
 # Codex Research + Cross-Model Synthesis
 
-Use Codex for deep-dive research via the codex-exec agent. Claude evaluates, verifies claims, fills gaps, and synthesizes a combined analysis.
+Use Codex for deep-dive research via the companion task subcommand. Claude evaluates, verifies claims, fills gaps, and synthesizes a combined analysis.
 
 ## Step 1: Determine Research Task
 
@@ -817,6 +840,7 @@ Parse $ARGUMENTS:
 |-------|--------|
 | A question or topic | Research directly |
 | Path to a file | Read file, use as context |
+| `resume [follow-up]` | Pass `--resume-last "[follow-up]"` to companion task |
 | (no args) | Ask user: "What should I research?" |
 
 ## Step 2: Build Research Prompt
@@ -867,14 +891,19 @@ Ground claims in evidence. Label hypotheses clearly.
 
 Create directory if needed: `mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp`
 
-## Step 3: Execute via Agent
+## Step 3: Execute via Companion Script
 
-Dispatch the `codex-exec` agent:
+```bash
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+```
 
+If resolve fails: direct to `/codex-setup`.
+
+```bash
+node "$CODEX_COMPANION" task --prompt-file "${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt"
 ```
-Agent: codex-advisor:codex-exec
-Prompt: "Execute codex exec with prompt at ${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt"
-```
+
+Timeout: 300000ms (5 minutes). Job is tracked and visible in `/codex:status`.
 
 ## Step 4: Double-Check & Synthesize
 
@@ -922,15 +951,16 @@ rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt
 - **Codex can hallucinate sources and facts.** Verify specific claims.
 - **Value is in synthesis.** If Claude reaches same conclusion alone, Codex added nothing.
 - **Do not auto-fix.** Present findings, wait for user.
+- **Resume supported.** User can `/codex-research resume [follow-up]` — pass `--resume-last` to companion.
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add plugins/codex-advisor/skills/codex-research/SKILL.md
-git commit -m "feat(codex-advisor): rewrite codex-research with agent-based execution
+git commit -m "feat(codex-advisor): rewrite codex-research with companion task execution
 
-Uses codex-exec agent, adds agreement level, focused on synthesis."
+Uses companion task --prompt-file, adds agreement level and resume support."
 ```
 
 ---
@@ -944,16 +974,16 @@ Uses codex-exec agent, adds agreement level, focused on synthesis."
 - Delete: `plugins/codex-advisor/references/review-output-schema.json`
 - Delete: `plugins/codex-advisor/references/stop-review-gate-prompt.md`
 
-Note: Old skill SKILL.md files (codex-review, codex-verify, codex-research) have already been overwritten by Tasks 4, 7, 8.
+Note: Old skill SKILL.md files (codex-review, codex-verify, codex-research) have already been overwritten by Tasks 4, 7, 8. Old `agents/` directory doesn't exist (v3 had no agents).
 
-- [ ] **Step 1: Delete files**
+- [ ] **Step 1: Delete files via git rm**
 
 ```bash
-rm -rf plugins/codex-advisor/hooks
-rm -f plugins/codex-advisor/references/execution.md
-rm -f plugins/codex-advisor/references/adversarial-prompt.md
-rm -f plugins/codex-advisor/references/review-output-schema.json
-rm -f plugins/codex-advisor/references/stop-review-gate-prompt.md
+git rm -r plugins/codex-advisor/hooks
+git rm plugins/codex-advisor/references/execution.md
+git rm plugins/codex-advisor/references/adversarial-prompt.md
+git rm plugins/codex-advisor/references/review-output-schema.json
+git rm plugins/codex-advisor/references/stop-review-gate-prompt.md
 ```
 
 - [ ] **Step 2: Verify deleted**
@@ -966,7 +996,6 @@ ls plugins/codex-advisor/references/       # Should: only evaluation.md, gpt-pro
 - [ ] **Step 3: Commit**
 
 ```bash
-git add plugins/codex-advisor/hooks/hooks.json plugins/codex-advisor/hooks/post-commit.sh plugins/codex-advisor/hooks/stop-review-gate.sh plugins/codex-advisor/hooks/task-completed.sh plugins/codex-advisor/references/execution.md plugins/codex-advisor/references/adversarial-prompt.md plugins/codex-advisor/references/review-output-schema.json plugins/codex-advisor/references/stop-review-gate-prompt.md
 git commit -m "refactor(codex-advisor): delete old v3 infrastructure
 
 Remove hooks, shell scripts, and obsolete references.
@@ -1067,15 +1096,15 @@ codex-advisor wraps the Official Codex plugin — same review, adversarial, and 
 ## How It Works
 
 ```
-You → codex-advisor skill → Official plugin executes → Codex result
-                                                          ↓
-                                              Claude double-check
-                                                          ↓
-                                              Evaluated result → You
+You → codex-advisor skill → companion script (codex-companion.mjs) → Codex result
+                                                                        ↓
+                                                            Claude double-check
+                                                                        ↓
+                                                            Evaluated result → You
 ```
 
-- **review, adversarial, rescue**: invoke Official plugin commands, then evaluate
-- **verify, research**: run `codex exec` via dedicated agent (Official doesn't have these), then evaluate
+- **review, adversarial**: call companion `review`/`adversarial-review` subcommand, then evaluate
+- **rescue, verify, research**: call companion `task` subcommand, then evaluate
 
 ## Prerequisites
 
@@ -1084,7 +1113,7 @@ You → codex-advisor skill → Official plugin executes → Codex result
 
 ## Breaking Changes from v3
 
-- **Official Codex plugin is now required.** v3 called `codex` CLI directly; v4 wraps Official plugin commands.
+- **Official Codex plugin is now required.** v3 called `codex` CLI directly; v4 calls the Official companion script (`codex-companion.mjs`) directly for job lifecycle, tracking, and resume.
 - **Hooks removed.** Post-commit review suggestion, task-completed verification, stop-review-gate — all removed. Official plugin provides its own review gate (`/codex:setup --enable-review-gate`).
 - **Config system changed.** v3 used `${CLAUDE_PLUGIN_DATA}/config.json`; v4 manages `~/.codex/config.toml` via `/codex-setup`.
 - **New commands.** `/codex-adversarial` and `/codex-rescue` are new. v3's adversarial mode was part of `/codex-review`.
@@ -1121,9 +1150,9 @@ Expected:
 ```
 plugins/codex-advisor/.claude-plugin/plugin.json
 plugins/codex-advisor/README.md
-plugins/codex-advisor/agents/codex-exec.md
 plugins/codex-advisor/references/evaluation.md
 plugins/codex-advisor/references/gpt-prompting.md
+plugins/codex-advisor/scripts/resolve-companion.sh
 plugins/codex-advisor/skills/codex-adversarial/SKILL.md
 plugins/codex-advisor/skills/codex-rescue/SKILL.md
 plugins/codex-advisor/skills/codex-research/SKILL.md
