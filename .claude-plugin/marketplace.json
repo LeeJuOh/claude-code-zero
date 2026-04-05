@@ -41,8 +41,8 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "3.0.0",
-      "description": "Integrate OpenAI Codex CLI for code review, adversarial review, document verification, and deep-dive research with Claude's critical evaluation. GPT-5.4 optimized prompts, structured JSON output, optional stop review gate."
+      "version": "4.0.0",
+      "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Review, adversarial, rescue, verify, research."
     },
     {
       "name": "rubber-duck-tutor",
