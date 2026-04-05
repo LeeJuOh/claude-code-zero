@@ -17,7 +17,7 @@ plugins/<plugin-name>/            # Local plugin source code (git-committed)
 references/                       # External reference materials (git-ignored)
 docs/                             # Knowledge base — see docs/INDEX.md
 data/                             # Session and operational data
-assets/                           # Marketplace assets (badges, images)
+video/                            # Demo videos and media assets
 ```
 
 ## Reference Materials
@@ -127,6 +127,8 @@ unset CLAUDECODE && claude plugin validate .
 **Research double-check**: Always verify web search / LLM research results against actual code and READMEs in `references/` before writing into spec or design documents. Research outputs can fabricate product features entirely (confirmed: HarnessKit features were completely mischaracterized).
 
 **Skill allowed-tools**: Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does not. `$()` command substitution triggers a separate security prompt regardless of allowed-tools. Skills inherit parent `settings.json` permissions: `permissions.allow` is additive, `permissions.deny` overrides skill `allowed-tools` (deny > allow).
+
+**Plugin independence**: A plugin must never assume another plugin is installed. Don't route users to a specific plugin by name (e.g., "use claw-mo instead") — say "these features are unavailable outside this environment" and let the user's own setup handle it. Each plugin is an independent unit; cross-plugin dependencies create silent failures when one is uninstalled.
 
 ## Coding Style
 
