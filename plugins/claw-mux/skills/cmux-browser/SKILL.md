@@ -94,18 +94,18 @@ If `get url` is empty or `about:blank`, navigate first instead of waiting on loa
 
 | Reference | When to Use |
 |-----------|-------------|
-| [$SKILL_DIR/references/commands.md]($SKILL_DIR/references/commands.md) | Full browser command mapping and quick syntax |
-| [$SKILL_DIR/references/snapshot-refs.md]($SKILL_DIR/references/snapshot-refs.md) | Ref lifecycle and stale-ref troubleshooting |
-| [$SKILL_DIR/references/authentication.md]($SKILL_DIR/references/authentication.md) | Login/OAuth/2FA patterns and state save/load |
-| [$SKILL_DIR/references/session-management.md]($SKILL_DIR/references/session-management.md) | Multi-surface isolation and state persistence patterns |
+| [Commands]($SKILL_DIR/references/commands.md) | Full browser command mapping and quick syntax |
+| [Snapshot and Refs]($SKILL_DIR/references/snapshot-refs.md) | Ref lifecycle and stale-ref troubleshooting |
+| [Authentication]($SKILL_DIR/references/authentication.md) | Login/OAuth/2FA patterns and state save/load |
+| [Session Management]($SKILL_DIR/references/session-management.md) | Multi-surface isolation and state persistence patterns |
 
 ## Ready-to-Use Templates
 
 | Template | Description |
 |----------|-------------|
-| [$SKILL_DIR/templates/form-automation.sh]($SKILL_DIR/templates/form-automation.sh) | Snapshot/ref form fill loop |
-| [$SKILL_DIR/templates/authenticated-session.sh]($SKILL_DIR/templates/authenticated-session.sh) | Login once, save/load state |
-| [$SKILL_DIR/templates/capture-workflow.sh]($SKILL_DIR/templates/capture-workflow.sh) | Navigate + capture snapshots/screenshots |
+| [Form Automation]($SKILL_DIR/templates/form-automation.sh) | Snapshot/ref form fill loop |
+| [Authenticated Session]($SKILL_DIR/templates/authenticated-session.sh) | Login once, save/load state |
+| [Capture Workflow]($SKILL_DIR/templates/capture-workflow.sh) | Navigate + capture snapshots/screenshots |
 
 ## Limits (WKWebView)
 

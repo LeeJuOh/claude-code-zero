@@ -88,7 +88,7 @@ cmux log --level error "Test suite failed"
 - **In cmux**: Use `cmux new-split` for panes, `cmux notify` for notifications, `cmux set-progress` for progress.
 - **Outside cmux**: These features are unavailable. Use standard terminal workflows.
 - **Browser automation in cmux**: Use the `cmux-browser` skill for embedded webview automation.
-- **Markdown viewing in cmux**: Use `cmux markdown open` (see Fast Start above) or invoke `/cmux-markdown` for detailed reference.
+- **Markdown viewing in cmux**: Invoke `/cmux-markdown` for the full command reference, or use `cmux markdown open <path>` directly.
 - **With `cmux claude-teams`**: Teams uses its own tmux-shim layer for topology — do not mix direct `cmux` topology commands with Teams orchestration.
 
 ## Gotchas
@@ -103,8 +103,8 @@ cmux log --level error "Test suite failed"
 
 | Reference | When to Use |
 |-----------|-------------|
-| [$SKILL_DIR/references/handles-and-identify.md]($SKILL_DIR/references/handles-and-identify.md) | Handle syntax, self-identify, caller targeting |
-| [$SKILL_DIR/references/windows-workspaces.md]($SKILL_DIR/references/windows-workspaces.md) | Window/workspace lifecycle and reorder/move |
-| [$SKILL_DIR/references/panes-surfaces.md]($SKILL_DIR/references/panes-surfaces.md) | Splits, surfaces, move/reorder, focus routing |
-| [$SKILL_DIR/references/trigger-flash-and-health.md]($SKILL_DIR/references/trigger-flash-and-health.md) | Visual flash confirmation and surface health checks |
-| [$SKILL_DIR/references/notifications.md]($SKILL_DIR/references/notifications.md) | Notification CLI, sidebar metadata API, hook patterns |
+| [Handles and Identify]($SKILL_DIR/references/handles-and-identify.md) | Handle syntax, self-identify, caller targeting |
+| [Windows and Workspaces]($SKILL_DIR/references/windows-workspaces.md) | Window/workspace lifecycle and reorder/move |
+| [Panes and Surfaces]($SKILL_DIR/references/panes-surfaces.md) | Splits, surfaces, move/reorder, focus routing |
+| [Trigger Flash and Health]($SKILL_DIR/references/trigger-flash-and-health.md) | Visual flash confirmation and surface health checks |
+| [Notifications]($SKILL_DIR/references/notifications.md) | Notification CLI, sidebar metadata API, hook patterns |

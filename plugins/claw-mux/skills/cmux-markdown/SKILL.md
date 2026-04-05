@@ -92,8 +92,8 @@ cmux markdown open plan.md --window window:1
 
 | Reference | When to Use |
 |-----------|-------------|
-| [$SKILL_DIR/references/commands.md]($SKILL_DIR/references/commands.md) | Full command syntax and options |
-| [$SKILL_DIR/references/live-reload.md]($SKILL_DIR/references/live-reload.md) | File watching behavior, atomic writes, edge cases |
+| [Commands]($SKILL_DIR/references/commands.md) | Full command syntax and options |
+| [Live Reload]($SKILL_DIR/references/live-reload.md) | File watching behavior, atomic writes, edge cases |
 
 ## Rendering Support
 

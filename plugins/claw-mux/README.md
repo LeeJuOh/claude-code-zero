@@ -12,7 +12,7 @@ With claw-mux installed, Claude Code will:
 - Display plans and documentation in a live-reloading markdown panel
 - Report progress via sidebar status pills, progress bars, and notifications
 
-Outside cmux, existing tools (claude-in-chrome, claw-mo) continue working as before.
+Outside cmux, these features are unavailable — existing browser and markdown tools in your environment continue working as before.
 
 ## Quick Start
 
