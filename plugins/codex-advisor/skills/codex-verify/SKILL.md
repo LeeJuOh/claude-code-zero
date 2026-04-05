@@ -11,7 +11,17 @@ Use Codex as an independent reviewer to verify plans, specs, and documents. Code
 
 For code review, use `/codex-review`. For research, use `/codex-research`.
 
-## Step 1: Determine Input
+## Step 1: Pre-flight — Companion Check
+
+Before any file reading or prompt building, verify companion availability:
+
+```bash
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+```
+
+If resolve fails: direct to `/codex-setup` immediately. Do NOT proceed to read files or build prompts — that work is wasted without the companion. Do NOT fall back to a Claude-only solo review. The whole point of this skill is cross-model verification.
+
+## Step 2: Determine Input
 
 Parse $ARGUMENTS:
 
@@ -21,7 +31,7 @@ Parse $ARGUMENTS:
 | `resume [follow-up]` | Pass `--resume-last "[follow-up]"` to companion task |
 | (no args) | Ask user: "What document should I verify?" |
 
-## Step 2: Build Verification Prompt
+## Step 3: Build Verification Prompt
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md` for XML tag structure.
 
@@ -66,13 +76,9 @@ Check for interactions between sections that may create contradictions.
 
 Create directory if needed: `mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp`
 
-## Step 3: Execute via Companion Script
+## Step 4: Execute via Companion Script
 
-```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
-```
-
-If resolve fails: direct to `/codex-setup`.
+Use the `$CODEX_COMPANION` resolved in Step 1:
 
 ```bash
 node "$CODEX_COMPANION" task --prompt-file "${CLAUDE_PLUGIN_DATA}/tmp/codex-verify-prompt.txt"
@@ -80,7 +86,7 @@ node "$CODEX_COMPANION" task --prompt-file "${CLAUDE_PLUGIN_DATA}/tmp/codex-veri
 
 Timeout: 300000ms (5 minutes). Job is tracked and visible in `/codex:status`.
 
-## Step 4: Double-Check with Verdict
+## Step 5: Double-Check with Verdict
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md` — Peer AI Evaluation and Self-Bias Awareness.
 
@@ -108,7 +114,7 @@ Since Claude may have authored the document, be **extra honest**. For each findi
 
 **FAIL** if any P1 issue exists. **PASS** if only P2 or none.
 
-## Step 5: Save & Clean Up
+## Step 6: Save & Clean Up
 
 Save to `${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>.md`.
 

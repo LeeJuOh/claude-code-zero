@@ -9,7 +9,15 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob"]
 
 Hand off a task to Codex via the Official companion's task subcommand. When Codex finishes, Claude reviews what was done.
 
-## Step 1: Snapshot Before
+## Step 1: Pre-flight — Companion Check
+
+```bash
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+```
+
+If resolve fails: direct to `/codex-setup` immediately. Do NOT proceed.
+
+## Step 2: Snapshot Before
 
 Record current state so we can diff after Codex runs:
 
@@ -18,13 +26,9 @@ git diff --stat
 git stash list | head -1
 ```
 
-## Step 2: Execute via Companion Script
+## Step 3: Execute via Companion Script
 
-```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
-```
-
-If resolve fails: direct to `/codex-setup`.
+Use the `$CODEX_COMPANION` resolved in Step 1:
 
 ```bash
 node "$CODEX_COMPANION" task --write $ARGUMENTS
@@ -40,11 +44,10 @@ Timeout: 300000ms (5 minutes) for foreground. Background tasks are tracked via `
 
 | Error | Action |
 |-------|--------|
-| resolve-companion.sh exits 1 | Official plugin not installed → direct to `/codex-setup` |
 | "not authenticated" in stderr | Auth required → suggest `codex login` |
 | Other error | Show raw error, don't retry silently |
 
-## Step 3: Double-Check
+## Step 4: Double-Check
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
 
@@ -83,7 +86,7 @@ git diff --stat
 
 Apply standard Peer AI Evaluation from evaluation.md.
 
-## Step 4: Save
+## Step 5: Save
 
 ```bash
 mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"

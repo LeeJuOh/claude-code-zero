@@ -9,13 +9,17 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob"]
 
 Invoke the Official Codex companion's adversarial review, then apply Claude's critical evaluation. Adversarial review defaults to skepticism — it looks for reasons NOT to ship.
 
-## Step 1: Execute via Companion Script
+## Step 1: Pre-flight — Companion Check
 
 ```bash
 CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
 ```
 
-If resolve fails: direct to `/codex-setup`.
+If resolve fails: direct to `/codex-setup` immediately. Do NOT fall back to a Claude-only solo review.
+
+## Step 2: Execute via Companion Script
+
+Use the `$CODEX_COMPANION` resolved in Step 1:
 
 ```bash
 node "$CODEX_COMPANION" adversarial-review --wait $ARGUMENTS
@@ -27,11 +31,10 @@ Timeout: 300000ms (5 minutes).
 
 | Error | Action |
 |-------|--------|
-| resolve-companion.sh exits 1 | Official plugin not installed → direct to `/codex-setup` |
 | "not authenticated" in stderr | Auth required → suggest `codex login` |
 | Other error | Show raw error, don't retry silently |
 
-## Step 2: Double-Check
+## Step 3: Double-Check
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
 
@@ -43,7 +46,7 @@ Adversarial findings are intentionally skeptical. For each finding:
 
 Be especially rigorous here. Adversarial review produces more false positives by design.
 
-## Step 3: Report
+## Step 4: Report
 
 Present to user:
 1. Codex adversarial findings (verbatim)
@@ -51,7 +54,7 @@ Present to user:
 3. Agreement level
 4. Findings that are genuine concerns vs noise
 
-## Step 4: Save
+## Step 5: Save
 
 ```bash
 mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
