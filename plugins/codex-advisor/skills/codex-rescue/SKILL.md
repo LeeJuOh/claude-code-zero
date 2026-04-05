@@ -85,6 +85,10 @@ Apply standard Peer AI Evaluation from evaluation.md.
 
 ## Step 4: Save
 
+```bash
+mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
+```
+
 Save to `${CLAUDE_PLUGIN_DATA}/reviews/rescue-<YYYYMMDD-HHMMSS>.md`.
 
 ## Gotchas

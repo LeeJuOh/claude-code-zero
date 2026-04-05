@@ -40,15 +40,21 @@ codex-advisor wraps the Official Codex plugin — same review, adversarial, and 
 ## How It Works
 
 ```
-You → codex-advisor skill → companion script (codex-companion.mjs) → Codex result
-                                                                        ↓
-                                                            Claude double-check
-                                                                        ↓
-                                                            Evaluated result → You
+You ── /codex-review ──→ resolve-companion.sh ──→ codex-companion.mjs review --wait
+                                                          │
+                                                    Codex result (verbatim)
+                                                          │
+                                                  Claude double-check
+                                                   (Agree / Dispute / Nuance)
+                                                          │
+                                                  Evaluated result ──→ You
 ```
 
-- **review, adversarial**: call companion `review`/`adversarial-review` subcommand, then evaluate
-- **rescue, verify, research**: call companion `task` subcommand, then evaluate
+| Skill | Companion subcommand | Codex interaction |
+|-------|---------------------|-------------------|
+| review, adversarial | `review` / `adversarial-review` | Code diff analysis |
+| rescue | `task --write` | Implementation + code changes |
+| verify, research | `task --prompt-file` | Document/topic analysis |
 
 ## Prerequisites
 

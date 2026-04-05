@@ -52,6 +52,10 @@ Present to user:
 
 ## Step 4: Save
 
+```bash
+mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
+```
+
 Save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>.md` using format from evaluation.md.
 
 ## Gotchas

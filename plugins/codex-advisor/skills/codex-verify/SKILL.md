@@ -25,7 +25,9 @@ Parse $ARGUMENTS:
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md` for XML tag structure.
 
-Write the verification prompt to `${CLAUDE_PLUGIN_DATA}/tmp/codex-verify-prompt.txt`:
+Write the verification prompt to `${CLAUDE_PLUGIN_DATA}/tmp/codex-verify-prompt.txt`.
+
+Compose the prompt by assembling these XML blocks. Replace the placeholder with the actual document content.
 
 ```
 <task>
@@ -58,7 +60,7 @@ Check for interactions between sections that may create contradictions.
 </completeness_contract>
 
 <document>
-{{DOCUMENT_CONTENT}}
+[INSERT DOCUMENT CONTENT HERE]
 </document>
 ```
 

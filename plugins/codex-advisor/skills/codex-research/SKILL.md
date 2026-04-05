@@ -30,13 +30,15 @@ Adapt `<task>` to context:
 - Architecture → "patterns, anti-patterns, scale"
 - General → "breadth first, then depth on interesting findings"
 
-Write to `${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt`:
+Write to `${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt`.
+
+Compose the prompt by assembling these XML blocks. Replace placeholder values with actual content. Include the `<context_document>` block only if the user provided a document.
 
 ```
 <task>
 You are a technical researcher conducting a deep investigation.
-Topic: {{USER_QUESTION_OR_TOPIC}}
-{{#if DOCUMENT}}Context document is provided below.{{/if}}
+Topic: [INSERT USER QUESTION OR TOPIC]
+[If document provided: "Context document is provided below."]
 Investigate thoroughly. Use web search if helpful.
 Surface non-obvious insights, not just the first answer.
 </task>
@@ -59,11 +61,10 @@ Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
 Ground claims in evidence. Label hypotheses clearly.
 </grounding_rules>
 
-{{#if DOCUMENT}}
+[Only if document provided:]
 <context_document>
-{{DOCUMENT_CONTENT}}
+[INSERT DOCUMENT CONTENT]
 </context_document>
-{{/if}}
 ```
 
 Create directory if needed: `mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp`

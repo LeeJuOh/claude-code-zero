@@ -53,6 +53,10 @@ Present to user:
 
 ## Step 4: Save
 
+```bash
+mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
+```
+
 Save to `${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>.md`.
 
 ## Gotchas

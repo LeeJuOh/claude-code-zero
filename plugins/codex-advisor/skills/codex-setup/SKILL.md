@@ -2,7 +2,7 @@
 name: codex-setup
 description: "Check Codex CLI, auth, Official plugin status, and configure defaults (model, reasoning effort). Use when the user says \"codex setup\", \"codex 설정\", \"코덱스 설치\", \"모델 바꿔\", \"코덱스 모델\", or when another codex-advisor skill reports setup issues."
 argument-hint: "[--model MODEL] [--effort LEVEL] [--status]"
-allowed-tools: ["Bash", "Read"]
+allowed-tools: ["Bash", "Read", "Edit"]
 ---
 
 # Codex Setup & Configuration
@@ -33,10 +33,11 @@ If NOT_INSTALLED: "Codex CLI is not installed. Install: `npm install -g @openai/
 ### Check Authentication
 
 ```bash
-codex exec "echo hello" -s read-only 2>&1 | head -5
+codex --version 2>&1
 ```
 
-If auth error: "Authentication required. Run: `codex login`"
+If output contains "not authenticated" or "OPENAI_API_KEY": "Authentication required. Run: `codex login`"
+If version prints normally: auth is likely OK (full verification happens on first real command).
 
 ### Check Official Codex Plugin
 
@@ -66,28 +67,16 @@ cat ~/.codex/config.toml 2>/dev/null || echo "NO_CONFIG"
 
 Valid models: `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex-spark`, or any model string.
 
-```bash
-# Create config if it doesn't exist
-mkdir -p ~/.codex
-# Update or create the model line
-if grep -q '^model' ~/.codex/config.toml 2>/dev/null; then
-  sed -i '' 's/^model = .*/model = "NEW_MODEL"/' ~/.codex/config.toml
-else
-  echo 'model = "NEW_MODEL"' >> ~/.codex/config.toml
-fi
-```
+1. Ensure directory exists: `mkdir -p ~/.codex`
+2. If `~/.codex/config.toml` doesn't exist, create it with `model = "NEW_MODEL"`
+3. If it exists, use the **Edit tool** to replace the `model = "..."` line. If no model line exists, append it.
 
 ### Set Reasoning Effort (`--effort`)
 
 Valid levels: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`.
 
-```bash
-if grep -q '^model_reasoning_effort' ~/.codex/config.toml 2>/dev/null; then
-  sed -i '' 's/^model_reasoning_effort = .*/model_reasoning_effort = "NEW_EFFORT"/' ~/.codex/config.toml
-else
-  echo 'model_reasoning_effort = "NEW_EFFORT"' >> ~/.codex/config.toml
-fi
-```
+1. If `~/.codex/config.toml` doesn't exist, create with `model_reasoning_effort = "NEW_EFFORT"`
+2. If it exists, use the **Edit tool** to replace the `model_reasoning_effort = "..."` line. If no such line exists, append it.
 
 ## Status Report
 
