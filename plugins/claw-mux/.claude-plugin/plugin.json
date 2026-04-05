@@ -1,0 +1,7 @@
+{
+  "name": "claw-mux",
+  "description": "cmux terminal integration: topology control, browser automation, markdown viewer, notifications",
+  "author": { "name": "LeeJuOh" },
+  "license": "MIT",
+  "keywords": ["cmux", "terminal", "browser-automation", "markdown", "notifications"]
+}

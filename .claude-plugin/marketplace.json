@@ -64,6 +64,14 @@
       "category": "lab"
     },
     {
+      "name": "claw-mux",
+      "source": "./plugins/claw-mux",
+      "version": "1.0.0",
+      "description": "cmux terminal integration: topology control, browser automation, markdown viewer, notifications",
+      "tags": ["cmux", "terminal", "browser-automation"],
+      "category": "lab"
+    },
+    {
       "name": "lab-harness-zero",
       "source": {
         "source": "url",
