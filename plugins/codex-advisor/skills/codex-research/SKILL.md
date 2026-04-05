@@ -1,20 +1,13 @@
 ---
 name: codex-research
-description: "Deep-dive research and analysis using Codex. Use when the user asks \"codex research\", \"codex 리서치\", \"codex 분석\", \"코덱스로 조사\", \"딥다이브\", \"이슈 분석해줘\", wants Codex to investigate a topic, analyze a document, or provide a second opinion on technical questions. NOT for code review (use codex-review) or plan verification (use codex-verify)."
-argument-hint: "topic or question | path/to/document.md | resume PROMPT"
+description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when the user asks \"codex research\", \"codex 리서치\", \"codex 분석\", \"코덱스로 조사\", \"딥다이브\", \"이슈 분석해줘\". NOT for code review or plan verification."
+argument-hint: "topic or question | path/to/document.md"
+allowed-tools: ["Bash", "Read", "Grep", "Glob", "Write"]
 ---
 
-# Codex Research
+# Codex Research + Cross-Model Synthesis
 
-Use Codex as a research partner for deep-dive analysis, issue investigation, and technical exploration. Codex investigates independently, then Claude evaluates and synthesizes the findings.
-
-Unlike `/codex-review` (code diffs) or `/codex-verify` (document PASS/FAIL), this skill is open-ended — there's no fixed verdict format. The output is a synthesized analysis combining both models' perspectives.
-
-## Step 0: Setup & Preflight
-
-Read `${CLAUDE_PLUGIN_ROOT}/references/execution.md` — Setup, Directory Setup, and Preflight sections.
-
-Check `${CLAUDE_PLUGIN_DATA}/config.json` for saved settings. If missing, run first-time setup.
+Use Codex for deep-dive research via the companion task subcommand. Claude evaluates, verifies claims, fills gaps, and synthesizes a combined analysis.
 
 ## Step 1: Determine Research Task
 
@@ -22,47 +15,48 @@ Parse $ARGUMENTS:
 
 | Input | Action |
 |-------|--------|
-| A question or topic | Research the topic directly |
-| Path to a file | Read file, use as research context |
-| `resume [PROMPT]` | Resume previous Codex session |
+| A question or topic | Research directly |
+| Path to a file | Read file, use as context |
+| `resume [follow-up]` | Pass `--resume-last "[follow-up]"` to companion task |
 | (no args) | Ask user: "What should I research?" |
 
 ## Step 2: Build Research Prompt
 
-Craft a research prompt tailored to the input using XML tag structure (see `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md`).
+Read `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md` for XML tag structure.
+
+Adapt `<task>` to context:
+- Issue investigation → "root cause analysis, reproduction steps"
+- Technology comparison → "trade-offs, real-world adoption, gotchas"
+- Architecture → "patterns, anti-patterns, scale"
+- General → "breadth first, then depth on interesting findings"
+
+Write to `${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt`:
 
 ```
-Write to ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt:
-
 <task>
 You are a technical researcher conducting a deep investigation.
 Topic: {{USER_QUESTION_OR_TOPIC}}
-{{#if DOCUMENT}}
-Context document is provided below.
-{{/if}}
+{{#if DOCUMENT}}Context document is provided below.{{/if}}
 Investigate thoroughly. Use web search if helpful.
-Surface non-obvious insights, not just the first answer you find.
+Surface non-obvious insights, not just the first answer.
 </task>
 
 <compact_output_contract>
-Return a structured analysis with clear sections.
-Separate: observed facts, reasoned inferences, and open questions.
-Identify risks, trade-offs, and alternative perspectives.
+Structured analysis with clear sections.
+Separate: observed facts, reasoned inferences, open questions.
+Identify risks, trade-offs, alternative perspectives.
 </compact_output_contract>
 
 <research_mode>
-Prefer breadth first, then go deeper only where the evidence changes the recommendation.
+Breadth first, then depth where evidence changes the recommendation.
 </research_mode>
 
 <citation_rules>
-Cite sources when possible. Prefer primary sources.
-Be direct about uncertainty — say "I'm not sure" rather than guessing.
+Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
 </citation_rules>
 
 <grounding_rules>
-Ground claims in evidence you can point to.
-Do not present inferences as facts.
-If a point is a hypothesis, label it clearly.
+Ground claims in evidence. Label hypotheses clearly.
 </grounding_rules>
 
 {{#if DOCUMENT}}
@@ -72,72 +66,66 @@ If a point is a hypothesis, label it clearly.
 {{/if}}
 ```
 
-Adapt the `<task>` block based on context:
-- **Issue investigation**: "Focus on root cause analysis, reproduction steps, related issues"
-- **Technology comparison**: "Focus on trade-offs, real-world adoption, gotchas"
-- **Architecture question**: "Focus on patterns, anti-patterns, scale considerations"
-- **General research**: "Focus on breadth first, then depth on interesting findings"
+Create directory if needed: `mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp`
 
-## Step 3: Execute
+## Step 3: Execute via Companion Script
 
 ```bash
-codex exec "$(cat ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt)" -m <MODEL> -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
 ```
 
-Timeout: 300000ms.
-
-### Session Resume
+If resolve fails: direct to `/codex-setup`.
 
 ```bash
-codex exec resume --last "[follow-up prompt]" -s read-only -c 'model_reasoning_effort="<REASONING>"' --enable web_search_cached 2>${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
+node "$CODEX_COMPANION" task --prompt-file "${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt"
 ```
 
-## Step 4: Evaluate & Synthesize
+Timeout: 300000ms (5 minutes). Job is tracked and visible in `/codex:status`.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/execution.md` — Peer AI Evaluation section.
+## Step 4: Double-Check & Synthesize
 
-This is NOT a rubber-stamp. Claude independently evaluates Codex's research:
+Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
 
-1. **Verify claims** — Check facts Codex presents against your own knowledge. Flag anything that looks fabricated.
-2. **Fill gaps** — Add perspectives or information Codex missed.
-3. **Challenge assumptions** — If Codex's analysis rests on an unstated assumption, call it out.
-4. **Synthesize** — Combine both models' findings into a coherent analysis for the user.
+1. **Verify claims** — Check facts against own knowledge. Flag fabrications.
+2. **Fill gaps** — Add perspectives Codex missed.
+3. **Challenge assumptions** — Call out unstated assumptions.
+4. **Synthesize** — Combine findings into coherent analysis.
 
-Present the synthesis conversationally, not as a rigid template. The format should match the nature of the research — a comparison table for tech comparisons, a timeline for incident investigation, bullet points for quick surveys.
+Adapt output format to question:
+- Comparison → table
+- Pros/cons → list
+- Root cause → chain
+- Survey → categorized bullets
 
 ## Step 5: Save & Clean Up
 
-Save to `${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>.md`. Create `${CLAUDE_PLUGIN_DATA}/reviews/` if it doesn't exist.
-
-Format:
+Save to `${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>.md`:
 
 ```markdown
-# Codex Research -- <date>
+# Codex Research — <date>
 
 ## Topic
 <what was investigated>
 
 ## Codex Findings
-<Codex's output, preserved verbatim>
+<verbatim>
 
 ## Claude's Evaluation & Synthesis
-<Claude's independent analysis, agreements, disagreements, additional findings>
+<independent analysis>
+
+## Agreement: <High|Partial|Disagreement>
 
 ## Key Takeaways
 - <actionable conclusions>
 ```
 
 ```bash
-rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-advisor-prompt.txt ${CLAUDE_PLUGIN_DATA}/tmp/codex-stderr.txt
+rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt
 ```
-
-Inform user: "Resume this session with `/codex-research resume [follow-up]`."
 
 ## Gotchas
 
-- **Codex can hallucinate sources and facts.** Always verify claims that seem too convenient or specific. If you can't verify, flag it as unverified.
-- **Don't just agree with Codex.** The value of this skill is the cross-model synthesis. If you'd reach the same conclusion without Codex, the research added nothing.
-- **Adapt the output format to the question.** A comparison table for "X vs Y", a pros/cons list for "should I use X", a root cause chain for "why does X happen". Don't force every research into the same rigid template.
-- **web_search_cached gives Codex web access.** It can find recent information that Claude may not have. Leverage this for questions about current ecosystem state.
-- **Never `2>/dev/null`.** Capture stderr for error diagnosis.
-- **Do not auto-fix after research.** Present findings and wait for user direction. See No Auto-Fix Rule in execution.md.
+- **Codex can hallucinate sources and facts.** Verify specific claims.
+- **Value is in synthesis.** If Claude reaches same conclusion alone, Codex added nothing.
+- **Do not auto-fix.** Present findings, wait for user.
+- **Resume supported.** User can `/codex-research resume [follow-up]` — pass `--resume-last` to companion.
