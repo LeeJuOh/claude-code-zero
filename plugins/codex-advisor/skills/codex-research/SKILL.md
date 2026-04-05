@@ -9,7 +9,17 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob", "Write"]
 
 Use Codex for deep-dive research via the companion task subcommand. Claude evaluates, verifies claims, fills gaps, and synthesizes a combined analysis.
 
-## Step 1: Determine Research Task
+## Step 1: Pre-flight — Companion Check
+
+Before any file reading or prompt building, verify companion availability:
+
+```bash
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+```
+
+If resolve fails: direct to `/codex-setup` immediately. Do NOT proceed to read files or build prompts. Do NOT fall back to a Claude-only solo analysis.
+
+## Step 2: Determine Research Task
 
 Parse $ARGUMENTS:
 
@@ -20,7 +30,7 @@ Parse $ARGUMENTS:
 | `resume [follow-up]` | Pass `--resume-last "[follow-up]"` to companion task |
 | (no args) | Ask user: "What should I research?" |
 
-## Step 2: Build Research Prompt
+## Step 3: Build Research Prompt
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md` for XML tag structure.
 
@@ -69,13 +79,9 @@ Ground claims in evidence. Label hypotheses clearly.
 
 Create directory if needed: `mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp`
 
-## Step 3: Execute via Companion Script
+## Step 4: Execute via Companion Script
 
-```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
-```
-
-If resolve fails: direct to `/codex-setup`.
+Use the `$CODEX_COMPANION` resolved in Step 1:
 
 ```bash
 node "$CODEX_COMPANION" task --prompt-file "${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt"
@@ -83,7 +89,7 @@ node "$CODEX_COMPANION" task --prompt-file "${CLAUDE_PLUGIN_DATA}/tmp/codex-rese
 
 Timeout: 300000ms (5 minutes). Job is tracked and visible in `/codex:status`.
 
-## Step 4: Double-Check & Synthesize
+## Step 5: Double-Check & Synthesize
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
 
@@ -98,7 +104,7 @@ Adapt output format to question:
 - Root cause → chain
 - Survey → categorized bullets
 
-## Step 5: Save & Clean Up
+## Step 6: Save & Clean Up
 
 Save to `${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>.md`:
 

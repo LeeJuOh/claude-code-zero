@@ -9,13 +9,17 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob"]
 
 Invoke the Official Codex companion's review, then apply Claude's independent evaluation to every finding.
 
-## Step 1: Execute via Companion Script
+## Step 1: Pre-flight — Companion Check
 
 ```bash
 CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
 ```
 
-If resolve fails: direct to `/codex-setup`.
+If resolve fails: direct to `/codex-setup` immediately. Do NOT fall back to a Claude-only solo review.
+
+## Step 2: Execute via Companion Script
+
+Use the `$CODEX_COMPANION` resolved in Step 1:
 
 ```bash
 node "$CODEX_COMPANION" review --wait $ARGUMENTS
@@ -29,11 +33,10 @@ Timeout: 300000ms (5 minutes).
 
 | Error | Action |
 |-------|--------|
-| resolve-companion.sh exits 1 | Official plugin not installed → direct to `/codex-setup` |
 | "not authenticated" in stderr | Auth required → suggest `codex login` |
 | Other error | Show raw error, don't retry silently |
 
-## Step 2: Double-Check
+## Step 3: Double-Check
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
 
@@ -42,7 +45,7 @@ For each finding in the Official review output:
 2. **Classify**: Agree / Disagree / Nuance — with evidence
 3. If Codex mentions a file or function that doesn't exist, flag as false positive
 
-## Step 3: Report
+## Step 4: Report
 
 Present to user:
 1. Codex findings (verbatim from Official output)
@@ -50,7 +53,7 @@ Present to user:
 3. Agreement level (High / Partial / Disagreement)
 4. Additional findings Claude spotted that Codex missed
 
-## Step 4: Save
+## Step 5: Save
 
 ```bash
 mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"

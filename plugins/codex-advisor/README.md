@@ -11,17 +11,21 @@ codex-advisor wraps the Official Codex plugin — same review, adversarial, and 
 ## Quick Start
 
 ```shell
-# 1. Install Official Codex plugin (required)
+# 1. Add Official Codex marketplace + install plugin
+/plugin marketplace add openai/codex-plugin-cc
 /plugin install codex@openai-codex
-/codex:setup
+/reload-plugins
 
 # 2. Install codex-advisor
 /plugin install codex-advisor@claude-code-zero
 
-# 3. Configure defaults (optional)
+# 3. Verify setup
+/codex-setup
+
+# 4. Configure defaults (optional)
 /codex-setup --model gpt-5.4-mini --effort high
 
-# 4. Use
+# 5. Use
 /codex-review                          # review + double-check
 /codex-verify docs/plan.md            # verify + PASS/FAIL
 ```

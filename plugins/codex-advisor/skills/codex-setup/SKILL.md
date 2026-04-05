@@ -45,7 +45,15 @@ If version prints normally: auth is likely OK (full verification happens on firs
 CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
 ```
 
-If exit code non-zero: show the error message ("Official Codex plugin not found. Install: `/plugin install codex@openai-codex` then `/reload-plugins`")
+If exit code non-zero (plugin not found), guide the user through the full installation process:
+
+1. Tell the user to run these commands **in order** (they must type these themselves since they are interactive CLI commands):
+   - `/plugin marketplace add openai/codex-plugin-cc` — adds the Official Codex marketplace
+   - `/plugin install codex@openai-codex` — installs the plugin from that marketplace
+   - `/reload-plugins` — activates the newly installed plugin
+2. After the user completes the steps, re-run the companion check to verify.
+
+Do NOT just print the steps and move on. Wait for the user to complete them.
 
 If found, run setup check:
 
