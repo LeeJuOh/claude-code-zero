@@ -29,12 +29,14 @@ For config schema, port logic, and groups: read `${PLUGIN_DIR}/references/shared
    find "$PROJECT_ROOT" -name '*.md' -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/vendor/*' 2>/dev/null | sed "s|$PROJECT_ROOT/||" | cut -d/ -f1 | sort -u
    ```
 
-5. **Suggest groups** based on common patterns found:
-   - `docs/` exists → suggest group `docs` with `docs/**/*.md`
-   - `plans/` or `docs/plan/` exists → suggest group `plans`
-   - `specs/` or `docs/spec/` exists → suggest group `specs`
-   - Root `.md` files exist → suggest group `default` with `*.md`
-   - Always include suggestions but let user modify
+5. **Suggest groups** based on the directories found in step 4:
+   - For each directory found, get the file count and suggest a group named after that directory:
+     ```bash
+     find "$PROJECT_ROOT/DIRNAME" -name '*.md' -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/vendor/*' 2>/dev/null | wc -l
+     ```
+   - If root `.md` files exist, suggest group `default` with `*.md`
+   - Use the actual directory name as the group name — don't rename or merge unless obvious (e.g., a single top-level dir with 1 file might be skipped)
+   - Always show file counts so the user can see what each pattern covers
 
 6. **AskUserQuestion**: Present suggested groups and port together. Example:
    ```

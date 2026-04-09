@@ -18,17 +18,17 @@ For config schema, HTTP API, and browser opening: read `${PLUGIN_DIR}/references
 
 ## Steps
 
-1. Parse `$ARGUMENTS` — extract file/dir path and optional `--group` name (default: `default`)
+1. Parse `$ARGUMENTS` — extract file/dir path and optional `--group` name. If `--group` is not specified, auto-detect from config: find which configured group's patterns best match the file path (e.g., `docs/spec.md` → `docs` group if `docs/**/*.md` is configured). Fall back to `default` if no match.
 2. Check prerequisites: `command -v mo >/dev/null 2>&1`
 3. Get project key and read config from `${PLUGIN_DATA_DIR}/config.json`
 4. Resolve the file path to absolute: `realpath <path>`
 
 5. **If server is running** (`mo --status --json` shows this port):
-   - **File**: Use HTTP API to add it:
+   - **File**: Use HTTP API to add it (group goes in the URL path, not body):
      ```bash
-     curl -s -X POST "http://localhost:$PORT/_/api/files" \
+     curl -s -X POST "http://localhost:$PORT/_/api/groups/$GROUP/files" \
        -H 'Content-Type: application/json' \
-       -d "{\"path\": \"$(realpath file.md)\", \"group\": \"$GROUP\"}"
+       -d "{\"path\": \"$(realpath file.md)\"}"
      ```
    - **Directory**: Use HTTP API to add a watch pattern:
      ```bash
