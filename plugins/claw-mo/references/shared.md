@@ -68,9 +68,9 @@ When the server is running, use the HTTP API for runtime file management (no res
 ```bash
 BASE="http://localhost:$PORT"
 
-# Add a file to a group
-curl -s -X POST "$BASE/_/api/files" -H 'Content-Type: application/json' \
-  -d "{\"path\": \"$(realpath file.md)\", \"group\": \"docs\"}"
+# Add a file to a group (group is in the URL path, not the body)
+curl -s -X POST "$BASE/_/api/groups/docs/files" -H 'Content-Type: application/json' \
+  -d "{\"path\": \"$(realpath file.md)\"}"
 
 # Add a watch pattern to a group
 curl -s -X POST "$BASE/_/api/patterns" -H 'Content-Type: application/json' \

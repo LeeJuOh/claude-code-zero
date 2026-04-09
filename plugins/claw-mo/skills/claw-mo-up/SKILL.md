@@ -26,7 +26,11 @@ For config schema, port logic, groups, and browser opening: read `${PLUGIN_DIR}/
    mo --no-open -w 'pattern3' --target anotherGroup -p PORT
    ```
 8. Open browser:
-   - cmux (`$CMUX_SURFACE_ID` set): check if a mo browser surface already exists from a previous run. If yes, `cmux browser "$SURFACE_ID" navigate "http://localhost:$PORT"` to reuse it. If no, `cmux browser open "http://localhost:$PORT"`.
+   - cmux (`$CMUX_SURFACE_ID` set):
+     1. Run `cmux list-pane-surfaces` to list surfaces in the current pane
+     2. Look for a browser surface already showing `http://localhost:$PORT`
+     3. If found: `cmux browser $SURFACE_ID navigate "http://localhost:$PORT"`
+     4. If not found: `cmux browser open "http://localhost:$PORT"`
    - Non-cmux: `open "http://localhost:$PORT"`
 9. Report: which groups started, how many patterns, the URL
 
@@ -35,4 +39,4 @@ For config schema, port logic, groups, and browser opening: read `${PLUGIN_DIR}/
 - Always `--no-open` when starting mo — the skill controls browser opening separately
 - mo survives shell exit and uses single-instance detection — multiple starts are safe
 - Start groups sequentially, not in parallel — the first invocation must start the server before others can add to it
-- In cmux, `cmux browser open` creates a new browser surface each time. If the user already has mo open in a browser surface, prefer `cmux browser navigate` to reuse it instead of creating a duplicate tab. See shared.md for details.
+- In cmux, always run `cmux list-pane-surfaces` first to check for an existing browser surface at the mo URL before calling `cmux browser open` — `open` creates a new surface every time and stacks duplicate tabs.
