@@ -168,7 +168,7 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 | `argument-hint` | Hint shown during autocomplete (e.g., `[issue-number]`) |
 | `allowed-tools` | Restrict tools (e.g., `Read, Grep, Bash(git *)`) |
 | `model` | Model override when this skill is active |
-| `effort` | Effort level override (`low`, `medium`, `high`) |
+| `effort` | Effort level override (`low`, `medium`, `high`). Session default became `high` for API-key, Bedrock, Vertex, Foundry, Team, and Enterprise users in v2.1.94 — set `effort: medium` explicitly if your skill needs the older default. |
 | `context` | `fork` to run in isolated subagent |
 | `agent` | Subagent type when `context: fork` is set (e.g., `Explore`, `Plan`) |
 | `hooks` | On-demand hooks active during skill execution |
@@ -190,6 +190,10 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 | `${CLAUDE_SESSION_ID}` | Current session ID — use for per-session tracking or logging |
 
 `${CLAUDE_SKILL_DIR}` is the most important for skill authors. Use it whenever your SKILL.md body tells Claude to read a bundled file — it resolves correctly regardless of where the plugin is installed.
+
+**Bash permission patterns (v2.1.97+):** The Bash tool permission checker tightened env-var prefix handling and network redirect detection, reducing false permission prompts on common commands. Patterns like `Bash(git *)` still match compound commands (`ls && git push`) and env-var-prefixed commands (`FOO=bar git push`) correctly — you don't need to expand patterns defensively.
+
+**Stable invocation naming (v2.1.94+):** When a plugin declares skills via `"skills": ["./"]` in `plugin.json`, the skill's frontmatter `name` field becomes the invocation name instead of the directory basename. This gives your skill a stable identity across install methods (local marketplace, git marketplace, `--plugin-dir`). Pick a `name` that matches what users should type, not what happens to be your folder name.
 
 ### Structure the Folder
 
@@ -242,6 +246,10 @@ Skills can register hooks that activate only during the skill's session. Use the
 Consider adding hooks when the skill touches production data, involves destructive operations, or needs directory boundaries.
 
 **Hook types:** `command` (run a shell script), `prompt` (inject a model prompt), `http` (POST JSON to a URL), or `agent` (spawn a subagent). HTTP hooks are useful for integrations that don't need shell access.
+
+**Plugin skill frontmatter hooks (v2.1.94+):** Hooks declared under `hooks:` in a plugin skill's frontmatter are parsed and registered by the runtime. For always-on hooks, use `hooks/hooks.json` at the plugin root; frontmatter hooks are scoped to the skill's session.
+
+**`hookSpecificOutput.sessionTitle` (v2.1.94+):** `UserPromptSubmit` hooks can return `{"hookSpecificOutput": {"sessionTitle": "..."}}` to rename the current session. Useful for skills that derive a meaningful title from the first user prompt (e.g., issue ID, file path, task name).
 
 **Conditional filtering:** Hooks support an `if` field using permission rule syntax (e.g., `Bash(git *)`) to narrow when they fire, reducing overhead from process spawning. Compound commands (`ls && git push`) and env-var-prefixed commands (`FOO=bar git push`) are matched correctly since v2.1.89.
 
@@ -427,6 +435,7 @@ Before packaging, verify:
 - [ ] No colons in `description` without quoting (YAML parses `description: Triggers: X, Y` incorrectly — use quotes)
 - [ ] No YAML sequence syntax in `argument-hint` (e.g., `[topic: foo | bar]` — use a plain string)
 - [ ] Skill name does not contain "claude" or "anthropic" (reserved, will be rejected)
+- [ ] Skill name is not a YAML boolean keyword (`on`, `off`, `yes`, `no`, `true`, `false`) — these parse as booleans and break the slash command picker
 - [ ] No README.md inside the skill folder (all documentation goes in SKILL.md or references/)
 - [ ] Gotchas section exists with at least 2-3 entries
 - [ ] SKILL.md under 500 lines / 5,000 words (body budget scales to ~2% of context window)
@@ -479,4 +488,4 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 
 ## Compatibility
 
-Written and tested against **Claude Code v2.1.92**. Key platform features used: `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_SESSION_ID}`, `effort` frontmatter, `skills` frontmatter, `paths` frontmatter, HTTP hooks, conditional `if` on hooks, `context: fork`, plugin `bin/` executables (v2.1.91+), `PermissionDenied` hook event (v2.1.89+), `defer` hook decision (v2.1.89+), `disableSkillShellExecution` setting (v2.1.91+). If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.
+Written and tested against **Claude Code v2.1.97**. Key platform features used: `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_SESSION_ID}`, `effort` frontmatter, `skills` frontmatter, `paths` frontmatter, HTTP hooks, conditional `if` on hooks, `context: fork`, plugin `bin/` executables (v2.1.91+), `PermissionDenied` hook event (v2.1.89+), `defer` hook decision (v2.1.89+), `disableSkillShellExecution` setting (v2.1.91+), plugin skill frontmatter hooks (v2.1.94+), stable invocation naming via `"skills": ["./"]` (v2.1.94+), `hookSpecificOutput.sessionTitle` on `UserPromptSubmit` hooks (v2.1.94+), hardened Bash tool permission checks (v2.1.97+). If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.

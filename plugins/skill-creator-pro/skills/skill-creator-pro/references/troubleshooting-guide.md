@@ -195,3 +195,22 @@ description: Use for [type] files
 ### Forbidden names
 
 Skill names cannot contain "claude" or "anthropic" (reserved).
+
+### YAML boolean keyword names
+
+```yaml
+# Wrong - YAML parses these as booleans, not strings
+name: on
+name: off
+name: yes
+name: no
+name: true
+name: false
+
+# Correct - quote to force string
+name: "on"
+# Or rename to something unambiguous
+name: always-on
+```
+
+Bare YAML boolean keywords (`on`, `off`, `yes`, `no`, `true`, `false`, and their uppercase variants) get parsed as booleans when used as the `name` value. The slash command picker chokes on boolean names — rename the skill or quote the value.
