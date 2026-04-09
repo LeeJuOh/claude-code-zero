@@ -187,7 +187,7 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 | `${CLAUDE_SKILL_DIR}` | Absolute path to this skill's folder — use to reference bundled files (`${CLAUDE_SKILL_DIR}/references/api.md`) |
 | `${CLAUDE_PLUGIN_ROOT}` | Plugin root directory — use for hook script paths |
 | `${CLAUDE_PLUGIN_DATA}` | Persistent data directory that survives plugin upgrades — use for config, logs, databases |
-| `${CLAUDE_SESSION_ID}` | Current session ID — use for per-session tracking or logging |
+| `${CLAUDE_SESSION_ID}` | Current session ID — e.g., append to `${CLAUDE_PLUGIN_DATA}/runs/${CLAUDE_SESSION_ID}.log` when you need per-session isolation |
 
 `${CLAUDE_SKILL_DIR}` is the most important for skill authors. Use it whenever your SKILL.md body tells Claude to read a bundled file — it resolves correctly regardless of where the plugin is installed.
 
@@ -275,6 +275,8 @@ For skills that benefit from history (standup posts, recurring reports):
 
 - **Don't use other testing skills during Phase 3.** `/skill-test` or similar skills will conflict with this skill's eval workflow. Run evals using the steps in Phase 3 directly.
 - **Snapshot before improving.** Always `cp -r` the skill before making changes in Phase 4. Without a snapshot, you can't run a meaningful baseline comparison — the "before" is gone.
+- **Create the workspace before spawning subagents.** `mkdir -p <skill-name>-workspace/iteration-N/<eval-name>` upfront. If each subagent tries to create the same parent, you'll hit race conditions and half-populated directories.
+- **Don't reuse iteration numbers.** When improving, always bump to `iteration-<N+1>/`. Rerunning into the previous iteration silently overwrites the baseline you needed for comparison.
 - **Kill the eval viewer.** The viewer process stays alive after review. If you forget `kill $VIEWER_PID`, subsequent launches may fail on port conflicts or you'll accumulate zombie processes.
 - **Don't over-design upfront.** The biggest time sink is spending 30 minutes on a perfect SKILL.md that turns out to need rewriting after the first eval. Write the minimum, test, then improve.
 - **Inline shell may be disabled.** Users can set `disableSkillShellExecution: true` in settings.json (v2.1.91+), which blocks all inline shell execution in skills. If your skill relies on inline shell, document it as a requirement and provide a fallback that uses the Bash tool directly.
@@ -311,7 +313,7 @@ Put results in `<skill-name>-workspace/` as a sibling to the skill directory. Or
 
 **Step 1: Spawn all runs in the same turn**
 
-For each test case, spawn two subagents simultaneously -- one with the skill, one without. Launch everything at once so it all finishes around the same time.
+For each test case, spawn two subagents simultaneously -- one with the skill, one without. Launch everything at once by sending a single message with multiple Task tool calls in parallel, so runs finish around the same time instead of sequentially.
 
 - **Creating a new skill**: baseline = no skill at all
 - **Improving an existing skill**: baseline = the old version (snapshot first with `cp -r`)
@@ -488,4 +490,4 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 
 ## Compatibility
 
-Written and tested against **Claude Code v2.1.97**. Key platform features used: `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_SESSION_ID}`, `effort` frontmatter, `skills` frontmatter, `paths` frontmatter, HTTP hooks, conditional `if` on hooks, `context: fork`, plugin `bin/` executables (v2.1.91+), `PermissionDenied` hook event (v2.1.89+), `defer` hook decision (v2.1.89+), `disableSkillShellExecution` setting (v2.1.91+), plugin skill frontmatter hooks (v2.1.94+), stable invocation naming via `"skills": ["./"]` (v2.1.94+), `hookSpecificOutput.sessionTitle` on `UserPromptSubmit` hooks (v2.1.94+), hardened Bash tool permission checks (v2.1.97+). If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.
+Written and tested against **Claude Code v2.1.97**. Version-specific notes for individual features (hooks, frontmatter flags, bin executables, etc.) are inlined next to the feature they describe above. If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.

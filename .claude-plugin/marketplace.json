@@ -35,13 +35,13 @@
     {
       "name": "skill-creator-pro",
       "source": "./plugins/skill-creator-pro",
-      "version": "1.7.2",
+      "version": "1.7.4",
       "description": "Create, test, measure, and iteratively improve Claude Code skills with category-aware design, gotchas-driven development, progressive disclosure coaching, and automated description optimization"
     },
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "4.1.0",
+      "version": "4.1.1",
       "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Review, adversarial, rescue, verify, research."
     },
     {

@@ -5,6 +5,8 @@ description: "Autonomously optimize any Claude Code skill by running it repeated
 
 # Autoresearch for Skills
 
+> **Bundled with `skill-creator-pro`.** This skill reads design guidance from its sibling via `${CLAUDE_SKILL_DIR}/../skill-creator-pro/`. The two skills ship together in the `skill-creator-pro` plugin and cannot be installed separately.
+
 Most skills work about 70% of the time. The other 30% you get garbage. The fix isn't to rewrite the skill from scratch. It's to let an agent run it dozens of times, score every output, and tighten the prompt until that 30% disappears.
 
 This skill adapts Andrej Karpathy's autoresearch methodology to Claude Code skills, enhanced with:

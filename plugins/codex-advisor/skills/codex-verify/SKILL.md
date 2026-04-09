@@ -55,10 +55,11 @@ Rules:
 ### Resolve the document path
 
 ```bash
-# Input validation only — never load content
-test -f "$USER_DOC" || { echo "File not found: $USER_DOC" >&2; exit 1; }
-test -s "$USER_DOC" || { echo "File is empty: $USER_DOC" >&2; exit 1; }
-echo "DOC_LINES=$(wc -l < "$USER_DOC")"   # size info, not content
+# Input validation only — never load content.
+# Replace <literal doc path> with the path parsed from $ARGUMENTS.
+test -f "<literal doc path>" || { echo "File not found: <literal doc path>" >&2; exit 1; }
+test -s "<literal doc path>" || { echo "File is empty: <literal doc path>" >&2; exit 1; }
+echo "DOC_LINES=$(wc -l < "<literal doc path>")"   # size info, not content
 ```
 
 ### Assemble the blind payload
@@ -110,8 +111,9 @@ Check for interactions between sections that may create contradictions.
 <document>
 EOF
 
-# Append document via file redirect — stdout stays empty, context stays clean
-cat "$USER_DOC" >> "$PROMPT_FILE"
+# Append document via file redirect — stdout stays empty, context stays clean.
+# Use the literal doc path, NOT a shell variable from a prior Bash call.
+cat "<literal doc path>" >> "$PROMPT_FILE"
 
 # Close XML
 printf '\n</document>\n' >> "$PROMPT_FILE"

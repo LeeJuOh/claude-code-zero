@@ -2,7 +2,7 @@
 name: codex-setup
 description: "Check Codex CLI, auth, Official plugin status, and configure defaults (model, reasoning effort). Use when the user says \"codex setup\", \"codex 설정\", \"코덱스 설치\", \"모델 바꿔\", \"코덱스 모델\", or when another codex-advisor skill reports setup issues."
 argument-hint: "[--model MODEL] [--effort LEVEL] [--status]"
-allowed-tools: ["Bash", "Read", "Edit"]
+allowed-tools: ["Bash", "Read", "Edit", "AskUserQuestion"]
 ---
 
 # Codex Setup & Configuration
