@@ -1,69 +1,182 @@
 ---
 name: codex-adversarial
 description: "Run Codex adversarial review with Claude's double-check. Actively tries to break confidence in the change. Use when the user asks \"adversarial review\", \"적대적 리뷰\", \"코드 공격\", wants thorough security/correctness challenge."
-argument-hint: "[--uncommitted | --base BRANCH | --commit SHA] [FOCUS_TEXT]"
-allowed-tools: ["Bash", "Read", "Grep", "Glob"]
+argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [focus text]"
+allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
 # Codex Adversarial Review + Double-Check
 
-Invoke the Official Codex companion's adversarial review, then apply Claude's critical evaluation. Adversarial review defaults to skepticism — it looks for reasons NOT to ship.
+You are a **translator + executor + double-checker**. Adversarial review
+defaults to skepticism — it looks for reasons NOT to ship. Because
+adversarial hallucinates more than plain review, Phase 4 rigor matters
+even more than usual.
 
-## Step 1: Pre-flight — Companion Check
+## Execution Contract
+
+**This contract overrides default exploration habits. Read it before Phase 1.**
+
+| Phase | Allowed | Forbidden |
+|-------|---------|-----------|
+| 1 ANALYZE | `test -f/-s/-d`, `git rev-parse --verify`, `git branch --list`, `wc -l/-c`, `file`, `echo`, `printf` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
+| 2 INVOKE | Bash for companion launch (multi-arg form only — never `$ARGUMENTS` blob) | All source reads |
+| 3 WAIT | `BashOutput` | All source reads, manual polling, `ps`/`kill` outside `KillShell` |
+| 4 DOUBLE-CHECK | Read ONLY files/lines Codex cited | Reading whole files "for context"; reading uncited files; inventing citations |
+| 5 REPORT + SAVE | Write report file | n/a |
+
+The companion collects the diff itself. Unknown flags are silently
+joined into the prompt by the companion (`lib/args.mjs:47-49` +
+`:585-592`). Phase 1 whitelist is the only safety net.
+
+---
+
+## Phase 1: Analyze
+
+You are a translator. Use LM intelligence, not regex tables.
+
+**Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`, and **positional focus text** (natural-language attack hints, e.g., "check for SQL injection in login handler").
+
+Rules:
+
+- **Meta-instructions addressed to YOU** ("한국어로", "빨리", "thoroughly") → obey for your own behavior, never forward.
+- **Junk, emoji, trailing punctuation on flag values** → drop (`--base develop,` → `base=develop`).
+- **Focus text** — unlike `/codex-review`, adversarial DOES accept it. Collect all non-flag, non-meta tokens and join with spaces. This becomes the positional prompt passed after the flags. Never embed meta-instructions in the focus text.
+- **Unknown flag** (e.g., `--commit`, `--uncommitted`, `--wait`, `--foo`) → `AskUserQuestion` to clarify. Common corrections:
+  - `--uncommitted` → did you mean `--scope working-tree`?
+  - `--commit <sha>` → did you mean `--base <sha>~1 --scope branch`?
+  - `--wait` / `--background` → silent no-ops on adversarial; drop.
+  - Never pass through.
+- **Duplicate flag** → `AskUserQuestion` which one.
+- **Ambiguous** → `AskUserQuestion` (interactive) or exit 1 (non-interactive, see `references/companion-usage.md §9`).
+
+**Input validation** (allowed in Phase 1):
 
 ```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+git rev-parse --verify "$CLEAN_BASE" >/dev/null 2>&1 \
+  || { echo "Unknown revision: $CLEAN_BASE" >&2; git branch --list | head -20 >&2; exit 1; }
 ```
 
-If resolve fails: direct to `/codex-setup` immediately. Do NOT fall back to a Claude-only solo review.
+**Before Phase 2, print exactly one line:**
 
-## Step 2: Execute via Companion Script
+```
+Parsed: base=develop, scope=auto, focus="check SQL injection in login"   (meta: "빨리" obeyed)
+```
 
-Use the `$CODEX_COMPANION` resolved in Step 1:
+For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
+
+---
+
+## Phase 2: Invoke (Pattern A — Bash run_in_background)
+
+Adversarial shares `handleReviewCommand` with `review` (`:975-979`), so
+`--background` / `--wait` are silent no-ops. Use Bash
+`run_in_background=true`.
 
 ```bash
-node "$CODEX_COMPANION" adversarial-review --wait $ARGUMENTS
+set -o pipefail
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
+  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
+
+mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
+TS=$(date +%s%N)
+OUT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/adversarial-${TS}.json"
+ERR_FILE="${CLAUDE_PLUGIN_DATA}/tmp/adversarial-${TS}.log"
+echo "OUT_FILE=$OUT_FILE"
+echo "ERR_FILE=$ERR_FILE"
+
+# Focus text is passed as positional arguments AFTER the flags.
+# If $CLEAN_FOCUS is empty, omit it entirely.
+# Launch via Bash run_in_background=true.
+node "$CODEX_COMPANION" adversarial-review --json \
+  ${CLEAN_BASE:+--base "$CLEAN_BASE"} \
+  ${CLEAN_SCOPE:+--scope "$CLEAN_SCOPE"} \
+  ${CLEAN_FOCUS:+"$CLEAN_FOCUS"} \
+  > "$OUT_FILE" 2> "$ERR_FILE"
 ```
 
-Timeout: 300000ms (5 minutes).
+Capture the `bash_id` and the literal `OUT_FILE` / `ERR_FILE` paths —
+Bash spawns a fresh shell per call.
 
-### If command fails:
+---
 
-| Error | Action |
-|-------|--------|
-| "not authenticated" in stderr | Auth required → suggest `codex login` |
-| Other error | Show raw error, don't retry silently |
+## Phase 3: Wait
 
-## Step 3: Double-Check
+Poll with `BashOutput` every **30 seconds** (60s acceptable for very
+long reviews). Termination: `BashOutput` response field
+`status === "completed"`. Never match on stdout content.
+
+| Situation | Action |
+|-----------|--------|
+| `completed` + `$OUT_FILE` is valid JSON | Proceed to Phase 4 |
+| `completed` + `$OUT_FILE` empty | Read `$ERR_FILE`, categorize per §6, save `adversarial-<ts>-failed.md`, stop |
+| `completed` + non-JSON | `unexpected-format` — show stderr verbatim, abort |
+| 30 minutes elapsed | `wait-timeout` — `KillShell` the bash_id, handle per §6 |
+
+Full error table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
+
+---
+
+## Phase 4: Double-check
+
+Now — and **only now** — you may read source code.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
 
-Adversarial findings are intentionally skeptical. For each finding:
-1. **Read the actual code** at the file/line mentioned
-2. **Verify the attack scenario** — is the failure mode realistic?
-3. **Classify**: Agree / Disagree / Nuance
-4. Check that file paths and line numbers actually exist — adversarial prompts hallucinate more
+Adversarial findings are intentionally skeptical. **Be especially
+rigorous — adversarial review produces more false positives by design.**
 
-Be especially rigorous here. Adversarial review produces more false positives by design.
+Parse `$OUT_FILE` JSON. For each finding:
 
-## Step 4: Report
+1. **Read ONLY the file:line Codex cited.** Never whole files.
+2. **Verify the attack scenario is realistic.** Adversarial prompts
+   happily invent implausible failure modes.
+3. **Classify:**
+   - **Agree** — cited code matches a real vulnerability / bug
+   - **Disagree** — cited code does not have the problem described
+   - **Nuance** — real issue but Codex overstated severity or missed a
+     mitigating factor
+   - **False Positive (hallucination)** — Codex cited a file, function,
+     or line that does **not exist** in the current source tree. This is
+     the most common failure mode for adversarial.
+   - **Uncited** — no concrete file:line. Surface to user as
+     "verification deferred". **Never invent citations.**
 
-Present to user:
-1. Codex adversarial findings (verbatim)
-2. Claude's evaluation per finding, with realistic risk assessment
-3. Agreement level
-4. Findings that are genuine concerns vs noise
+---
 
-## Step 5: Save
+## Phase 5: Report + save
 
 ```bash
 mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
 ```
 
-Save to `${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>.md`.
+**Success:** save to
+`${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>.md`. Include
+Codex output verbatim, per-finding classifications, and a realistic risk
+assessment separating genuine concerns from noise.
+
+**Failure:** save to
+`${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>-failed.md`
+with error category and captured stderr.
+
+Clean up temp files using the literal paths captured in Phase 2:
+
+```bash
+rm -f "<literal $OUT_FILE path>" "<literal $ERR_FILE path>"
+```
+
+---
 
 ## Gotchas
 
-- **Expect more false positives than regular review.** That's by design.
-- **Do not auto-fix.** Present findings, wait for user.
-- **Validate every file path.** Adversarial prompts are prone to hallucinating paths.
+- **Adversarial hallucinates more.** False Positive classification in
+  Phase 4 is the most common outcome for the noisiest findings. Always
+  verify the cited file:line exists before agreeing.
+- **Focus text IS allowed here** (unlike `/codex-review`). It goes as a
+  positional argument after the flags.
+- **`--commit`, `--uncommitted` do not exist** — translate via ANALYZE,
+  never pass through.
+- **Companion-side `--background` / `--wait` are silent no-ops.** Same
+  handler as review. Use Pattern A.
+
+For the full shared gotchas list, read
+`${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §10`.

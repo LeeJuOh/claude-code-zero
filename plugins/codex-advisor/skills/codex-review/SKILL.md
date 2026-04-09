@@ -1,69 +1,188 @@
 ---
 name: codex-review
 description: "Run Codex code review with Claude's independent double-check. Use when the user asks \"codex review\", \"codex 리뷰\", \"코드 리뷰\", wants Codex to review code changes, diff, branch, or commit. For adversarial review use /codex-adversarial."
-argument-hint: "[--uncommitted | --base BRANCH | --commit SHA | FOCUS_TEXT]"
-allowed-tools: ["Bash", "Read", "Grep", "Glob"]
+argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch]"
+allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
 # Codex Code Review + Double-Check
 
-Invoke the Official Codex companion's review, then apply Claude's independent evaluation to every finding.
+You are a **translator + executor + double-checker**. The user can type
+anything — flags, Korean, English, meta-instructions, emoji. Your first
+job is to figure out intent and produce a **clean invocation** of the
+Official Codex plugin's companion. Your second job is to double-check
+what Codex returns, without biasing yourself by reading the diff first.
 
-## Step 1: Pre-flight — Companion Check
+## Execution Contract
+
+**This contract overrides default exploration habits. Read it before Phase 1.**
+
+| Phase | Allowed | Forbidden |
+|-------|---------|-----------|
+| 1 ANALYZE | `test -f/-s/-d`, `git rev-parse --verify`, `git branch --list`, `wc -l/-c`, `file`, `echo`, `printf` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
+| 2 INVOKE | Bash for companion launch (multi-arg form only — never `$ARGUMENTS` blob) | All source reads |
+| 3 WAIT | `BashOutput` | All source reads, manual polling, `ps`/`kill` outside `KillShell` |
+| 4 DOUBLE-CHECK | Read ONLY files/lines Codex cited | Reading whole files "for context"; reading uncited files; inventing citations |
+| 5 REPORT + SAVE | Write report file | n/a |
+
+The companion collects the diff and context itself. Your value-add is
+the double-check, not pre-analysis. Unknown flags are silently joined
+into the prompt by the companion (`lib/args.mjs:47-49` + `:585-592`) —
+there is NO post-hoc detection. Phase 1 whitelist is the only safety net.
+
+---
+
+## Phase 1: Analyze
+
+You are a translator. Use LM intelligence, not regex tables.
+
+**Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`. Nothing else.
+
+Rules:
+
+- **Meta-instructions addressed to YOU** ("분석 먼저 하지마", "한국어로", "빨리", "thoroughly") → obey for your own behavior, never forward to the companion.
+- **Junk, emoji, trailing punctuation** → drop. Strip trailing `,` `.` `)` from flag values (e.g., `--base develop,` → `base=develop`).
+- **Focus text detected** (any natural-language string not addressed to you and not a whitelisted flag) → use `AskUserQuestion` to offer the adversarial redirect: "This looks like focus text — use `/codex-adversarial <focus>` instead? The built-in review rejects focus text at `codex-companion.mjs:272-273`." Do NOT pass focus text to the companion.
+- **Unknown flag** (e.g., `--commit`, `--uncommitted`, `--wait`, `--foo`) → `AskUserQuestion` to clarify. Common corrections:
+  - `--uncommitted` → did you mean `--scope working-tree`?
+  - `--commit <sha>` → did you mean `--base <sha>~1 --scope branch`?
+  - `--wait` / `--background` → these are silent no-ops on review; drop.
+  - Never pass through. The companion has no safety net.
+- **Duplicate flag** (e.g., `--base develop --base main`) → `AskUserQuestion` which one is intended. Never silently pick last.
+- **Ambiguous** → `AskUserQuestion` (interactive) or exit 1 with clear stderr (non-interactive, see `references/companion-usage.md §9`).
+
+**Input validation** (allowed in Phase 1 — these never load source contents):
 
 ```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+# Verify the base ref exists, if provided
+git rev-parse --verify "$CLEAN_BASE" >/dev/null 2>&1 \
+  || { echo "Unknown revision: $CLEAN_BASE" >&2; git branch --list | head -20 >&2; exit 1; }
 ```
 
-If resolve fails: direct to `/codex-setup` immediately. Do NOT fall back to a Claude-only solo review.
+**Before Phase 2, print exactly one line:**
 
-## Step 2: Execute via Companion Script
+```
+Parsed: base=develop, scope=auto   (meta: "분석 먼저 하지마" obeyed)
+```
 
-Use the `$CODEX_COMPANION` resolved in Step 1:
+For edge cases (flag conflicts, unusual phrasings, classification
+details), read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
+
+---
+
+## Phase 2: Invoke (Pattern A — Bash run_in_background)
+
+Review's companion-side `--background` / `--wait` are silent no-ops
+(`handleReviewCommand :681` unconditionally calls `runForegroundCommand`).
+We use Claude's Bash `run_in_background=true` to survive the 300s tool
+timeout.
 
 ```bash
-node "$CODEX_COMPANION" review --wait $ARGUMENTS
+set -o pipefail
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
+  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
+
+mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
+TS=$(date +%s%N)
+OUT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/review-${TS}.json"
+ERR_FILE="${CLAUDE_PLUGIN_DATA}/tmp/review-${TS}.log"
+echo "OUT_FILE=$OUT_FILE"
+echo "ERR_FILE=$ERR_FILE"
+
+# Launch via Bash run_in_background=true.
+# Omit --base/--scope entirely if the user provided nothing (companion auto-detects).
+node "$CODEX_COMPANION" review --json ${CLEAN_BASE:+--base "$CLEAN_BASE"} ${CLEAN_SCOPE:+--scope "$CLEAN_SCOPE"} \
+  > "$OUT_FILE" 2> "$ERR_FILE"
 ```
 
-If $ARGUMENTS is empty, pass no args — companion auto-detects scope (uncommitted or branch).
+**Remember:** capture the `bash_id` returned by the background launch,
+AND the literal `OUT_FILE` / `ERR_FILE` paths printed above. Bash spawns
+a fresh shell per call — shell variables do not survive across calls.
 
-Timeout: 300000ms (5 minutes).
+---
 
-### If command fails:
+## Phase 3: Wait
 
-| Error | Action |
-|-------|--------|
-| "not authenticated" in stderr | Auth required → suggest `codex login` |
-| Other error | Show raw error, don't retry silently |
+Poll with `BashOutput` every **30 seconds** (60s acceptable for very
+long reviews). Termination signal: `BashOutput` response field
+`status === "completed"`. Never match on stdout content — the payload
+format can change.
 
-## Step 3: Double-Check
+| Situation | Action |
+|-----------|--------|
+| `status === "completed"` and `$OUT_FILE` parses as JSON | Proceed to Phase 4 |
+| `status === "completed"` and `$OUT_FILE` is empty | Read `$ERR_FILE`, categorize per §6 of companion-usage.md, save as `review-<ts>-failed.md`, stop |
+| `status === "completed"` and `$OUT_FILE` is non-JSON | `unexpected-format` — show raw stderr verbatim, abort |
+| 30 minutes elapsed, still running | `wait-timeout` — `KillShell` the bash_id. If `$OUT_FILE` parses as JSON treat as partial result; otherwise mark `recovery-impossible` and save failure report |
+
+Do NOT use `ps`, `kill` (except via `KillShell` on cap), manual polling
+loops, or raw state JSON reads. The full error categorization table is
+in `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
+
+---
+
+## Phase 4: Double-check
+
+Now — and **only now** — you may read source code.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
 
-For each finding in the Official review output:
-1. **Read the actual code** at the file/line Codex mentions
-2. **Classify**: Agree / Disagree / Nuance — with evidence
-3. If Codex mentions a file or function that doesn't exist, flag as false positive
+Parse `$OUT_FILE` JSON. For each finding Codex reported:
 
-## Step 4: Report
+1. **Read ONLY the file:line Codex cited.** Never the whole file. Never
+   adjacent files "for context".
+2. **Classify:**
+   - **Agree** — cited code matches the finding
+   - **Disagree** — cited code contradicts the finding, with evidence
+   - **Nuance** — the finding is real but needs context Codex missed
+   - **False Positive (hallucination)** — Codex cited a file, function,
+     or line that does **not exist** in the current source tree
+   - **Uncited** — no concrete file:line citation. Surface to user as
+     "verification deferred". **Do NOT invent citations** to justify
+     reading files.
 
-Present to user:
-1. Codex findings (verbatim from Official output)
-2. Claude's evaluation per finding
-3. Agreement level (High / Partial / Disagreement)
-4. Additional findings Claude spotted that Codex missed
+---
 
-## Step 5: Save
+## Phase 5: Report + save
 
 ```bash
 mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
 ```
 
-Save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>.md` using format from evaluation.md.
+**Success** (Codex returned a result):
+save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>.md`
+using the format from `references/evaluation.md`. Include the Codex
+output verbatim, then Claude's per-finding classification, then an
+Agreement summary.
+
+**Failure** (Codex never produced a result, or Phase 3 hit a failure
+state):
+save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>-failed.md`
+with the §6 error category, the captured stderr, and any partial
+payload.
+
+Clean up temp files by re-injecting the literal absolute paths captured
+in Phase 2:
+
+```bash
+rm -f "<literal $OUT_FILE path>" "<literal $ERR_FILE path>"
+```
+
+Do NOT rely on `$OUT_FILE` / `$ERR_FILE` shell variables — they are
+scoped to the shell that set them, which is not this shell.
+
+---
 
 ## Gotchas
 
-- **Do not auto-fix.** Present findings, wait for user.
-- **Preserve Codex output verbatim.** Evaluation comes after.
-- **Companion handles scope detection, job tracking, retry.** Our job is evaluation only.
-- **Always pass `--wait`.** Without it, companion prompts for foreground/background selection via AskUserQuestion, which disrupts our flow.
+- **`--commit`, `--uncommitted` do not exist on review** — they were in
+  an older argument-hint and need to be translated by ANALYZE, not
+  passed through. See §3.1 of the plan.
+- **Focus text on `codex-review` is fatal at the companion** (`:272-273`).
+  Offer the adversarial redirect in Phase 1 instead of forwarding.
+- **Review always runs in the foreground on the companion side** — the
+  companion's `--background` / `--wait` are silent no-ops. Pattern A
+  (Bash `run_in_background=true`) is the only way to survive long runs.
+
+For the full shared gotchas list, read
+`${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §10`.

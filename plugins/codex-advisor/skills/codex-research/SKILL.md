@@ -2,53 +2,86 @@
 name: codex-research
 description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when the user asks \"codex research\", \"codex 리서치\", \"codex 분석\", \"코덱스로 조사\", \"딥다이브\", \"이슈 분석해줘\". NOT for code review or plan verification."
 argument-hint: "topic or question | path/to/document.md"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "Write"]
+allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
 # Codex Research + Cross-Model Synthesis
 
-Use Codex for deep-dive research via the companion task subcommand. Claude evaluates, verifies claims, fills gaps, and synthesizes a combined analysis.
+You are a **translator + executor + double-checker**. The user wants
+deep-dive research. Your job is to hand the topic (and any context
+document) to Codex **without loading the document into your own
+context**, then synthesize Codex's findings with your own independent
+analysis.
 
-## Step 1: Pre-flight — Companion Check
+For code review use `/codex-review`. For plan verification use
+`/codex-verify`.
 
-Before any file reading or prompt building, verify companion availability:
+## Execution Contract
+
+**This contract overrides default exploration habits. Read it before Phase 1.**
+
+| Phase | Allowed | Forbidden |
+|-------|---------|-----------|
+| 1 ANALYZE | `test -f/-s`, `wc -l/-c`, `file`, `echo`, `printf`, `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, no stdout) | `cat "$DOC"` to stdout, `head`, `tail`, Read, Grep, Glob |
+| 2 INVOKE | Bash for companion launch via stdin pipe | All source / document reads to stdout |
+| 3 WAIT | `status --wait` loop (≤6 iterations, ≤24 min) | All reads, manual polling, `ps`/`kill` |
+| 4 DOUBLE-CHECK | Verify claims against your own knowledge; read the context document (if any) now | n/a |
+| 5 REPORT + SAVE | Write report file | n/a |
+
+**Why the document stays out of context in Phase 1-3:** same reason as
+verify — independence. If you read it upfront, your synthesis just
+echoes Codex instead of adding independent perspective.
+
+Unknown flags silently become task prompt content (`readTaskPrompt
+:585-592`). Phase 1 is the only safety net.
+
+---
+
+## Phase 1: Analyze + assemble blind payload
+
+### Parse `$ARGUMENTS`
+
+**Whitelist for this skill:** (no user-controllable companion flags) — the topic and optional document path are **skill inputs**, not companion flags.
+
+Rules:
+
+- **Plain text** → treat as the research topic/question.
+- **A single path** → treat as a context document; the research task comes from the surrounding text or the filename.
+- **`resume [follow-up]`** → pass `--resume-last` to the companion.
+- **Mixed** (topic + path) → both, in the blind payload template.
+- **Meta-instructions addressed to YOU** ("한국어로", "빨리", "thoroughly") → obey for your own behavior, never include in the prompt.
+- **No args** → `AskUserQuestion`: "What should I research?"
+- **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. research has no companion flags to forward.
+
+### If a document was provided, validate it
 
 ```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+# Input validation only — never load content
+test -f "$USER_DOC" || { echo "File not found: $USER_DOC" >&2; exit 1; }
+test -s "$USER_DOC" || { echo "File is empty: $USER_DOC" >&2; exit 1; }
+echo "DOC_LINES=$(wc -l < "$USER_DOC")"   # size info, not content
 ```
 
-If resolve fails: direct to `/codex-setup` immediately. Do NOT proceed to read files or build prompts. Do NOT fall back to a Claude-only solo analysis.
+### Assemble the payload
 
-## Step 2: Determine Research Task
+```bash
+set -o pipefail
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
+  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
 
-Parse $ARGUMENTS:
+mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
+TS=$(date +%s%N)
+PROMPT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/research-prompt-${TS}.txt"
+JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/research-job-${TS}.json"
+echo "PROMPT_FILE=$PROMPT_FILE"
+echo "JOB_JSON_FILE=$JOB_JSON_FILE"
 
-| Input | Action |
-|-------|--------|
-| A question or topic | Research directly |
-| Path to a file | Read file, use as context |
-| `resume [follow-up]` | Pass `--resume-last "[follow-up]"` to companion task |
-| (no args) | Ask user: "What should I research?" |
-
-## Step 3: Build Research Prompt
-
-Read `${CLAUDE_PLUGIN_ROOT}/references/gpt-prompting.md` for XML tag structure.
-
-Adapt `<task>` to context:
-- Issue investigation → "root cause analysis, reproduction steps"
-- Technology comparison → "trade-offs, real-world adoption, gotchas"
-- Architecture → "patterns, anti-patterns, scale"
-- General → "breadth first, then depth on interesting findings"
-
-Write to `${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt`.
-
-Compose the prompt by assembling these XML blocks. Replace placeholder values with actual content. Include the `<context_document>` block only if the user provided a document.
-
-```
+# Header via heredoc. Replace <TOPIC> with the cleaned research topic
+# from ANALYZE. Do NOT embed the user's meta-instructions.
+cat > "$PROMPT_FILE" <<'EOF'
 <task>
 You are a technical researcher conducting a deep investigation.
-Topic: [INSERT USER QUESTION OR TOPIC]
-[If document provided: "Context document is provided below."]
+Topic: <TOPIC>
 Investigate thoroughly. Use web search if helpful.
 Surface non-obvious insights, not just the first answer.
 </task>
@@ -70,43 +103,127 @@ Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
 <grounding_rules>
 Ground claims in evidence. Label hypotheses clearly.
 </grounding_rules>
-
-[Only if document provided:]
-<context_document>
-[INSERT DOCUMENT CONTENT]
-</context_document>
+EOF
 ```
 
-Create directory if needed: `mkdir -p ${CLAUDE_PLUGIN_DATA}/tmp`
+**Topic-only mode:** if the user gave no document, stop here — the
+payload is complete. Skip the append step below.
 
-## Step 4: Execute via Companion Script
-
-Use the `$CODEX_COMPANION` resolved in Step 1:
+**Document mode:** append the context document via file redirect:
 
 ```bash
-node "$CODEX_COMPANION" task --prompt-file "${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt"
+printf '\n<context_document>\n' >> "$PROMPT_FILE"
+cat "$USER_DOC" >> "$PROMPT_FILE"
+printf '\n</context_document>\n' >> "$PROMPT_FILE"
 ```
 
-Timeout: 300000ms (5 minutes). Job is tracked and visible in `/codex:status`.
+**Before Phase 2, print exactly one line:**
 
-## Step 5: Double-Check & Synthesize
+```
+Parsed: topic="GraphQL vs tRPC in 2026", doc=(none)
+# or
+Parsed: topic="performance regression analysis", doc="benchmarks/results.md" (DOC_LINES=512)
+```
+
+Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, and (if any)
+`USER_DOC` paths.
+
+For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (ANALYZE rules) and `§8` (blind-payload details).
+
+---
+
+## Phase 2: Invoke (Pattern B — stdin pipe to `task --background`)
+
+```bash
+# NEVER pass a positional arg — readTaskPrompt short-circuits on
+# positionalPrompt (:591), silently dropping the entire blind payload.
+cat "<literal PROMPT_FILE path>" | node "$CODEX_COMPANION" task --background --json \
+  > "<literal JOB_JSON_FILE path>" 2> "<literal JOB_JSON_FILE path>.stderr" \
+  || { echo "task launch failed:" >&2; cat "<literal JOB_JSON_FILE path>.stderr" >&2; exit 1; }
+
+# Capture jobId (node, not python)
+JOB_ID=$(node -e 'const fs=require("fs");try{const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!j.jobId)throw new Error("no jobId");process.stdout.write(j.jobId);}catch(e){process.stderr.write("JOB_ID parse failed: "+e.message+"\n");process.exit(1);}' "<literal JOB_JSON_FILE path>") \
+  || { echo "raw companion stdout:" >&2; cat "<literal JOB_JSON_FILE path>" >&2; exit 1; }
+echo "JOB_ID=$JOB_ID"
+```
+
+Remember the literal `JOB_ID`.
+
+---
+
+## Phase 3: Wait (`status --wait` loop)
+
+Each call blocks ≤4 min. Re-call on timeout. Cap at **6 iterations** (24
+minutes).
+
+```bash
+# Repeat until status is "completed" or "failed", or cap hit.
+node "$CODEX_COMPANION" status --wait "<literal JOB_ID>" \
+  --timeout-ms 240000 --json
+```
+
+- `completed` → fetch result
+- `failed` → categorize per §6, save failure report
+- `waitTimedOut === true` + queued/running → re-call
+- Cap exhausted → `wait-timeout` (§6). Show JOB_ID, suggest `/codex:status <JOB_ID>`.
+
+Fetch result:
+
+```bash
+node "$CODEX_COMPANION" result "<literal JOB_ID>" --json
+```
+
+Full error table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
+
+---
+
+## Phase 4: Double-check + synthesize
+
+Now you may verify claims, read the context document (if any), and
+synthesize.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
 
-1. **Verify claims** — Check facts against own knowledge. Flag fabrications.
-2. **Fill gaps** — Add perspectives Codex missed.
-3. **Challenge assumptions** — Call out unstated assumptions.
-4. **Synthesize** — Combine findings into coherent analysis.
+For each substantive claim in Codex's findings:
 
-Adapt output format to question:
+- **Verify against own knowledge** — is this factually correct?
+- **Check citations** — do the sources Codex named actually exist and
+  support the claim?
+- **Read the context document** (if one was provided) — does the
+  document actually say what Codex claims it says?
+- **Classify:**
+  - **Agree** — claim is verified
+  - **Disagree** — claim is wrong, with evidence
+  - **Nuance** — real insight, but missing context
+  - **False Positive (hallucination)** — Codex cited a source, fact, or
+    document passage that does **not exist** or says something different
+  - **Uncited** — no concrete source. Label as "needs verification" and
+    surface to the user. Never invent sources.
+
+Then **synthesize**:
+
+- Fill gaps Codex missed
+- Challenge unstated assumptions
+- Combine the verified findings into a coherent analysis
+- If Claude independently reaches the same conclusion with no new
+  information, call that out — Codex may have added little value
+
+Adapt output format to the question type:
 - Comparison → table
 - Pros/cons → list
-- Root cause → chain
+- Root cause → causal chain
 - Survey → categorized bullets
 
-## Step 6: Save & Clean Up
+---
 
-Save to `${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>.md`:
+## Phase 5: Report + save
+
+```bash
+mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
+```
+
+**Success:** save to
+`${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>.md`:
 
 ```markdown
 # Codex Research — <date>
@@ -118,7 +235,7 @@ Save to `${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>.md`:
 <verbatim>
 
 ## Claude's Evaluation & Synthesis
-<independent analysis>
+<independent analysis, with per-finding classification>
 
 ## Agreement: <High|Partial|Disagreement>
 
@@ -126,13 +243,34 @@ Save to `${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>.md`:
 - <actionable conclusions>
 ```
 
+**Failure:** save to
+`${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>-failed.md` with
+the §6 error category, stderr, and topic/document path.
+
+Clean up temp files using literal paths from Phase 1:
+
 ```bash
-rm -f ${CLAUDE_PLUGIN_DATA}/tmp/codex-research-prompt.txt
+rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_JSON_FILE path>.stderr"
 ```
+
+---
 
 ## Gotchas
 
-- **Codex can hallucinate sources and facts.** Verify specific claims.
-- **Value is in synthesis.** If Claude reaches same conclusion alone, Codex added nothing.
-- **Do not auto-fix.** Present findings, wait for user.
-- **Resume supported.** User can `/codex-research resume [follow-up]` — pass `--resume-last` to companion.
+- **Codex can hallucinate sources and facts** — verify specific claims
+  before agreeing.
+- **Never Read the context document before Phase 4.** If you do, your
+  synthesis just echoes Codex instead of adding independent perspective.
+- **Topic-only mode skips the document append entirely** — don't
+  accidentally pass an empty `<context_document>` tag.
+- **`cat "$USER_DOC" >> "$PROMPT_FILE"`** — file redirect keeps stdout
+  empty. Reading the doc to stdout defeats the entire point.
+- **Never pass a positional argument with Pattern B's stdin pipe.**
+  `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:591`); a positional silently drops the entire blind payload.
+- **Value is in synthesis.** If Claude reaches the same conclusion
+  alone, Codex added nothing — say so in the report instead of padding.
+- **Temp file paths must come from Phase 1 stdout.** Re-inject literal
+  absolute paths; Bash shell variables do not survive across calls.
+
+For the full shared gotchas list, read
+`${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §10`.

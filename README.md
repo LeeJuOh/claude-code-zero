@@ -33,13 +33,14 @@ Run `/plugin` and check the **Installed** tab.
 
 | Plugin | Description |
 |--------|-------------|
-| [vision-powers](plugins/vision-powers/README.md) | Interactive HTML reports — diffs, plans, project recaps, and wiki analysis with Mermaid diagrams and Chart.js |
+| [vision-powers](plugins/vision-powers/README.md) | Claude Code plugin analyzer with interactive HTML wiki reports — security audit, architecture diagrams, environment fit diagnosis, skill quality assessment. Also visualizes diffs, plans, and project recaps |
 | [worktree-plus](plugins/worktree-plus/README.md) | Native git worktree behavior with gitignored file support (`.worktreeinclude` / `.worktreelink`) |
-| [toolbox](plugins/toolbox/README.md) | Developer utilities — sitemap extraction, Gemini web fetch, handoff docs, config audit, secret management |
+| [toolbox](plugins/toolbox/README.md) | Developer utilities — Gemini web fetch, sitemap extraction, handoff docs, config audit, secret management, reference repo sync |
 | [notebooklm-connector](plugins/notebooklm-connector/README.md) | Query Google NotebookLM notebooks from Claude Code — source-grounded answers via Chrome automation |
 | [skill-creator-pro](plugins/skill-creator-pro/README.md) | Create, test, and optimize Claude Code skills with category-aware design and autonomous benchmarking |
 | [rubber-duck-tutor](plugins/rubber-duck-tutor/README.md) | Protect your coding skills — interactive comprehension exercises after plans, code, and commits |
-| [e2e-test-runner](plugins/e2e-test-runner/README.md) | Browser tests in plain English — natural language steps with video recording and visual regression |
+| [e2e-test-runner](plugins/e2e-test-runner/README.md) | [Lab] Browser tests in plain English — natural language steps with video recording and visual regression |
+| [claw-mo](plugins/claw-mo/README.md) | [Lab] Markdown live preview in Claude Code — per-project watch patterns, auto port isolation, one-command mo server management |
 | [codex-advisor](plugins/codex-advisor/README.md) | Cross-model code analysis — OpenAI Codex review and verification with Claude's critical evaluation |
 
 ## Plugin Management
