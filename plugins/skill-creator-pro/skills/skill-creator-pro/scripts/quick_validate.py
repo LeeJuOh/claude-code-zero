@@ -48,7 +48,7 @@ def validate_skill(skill_path):
         "metadata", "compatibility", "argument-hint",
         "disable-model-invocation", "user-invocable",
         "model", "context", "agent", "hooks",
-        "effort", "paths",
+        "effort", "paths", "skills", "shell",
     }
     unexpected = set(frontmatter.keys()) - allowed
     if unexpected:

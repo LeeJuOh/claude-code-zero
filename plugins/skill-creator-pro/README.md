@@ -11,12 +11,15 @@ Making a skill is easy. Making one that triggers reliably, follows instructions 
 
 It adds a 9-category taxonomy, gotchas-driven design, and an autonomous optimization loop inspired by Karpathy's [autoresearch](https://github.com/karpathy/autoresearch).
 
-## Features
+## Two skills, two speeds
 
-| Skill | Description |
-|-------|-------------|
-| `skill-creator-pro` | Full creation workflow: Understand → Design → Test → Improve → Polish |
-| `auto-optimize` | Autonomous optimization — run repeatedly, score with binary evals, mutate the prompt, keep improvements |
+**`/skill-creator-pro`** — for when you're at the keyboard.
+Walks you through a 5-phase loop (Understand → Design → Test → Improve → Polish), shows eval diffs in a browser between iterations, and waits for your feedback before changing anything. Use this when the skill is new, the requirements are fuzzy, or you want to stay in the loop.
+
+**`/auto-optimize`** — for when you're not.
+Takes a working-ish skill and hill-climbs it. Runs the skill dozens of times, scores every output against binary evals, reads the failures, and mutates the prompt — autonomously, without stopping to ask. Use this when the skill is already 70% good and you want it at 95%.
+
+The first one needs you. The second one needs evals.
 
 ## Install
 
