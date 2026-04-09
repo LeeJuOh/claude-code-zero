@@ -1,7 +1,7 @@
 ---
 name: codex-research
 description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when the user asks \"codex research\", \"codex 리서치\", \"codex 분석\", \"코덱스로 조사\", \"딥다이브\", \"이슈 분석해줘\". NOT for code review or plan verification."
-argument-hint: "topic or question | path/to/document.md"
+argument-hint: "topic [path/to/document.md]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -56,10 +56,11 @@ Rules:
 ### If a document was provided, validate it
 
 ```bash
-# Input validation only — never load content
-test -f "$USER_DOC" || { echo "File not found: $USER_DOC" >&2; exit 1; }
-test -s "$USER_DOC" || { echo "File is empty: $USER_DOC" >&2; exit 1; }
-echo "DOC_LINES=$(wc -l < "$USER_DOC")"   # size info, not content
+# Input validation only — never load content.
+# Replace <literal doc path> with the path parsed from $ARGUMENTS.
+test -f "<literal doc path>" || { echo "File not found: <literal doc path>" >&2; exit 1; }
+test -s "<literal doc path>" || { echo "File is empty: <literal doc path>" >&2; exit 1; }
+echo "DOC_LINES=$(wc -l < "<literal doc path>")"   # size info, not content
 ```
 
 ### Assemble the payload
@@ -76,12 +77,12 @@ JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/research-job-${TS}.json"
 echo "PROMPT_FILE=$PROMPT_FILE"
 echo "JOB_JSON_FILE=$JOB_JSON_FILE"
 
-# Header via heredoc. Replace <TOPIC> with the cleaned research topic
-# from ANALYZE. Do NOT embed the user's meta-instructions.
+# Header via heredoc. Replace <literal topic> with the cleaned research
+# topic from Phase 1. Do NOT embed the user's meta-instructions.
 cat > "$PROMPT_FILE" <<'EOF'
 <task>
 You are a technical researcher conducting a deep investigation.
-Topic: <TOPIC>
+Topic: <literal topic from Phase 1>
 Investigate thoroughly. Use web search if helpful.
 Surface non-obvious insights, not just the first answer.
 </task>
@@ -113,7 +114,8 @@ payload is complete. Skip the append step below.
 
 ```bash
 printf '\n<context_document>\n' >> "$PROMPT_FILE"
-cat "$USER_DOC" >> "$PROMPT_FILE"
+# Use the literal doc path, NOT a shell variable from a prior Bash call.
+cat "<literal doc path>" >> "$PROMPT_FILE"
 printf '\n</context_document>\n' >> "$PROMPT_FILE"
 ```
 

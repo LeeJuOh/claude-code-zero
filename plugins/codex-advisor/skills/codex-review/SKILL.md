@@ -54,9 +54,11 @@ Rules:
 **Input validation** (allowed in Phase 1 — these never load source contents):
 
 ```bash
-# Verify the base ref exists, if provided
-git rev-parse --verify "$CLEAN_BASE" >/dev/null 2>&1 \
-  || { echo "Unknown revision: $CLEAN_BASE" >&2; git branch --list | head -20 >&2; exit 1; }
+# Verify the base ref exists, if provided.
+# Replace <literal clean base> with the value you parsed — or skip this
+# block entirely if the user gave no --base.
+git rev-parse --verify "<literal clean base>" >/dev/null 2>&1 \
+  || { echo "Unknown revision: <literal clean base>" >&2; git branch --list | head -20 >&2; exit 1; }
 ```
 
 **Before Phase 2, print exactly one line:**
@@ -90,14 +92,18 @@ echo "OUT_FILE=$OUT_FILE"
 echo "ERR_FILE=$ERR_FILE"
 
 # Launch via Bash run_in_background=true.
-# Omit --base/--scope entirely if the user provided nothing (companion auto-detects).
-node "$CODEX_COMPANION" review --json ${CLEAN_BASE:+--base "$CLEAN_BASE"} ${CLEAN_SCOPE:+--scope "$CLEAN_SCOPE"} \
+# Replace <literal ...> with values from Phase 1. Omit the entire --base or
+# --scope line if the user provided nothing (companion auto-detects).
+node "$CODEX_COMPANION" review --json \
+  --base "<literal clean base from Phase 1>" \
+  --scope "<literal clean scope from Phase 1>" \
   > "$OUT_FILE" 2> "$ERR_FILE"
 ```
 
 **Remember:** capture the `bash_id` returned by the background launch,
-AND the literal `OUT_FILE` / `ERR_FILE` paths printed above. Bash spawns
-a fresh shell per call — shell variables do not survive across calls.
+AND the literal `OUT_FILE` / `ERR_FILE` paths printed above. Re-inject
+these as literal strings in every subsequent Bash call — shell variables
+do not survive across calls.
 
 ---
 

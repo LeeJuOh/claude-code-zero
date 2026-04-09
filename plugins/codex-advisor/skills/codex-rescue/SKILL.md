@@ -59,13 +59,6 @@ becomes the prompt body. Translate it cleanly:
 Parsed: task="implement login rate limiter", write=true, effort=high, model=(default)
 ```
 
-**Snapshot before** — file list only, no contents:
-
-```bash
-git status --porcelain > "${CLAUDE_PLUGIN_DATA}/tmp/rescue-${TS}-pre.list" 2>/dev/null || true
-git rev-parse HEAD > "${CLAUDE_PLUGIN_DATA}/tmp/rescue-${TS}-pre.sha"
-```
-
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 
 ---
@@ -84,22 +77,35 @@ mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
 TS=$(date +%s%N)
 PROMPT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/rescue-prompt-${TS}.txt"
 JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/rescue-job-${TS}.json"
+PRE_LIST="${CLAUDE_PLUGIN_DATA}/tmp/rescue-pre-${TS}.list"
+PRE_SHA="${CLAUDE_PLUGIN_DATA}/tmp/rescue-pre-${TS}.sha"
 echo "PROMPT_FILE=$PROMPT_FILE"
 echo "JOB_JSON_FILE=$JOB_JSON_FILE"
+echo "PRE_LIST=$PRE_LIST"
+echo "PRE_SHA=$PRE_SHA"
 
-# Write the cleaned task description to the prompt file.
-# Do NOT include meta-instructions. Do NOT include flag names.
+# Snapshot current repo state — file names only, no contents
+git status --porcelain > "$PRE_LIST" 2>/dev/null || true
+git rev-parse HEAD > "$PRE_SHA"
+
+# Write the cleaned task description. Replace <literal ...> with the
+# value built in Phase 1. Do NOT include meta-instructions or flags.
 cat > "$PROMPT_FILE" <<'EOF'
-<task description goes here — the cleaned string from Phase 1>
+<literal cleaned task description from Phase 1>
 EOF
 
-# Launch via stdin pipe. NEVER pass a positional arg — readTaskPrompt
-# short-circuits on positionalPrompt (:591), silently dropping stdin.
+# Launch via stdin pipe. Each flag line below is optional — include only
+# what Phase 1 parsed. Omit the entire line for flags not provided.
+# --write: include for implementation (default ON); omit for read-only.
+# --model/--effort: omit to use config.toml defaults.
+# --resume-last/--resume/--fresh: mutually exclusive; omit if none.
+# NEVER pass a positional arg — readTaskPrompt short-circuits on
+# positionalPrompt (:591), silently dropping stdin.
 cat "$PROMPT_FILE" | node "$CODEX_COMPANION" task --background --json \
-  ${WRITE_FLAG:+--write} \
-  ${MODEL:+--model "$MODEL"} \
-  ${EFFORT:+--effort "$EFFORT"} \
-  ${RESUME_FLAG:+"$RESUME_FLAG"} \
+  --write \
+  --model "<literal model from Phase 1>" \
+  --effort "<literal effort from Phase 1>" \
+  --resume-last \
   > "$JOB_JSON_FILE" 2> "${JOB_JSON_FILE}.stderr" \
   || { echo "task launch failed:" >&2; cat "${JOB_JSON_FILE}.stderr" >&2; exit 1; }
 
@@ -109,13 +115,14 @@ JOB_ID=$(node -e 'const fs=require("fs");try{const j=JSON.parse(fs.readFileSync(
 echo "JOB_ID=$JOB_ID"
 ```
 
-`$WRITE_FLAG` is set to a non-empty string when `--write` should be ON
-(the default for implementation). Omit it for read-only investigation.
-`$RESUME_FLAG` is one of `--resume-last` / `--resume` / `--fresh` —
-never two at once.
+Each flag line in the template is optional — include only what Phase 1
+parsed. Replace `<literal ...>` values with the actual strings from
+Phase 1. `--write` defaults to ON for implementation; omit for
+read-only investigation.
 
-Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, and `JOB_ID`
-values. They are needed in every later phase.
+Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, `PRE_LIST`,
+`PRE_SHA`, and `JOB_ID` values. Re-inject these as literal strings in
+every subsequent Bash call — shell variables do not survive across calls.
 
 ---
 

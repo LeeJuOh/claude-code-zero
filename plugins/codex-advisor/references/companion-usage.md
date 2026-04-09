@@ -179,8 +179,10 @@ ERR_FILE="${CLAUDE_PLUGIN_DATA}/tmp/review-${TS}.log"
 echo "OUT_FILE=$OUT_FILE"
 echo "ERR_FILE=$ERR_FILE"
 
-# Launch via Bash run_in_background=true (Claude-side)
-node "$CODEX_COMPANION" review --json --base "$CLEAN_BASE" \
+# Launch via Bash run_in_background=true (Claude-side).
+# Replace <literal ...> with values from Phase 1.
+node "$CODEX_COMPANION" review --json \
+  --base "<literal clean base from Phase 1>" \
   > "$OUT_FILE" 2> "$ERR_FILE"
 ```
 
@@ -407,13 +409,15 @@ cat > "$PROMPT_FILE" <<'EOF'
 <document>
 EOF
 
-# Input validation only — never load content
-test -f "$USER_DOC" || { echo "File not found: $USER_DOC" >&2; exit 1; }
-test -s "$USER_DOC" || { echo "File is empty: $USER_DOC" >&2; exit 1; }
-echo "DOC_LINES=$(wc -l < "$USER_DOC")"   # size info, not content
+# Input validation only — never load content.
+# Replace <literal doc path> with the path parsed from $ARGUMENTS.
+test -f "<literal doc path>" || { echo "File not found: <literal doc path>" >&2; exit 1; }
+test -s "<literal doc path>" || { echo "File is empty: <literal doc path>" >&2; exit 1; }
+echo "DOC_LINES=$(wc -l < "<literal doc path>")"   # size info, not content
 
-# Append document via redirect — Bash stdout stays empty
-cat "$USER_DOC" >> "$PROMPT_FILE"
+# Append document via redirect — Bash stdout stays empty.
+# Use the literal doc path, NOT a shell variable from a prior Bash call.
+cat "<literal doc path>" >> "$PROMPT_FILE"
 
 # Close XML
 printf '\n</document>\n' >> "$PROMPT_FILE"
