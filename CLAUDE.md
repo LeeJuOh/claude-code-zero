@@ -39,7 +39,7 @@ claude plugin enable  <plugin-name>@claude-code-zero   # after testing
 
 See `docs/release-workflow.md` — 8-step process: sync remote → compare branches → bump versions → merge to main → tag → push.
 
-**Release pre-flight**: Always `git fetch origin` and check `git tag --sort=-v:refname | head -3` before starting. Other sessions may have tagged versions in the meantime — skipping this causes tag collisions and push failures.
+**Release pre-flight**: Always `git fetch origin` and check `git tag --sort=-v:refname | head -3` before starting. Other sessions may have tagged versions in the meantime — skipping this causes tag collisions and push failures. Also run `git log develop..main --oneline` — if any commits appear, merge main → develop first (`git checkout develop && git merge main --no-ff`) before proceeding. Direct commits to main create divergence that must be resolved at release time.
 
 ## Plugin README Style
 
