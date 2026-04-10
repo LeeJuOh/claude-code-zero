@@ -67,9 +67,9 @@
     {
       "name": "claw-mux",
       "source": "./plugins/claw-mux",
-      "version": "1.0.0",
-      "description": "cmux terminal integration: topology control, browser automation, markdown viewer, notifications",
-      "tags": ["cmux", "terminal", "browser-automation"],
+      "version": "1.1.0",
+      "description": "cmux terminal integration: terminal I/O, topology control, browser automation, markdown viewer, notifications",
+      "tags": ["cmux", "terminal", "browser-automation", "terminal-io"],
       "category": "lab"
     },
     {
