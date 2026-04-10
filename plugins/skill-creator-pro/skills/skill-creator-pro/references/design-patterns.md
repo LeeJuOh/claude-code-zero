@@ -322,7 +322,7 @@ hooks:
 
 ### Available Hook Events
 
-`PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop`, `StopFailure`, `SessionEnd`, `SubagentStart`, `UserPromptSubmit`, `PreCompact`, `PostCompact`, `Notification`, `PermissionRequest`, `Setup`, `ConfigChange`, `CwdChanged`, `FileChanged`, `TaskCreated`, `TeammateIdle`, `TaskCompleted`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify against official docs — events evolve across releases.
+`PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop`, `StopFailure`, `SessionEnd`, `SubagentStart`, `UserPromptSubmit`, `PreCompact`, `PostCompact`, `Notification`, `PermissionRequest`, `PermissionDenied`, `Setup`, `ConfigChange`, `CwdChanged`, `FileChanged`, `TaskCreated`, `TeammateIdle`, `TaskCompleted`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify against official docs — events evolve across releases.
 
 ### Examples
 
@@ -443,7 +443,11 @@ If your skill includes an MCP server (`.mcp.json`), keep tool descriptions and s
 
 ## Composing Skills
 
-Dependency management is not natively built into skills or marketplaces. Reference other skills by name and Claude will invoke them if installed.
+Dependency management is not natively built into skills or marketplaces. Reference other skills by name — Claude will invoke them if installed.
+
+### Inline Reference
+
+Mention another skill by name in your instructions. Claude will invoke it if the user has it installed:
 
 ```markdown
 ## Workflow
@@ -452,7 +456,35 @@ Dependency management is not natively built into skills or marketplaces. Referen
 3. Use the `format-report` skill to generate the output
 ```
 
-If a dependency is critical, document it in the skill's description or compatibility field.
+### Subagent Composition via `skills` Frontmatter
+
+Use the `skills` frontmatter field to auto-load skills into subagents spawned by your skill:
+
+```yaml
+---
+name: weekly-recap
+skills:
+  - jira-query
+  - slack-post
+---
+```
+
+When your skill spawns subagents (via `context: fork` or Task tool), the listed skills are available to those subagents without the user needing to invoke them manually.
+
+### Graceful Degradation
+
+A plugin must never assume another plugin is installed. When composing:
+
+- Don't route users to a specific plugin by name ("use `claw-mo` instead")
+- Check if the tool/skill is available before depending on it
+- Provide a fallback path when the dependency is missing
+- Document optional dependencies in the compatibility field, not as hard requirements
+
+```markdown
+## Data Visualization
+If the `chart-builder` skill is available, use it for graphs.
+Otherwise, generate a markdown table with the data.
+```
 
 ---
 
@@ -460,7 +492,8 @@ If a dependency is critical, document it in the skill's description or compatibi
 
 ### Usage Tracking
 
-Use a PreToolUse hook to log skill usage:
+Use a PreToolUse hook to log when skills are invoked. This enables data-driven improvement:
+
 ```json
 {
   "hooks": {
@@ -473,9 +506,14 @@ Use a PreToolUse hook to log skill usage:
 ```
 
 ### What to Track
-- Which skills are popular vs underused
-- Skills that undertrigger compared to expectations
-- Time and token consumption patterns
+- **Popular vs underused** — High-usage skills justify more investment; low-usage may need description optimization or retirement
+- **Under-triggering** — If a skill exists for a task but users invoke it manually instead of auto-triggering, the description needs work
+- **Time and token consumption** — Skills that significantly increase token usage without proportional quality gain may need to be leaned down
+- **Regression after model updates** — Rerun evals after model changes to catch skills that break or become redundant (see Phase 3: Model Update Check)
+
+### Detecting Under-triggering
+
+Review usage logs periodically. If a skill is manually invoked (via `/skill-name`) far more often than auto-triggered, the description probably lacks the right trigger phrases. Run the description optimization loop from Phase 5.
 
 ---
 
