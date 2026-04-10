@@ -191,7 +191,7 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 
 `${CLAUDE_SKILL_DIR}` is the most important for skill authors. Use it whenever your SKILL.md body tells Claude to read a bundled file — it resolves correctly regardless of where the plugin is installed.
 
-**Bash permission patterns (v2.1.97+):** The Bash tool permission checker tightened env-var prefix handling and network redirect detection, reducing false permission prompts on common commands. Patterns like `Bash(git *)` still match compound commands (`ls && git push`) and env-var-prefixed commands (`FOO=bar git push`) correctly — you don't need to expand patterns defensively.
+**Bash permission patterns (v2.1.97+):** The Bash tool permission checker tightened env-var prefix handling and network redirect detection, reducing false permission prompts on common commands. Patterns like `Bash(git *)` still match compound commands (`ls && git push`) and env-var-prefixed commands (`FOO=bar git push`) correctly — you don't need to expand patterns defensively. **v2.1.98 addition:** Wildcard patterns like `Bash(git commit *)` now also match correctly when commands contain extra spaces or tabs — no workarounds needed.
 
 **Stable invocation naming (v2.1.94+):** When a plugin declares skills via `"skills": ["./"]` in `plugin.json`, the skill's frontmatter `name` field becomes the invocation name instead of the directory basename. This gives your skill a stable identity across install methods (local marketplace, git marketplace, `--plugin-dir`). Pick a `name` that matches what users should type, not what happens to be your folder name.
 
@@ -280,6 +280,8 @@ For skills that benefit from history (standup posts, recurring reports):
 - **Kill the eval viewer.** The viewer process stays alive after review. If you forget `kill $VIEWER_PID`, subsequent launches may fail on port conflicts or you'll accumulate zombie processes.
 - **Don't over-design upfront.** The biggest time sink is spending 30 minutes on a perfect SKILL.md that turns out to need rewriting after the first eval. Write the minimum, test, then improve.
 - **Inline shell may be disabled.** Users can set `disableSkillShellExecution: true` in settings.json (v2.1.91+), which blocks all inline shell execution in skills. If your skill relies on inline shell, document it as a requirement and provide a fallback that uses the Bash tool directly.
+- **Use `/reload-plugins` during development (v2.1.98+).** After editing a skill, run `/reload-plugins` in Claude Code to pick up changes without restarting. Previously, a full restart was required for plugin-provided skill changes to take effect.
+- **Avoid JS prototype property names in settings.json rules (fixed in v2.1.98).** Permission rule names like `toString`, `constructor`, `hasOwnProperty` match JavaScript prototype property names and caused settings.json to be silently ignored before v2.1.98. If your plugin ships a `settings.json` with named rules, audit them against JS prototype property names.
 
 ---
 
@@ -490,4 +492,4 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 
 ## Compatibility
 
-Written and tested against **Claude Code v2.1.97**. Version-specific notes for individual features (hooks, frontmatter flags, bin executables, etc.) are inlined next to the feature they describe above. If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.
+Written and tested against **Claude Code v2.1.98**. Version-specific notes for individual features (hooks, frontmatter flags, bin executables, etc.) are inlined next to the feature they describe above. If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.
