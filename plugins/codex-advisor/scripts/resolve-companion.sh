@@ -21,7 +21,11 @@ done < <(find "$PLUGINS_DIR" -path "*/codex/scripts/codex-companion.mjs" -print 
   | xargs ls -t 2>/dev/null)
 
 if [ -z "$CODEX_COMPANION" ]; then
-  echo "Official Codex plugin not found. Install: /plugin install codex@openai-codex then /reload-plugins" >&2
+  echo "Official Codex plugin not found. Run these steps in order:" >&2
+  echo "  1. /plugin marketplace add openai/codex-plugin-cc" >&2
+  echo "  2. /plugin install codex@openai-codex" >&2
+  echo "  3. /reload-plugins" >&2
+  echo "Or run /codex-setup for guided installation." >&2
   exit 1
 fi
 
