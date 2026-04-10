@@ -33,9 +33,9 @@ Desktop alerts are suppressed when: the cmux window is focused, the workspace is
 
 ```bash
 # set-status <key> <value> [--icon icon] [--color #hex] [--workspace id]
-cmux set-status build "Ready" --icon checkmark --color green
-cmux set-status build "Failed" --icon xmark --color red
-cmux set-status build "Building" --icon gear --color blue
+cmux set-status build "Ready" --icon checkmark --color "#34c759"
+cmux set-status build "Failed" --icon xmark --color "#ff3b30"
+cmux set-status build "Building" --icon gear --color "#007aff"
 cmux clear-status build
 cmux list-status
 ```
@@ -85,7 +85,7 @@ Add a `Stop` hook to `~/.claude/settings.json` for task-completion notifications
 
 ```bash
 # One-liner hook command (checks cmux env, notifies + sets status)
-bash -c '[ -z "${CMUX_WORKSPACE_ID:-}" ] && exit 0; cmux notify --title "Claude Code" --body "Task complete"; cmux set-status agent "Done" --icon checkmark --color green'
+bash -c '[ -z "${CMUX_WORKSPACE_ID:-}" ] && exit 0; cmux notify --title "Claude Code" --body "Task complete"; cmux set-status agent "Done" --icon checkmark --color "#34c759"'
 ```
 
 For richer logic (e.g., branching on `stop_reason`), use a script file instead. The hook receives JSON on stdin with the event payload.
@@ -113,7 +113,7 @@ cmux notify --title "Plan Complete" --body "3/3 tasks finished"
 ### Error Notification
 
 ```bash
-cmux set-status build "Build Failed" --icon xmark --color red
+cmux set-status build "Build Failed" --icon xmark --color "#ff3b30"
 cmux notify --title "Build Error" --body "Test suite failed: 2 failures"
 cmux log --level error "npm test exited with code 1"
 ```

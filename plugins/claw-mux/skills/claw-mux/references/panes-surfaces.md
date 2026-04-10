@@ -12,7 +12,8 @@ cmux list-pane-surfaces --pane pane:1
 ## Create Splits/Surfaces
 
 ```bash
-cmux new-split right --panel pane:1
+cmux new-split right                              # split from current surface
+cmux new-split right --surface surface:3          # split from specific surface
 cmux new-surface --type terminal --pane pane:1
 cmux new-surface --type browser --pane pane:1 --url https://example.com
 ```

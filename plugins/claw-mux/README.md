@@ -1,18 +1,21 @@
 # claw-mux
 
-Make Claude Code a first-class cmux citizen — auto-detecting the cmux environment and using native tools for topology control, browser automation, markdown viewing, and notifications.
+Give Claude Code full control of the terminal environment through cmux — execute commands in other panes, read their output, split layouts, automate browsers, and report progress.
 
 ## Why
 
-cmux provides pane splitting, an embedded browser, a markdown viewer, and a notification system — all accessible via CLI. Without this plugin, Claude Code doesn't know these features exist. It suggests keyboard shortcuts instead of splitting programmatically, uses external browser tools instead of the faster embedded browser, and never updates the sidebar with progress.
+Claude Code can only control the terminal it's running in. It can't start a server in one pane and read its logs from another. It can't run E2E tests while monitoring a dev server. It can't spin up a second Claude Code instance and feed it tasks.
+
+cmux exposes all of this through a CLI: `send` commands to any pane, `read-screen` to get output back, `new-split` to create layouts, `browser open` for embedded web automation. Without this plugin, Claude Code doesn't know any of it exists.
 
 With claw-mux installed, Claude Code will:
-- Split panes automatically to organize parallel work
+- Send commands to other panes and read their output (`send`, `read-screen`)
+- Start servers, monitor logs, run builds across split panes
 - Use the embedded browser for web automation (faster, no external extension)
 - Display plans and documentation in a live-reloading markdown panel
 - Report progress via sidebar status pills, progress bars, and notifications
 
-Outside cmux, these features are unavailable — existing browser and markdown tools in your environment continue working as before.
+The human watches from cmux, seeing every pane Claude Code is orchestrating. Outside cmux, these features are unavailable — existing tools continue working as before.
 
 ## Quick Start
 

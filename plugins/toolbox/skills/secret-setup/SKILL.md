@@ -216,10 +216,12 @@ MOCK_ENV=$(mktemp)
 CLAUDE_ENV_FILE="$MOCK_ENV" CLAUDE_PROJECT_DIR="$(pwd)" .claude/hooks/load-secrets.sh
 echo "=== Loaded variables ==="
 cat "$MOCK_ENV"
+echo "=== Syntax check ==="
+bash -n "$MOCK_ENV" && echo "OK" || echo "INVALID SHELL SYNTAX"
 rm "$MOCK_ENV"
 ```
 
-Expected output: one `export VAR="value"` line per secret (or placeholder).
+Expected output: one `export VAR='value'` line per secret (or placeholder), and syntax check OK. If stderr shows `load-secrets: skipping line N` warnings, check the env file for malformed lines.
 
 After verification, inform the user:
 1. Fill in actual values in the env file.
@@ -237,6 +239,6 @@ After verification, inform the user:
 - **Deny rules are additive**: When merging deny rules into settings.local.json, existing deny rules must be preserved. Use array concatenation, not replacement.
 - **Hook idempotency**: The hook script skips gracefully if the env file does not exist yet. This prevents errors when the env file is created later.
 - **Line ending safety**: Always use Unix LF line endings in the hook script. CRLF causes `command\r: not found` errors.
-- **Value quoting**: The hook script wraps values in double quotes (`export KEY="value"`) to handle spaces and special characters. If a value itself contains double quotes, the user must escape them in the env file (`KEY=value with \"quotes\"`).
+- **Value quoting**: The hook script outputs single-quoted exports (`export KEY='value'`) to prevent shell expansion of `$`, backticks, and backslashes. It also strips surrounding quotes from `.env` values before re-quoting, so `KEY="value"`, `KEY='value'`, and `KEY=value` all produce the same correct output.
 - **MCP secrets ≠ CLAUDE.md secrets**: MCP servers start as separate processes before SessionStart hooks run. They cannot receive env vars from the hook. MCP secrets must be set in the shell profile (`~/.zshrc`) or the `.mcp.json` must be gitignored.
 - **MCP env field inheritance**: When an `env` field in `.mcp.json` is empty or missing a key, the MCP server inherits that env var from the parent shell. This is standard Unix process behavior — removing a key from `env` does NOT block inheritance.
