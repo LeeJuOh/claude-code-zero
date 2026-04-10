@@ -30,6 +30,13 @@ Specs and guides for plugin development. Required reading for structural work.
 | `superpowers/specs/` | Design specs and analysis documents |
 | `enhancement/` | Enhancement proposals |
 
+## Research
+
+| Document | Description |
+|---|---|
+| `research/ai-context-tools-comparison.md` | Graphify, CodeSight, code-review-graph, Repomix 비교 분석 |
+| `research/deeptutor-analysis.md` | DeepTutor 분석 |
+
 ## Knowledge Sources
 
 | Directory | Description |
