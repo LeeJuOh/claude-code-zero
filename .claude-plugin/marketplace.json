@@ -35,7 +35,7 @@
     {
       "name": "skill-creator-pro",
       "source": "./plugins/skill-creator-pro",
-      "version": "1.7.5",
+      "version": "1.8.0",
       "description": "Create, test, measure, and iteratively improve Claude Code skills with category-aware design, gotchas-driven development, progressive disclosure coaching, and automated description optimization"
     },
     {

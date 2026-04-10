@@ -80,6 +80,8 @@ Wait to write test prompts until you've got this part ironed out.
 
 ### Identify Approach: Problem-first vs Tool-first
 
+**MCP vs Skills:** MCP gives Claude tools (what it *can* do). Skills give Claude knowledge (how it *should* do it). Think of MCP as a professional kitchen and skills as recipes.
+
 Before choosing a category, clarify the skill's orientation:
 
 - **Problem-first**: "I need to set up a project workspace" -- the skill orchestrates the right tool calls in the right sequence. Users describe outcomes; the skill handles the tools.
@@ -109,32 +111,18 @@ Also identify the skill type:
 - **Capability uplift** -- Teaches Claude novel techniques it doesn't know by default. Needs regression detection (does it still work after model updates?).
 - **Encoded preference** -- Documents established workflows. Needs workflow fidelity (does it follow the process correctly?).
 
+**Future direction:** As models improve, capability-uplift skills trend toward becoming specifications — eval criteria describing *what* good output looks like may eventually replace instructions telling the model *how*. Write evals as if they might one day be the skill itself.
+
 ---
 
 ## Phase 2: Design
 
-### Consult Official Docs (When Needed)
+### Consult Platform Reference (When Needed)
 
-Before writing SKILL.md, check if the skill uses platform features where the official spec is the source of truth:
+Before writing SKILL.md, check if the skill uses platform features (frontmatter fields, hooks, allowed-tools, plugin manifest):
 
-- **Frontmatter fields** (allowed-tools, context, hooks, disable-model-invocation)
-- **Hook events and syntax** (PreToolUse, PostToolUse, SessionStart, etc.)
-- **allowed-tools patterns** (command-scoped like `Bash(git *)`, tool restrictions)
-- **Plugin manifest** (plugin.json schema, settings.json limitations)
-
-For these, fetch the official docs index and the relevant page:
-
-```
-WebFetch https://code.claude.com/docs/llms.txt
-```
-
-Then fetch the specific page (e.g., `skills.md`, `hooks.md`, `plugins-reference.md`):
-
-```
-WebFetch https://code.claude.com/docs/en/<page>
-```
-
-Key pages: `skills.md` (frontmatter spec), `hooks.md` + `hooks-guide.md` (hook events/syntax), `plugins-reference.md` (plugin.json schema), `sub-agents.md` (agent restrictions).
+- **Quick reference:** `${CLAUDE_SKILL_DIR}/references/platform-reference.md`
+- **Latest spec:** `WebFetch https://code.claude.com/docs/en/<page>` (key pages: `skills.md`, `hooks.md`, `hooks-guide.md`, `plugins-reference.md`, `sub-agents.md`)
 
 Skip this step when: writing skill body content, designing gotchas, structuring folders, or working on evals -- these don't depend on platform spec.
 
@@ -159,41 +147,7 @@ Based on the category and intent, write the SKILL.md. Read `${CLAUDE_SKILL_DIR}/
 
 4. **Give flexibility.** Skills get reused across situations you can't predict. If you over-constrain with rigid step sequences, the skill breaks on anything slightly different from your test cases. Give Claude the information it needs but let it adapt to context.
 
-**Key frontmatter fields:**
-
-| Field | Description |
-|-------|-------------|
-| `name` | kebab-case, matches folder name |
-| `description` | Trigger condition -- see Phase 5 for optimization |
-| `argument-hint` | Hint shown during autocomplete (e.g., `[issue-number]`) |
-| `allowed-tools` | Restrict tools (e.g., `Read, Grep, Bash(git *)`) |
-| `model` | Model override when this skill is active |
-| `effort` | Effort level override (`low`, `medium`, `high`). Session default became `high` for API-key, Bedrock, Vertex, Foundry, Team, and Enterprise users in v2.1.94 — set `effort: medium` explicitly if your skill needs the older default. |
-| `context` | `fork` to run in isolated subagent |
-| `agent` | Subagent type when `context: fork` is set (e.g., `Explore`, `Plan`) |
-| `hooks` | On-demand hooks active during skill execution |
-| `disable-model-invocation` | `true` = manual-only (user invokes with `/name`) |
-| `paths` | YAML list of globs — skill only triggers for matching file paths (e.g., `["src/**/*.ts"]`) |
-| `skills` | List of skill names to auto-load when subagents execute this skill |
-| `user-invocable` | `false` = hidden from `/` menu, Claude-only background knowledge |
-| `shell` | Shell interpreter for inline shell execution blocks: `bash` (default) or `powershell` |
-
-**String substitutions** available in SKILL.md body:
-
-| Variable | Resolves to |
-|----------|-------------|
-| `$ARGUMENTS` | Text the user typed after the slash command (e.g., `/my-skill fix the login bug` → `fix the login bug`) |
-| `$ARGUMENTS[N]` | Nth individual argument (0-indexed). E.g., `/my-skill foo bar` → `$ARGUMENTS[0]` = `foo` |
-| `${CLAUDE_SKILL_DIR}` | Absolute path to this skill's folder — use to reference bundled files (`${CLAUDE_SKILL_DIR}/references/api.md`) |
-| `${CLAUDE_PLUGIN_ROOT}` | Plugin root directory — use for hook script paths |
-| `${CLAUDE_PLUGIN_DATA}` | Persistent data directory that survives plugin upgrades — use for config, logs, databases |
-| `${CLAUDE_SESSION_ID}` | Current session ID — e.g., append to `${CLAUDE_PLUGIN_DATA}/runs/${CLAUDE_SESSION_ID}.log` when you need per-session isolation |
-
-`${CLAUDE_SKILL_DIR}` is the most important for skill authors. Use it whenever your SKILL.md body tells Claude to read a bundled file — it resolves correctly regardless of where the plugin is installed.
-
-**Bash permission patterns (v2.1.97+):** The Bash tool permission checker tightened env-var prefix handling and network redirect detection, reducing false permission prompts on common commands. Patterns like `Bash(git *)` still match compound commands (`ls && git push`) and env-var-prefixed commands (`FOO=bar git push`) correctly — you don't need to expand patterns defensively. **v2.1.98 addition:** Wildcard patterns like `Bash(git commit *)` now also match correctly when commands contain extra spaces or tabs — no workarounds needed.
-
-**Stable invocation naming (v2.1.94+):** When a plugin declares skills via `"skills": ["./"]` in `plugin.json`, the skill's frontmatter `name` field becomes the invocation name instead of the directory basename. This gives your skill a stable identity across install methods (local marketplace, git marketplace, `--plugin-dir`). Pick a `name` that matches what users should type, not what happens to be your folder name.
+For the full frontmatter field reference, string substitutions (`$ARGUMENTS`, `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_DATA}`, etc.), and bash permission patterns, read `${CLAUDE_SKILL_DIR}/references/platform-reference.md`. The most important substitution is `${CLAUDE_SKILL_DIR}` — use it whenever your SKILL.md references a bundled file.
 
 ### Structure the Folder
 
@@ -245,23 +199,7 @@ Skills can register hooks that activate only during the skill's session. Use the
 
 Consider adding hooks when the skill touches production data, involves destructive operations, or needs directory boundaries.
 
-**Hook types:** `command` (run a shell script), `prompt` (inject a model prompt), `http` (POST JSON to a URL), or `agent` (spawn a subagent). HTTP hooks are useful for integrations that don't need shell access.
-
-**Plugin skill frontmatter hooks (v2.1.94+):** Hooks declared under `hooks:` in a plugin skill's frontmatter are parsed and registered by the runtime. For always-on hooks, use `hooks/hooks.json` at the plugin root; frontmatter hooks are scoped to the skill's session.
-
-**`hookSpecificOutput.sessionTitle` (v2.1.94+):** `UserPromptSubmit` hooks can return `{"hookSpecificOutput": {"sessionTitle": "..."}}` to rename the current session. Useful for skills that derive a meaningful title from the first user prompt (e.g., issue ID, file path, task name).
-
-**Conditional filtering:** Hooks support an `if` field using permission rule syntax (e.g., `Bash(git *)`) to narrow when they fire, reducing overhead from process spawning. Compound commands (`ls && git push`) and env-var-prefixed commands (`FOO=bar git push`) are matched correctly since v2.1.89.
-
-**Permission decisions:** PreToolUse hooks can return `allow`, `deny`, or `defer`. The `defer` decision (v2.1.89+) pauses headless sessions at the tool call — useful for human-in-the-loop gates in `-p` pipelines, resumed with `-p --resume`.
-
-**Hook output limit:** Hook output exceeding 50K characters is saved to disk with a file path + preview instead of being injected directly into context. Design hooks to produce concise output; if your hook generates large results (e.g., lint reports), consider writing to a file and returning just the path.
-
-**`preventContinuation:true`:** For prompt-type hooks on non-Stop events, this flag stops the model from continuing after the hook fires (v2.1.92 restored semantics).
-
-**Available events:** `PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop`, `StopFailure`, `SessionEnd`, `SubagentStart`, `UserPromptSubmit`, `PreCompact`, `PostCompact`, `Notification`, `PermissionRequest`, `PermissionDenied`, `Setup`, `ConfigChange`, `CwdChanged`, `FileChanged`, `TaskCreated`, `TeammateIdle`, `TaskCompleted`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify syntax against official docs (`hooks.md`, `hooks-guide.md`) -- hook events and types evolve across releases.
-
-Notable event: `PermissionDenied` (v2.1.89+) fires after auto mode classifier denials — return `{retry: true}` to let the model retry. Useful for skills that need graceful recovery from permission blocks.
+For hook types, events, conditional filtering, and permission decisions, read `${CLAUDE_SKILL_DIR}/references/platform-reference.md`. For the full syntax spec, fetch `hooks.md` and `hooks-guide.md` from official docs.
 
 ### Memory & Data Persistence (Optional)
 
@@ -279,9 +217,6 @@ For skills that benefit from history (standup posts, recurring reports):
 - **Don't reuse iteration numbers.** When improving, always bump to `iteration-<N+1>/`. Rerunning into the previous iteration silently overwrites the baseline you needed for comparison.
 - **Kill the eval viewer.** The viewer process stays alive after review. If you forget `kill $VIEWER_PID`, subsequent launches may fail on port conflicts or you'll accumulate zombie processes.
 - **Don't over-design upfront.** The biggest time sink is spending 30 minutes on a perfect SKILL.md that turns out to need rewriting after the first eval. Write the minimum, test, then improve.
-- **Inline shell may be disabled.** Users can set `disableSkillShellExecution: true` in settings.json (v2.1.91+), which blocks all inline shell execution in skills. If your skill relies on inline shell, document it as a requirement and provide a fallback that uses the Bash tool directly.
-- **Use `/reload-plugins` during development (v2.1.98+).** After editing a skill, run `/reload-plugins` in Claude Code to pick up changes without restarting. Previously, a full restart was required for plugin-provided skill changes to take effect.
-- **Avoid JS prototype property names in settings.json rules (fixed in v2.1.98).** Permission rule names like `toString`, `constructor`, `hasOwnProperty` match JavaScript prototype property names and caused settings.json to be silently ignored before v2.1.98. If your plugin ships a `settings.json` with named rules, audit them against JS prototype property names.
 
 ---
 
@@ -363,6 +298,10 @@ When each subagent completes, immediately save `total_tokens` and `duration_ms` 
 
 Read `feedback.json`. Empty feedback = user thought it was fine. Focus improvements on specific complaints. Kill the viewer when done: `kill $VIEWER_PID 2>/dev/null`
 
+### Model Update Check
+
+After a Claude model update, rerun existing evals against the new model. A pass rate drop signals the skill needs adaptation. For capability-uplift skills, also check if the baseline (without skill) now matches the with-skill rate — the model may have absorbed this technique natively, making the skill redundant rather than broken.
+
 ---
 
 ## Phase 4: Improve
@@ -399,7 +338,7 @@ For rigorous A/B comparison, read `${CLAUDE_SKILL_DIR}/agents/comparator.md` and
 
 ### Autonomous Optimization (Advanced)
 
-If the user wants hands-off optimization instead of the manual review loop above, suggest `/auto-optimize`. It runs the skill dozens of times, scores outputs with binary evals, mutates the prompt, and keeps only improvements -- all autonomously. Best for skills that already work but need to go from 70% to 95%+.
+If the user wants hands-off optimization instead of the manual review loop above, suggest `/auto-optimize` when iteration-1 shows a with_skill pass rate ≥ 0.7. Below that, the skill needs structural redesign (stay in this manual loop). Above that, auto-optimize's mutation approach can systematically close the remaining gap to 95%+.
 
 ---
 
@@ -481,8 +420,9 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 | `agents/grader.md` | Evaluate assertions against outputs |
 | `agents/comparator.md` | Blind A/B comparison between two outputs |
 | `agents/analyzer.md` | Analyze benchmark patterns and comparison results |
+| `references/platform-reference.md` | Frontmatter fields, string substitutions, hook system, platform gotchas |
 
-**Official docs (external):** `https://code.claude.com/docs/llms.txt` → index of all pages. Fetch when working with platform features (frontmatter, hooks, allowed-tools, plugin manifest). Key pages: `skills.md`, `hooks.md`, `hooks-guide.md`, `plugins-reference.md`, `sub-agents.md`.
+**Official docs (external):** `https://code.claude.com/docs/llms.txt` → index of all pages. Fetch when working with platform features (frontmatter, hooks, allowed-tools, plugin manifest).
 
 ## Environment Notes
 
@@ -492,4 +432,4 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 
 ## Compatibility
 
-Written and tested against **Claude Code v2.1.98**. Version-specific notes for individual features (hooks, frontmatter flags, bin executables, etc.) are inlined next to the feature they describe above. If something breaks after a Claude Code update, fetch `https://code.claude.com/docs/llms.txt` and check the relevant page for spec changes.
+Written and tested against **Claude Code v2.1.98**. If something breaks after a Claude Code update, check `${CLAUDE_SKILL_DIR}/references/platform-reference.md` and fetch official docs for spec changes.
