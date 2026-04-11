@@ -1,6 +1,6 @@
 ---
-name: setup-vibeproxy
-description: "Set up VibeProxy aliases for Claude Code on a new machine. Use when the user says setup vibeproxy, vibeproxy setup, proxy setup, cc-list setup, or wants to configure VibeProxy aliases for Codex/Copilot/Antigravity/Gemini models."
+name: setup-aliases
+description: "Configure or rebuild backend-specific VibeProxy aliases. Use when the user wants to set up, reset, or customize Claude Code aliases for Codex, Copilot, Antigravity, or Gemini models through VibeProxy."
 allowed-tools:
   - Bash(command *)
   - Read

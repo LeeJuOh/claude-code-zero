@@ -17,8 +17,14 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.11.0",
+      "version": "1.12.0",
       "description": "Personal utility commands and tools for Claude Code"
+    },
+    {
+      "name": "vibeproxy-kit",
+      "source": "./plugins/vibeproxy-kit",
+      "version": "0.1.0",
+      "description": "State-aware VibeProxy alias manager for Claude Code. Discover VibeProxy state, choose backend-specific cc-* aliases, and rewrite only managed config and shell blocks without clobbering manual edits."
     },
     {
       "name": "vision-powers",
