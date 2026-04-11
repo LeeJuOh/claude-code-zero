@@ -23,8 +23,8 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "2.13.0",
-      "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, and report management with interactive diagrams and curated design system"
+      "version": "2.14.0",
+      "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, environment health diagnostics, and report management with interactive diagrams and curated design system"
     },
     {
       "name": "worktree-plus",

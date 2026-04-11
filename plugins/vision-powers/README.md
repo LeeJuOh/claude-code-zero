@@ -17,6 +17,7 @@ vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js
 | `plan-visual` | Review implementation plans with blast radius analysis and risk assessment |
 | `project-recap` | Rebuild mental model — recent activity, key decisions, cognitive debt hotspots |
 | `fact-check` | Verify document accuracy against the actual codebase and git history |
+| `environment-health` | Diagnose Claude Code environment — context budget, description obesity, trigger collisions, hook/MCP overhead, CLAUDE.md & memory health, with actionable levers |
 | `report-manager` | List, open, delete, and search generated reports |
 
 4 specialized agents: `visual-report-writer`, `feature-architect`, `security-auditor`, `coherence-reviewer`
