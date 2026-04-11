@@ -19,7 +19,7 @@ Redesign `plugins/vibeproxy-kit/skills/setup-aliases/` from a one-shot bootstrap
 - The skill must preserve unrelated user configuration and must not assume it owns the entire `config.yaml` or `~/.zshrc`.
 - Persistent state must live under `${CLAUDE_PLUGIN_DATA}`.
 - Changes to `~/.cli-proxy-api/config.yaml` do not take effect until VibeProxy is quit from the menu bar and relaunched. `merged-config.yaml` is regenerated only on app launch, so any runtime validation must happen after an explicit restart gate, not immediately after the file write.
-- `/v1/models` returns one `owned_by` per model reflecting current routing priority, not a static per-backend capability list. The same upstream model name can exist under multiple backends, but the listing collapses it into whichever backend currently has routing priority. Building a per-backend model catalog therefore requires probing each backend in isolation with only that backend enabled in the VibeProxy UI.
+- `/v1/models` returns one `owned_by` and one `type` per model as a Last-Write-Wins projection of the Plus binary's model registry, not a static per-backend capability list. The registry stores models in a `map[modelID]*ModelRegistration`, so when two backends register the same model ID (e.g. both `codex` and `github-copilot` exposing `gpt-5.4`), the second registration overwrites `registration.Info` with its own metadata and the list endpoint reads only that overwritten `Info` — the lower-priority copy's `owned_by`/`type` is invisible to `/v1/models` even though it is still fully configured and routable. Building a per-backend model catalog therefore requires probing each backend in isolation with only that backend enabled in the VibeProxy UI, which forces the excluded backends to unregister their clients so no overwrite can happen.
 
 ## Design decisions
 
@@ -266,7 +266,24 @@ Responsibilities:
 - parse the response body
 - emit a JSON object containing the backend token the caller claims to have enabled, a `probed_at` timestamp, and the full model list as reported by VibeProxy
 
-The script does not verify which backend is actually enabled — it cannot, because the only way to tell is the response it is about to parse. The caller is responsible for correlating the probe output with the backend token the user confirmed enabling, and for rejecting obviously inconsistent results (e.g. copilot-shaped models returned during a supposed codex probe).
+The script itself does not decide whether the probe is valid. The orchestrating skill verifies each probe result against two independent sources of truth before accepting it into the backend catalog:
+
+**Verification layer 1 — merged-config cross-check.** Before recording the probe result, read `~/.cli-proxy-api/merged-config.yaml` and inspect `oauth-excluded-models`. For a probe claiming backend `X`, every authenticated backend other than `X` must appear in `oauth-excluded-models` with a wildcard `["*"]` entry, and `X` itself must not. If the exclusion set does not match, the user toggled the wrong backends in the VibeProxy menu bar and the probe is rejected. This layer does not depend on the `/v1/models` response shape and catches the most common failure mode (user forgot to disable a backend) deterministically.
+
+**Verification layer 2 — per-model signature check.** Each model in the `/v1/models` response carries both `type` (backend family label) and `owned_by` (vendor label) fields emitted by the Plus binary's model registry. The orchestrator maintains a fixed signature table:
+
+| claimed backend token | expected `type` | expected `owned_by` |
+| --- | --- | --- |
+| `codex` | `codex` | `openai` |
+| `copilot` | `copilot` | `github-copilot` |
+| `gravity` | `antigravity` | `antigravity` |
+| `gemini` | `gemini` | `google` |
+
+If any model in the response carries a `type` or `owned_by` value belonging to a different backend's signature, the probe contains leaked models from a backend that was supposed to be disabled, and the probe is rejected. Models with `type` or `owned_by` values not present in the table are treated as unknown (new Plus provider the skill does not yet know about) and surfaced to the user via `AskUserQuestion` rather than auto-rejected; accepted unknowns are persisted under `backend_catalogs.<token>.unknown_signatures` for future table updates.
+
+On rejection, the orchestrator explains which layer failed and which specific backend or model triggered it, then re-issues the `AskUserQuestion` toggle prompt. The probe script itself is re-invoked only after the user confirms a corrected toggle state.
+
+Because the probe cycle forces exactly one backend to be enabled in VibeProxy at a time, `/v1/models` routing-priority collapse cannot happen during probing — the disabled backends are wildcarded out of `oauth-excluded-models` and have no candidate models to route to, so the returned catalog reflects the claimed backend's true model list in full, including models whose upstream names collide with other backends' offerings.
 
 Output contract:
 
@@ -274,9 +291,16 @@ Output contract:
 {
   "claimed_backend_token": "copilot",
   "probed_at": "2026-04-11T09:42:17Z",
-  "models": ["gpt-5.4", "gpt-5.4(high)", "claude-opus-4.6", "claude-sonnet-4.6"]
+  "models": [
+    { "id": "gpt-5.4",           "type": "copilot", "owned_by": "github-copilot" },
+    { "id": "gpt-5.4(high)",     "type": "copilot", "owned_by": "github-copilot" },
+    { "id": "claude-opus-4.6",   "type": "copilot", "owned_by": "github-copilot" },
+    { "id": "claude-sonnet-4.6", "type": "copilot", "owned_by": "github-copilot" }
+  ]
 }
 ```
+
+The `models` array preserves `type` and `owned_by` per entry so the orchestrator can run the signature check without re-issuing `/v1/models`. Entries missing either field are passed through unchanged; the signature check treats absent fields as "unknown" rather than mismatches.
 
 ### `scripts/write_user_config.py`
 
