@@ -1,0 +1,9 @@
+{
+  "name": "vibeproxy-kit",
+  "description": "State-aware VibeProxy alias manager for Claude Code. Discover, choose, and rewrite backend-specific cc-* aliases without clobbering manual shell edits.",
+  "author": {
+    "name": "LeeJuOh"
+  },
+  "license": "MIT",
+  "keywords": ["vibeproxy", "claude-code", "aliases", "codex", "copilot", "antigravity", "gemini"]
+}

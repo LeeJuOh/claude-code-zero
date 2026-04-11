@@ -13,7 +13,7 @@ duck__init
 duck__check_rate_limit
 
 cat <<'HOOK_JSON'
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] 🦆 A plan was just created. Suggest a duck plan review in one short sentence using the duck character. Example tone: '🦆 꽥 — 플랜 나왔네! 30초만 같이 볼래?' Stay in character as a curious, strategically naive duck. Do not start the session until they confirm. If they decline, do not offer again. If another plugin has already suggested a review, skip silently."}}
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] A plan was just created. In one short sentence, suggest the user type `/branch` then `/duck plan` to review without interrupting their current work. Stay in duck character. If they decline, do not offer again. If another plugin has already suggested a review, skip silently."}}
 HOOK_JSON
 
 exit 0

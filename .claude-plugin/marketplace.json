@@ -17,14 +17,20 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.11.0",
+      "version": "1.13.0",
       "description": "Personal utility commands and tools for Claude Code"
+    },
+    {
+      "name": "vibeproxy-kit",
+      "source": "./plugins/vibeproxy-kit",
+      "version": "0.2.0",
+      "description": "State-aware VibeProxy alias manager for Claude Code. Discover VibeProxy state, choose backend-specific cc-* aliases, and rewrite only managed config and shell blocks without clobbering manual edits."
     },
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "2.13.0",
-      "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, and report management with interactive diagrams and curated design system"
+      "version": "2.14.0",
+      "description": "Visual report generation suite: wiki analysis, diff review, plan review, project recap, fact-checking, environment health diagnostics, and report management with interactive diagrams and curated design system"
     },
     {
       "name": "worktree-plus",
@@ -47,7 +53,7 @@
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "2.0.2",
+      "version": "2.1.0",
       "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Duck character (🦆) with structured question frameworks (assumptions/blindspots/tradeoffs). Auto-hooks at workflow checkpoints: plan creation, spec documents, PR/MR."
     },
     {
@@ -60,7 +66,7 @@
     {
       "name": "claw-mo",
       "source": "./plugins/claw-mo",
-      "version": "2.3.1",
+      "version": "2.4.0",
       "description": "Manage mo markdown viewer sessions with group-based organization: auto-start, browser integration, per-project watch patterns, port isolation",
       "category": "lab"
     },

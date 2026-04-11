@@ -8,6 +8,8 @@ AI coding assistants generate code fast. The trap is what happens to *you* — p
 
 This plugin builds that questioning habit into your workflow. The duck asks you questions about the code, then waits. No hints, no teaching — just a question and silence. If you can't explain it, you've found a gap.
 
+**Learning shouldn't compete with productivity.** When the duck suggests a review, it guides you to `/branch` first — fork the conversation, do the review there, and return to your main work with `/resume`. No interrupted flow, no "I'll do it later" that never happens.
+
 ## Features
 
 | Mode | When | What it checks |
@@ -19,7 +21,7 @@ This plugin builds that questioning habit into your workflow. The duck asks you 
 
 `/duck` with no argument auto-detects the right mode from context.
 
-Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents, and PR/MR creation. The duck speaks in character (🦆 꽥). Rate-limited to 2 suggestions per session.
+Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents, PR/MR creation, and git push. When triggered, the duck suggests `/branch` + `/duck` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session.
 
 ## Prerequisites
 

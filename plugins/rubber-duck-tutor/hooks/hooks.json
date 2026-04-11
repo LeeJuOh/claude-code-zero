@@ -6,13 +6,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-pr.sh",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-pr.sh",
             "if": "Bash(gh *)"
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-pr.sh",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-pr.sh",
             "if": "Bash(glab *)"
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-push.sh",
+            "if": "Bash(git *)"
           }
         ]
       },

@@ -74,9 +74,19 @@ Wait for their response before continuing.
 
 ## When to Offer
 
-Auto-hooks handle triggering at workflow checkpoints (plan creation, spec documents, PR/MR creation). This section applies to **Claude's own judgment** when no hook fired.
+Auto-hooks handle triggering at workflow checkpoints (plan creation, spec documents, PR/MR creation, git push). This section applies to **Claude's own judgment** when no hook fired.
 
 When the user explicitly invokes `/duck`, always run the session regardless.
+
+### Branch-first workflow
+
+Duck sessions should not interrupt the user's main work. When suggesting a duck session — whether via hook or your own judgment — always guide the user to **branch first**:
+
+1. `/branch` — forks the conversation, preserving full context
+2. `/duck [mode]` — runs the duck session in the branched conversation
+3. When done, the user returns to their original session via `/resume`
+
+This way learning and productivity never compete. The user reviews when ready, not when interrupted.
 
 Do not offer when:
 - User declined this session

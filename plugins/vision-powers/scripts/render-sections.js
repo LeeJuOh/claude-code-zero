@@ -1004,6 +1004,454 @@ new Chart(document.getElementById('component-chart'), {
 }
 
 // ---------------------------------------------------------------------------
+// Environment Health renderers
+// ---------------------------------------------------------------------------
+
+function tierBadge(status) {
+  const s = String(status || "").toLowerCase();
+  const map = {
+    healthy: { cls: "healthy", label: "🟢 healthy" },
+    attention: { cls: "attention", label: "🟡 attention" },
+    critical: { cls: "critical", label: "🔴 critical" },
+    observational: { cls: "observational", label: "ℹ️ observational" },
+  };
+  const entry = map[s] || map.observational;
+  return `<span class="ve-tier ve-tier--${entry.cls}">${entry.label}</span>`;
+}
+
+function tierFromPct(pct) {
+  if (pct >= 90) return "critical";
+  if (pct >= 70) return "attention";
+  return "healthy";
+}
+
+function formatNum(n) {
+  if (n == null || isNaN(n)) return "—";
+  return Number(n).toLocaleString("en-US");
+}
+
+function gaugeRow(label, pct, tier, valueText) {
+  const capped = Math.max(0, Math.min(100, Number(pct) || 0));
+  const t = tier || "neutral";
+  return `<div class="ve-gauge-row">
+    <div class="ve-gauge-row__label">${esc(label)}</div>
+    <div class="ve-gauge"><span class="ve-gauge__fill ve-gauge__fill--${esc(t)}" style="width: ${capped}%"></span></div>
+    <div class="ve-gauge-row__value">${esc(valueText || `${Math.round(capped)}%`)}</div>
+  </div>`;
+}
+
+function renderHealthHeader(d) {
+  const tally = d.status_tally || { healthy: 0, attention: 0, critical: 0, graded_total: 6, observational: [] };
+  const qs = d.quick_stats || {};
+  const obs = Array.isArray(tally.observational) ? tally.observational.join(", ") : "";
+  const kpis = [
+    { label: "Plugins", value: qs.plugins },
+    { label: "Skills", value: qs.skills },
+    { label: "Hooks", value: qs.hooks },
+    { label: "MCP Servers", value: qs.mcp_servers },
+    { label: "Est. startup tokens", value: qs.est_startup_tokens != null ? formatNum(qs.est_startup_tokens) : null },
+    { label: "Window", value: qs.context_window_size != null ? `${(qs.context_window_size / 1000).toFixed(0)}K` : null },
+  ].filter(k => k.value != null && k.value !== "");
+
+  const kpiHtml = kpis.length > 0
+    ? `  <div class="kpi-grid">
+${kpis.map(k => `    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(k.value)}</span><span class="kpi-label">${esc(k.label)}</span></div>`).join("\n")}
+  </div>`
+    : "";
+
+  return `<section id="header" class="ve-card ve-card--hero" style="--i: 0">
+  <h1>${esc(d.title || "Environment Health Report")}</h1>
+  <p class="hero-subtitle">${esc(d.summary || "Claude Code environment diagnostics")}</p>
+  <div class="scope-summary">
+    <span class="ve-tier ve-tier--healthy">🟢 ${esc(tally.healthy || 0)} healthy</span>
+    <span class="ve-tier ve-tier--attention">🟡 ${esc(tally.attention || 0)} attention</span>
+    <span class="ve-tier ve-tier--critical">🔴 ${esc(tally.critical || 0)} critical</span>
+    <span class="scope-badge">Graded: ${esc(tally.graded_total || 6)} areas</span>
+    ${obs ? `<span class="scope-badge">Observational: ${esc(obs)}</span>` : ""}
+    ${d.scan_date ? `<span class="scope-badge">${esc(d.scan_date)}</span>` : ""}
+  </div>
+  ${d.top_lever ? `<p class="hero-insight"><strong>Top lever:</strong> ${esc(d.top_lever)}</p>` : ""}
+${kpiHtml}
+  ${d.estimate_caveat ? `<p class="text-dim" style="font-size: 12px; margin-top: 12px; color: var(--text-dim);">${esc(d.estimate_caveat)}</p>` : ""}
+</section>`;
+}
+
+function renderHealthOverview(d) {
+  const totals = d.totals || {};
+  const plugins = Array.isArray(d.plugins) ? d.plugins : [];
+  const notes = Array.isArray(d.info_notes) ? d.info_notes : [];
+
+  const totalsRow = `  <div class="kpi-grid">
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.active_plugins || 0)}</span><span class="kpi-label">Active plugins</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.disabled_plugins || 0)}</span><span class="kpi-label">Disabled</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.total_skills || 0)}</span><span class="kpi-label">Skills</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.total_commands || 0)}</span><span class="kpi-label">Commands</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.local_skills || 0)}</span><span class="kpi-label">Local</span></div>
+  </div>`;
+
+  const pluginRows = plugins.map(p => `<tr>
+    <td>${esc(p.name)}</td>
+    <td>${esc(p.description || "")}</td>
+    <td style="text-align: right">${esc(p.skill_count || 0)}</td>
+    <td style="text-align: right">${esc(p.command_count || 0)}</td>
+    <td><span class="scope-badge">${esc(p.enabled_state || "active")}</span></td>
+  </tr>`).join("\n");
+
+  const notesHtml = notes.length > 0
+    ? `  <div class="ve-card ve-card--recessed" style="margin-top: 12px">
+    <div class="ve-card__label">Observations</div>
+    <ul>${notes.map(n => `<li>ℹ️ ${esc(n.text || n)}</li>`).join("")}</ul>
+  </div>`
+    : "";
+
+  return `<section id="overview" class="ve-card ve-card--elevated" style="--i: 1">
+  <h2>Plugin &amp; Skill Inventory ${tierBadge("observational")}</h2>
+  <p class="hero-insight">${esc(d.summary || "No official thresholds apply — raw data only.")}</p>
+${totalsRow}
+  <div class="chart-container" style="margin-top: 16px">
+    <canvas id="component-chart"></canvas>
+  </div>
+  <div class="table-wrapper" style="margin-top: 16px">
+    <table>
+      <thead><tr><th>Plugin</th><th>Description</th><th>Skills</th><th>Commands</th><th>State</th></tr></thead>
+      <tbody>${pluginRows}</tbody>
+    </table>
+  </div>
+${notesHtml}
+</section>`;
+}
+
+function renderContextBudget(d) {
+  const al = d.always_loaded || {};
+  const total = al.total?.tokens ?? 0;
+  const windowSize = d.context_window_size || 200000;
+  const loadPct = Math.round((total / windowSize) * 100 * 10) / 10;
+  const components = ["system_prompt", "memory", "env_info", "mcp_names", "skill_descriptions", "claude_md", "rules"];
+  const bars = components
+    .filter(c => al[c])
+    .map(c => {
+      const row = al[c];
+      const pct = total > 0 ? Math.round((row.tokens / total) * 100) : 0;
+      return gaugeRow(row.label || c, pct, "neutral", `${formatNum(row.tokens)} tok (${pct}%)`);
+    })
+    .join("\n");
+
+  const refs = Array.isArray(d.component_status_refs) ? d.component_status_refs : [];
+  const refsHtml = refs.length > 0
+    ? `  <h3>Component grading (delegated)</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Component</th><th>Owner</th><th>Status</th><th>Rationale</th></tr></thead>
+      <tbody>${refs.map(r => `<tr><td>${esc(r.component)}</td><td>§${esc(r.owner_section)}</td><td>${tierBadge(r.status)}</td><td>${esc(r.rationale || "")}</td></tr>`).join("")}</tbody>
+    </table>
+  </div>`
+    : "";
+
+  const env = d.env_and_settings || {};
+  const envHtml = `  <div class="ve-card ve-card--recessed" style="margin-bottom: 12px">
+    <div class="ve-card__label">Environment</div>
+    <ul>
+      <li><code>ENABLE_TOOL_SEARCH</code> = ${esc(env.enable_tool_search || "deferred")}</li>
+      <li><code>SLASH_COMMAND_TOOL_CHAR_BUDGET</code> = ${env.desc_budget_override != null ? esc(env.desc_budget_override) : "<em>unset</em>"}</li>
+      <li><code>CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD</code> = ${env.add_dir_claude_md ? "1" : "0"}</li>
+      <li><code>CLAUDE_CODE_DISABLE_AUTO_MEMORY</code> = ${env.auto_memory_disabled ? "1" : "0"}</li>
+    </ul>
+  </div>`;
+
+  return `<section id="context-budget" class="ve-card ve-card--elevated" style="--i: 2">
+  <h2>Startup Context Budget ${tierBadge("observational")}</h2>
+  <p class="hero-insight">Estimated startup load: <strong>${formatNum(total)}</strong> tokens (${loadPct}% of ${formatNum(windowSize)}-token window)</p>
+${envHtml}
+  <h3>Always-loaded breakdown</h3>
+${bars}
+${refsHtml}
+  <p class="text-dim" style="font-size: 12px; color: var(--text-dim); margin-top: 12px">${esc(d.estimate_caveat || "Values are estimates. Run /context for ground truth.")}</p>
+</section>`;
+}
+
+function renderSkillHealth(d) {
+  const db = d.description_budget || {};
+  const ar = d.at_rest_body_sizes || {};
+  const pc = d.post_compact_risk || {};
+  const dmi = d.disable_model_invocation || {};
+
+  const budgetTier = db.status || tierFromPct(db.pct || 0);
+  const budgetGauge = gaugeRow(
+    `Descriptions (${db.budget_source || "budget"})`,
+    db.pct || 0,
+    budgetTier,
+    `${formatNum(db.total_chars || 0)} / ${formatNum(db.effective_budget || 0)} chars`
+  );
+
+  const over250 = Array.isArray(db.over_250_char_entries) ? db.over_250_char_entries : [];
+  const over250Html = over250.length > 0
+    ? `  <h4>Entries over 250-char cap (truncated in listing)</h4>
+  <div class="table-wrapper">
+    <table><thead><tr><th>Plugin</th><th>Skill</th><th>Chars</th></tr></thead>
+    <tbody>${over250.map(e => `<tr><td>${esc(e.plugin)}</td><td>${esc(e.skill)}</td><td>${esc(e.chars)}</td></tr>`).join("")}</tbody></table>
+  </div>`
+    : "";
+
+  const atRestSkills = Array.isArray(ar.skills) ? ar.skills.filter(s => s.over_500) : [];
+  const atRestHtml = atRestSkills.length > 0
+    ? `  <h4>SKILL.md files over 500 lines (at-rest)</h4>
+  <div class="table-wrapper">
+    <table><thead><tr><th>Plugin</th><th>Skill</th><th>Lines</th></tr></thead>
+    <tbody>${atRestSkills.map(s => `<tr><td>${esc(s.plugin)}</td><td>${esc(s.skill)}</td><td>${esc(s.body_lines)}</td></tr>`).join("")}</tbody></table>
+  </div>`
+    : `  <p class="text-dim" style="color: var(--text-dim)">All SKILL.md files are under 500 lines.</p>`;
+
+  const pcSkills = Array.isArray(pc.skills_over_5k) ? pc.skills_over_5k : [];
+  const pcHtml = pcSkills.length > 0
+    ? `  <h4>Post-compact truncation risk (latent — only if invoked &amp; session compacts)</h4>
+  <div class="table-wrapper">
+    <table><thead><tr><th>Plugin</th><th>Skill</th><th>Est. tokens</th></tr></thead>
+    <tbody>${pcSkills.map(s => `<tr><td>${esc(s.plugin)}</td><td>${esc(s.skill)}</td><td>${esc(formatNum(s.est_tokens))}</td></tr>`).join("")}</tbody></table>
+  </div>
+  <p class="text-dim" style="font-size: 12px; color: var(--text-dim)">${pc.would_exceed_25k ? "⚠ Combined skill bodies exceed the 25K re-injection cap — guaranteed truncation if all invoked together." : "Combined skill bodies stay under the 25K re-injection cap."}</p>`
+    : `  <p class="text-dim" style="color: var(--text-dim)">No skills exceed the 5K-token post-compact threshold.</p>`;
+
+  const notUsing = Array.isArray(dmi.not_using) ? dmi.not_using.slice(0, 8) : [];
+  const dmiHtml = notUsing.length > 0
+    ? `  <details class="collapsible">
+    <summary>disable-model-invocation candidates (${notUsing.length} shown)</summary>
+    <div class="table-wrapper">
+      <table><thead><tr><th>Plugin</th><th>Skill</th><th>Desc chars</th></tr></thead>
+      <tbody>${notUsing.map(s => `<tr><td>${esc(s.plugin)}</td><td>${esc(s.skill)}</td><td>${esc(s.desc_chars)}</td></tr>`).join("")}</tbody></table>
+    </div>
+  </details>`
+    : "";
+
+  return `<section id="skill-health" class="ve-card ve-card--elevated" style="--i: 3">
+  <h2>Skill Health ${tierBadge(budgetTier)}</h2>
+  <h3>Description budget (§3)</h3>
+${budgetGauge}
+${over250Html}
+  <h3>At-rest SKILL.md size (§4a) ${tierBadge(ar.status || "healthy")}</h3>
+${atRestHtml}
+  <h3>Post-compact re-injection budget (§4b) ${tierBadge(pc.status || "healthy")}</h3>
+${pcHtml}
+${dmiHtml}
+</section>`;
+}
+
+function renderTriggerAnalysis(d) {
+  const collisions = Array.isArray(d.collisions) ? d.collisions : [];
+  const status = d.status || "healthy";
+
+  const rows = collisions.map(c => `<tr>
+    <td><code>${esc(c.skill_a)}</code></td>
+    <td><code>${esc(c.skill_b)}</code></td>
+    <td><span class="scope-badge scope-badge--${c.classification === "DUPLICATE" ? "high" : "medium"}">${esc(c.classification)}</span></td>
+    <td>${renderKeywords(c.shared_keywords)}</td>
+    <td>${esc(c.note || "")}</td>
+  </tr>`).join("\n");
+
+  const mermaid = d.mermaid_diagram
+    ? renderMermaidWrap("Collision clusters", d.mermaid_diagram, "md")
+    : "";
+
+  const body = collisions.length > 0
+    ? `  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Skill A</th><th>Skill B</th><th>Type</th><th>Shared keywords</th><th>Note</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>
+${mermaid}`
+    : `  <p class="text-dim" style="color: var(--text-dim)">No trigger collisions detected.</p>`;
+
+  return `<section id="trigger-analysis" class="ve-card ve-card--elevated" style="--i: 4">
+  <h2>Trigger Collision Analysis ${tierBadge(status)}</h2>
+  <p class="hero-insight">Inspector: ${esc(d.inspector || "trigger-collision-inspector subagent")}. Descriptions analyzed: <strong>${esc(d.total_descriptions_analyzed || 0)}</strong></p>
+${body}
+</section>`;
+}
+
+function renderHooksAndMcp(d) {
+  const h = d.hooks || {};
+  const m = d.mcp || {};
+  const types = h.type_counts || {};
+  const collisions = Array.isArray(h.event_collisions) ? h.event_collisions : [];
+  const servers = Array.isArray(m.servers) ? m.servers : [];
+
+  const hookKpis = `  <div class="kpi-grid">
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(h.total || 0)}</span><span class="kpi-label">Total hooks</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(types.command || 0)}</span><span class="kpi-label">command</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(types.http || 0)}</span><span class="kpi-label">http</span></div>
+    <div class="kpi-card kpi-card--warning"><span class="kpi-value">${esc(types.prompt || 0)}</span><span class="kpi-label">prompt (LLM)</span></div>
+    <div class="kpi-card kpi-card--warning"><span class="kpi-value">${esc(types.agent || 0)}</span><span class="kpi-label">agent (LLM)</span></div>
+  </div>`;
+
+  const collisionHtml = collisions.length > 0
+    ? `  <h4>Event collisions</h4>
+  <div class="table-wrapper">
+    <table><thead><tr><th>Event</th><th>Matcher</th><th>Sources</th></tr></thead>
+    <tbody>${collisions.map(c => `<tr><td>${esc(c.event)}</td><td><code>${esc(c.matcher)}</code></td><td>${esc((c.sources || []).join(", "))}</td></tr>`).join("")}</tbody></table>
+  </div>`
+    : "";
+
+  const serverRows = servers.length > 0
+    ? `  <div class="table-wrapper">
+    <table><thead><tr><th>Server</th><th>Source scope</th></tr></thead>
+    <tbody>${servers.map(s => `<tr><td>${esc(s.name)}</td><td><span class="scope-badge">${esc(s.source_scope || "unknown")}</span></td></tr>`).join("")}</tbody></table>
+  </div>`
+    : `  <p class="text-dim" style="color: var(--text-dim)">No MCP servers configured.</p>`;
+
+  return `<section id="hooks-mcp" class="ve-card ve-card--elevated" style="--i: 5">
+  <h2>Hooks &amp; MCP ${tierBadge(h.status || "healthy")}</h2>
+  <h3>Hooks</h3>
+${hookKpis}
+${collisionHtml}
+  <h3>MCP ${tierBadge(m.status || "healthy")}</h3>
+  <p class="hero-insight">${esc(m.server_count || 0)} servers · Loading mode: <code>${esc(m.effective_mode || "deferred")}</code>${m.est_tokens ? ` · Est. ${formatNum(m.est_tokens)} tok` : ""}</p>
+${serverRows}
+</section>`;
+}
+
+function renderClaudeMdMemory(d) {
+  const cm = d.claude_md || {};
+  const mem = d.memory || {};
+  const files = Array.isArray(cm.files) ? cm.files : [];
+
+  const fileRows = files.map(f => {
+    const pct = Math.min(100, Math.round((f.lines / 200) * 100));
+    const tier = f.lines > 300 ? "critical" : f.lines > 200 ? "attention" : "healthy";
+    return `<tr>
+      <td><code>${esc(f.path)}</code></td>
+      <td><span class="scope-badge">${esc(f.scope)}</span></td>
+      <td style="text-align: right">${esc(f.lines)}</td>
+      <td style="min-width: 180px"><div class="ve-gauge"><span class="ve-gauge__fill ve-gauge__fill--${tier}" style="width: ${pct}%"></span></div></td>
+    </tr>`;
+  }).join("\n");
+
+  const filesHtml = files.length > 0
+    ? `  <h3>CLAUDE.md files ${tierBadge(cm.status || "healthy")}</h3>
+  <div class="table-wrapper">
+    <table><thead><tr><th>Path</th><th>Scope</th><th>Lines</th><th>vs 200-line target</th></tr></thead><tbody>${fileRows}</tbody></table>
+  </div>`
+    : `  <p class="text-dim" style="color: var(--text-dim)">No CLAUDE.md files found in the walk.</p>`;
+
+  const memTier = mem.status || (mem.over_25kb ? "critical" : mem.pct_of_limit > 90 ? "attention" : "healthy");
+  const memGauge = mem.path
+    ? gaugeRow(
+      `MEMORY.md (${mem.lines || 0} lines, ${formatNum(mem.bytes || 0)} bytes)`,
+      mem.pct_of_limit || 0,
+      memTier,
+      `${mem.pct_of_limit || 0}% of 25KB cap`
+    )
+    : `  <p class="text-dim" style="color: var(--text-dim)">No MEMORY.md found for this project.</p>`;
+
+  const imports = Array.isArray(cm.imports) ? cm.imports : [];
+  const importsHtml = imports.length > 0
+    ? `  <details class="collapsible">
+    <summary>@import chain (${imports.length})</summary>
+    <ul>${imports.map(i => `<li><code>${esc(i.from)}</code> → <code>${esc(i.target)}</code></li>`).join("")}</ul>
+  </details>`
+    : "";
+
+  return `<section id="claude-md-memory" class="ve-card ve-card--elevated" style="--i: 6">
+  <h2>CLAUDE.md &amp; Memory Health</h2>
+${filesHtml}
+  <h3>MEMORY.md ${tierBadge(memTier)}</h3>
+${memGauge}
+${importsHtml}
+</section>`;
+}
+
+function renderRecommendations(d) {
+  const items = Array.isArray(d.items) ? d.items : [];
+  const groups = { critical: [], warning: [], info: [] };
+  for (const it of items) {
+    const s = (it.severity || "info").toLowerCase();
+    (groups[s] || groups.info).push(it);
+  }
+
+  function groupHtml(label, list, tier) {
+    if (list.length === 0) return "";
+    const cards = list.map(it => `    <div class="ve-card ve-card--recessed">
+      <div class="ve-card__label">${tierBadge(tier)} · ${esc(it.area || "")}</div>
+      <p><strong>${esc(it.action || "")}</strong></p>
+      ${it.impact_estimate ? `<p style="font-size: 13px; color: var(--text-dim)">Impact: ${esc(it.impact_estimate)}</p>` : ""}
+      ${it.current_value != null ? `<p style="font-size: 13px; color: var(--text-dim)">Current: ${esc(it.current_value)}${it.target_value != null ? ` → Target: ${esc(it.target_value)}` : ""}</p>` : ""}
+      ${it.docs_source ? `<p style="font-size: 12px; color: var(--text-dim)">Source: <code>${esc(it.docs_source)}</code></p>` : ""}
+    </div>`).join("\n");
+    return `  <h3>${esc(label)}</h3>
+${cards}`;
+  }
+
+  const topLever = d.top_lever
+    ? `  <div class="ve-card ve-card--hero" style="margin-bottom: 16px">
+    <div class="ve-card__label">Top Lever</div>
+    <p><strong>${esc(d.top_lever.action || d.top_lever)}</strong></p>
+    ${d.top_lever.impact_estimate ? `<p style="color: var(--text-dim)">${esc(d.top_lever.impact_estimate)}</p>` : ""}
+  </div>`
+    : "";
+
+  const body = items.length > 0
+    ? `${groupHtml("Critical", groups.critical, "critical")}
+${groupHtml("Attention", groups.warning, "attention")}
+${groupHtml("Info", groups.info, "observational")}`
+    : `  <p class="text-dim" style="color: var(--text-dim)">No recommendations — environment looks healthy.</p>`;
+
+  return `<section id="recommendations" class="ve-card ve-card--elevated" style="--i: 7">
+  <h2>Recommendations</h2>
+  ${d.summary ? `<p class="hero-insight">${esc(d.summary)}</p>` : ""}
+${topLever}
+${body}
+</section>`;
+}
+
+function generateHealthToc(sections) {
+  const tocEntries = [
+    { id: "header", label: "Overview" },
+    { id: "overview", label: "Inventory" },
+    { id: "context-budget", label: "Context Budget" },
+    { id: "skill-health", label: "Skill Health" },
+    { id: "trigger-analysis", label: "Triggers" },
+    { id: "hooks-mcp", label: "Hooks & MCP" },
+    { id: "claude-md-memory", label: "CLAUDE.md & Memory" },
+    { id: "recommendations", label: "Recommendations" },
+  ];
+  return tocEntries.map(e => `<a href="#${e.id}">${esc(e.label)}</a>`).join("\n");
+}
+
+function generateHealthChartData(sections) {
+  const scripts = [];
+
+  // Component distribution chart (section 2: overview)
+  const overviewChart = sections.overview?.chart_data;
+  if (overviewChart && overviewChart.labels && overviewChart.datasets) {
+    scripts.push(`<script>
+(function(){
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var canvas = document.getElementById('component-chart');
+  if (!canvas) return;
+  new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: ${JSON.stringify(overviewChart.labels)},
+      datasets: [{
+        data: ${JSON.stringify(overviewChart.datasets[0].data)},
+        backgroundColor: isDark
+          ? ['rgba(34,211,238,0.7)', 'rgba(52,211,153,0.7)', 'rgba(251,191,36,0.7)', 'rgba(248,113,113,0.7)', 'rgba(139,92,246,0.7)']
+          : ['rgba(8,145,178,0.7)', 'rgba(5,150,105,0.7)', 'rgba(217,119,6,0.7)', 'rgba(220,38,38,0.7)', 'rgba(109,40,217,0.7)'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { color: isDark ? '#e6edf3' : '#1a1a2e' } } }
+    }
+  });
+})();
+</script>`);
+  }
+
+  return scripts.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -1475,46 +1923,69 @@ function main() {
   }
 
   const input = JSON.parse(fs.readFileSync(args.data, "utf-8"));
-
-  // Normalize common LLM output mismatches before validation
-  const fixes = normalizeSectionsData(input);
-  if (fixes.length > 0) {
-    console.error(`\n=== NORMALIZED ${fixes.length} field(s) ===`);
-    for (const f of fixes) console.error(`  FIX: ${f}`);
-  }
-
-  // Validate JSON data before rendering
-  const { warnings, errors } = validateSectionsData(input);
-  if (errors.length > 0) {
-    console.error(`\n=== JSON DATA ERRORS (${errors.length}) ===`);
-    for (const e of errors) console.error(`  ERROR: ${e}`);
-  }
-  if (warnings.length > 0) {
-    console.error(`\n=== JSON DATA WARNINGS (${warnings.length}) ===`);
-    for (const w of warnings) console.error(`  WARN: ${w}`);
-  }
-  if (errors.length > 0) {
-    console.error("\nRendering will proceed but output may be incomplete.");
-  }
-
   const meta = input.metadata || {};
   const sections = input.sections || {};
   const srcCtx = input.source_context || null;
+  const reportType = meta.report_type || "agent-extension-visualizing";
 
-  // Render all 11 sections
-  const rendered = [
-    renderHeader(sections.header || {}),
-    renderOverview(sections.overview || {}),
-    renderArchitecture(sections.architecture || {}),
-    renderFeatureDeepDive(sections.feature_deep_dive || {}, srcCtx),
-    renderEnvironmentFit(sections.environment_fit),
-    renderUsageGuide(sections.usage_guide || {}),
-    renderComponents(sections.components || {}, srcCtx),
-    renderSecurityAudit(sections.security_audit || {}),
-    renderDependencies(sections.dependencies || {}),
-    renderPluginProfile(sections.plugin_profile || {}),
-    renderFooter(sections.footer || {}),
-  ];
+  let rendered;
+  let tocContent;
+  let chartData;
+  let defaultTitle;
+
+  if (reportType === "environment-health") {
+    // Environment Health: 8 sections, no agent-extension normalization/validation
+    rendered = [
+      renderHealthHeader(sections.header || {}),
+      renderHealthOverview(sections.overview || {}),
+      renderContextBudget(sections.context_budget || {}),
+      renderSkillHealth(sections.skill_health || {}),
+      renderTriggerAnalysis(sections.trigger_analysis || {}),
+      renderHooksAndMcp(sections.hooks_and_mcp || {}),
+      renderClaudeMdMemory(sections.claude_md_memory || {}),
+      renderRecommendations(sections.recommendations || {}),
+    ];
+    tocContent = generateHealthToc(sections);
+    chartData = generateHealthChartData(sections);
+    defaultTitle = "Environment Health Report";
+  } else {
+    // Agent Extension Visualizing: 11 sections with normalization + validation
+    const fixes = normalizeSectionsData(input);
+    if (fixes.length > 0) {
+      console.error(`\n=== NORMALIZED ${fixes.length} field(s) ===`);
+      for (const f of fixes) console.error(`  FIX: ${f}`);
+    }
+
+    const { warnings, errors } = validateSectionsData(input);
+    if (errors.length > 0) {
+      console.error(`\n=== JSON DATA ERRORS (${errors.length}) ===`);
+      for (const e of errors) console.error(`  ERROR: ${e}`);
+    }
+    if (warnings.length > 0) {
+      console.error(`\n=== JSON DATA WARNINGS (${warnings.length}) ===`);
+      for (const w of warnings) console.error(`  WARN: ${w}`);
+    }
+    if (errors.length > 0) {
+      console.error("\nRendering will proceed but output may be incomplete.");
+    }
+
+    rendered = [
+      renderHeader(sections.header || {}),
+      renderOverview(sections.overview || {}),
+      renderArchitecture(sections.architecture || {}),
+      renderFeatureDeepDive(sections.feature_deep_dive || {}, srcCtx),
+      renderEnvironmentFit(sections.environment_fit),
+      renderUsageGuide(sections.usage_guide || {}),
+      renderComponents(sections.components || {}, srcCtx),
+      renderSecurityAudit(sections.security_audit || {}),
+      renderDependencies(sections.dependencies || {}),
+      renderPluginProfile(sections.plugin_profile || {}),
+      renderFooter(sections.footer || {}),
+    ];
+    tocContent = generateToc(sections);
+    chartData = generateChartData(sections.overview);
+    defaultTitle = "Agent Extension Visual Report";
+  }
 
   // Write section files
   const outDir = args.output;
@@ -1528,19 +1999,19 @@ function main() {
   // Generate metadata.json
   const metadata = {
     lang: meta.lang || "en",
-    title: meta.title || "Agent Extension Visual Report",
+    title: meta.title || defaultTitle,
     font_link: meta.font_link || "",
     css_variables: meta.css_variables || "",
     css_variables_dark: meta.css_variables_dark || "",
     mermaid_theme: meta.mermaid_theme || "",
-    toc_content: generateToc(sections),
-    chart_data: generateChartData(sections.overview),
+    toc_content: tocContent,
+    chart_data: chartData,
   };
 
   const metaPath = path.join(outDir, "metadata.json");
   fs.writeFileSync(metaPath, JSON.stringify(metadata, null, 2), "utf-8");
 
-  console.log(`Rendered: ${rendered.length} sections + metadata.json to ${outDir}`);
+  console.log(`Rendered: ${rendered.length} sections + metadata.json to ${outDir} (type: ${reportType})`);
 }
 
 main();
