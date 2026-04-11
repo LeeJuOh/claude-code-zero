@@ -1,6 +1,6 @@
 ---
 name: claw-mo-setup
-description: "Use when the user wants to initialize claw-mo for a project, choose markdown watch patterns, or set up persistent mo groups for the current repository."
+description: "Configure mo markdown viewer for the current project. Use when the user wants to set up doc watching, configure mo patterns, initialize claw-mo for a project, or set up markdown viewer groups."
 allowed-tools: Bash, AskUserQuestion, Read, Write
 ---
 
