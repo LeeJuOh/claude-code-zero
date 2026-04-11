@@ -18,15 +18,22 @@ This plugin saves per-project config and organizes files into groups so it all c
 /claw-mo-up        ← every time after: start server + open browser
 ```
 
+## Behavior Notes
+
+- You can rerun `/claw-mo-up` without guessing whether mo is already running — claw-mo checks the saved project session first.
+- If an old mo session came back with the wrong tabs or groups, claw-mo flags that mismatch before it reuses the viewer.
+- In cmux, repeated opens reuse the existing mo browser panel when possible instead of cluttering your layout with duplicate tabs.
+- Setup shows file counts before saving broad watch patterns, so you can avoid accidentally loading huge markdown trees.
+
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/claw-mo-up` | Start server + open browser |
+| `/claw-mo-up` | Start or reuse the project server, then open/reuse browser |
 | `/claw-mo-down` | Stop server for current project |
 | `/claw-mo-setup` | Configure groups, watch patterns, and port |
 | `/claw-mo-open <path>` | Add a file or directory to mo and open it |
-| `/claw-mo-manage` | Interactive management (status, patterns, groups, reset) |
+| `/claw-mo-manage` | Interactive management (status, patterns, groups, reset, sync) |
 
 ## Configuration
 

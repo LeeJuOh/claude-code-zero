@@ -1,6 +1,6 @@
 ---
 name: claw-mo-setup
-description: "Configure mo markdown viewer for current project. Use when user wants to set up doc watching, configure mo patterns, initialize claw-mo for a project, or set up markdown viewer."
+description: "Use when the user wants to initialize claw-mo for a project, choose markdown watch patterns, or set up persistent mo groups for the current repository."
 allowed-tools: Bash, AskUserQuestion, Read, Write
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Bash, AskUserQuestion, Read, Write
 
 Configure mo markdown viewer with group-based watch patterns for the current project.
 
-For config schema, port logic, and groups: read `${PLUGIN_DIR}/references/shared.md`
+For config schema, port logic, and groups: read `${CLAUDE_PLUGIN_ROOT}/references/shared.md`
 
 ## Steps
 
@@ -18,7 +18,7 @@ For config schema, port logic, and groups: read `${PLUGIN_DIR}/references/shared
 
 2. **Detect project root**: `git rev-parse --show-toplevel` (fallback: `$PWD`)
 
-3. **Check existing config**: Read `${PLUGIN_DATA_DIR}/config.json`. If an entry exists for this project:
+3. **Check existing config**: Read `${CLAUDE_PLUGIN_DATA}/config.json`. If an entry exists for this project:
    - Show current groups and port
    - Ask: "Config already exists — update existing groups or start fresh?"
    - **Update**: Skip to step 6 with current groups pre-populated (user can add/remove/rename)
@@ -40,9 +40,10 @@ For config schema, port logic, and groups: read `${PLUGIN_DIR}/references/shared
      ```bash
      find "$PROJECT_ROOT/DIRNAME" -name '*.md' -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/vendor/*' 2>/dev/null | wc -l
      ```
+   - If a top-level directory is huge, do not blindly suggest `DIRNAME/**/*.md`. Inspect one level deeper and propose narrower subgroups when that better matches the actual content (for example `raw/articles/**/*.md` but not `raw/**/*.md` when `raw/repos/**` dominates)
    - If root `.md` files exist, suggest group `default` with `*.md`
    - Use the actual directory name as the group name — don't rename or merge unless obvious (e.g., a single top-level dir with 1 file might be skipped)
-   - Always show file counts so the user can see what each pattern covers
+   - Always show file counts so the user can see what each pattern covers, and explicitly call out directories you are excluding because the watch scope would be too large
 
 7. **AskUserQuestion**: Present suggested groups and port together. Example:
    ```
@@ -57,11 +58,12 @@ For config schema, port logic, and groups: read `${PLUGIN_DIR}/references/shared
    Proceed with these? Let me know if you want to add, remove, or change anything.
    ```
 
-8. **Save config** to `${PLUGIN_DATA_DIR}/config.json` (create file if needed, merge if exists). Use v2 `groups` format.
+8. **Save config** to `${CLAUDE_PLUGIN_DATA}/config.json` (create file if needed, merge if exists). Use v2 `groups` format.
 
 9. **Offer to start**: "Setup complete! Want me to start the server with `/claw-mo-up`?"
 
 ## Gotchas
 
 - **`**/*.md` can explode**: Projects with vendored code may contain thousands of .md files. Always show the count before accepting broad patterns. Guide users toward specific directory patterns.
+- **Large top-level directories need one more pass**: If a directory contains a massive subtree, inspect its immediate children before suggesting patterns. Otherwise Claude tends to recommend broad watches like `raw/**/*.md` that swamp mo with irrelevant files.
 - **Group names become URL paths**: Keep them simple lowercase, no spaces or special chars.

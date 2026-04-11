@@ -10,7 +10,7 @@ If mo is not installed, tell the user: `brew install k1LoW/tap/mo` and stop.
 
 ## Config
 
-Location: `${PLUGIN_DATA_DIR}/config.json`
+Location: `${CLAUDE_PLUGIN_DATA}/config.json`
 
 ### v2 Schema (groups)
 
@@ -117,9 +117,11 @@ fi
 `cmux browser open` creates a **new browser surface** each time. To avoid duplicate browser tabs on repeated `/claw-mo-up` calls, prefer `cmux browser navigate` if a browser surface already exists:
 
 ```bash
-# If you know the browser surface ID from a previous open:
-cmux browser "$BROWSER_SURFACE_ID" navigate "$URL"
+# Reuse the exact surface identifier returned by cmux, e.g. "surface:4"
+cmux browser "surface:4" navigate "$URL"
 ```
+
+If `cmux list-pane-surfaces` shows `surface:4`, do not strip the `surface:` prefix. Passing just `4` can fail with `Surface index not found`.
 
 For first-time setup, `cmux browser open-split` opens the browser alongside the terminal in a split pane — useful for side-by-side coding + docs viewing.
 
@@ -135,6 +137,6 @@ For first-time setup, `cmux browser open-split` opens the browser alongside the 
 - **HTTP API needs absolute paths**: When adding files via `/_/api/files`, always `realpath` the file path first.
 - **Group name = URL path**: Group names become URL segments (`/docs`, `/plans`). Keep them simple lowercase — no spaces or special chars.
 - **`--watch` and file arguments are mutually exclusive**: `mo --watch '*.md' README.md` fails. Use either `--watch` patterns or explicit file arguments, not both. Directory arguments are the exception — they work with `--watch`.
-- **mo auto-restores previous sessions**: When starting a new server, mo restores its backup (`$XDG_STATE_HOME/mo/backup/mo-<port>.json`) and merges with CLI-specified files. This means files from a previous manual `mo` invocation may reappear. Use `echo "y" | mo --clear -p $PORT` before starting if you need a clean slate.
+- **mo auto-restores previous sessions**: When starting a new server, mo restores its backup (`$XDG_STATE_HOME/mo/backup/mo-<port>.json`) and merges with CLI-specified files. This means files from a previous manual `mo` invocation may reappear. A matching port is not enough — compare the running session's groups to config before reusing it. Use `echo "y" | mo --clear -p $PORT` before starting if you need a clean slate.
 - **cmux `browser open` creates a new surface each time**: Repeated `/claw-mo-up` calls will stack browser tabs. Use `cmux browser navigate` to reuse an existing browser surface when possible.
 - **cmux also has `cmux markdown open <path>`**: Opens a single markdown file in a dedicated cmux panel. mo is better for multi-file watching with groups.
