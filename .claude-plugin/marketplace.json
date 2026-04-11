@@ -17,7 +17,7 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.12.0",
+      "version": "1.13.0",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -53,7 +53,7 @@
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "2.0.2",
+      "version": "2.1.0",
       "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Duck character (🦆) with structured question frameworks (assumptions/blindspots/tradeoffs). Auto-hooks at workflow checkpoints: plan creation, spec documents, PR/MR."
     },
     {
@@ -66,7 +66,7 @@
     {
       "name": "claw-mo",
       "source": "./plugins/claw-mo",
-      "version": "2.3.1",
+      "version": "2.4.0",
       "description": "Manage mo markdown viewer sessions with group-based organization: auto-start, browser integration, per-project watch patterns, port isolation",
       "category": "lab"
     },
