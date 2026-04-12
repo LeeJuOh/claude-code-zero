@@ -310,12 +310,12 @@ For each canonical alias, use its `model` field (the value that goes into `ANTHR
 curl -s -o /tmp/vp_val.json -w '%{http_code}\n' \
   -X POST http://localhost:8318/v1/chat/completions \
   -H 'content-type: application/json' \
-  -d '{"model":"<MODEL_NAME>","max_tokens":10,"messages":[{"role":"user","content":"ping"}]}'
+  -d '{"model":"<MODEL_NAME>","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}'
 ```
 
 Where `<MODEL_NAME>` is the model field from `canonical_aliases` (e.g., `gpt-5.4(medium)`, `claude-opus-4.6(high)`, `claude-sonnet-4.6`), **not** the alias field (e.g., `cc-codex-gpt54-med`).
 
-Use `max_tokens:10` instead of `max_tokens:1` — some reasoning models reject `max_tokens:1` as too low.
+Use `max_tokens:16` — many models enforce a minimum of 16 tokens and reject lower values.
 
 Interpret:
 
