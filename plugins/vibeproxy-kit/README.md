@@ -44,7 +44,7 @@ Models like `gpt-5.4` and `claude-opus-4.6` support effort suffixes: `gpt-5.4(hi
 
 ### Validation
 
-Each alias is validated by sending a real chat-completions request with the actual model name (e.g., `gpt-5.4(medium)`), not the shell alias name. This confirms end-to-end routing through VibeProxy to the upstream provider.
+Each alias is validated by sending a real chat-completions request with the same model name the shell alias sends (the `request_model` value). For `fork: false` base models this is the alias name itself (e.g., `cc-gravity-opus46`); for effort-suffix models it is the original suffixed form (e.g., `gpt-5.4(medium)`). This confirms end-to-end routing through VibeProxy to the upstream provider.
 
 ## How it treats your files
 

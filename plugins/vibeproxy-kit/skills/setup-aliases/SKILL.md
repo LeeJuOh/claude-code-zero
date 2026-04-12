@@ -162,37 +162,12 @@ Use one multi-select `AskUserQuestion` per backend with all families mixed in.
 Effort variants are NOT separate models in `/v1/models` — they are constructed by appending a parenthesized suffix to the base model name at request time (e.g., `gpt-5.4(high)`). Detection uses two sources:
 
 1. **Probe data** — each model with `"thinking": true` in the probe output supports effort suffixes
-2. **Effort levels map** — the specific levels available per model ID (from VibeProxy's built-in model definitions)
-
-**Effort levels map:**
-
-| Model ID | Levels (codex) | Levels (copilot) |
-|---|---|---|
-| `gpt-5` | `minimal`, `low`, `medium`, `high` | `low`, `medium`, `high` |
-| `gpt-5.1` | `none`, `low`, `medium`, `high` | `none`, `low`, `medium`, `high` |
-| `gpt-5.2` | `none`, `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
-| `gpt-5.4` | `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
-| `gpt-5.4-mini` | `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
-| `claude-opus-4.6` | — | `low`, `medium`, `high` |
-| `claude-sonnet-4.6` | — | `low`, `medium`, `high` |
-| `claude-sonnet-4.5` | — | `low`, `medium`, `high` |
-| `claude-opus-4.5` | — | `low`, `medium`, `high` |
-
-| Model ID | Levels (antigravity) | Levels (gemini-cli) |
-|---|---|---|
-| `claude-opus-4-6-thinking` | budget-based (no discrete levels) | — |
-| `claude-sonnet-4-6` | budget-based (no discrete levels) | — |
-| `gemini-3.1-pro-high` | `low`, `medium`, `high` | — |
-| `gemini-3.1-pro-low` | `low`, `medium`, `high` | — |
-| `gemini-3-pro-high` | `low`, `high` | — |
-| `gemini-3-pro-low` | `low`, `high` | — |
-| `gemini-3.1-pro-preview` | — | `low`, `medium`, `high` |
-| `gemini-3-pro-preview` | — | `low`, `high` |
+2. **Effort levels map** — read `${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/references/effort-levels.md` for the full per-model, per-backend effort levels table
 
 **Detection logic:**
 
 1. For each selected model, check if `thinking: true` in probe data
-2. If yes, look up the model ID + backend token in the effort levels map above. **Normalize dots/hyphens before lookup** — Copilot uses dots (`claude-opus-4.6`) while direct API uses hyphens (`claude-opus-4-6`). The map uses dots for Copilot IDs and hyphens for Antigravity/Gemini IDs, matching how each backend reports them in `/v1/models`. If a probe returns a variant not in the map, try the other format before declaring a miss.
+2. If yes, look up the model ID + backend token in the effort levels map. **Normalize dots/hyphens before lookup** — Copilot uses dots (`claude-opus-4.6`) while direct API uses hyphens (`claude-opus-4-6`). The map uses dots for Copilot IDs and hyphens for Antigravity/Gemini IDs, matching how each backend reports them in `/v1/models`. If a probe returns a variant not in the map, try the other format before declaring a miss.
 3. **Map hit** → automatically present the levels as a multi-select `AskUserQuestion`
 4. **Map miss** (model has `thinking: true` but not in map after both formats tried) → tell the user: "This model supports effort levels but the available levels are unknown. What levels do you want to configure?" and let the user specify
 5. If `thinking` is absent or false → no effort variants, use base model name as-is
@@ -227,6 +202,10 @@ Map each selected model+effort combination to a canonical alias name:
 - `claude-opus-4-6-thinking` → `opus46`  (drop `-thinking` — implicit in antigravity)
 
 **Effort tokens:** `low`, `med`, `high`, `max` (maps from `xhigh` → `max`).
+
+**`fork` field:** Omit the `fork` field (defaults to `false`). With `fork: false`, VibeProxy replaces the original model name in its registry with the alias name — the alias name itself becomes the routable model name. Only set `fork: true` if the user explicitly needs both the original model name and the alias to coexist as separate routes.
+
+**`request_model` field:** For non-suffix base models with `fork: false`, set `request_model` to the alias name (e.g., `cc-gravity-opus46`). For effort-suffix models (e.g., `gpt-5.4(medium)`), set `request_model` to the original suffixed form. This field determines what the shell alias sends as `ANTHROPIC_MODEL` and what validation uses.
 
 ### Step 4: Shortcut aliases
 
@@ -302,18 +281,18 @@ Do not skip this step. Do not proceed to validation before the user confirms.
 
 Each validation call sends a real (billable) inference request. If the user has many aliases, warn them about the per-alias cost before proceeding.
 
-**Critical: use the actual model name, not the alias name.** Shell aliases set `ANTHROPIC_MODEL=<model>` — the model name is what VibeProxy routes (e.g., `gpt-5.4(medium)`). The alias name (e.g., `cc-codex-gpt54-med`) is unknown to VibeProxy's routing table and will fail with "unknown provider".
+**Critical: use the `request_model` value — the same model name the shell alias sends.** Because the plugin uses `fork: false` by default, the original upstream model name is replaced by the alias name in VibeProxy's registry. For non-suffix base models, this means the alias name (e.g., `cc-gravity-opus46`) is the routable name, not the original (e.g., `claude-opus-4-6-thinking`). For effort-suffix models (e.g., `gpt-5.4(medium)`), the original suffix form is still routable because VibeProxy parses the suffix at request time and resolves the base model.
 
-For each canonical alias, use its `model` field (the value that goes into `ANTHROPIC_MODEL`):
+For each canonical alias, use its `request_model` field (the value that goes into `ANTHROPIC_MODEL`):
 
 ```bash
 curl -s -o /tmp/vp_val.json -w '%{http_code}\n' \
   -X POST http://localhost:8318/v1/chat/completions \
   -H 'content-type: application/json' \
-  -d '{"model":"<MODEL_NAME>","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}'
+  -d '{"model":"<REQUEST_MODEL>","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}'
 ```
 
-Where `<MODEL_NAME>` is the model field from `canonical_aliases` (e.g., `gpt-5.4(medium)`, `claude-opus-4.6(high)`, `claude-sonnet-4.6`), **not** the alias field (e.g., `cc-codex-gpt54-med`).
+Where `<REQUEST_MODEL>` is the `request_model` field from `canonical_aliases` — for non-suffix base models this is the alias name (e.g., `cc-gravity-opus46`), for effort-suffix models this is the original suffix form (e.g., `gpt-5.4(medium)`).
 
 Use `max_tokens:16` — many models enforce a minimum of 16 tokens and reject lower values.
 
@@ -350,7 +329,8 @@ Transactional rollback is the default because shell aliases and model aliases fo
 - **Never read `~/.cli-proxy-api/merged-config.yaml` until after the restart gate.** Before restart it is stale. The one exception is `verify_probe.py` during Phase 4 — that is intentional because the hot-reload path triggered by a menu-bar toggle regenerates merged-config in place, and Layer 1 reads exactly that regenerated state.
 - **Do not preserve ambiguous shared model names.** If the user picks `gpt-5.4` from codex and also from copilot, generate `cc-codex-gpt54-high` and `cc-copilot-gpt54-high` as separate canonical aliases. Do not also create a bare `gpt-5.4` alias, because that re-introduces the routing-priority ambiguity the probe cycle was designed to avoid.
 - **5xx is not a rollback trigger.** If the upstream provider is down, the alias is still correctly configured. Log and keep going.
-- **Validate with model names, not alias names.** Shell aliases set `ANTHROPIC_MODEL=gpt-5.4(medium)` — the actual model name. The alias name `cc-codex-gpt54-med` is a shell convenience that VibeProxy has never seen. Sending the alias name as the model in a validation curl will always fail with "unknown provider". Use the `model` field from `canonical_aliases`.
+- **Validate with `request_model`, not the upstream `name`.** With `fork: false`, the upstream model name is replaced by the alias name in VibeProxy's registry. For non-suffix base models, the alias name (e.g., `cc-gravity-opus46`) is the routable name — sending the original upstream name (e.g., `claude-opus-4-6-thinking`) will fail with "unknown provider". For effort-suffix models (e.g., `gpt-5.4(medium)`), the original suffix form is still routable because suffix parsing resolves the base model. Always use the `request_model` field from `canonical_aliases`.
+- **`request_model` must match what VibeProxy sees after alias resolution.** When building `canonical_aliases`, set `request_model` to the alias name for non-suffix base models (because `fork: false` replaces the original name in the registry). For effort-suffix models like `gpt-5.4(medium)`, set `request_model` to the original suffix form (because suffix parsing happens before alias lookup and resolves the base model). The `model` field preserves the upstream name for documentation; `request_model` is what the shell actually sends.
 - **Effort variants are suffix-parsed, not registered.** `gpt-5.4(high)` is not a separate model in VibeProxy's registry — it's `gpt-5.4` with a `(high)` suffix parsed at request time by the thinking layer. This means effort-variant aliases will never appear in `/v1/models` listings, and validating them requires sending the full suffixed name (e.g., `gpt-5.4(high)`) as the model in a chat-completions request.
 - **Show ALL model families per backend.** Do not filter Copilot to only Claude models, or Codex to only GPT models. The same model (e.g., `gpt-5.4`) can appear in multiple backends with different effort levels or routing. Show everything the probe returns; let the user choose.
 
