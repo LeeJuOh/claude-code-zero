@@ -109,28 +109,84 @@ def build_block() -> str:
             continue
         lines.append(f"alias {alias}='{target}'")
 
-    list_rows: list[tuple[str, str]] = []
+    # Group canonical aliases by backend (extracted from label "Backend · Model · Effort")
+    backend_groups: list[tuple[str, list[tuple[str, str]]]] = []
+    seen_backends: dict[str, int] = {}
     for entry in canonical_aliases:
         alias = entry.get("alias")
         label = entry.get("label") or ""
-        if isinstance(alias, str):
-            list_rows.append((alias, label if isinstance(label, str) else ""))
+        if not isinstance(alias, str):
+            continue
+        parts = label.split(" \u00b7 ", 1)
+        backend = parts[0].strip() if parts else "Other"
+        model_desc = parts[1].strip() if len(parts) > 1 else label
+        if backend not in seen_backends:
+            seen_backends[backend] = len(backend_groups)
+            backend_groups.append((backend, []))
+        backend_groups[seen_backends[backend]][1].append((alias, model_desc))
+
+    # Build reverse map: canonical alias → list of shortcut names
+    target_to_shortcuts: dict[str, list[str]] = {}
     for entry in shortcut_aliases:
         alias = entry.get("alias")
         target = entry.get("target")
-        label = entry.get("label") or (f"Shortcut → {target}" if target else "Shortcut")
-        if isinstance(alias, str):
-            list_rows.append((alias, label if isinstance(label, str) else ""))
+        if isinstance(alias, str) and isinstance(target, str):
+            target_to_shortcuts.setdefault(target, []).append(alias)
 
-    if list_rows:
-        width = max(len(row[0]) for row in list_rows)
-        col_start = max(width + 4, 25)
-        lines.append("")
-        lines.append("cc-list() {")
-        for alias_name, label in list_rows:
-            padded = alias_name.ljust(col_start)
-            lines.append(f"  printf '%s%s\\n' {shell_quote(padded)} {shell_quote(label)}")
-        lines.append("}")
+    all_names: list[str] = []
+    all_descs: list[str] = []
+    for _, entries in backend_groups:
+        for a, d in entries:
+            all_names.append(a)
+            all_descs.append(d)
+    if not all_names:
+        all_names.append("")
+        all_descs.append("")
+
+    col1 = max(len(n) for n in all_names) + 2
+    col2 = max(len(d) for d in all_descs) + 2
+    has_shortcuts = bool(target_to_shortcuts)
+    hdr_alias = "Alias"
+    hdr_model = "Model"
+    hdr_short = "Shortcut"
+    rule_width = 2 + col1 + col2 + (len(hdr_short) + 4 if has_shortcuts else 0)
+
+    lines.append("")
+    lines.append("cc-list() {")
+
+    # Column header — once at the top
+    if has_shortcuts:
+        hdr_line = f"  {hdr_alias.ljust(col1)}{hdr_model.ljust(col2)}{hdr_short}"
+    else:
+        hdr_line = f"  {hdr_alias.ljust(col1)}{hdr_model}"
+    lines.append(f"  printf '\\033[1m%s\\033[0m\\n' {shell_quote(hdr_line)}")
+
+    first_group = True
+    for backend, entries in backend_groups:
+        if not first_group:
+            lines.append("  echo")
+        # Backend separator — bold with padding
+        sep = f"\u2500\u2500 {backend} "
+        sep += "\u2500" * max(0, rule_width - len(sep))
+        lines.append(f"  printf '\\033[1m%s\\033[0m\\n' {shell_quote(sep)}")
+        first_group = False
+        for alias_name, model_desc in entries:
+            shortcuts = target_to_shortcuts.get(alias_name, [])
+            shortcut_str = ", ".join(shortcuts) if shortcuts else ""
+            padded_alias = alias_name.ljust(col1)
+            padded_desc = model_desc.ljust(col2)
+            if shortcut_str:
+                lines.append(
+                    f"  printf '  %s%s\\033[36m%s\\033[0m\\n' "
+                    f"{shell_quote(padded_alias)} {shell_quote(padded_desc)} {shell_quote(shortcut_str)}"
+                )
+            else:
+                lines.append(
+                    f"  printf '  %s%s\\n' "
+                    f"{shell_quote(padded_alias)} {shell_quote(model_desc)}"
+                )
+
+    lines.append("}")
 
     lines.append(MARK_END)
     return "\n".join(lines) + "\n"
@@ -148,7 +204,6 @@ if os.path.isfile(zshrc_path):
 else:
     original = ""
 
-ensure_dir(os.path.dirname(backup_dir))
 ensure_dir(backup_dir)
 if original:
     backup_path = os.path.join(backup_dir, f"zshrc.{stamp()}.bak")

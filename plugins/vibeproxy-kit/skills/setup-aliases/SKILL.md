@@ -162,37 +162,12 @@ Use one multi-select `AskUserQuestion` per backend with all families mixed in.
 Effort variants are NOT separate models in `/v1/models` — they are constructed by appending a parenthesized suffix to the base model name at request time (e.g., `gpt-5.4(high)`). Detection uses two sources:
 
 1. **Probe data** — each model with `"thinking": true` in the probe output supports effort suffixes
-2. **Effort levels map** — the specific levels available per model ID (from VibeProxy's built-in model definitions)
-
-**Effort levels map:**
-
-| Model ID | Levels (codex) | Levels (copilot) |
-|---|---|---|
-| `gpt-5` | `minimal`, `low`, `medium`, `high` | `low`, `medium`, `high` |
-| `gpt-5.1` | `none`, `low`, `medium`, `high` | `none`, `low`, `medium`, `high` |
-| `gpt-5.2` | `none`, `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
-| `gpt-5.4` | `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
-| `gpt-5.4-mini` | `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
-| `claude-opus-4.6` | — | `low`, `medium`, `high` |
-| `claude-sonnet-4.6` | — | `low`, `medium`, `high` |
-| `claude-sonnet-4.5` | — | `low`, `medium`, `high` |
-| `claude-opus-4.5` | — | `low`, `medium`, `high` |
-
-| Model ID | Levels (antigravity) | Levels (gemini-cli) |
-|---|---|---|
-| `claude-opus-4-6-thinking` | budget-based (no discrete levels) | — |
-| `claude-sonnet-4-6` | budget-based (no discrete levels) | — |
-| `gemini-3.1-pro-high` | `low`, `medium`, `high` | — |
-| `gemini-3.1-pro-low` | `low`, `medium`, `high` | — |
-| `gemini-3-pro-high` | `low`, `high` | — |
-| `gemini-3-pro-low` | `low`, `high` | — |
-| `gemini-3.1-pro-preview` | — | `low`, `medium`, `high` |
-| `gemini-3-pro-preview` | — | `low`, `high` |
+2. **Effort levels map** — read `${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/references/effort-levels.md` for the full per-model, per-backend effort levels table
 
 **Detection logic:**
 
 1. For each selected model, check if `thinking: true` in probe data
-2. If yes, look up the model ID + backend token in the effort levels map above. **Normalize dots/hyphens before lookup** — Copilot uses dots (`claude-opus-4.6`) while direct API uses hyphens (`claude-opus-4-6`). The map uses dots for Copilot IDs and hyphens for Antigravity/Gemini IDs, matching how each backend reports them in `/v1/models`. If a probe returns a variant not in the map, try the other format before declaring a miss.
+2. If yes, look up the model ID + backend token in the effort levels map. **Normalize dots/hyphens before lookup** — Copilot uses dots (`claude-opus-4.6`) while direct API uses hyphens (`claude-opus-4-6`). The map uses dots for Copilot IDs and hyphens for Antigravity/Gemini IDs, matching how each backend reports them in `/v1/models`. If a probe returns a variant not in the map, try the other format before declaring a miss.
 3. **Map hit** → automatically present the levels as a multi-select `AskUserQuestion`
 4. **Map miss** (model has `thinking: true` but not in map after both formats tried) → tell the user: "This model supports effort levels but the available levels are unknown. What levels do you want to configure?" and let the user specify
 5. If `thinking` is absent or false → no effort variants, use base model name as-is
@@ -227,6 +202,10 @@ Map each selected model+effort combination to a canonical alias name:
 - `claude-opus-4-6-thinking` → `opus46`  (drop `-thinking` — implicit in antigravity)
 
 **Effort tokens:** `low`, `med`, `high`, `max` (maps from `xhigh` → `max`).
+
+**`fork` field:** Omit the `fork` field (defaults to `false`). With `fork: false`, VibeProxy replaces the original model name in its registry with the alias name — the alias name itself becomes the routable model name. Only set `fork: true` if the user explicitly needs both the original model name and the alias to coexist as separate routes.
+
+**`request_model` field:** For non-suffix base models with `fork: false`, set `request_model` to the alias name (e.g., `cc-gravity-opus46`). For effort-suffix models (e.g., `gpt-5.4(medium)`), set `request_model` to the original suffixed form. This field determines what the shell alias sends as `ANTHROPIC_MODEL` and what validation uses.
 
 ### Step 4: Shortcut aliases
 
