@@ -69,8 +69,8 @@ unset CLAUDECODE && claude plugin validate .
 
 - Git-ignored. External open-source code stored here for local reference only.
 - When cloning external repos for research, always clone into `references/<repo-name>`.
-- Read files ONLY when the user explicitly specifies them using `@references/...` syntax.
-- Never explore this folder on your own. Never modify files in it.
+- Read-only benchmark/reference projects live here for insight gathering and comparison.
+- Never modify files in `references/`; use them only for reading, benchmarking, and pattern discovery.
 
 ## Git Workflow
 

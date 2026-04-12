@@ -28,7 +28,7 @@ fi
 RESPONSE_FILE="$(mktemp -t vibeproxy_probe.XXXXXX)"
 trap 'rm -f "$RESPONSE_FILE"' EXIT
 
-HTTP_CODE=$(curl -sS --max-time 10 -o "$RESPONSE_FILE" -w '%{http_code}' "$MODELS_URL" 2>/dev/null || echo "000")
+HTTP_CODE=$(curl -sS --max-time 10 -H "User-Agent: claude-cli/1.0" -o "$RESPONSE_FILE" -w '%{http_code}' "$MODELS_URL" 2>/dev/null || echo "000")
 
 if [ "$HTTP_CODE" != "200" ]; then
   {
@@ -74,6 +74,8 @@ for m in raw_models:
         entry["type"] = m["type"]
     if isinstance(m.get("owned_by"), str):
         entry["owned_by"] = m["owned_by"]
+    if m.get("thinking") is True:
+        entry["thinking"] = True
     models.append(entry)
 
 out = {

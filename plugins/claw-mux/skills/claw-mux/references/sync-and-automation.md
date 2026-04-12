@@ -15,6 +15,13 @@ cmux wait-for --signal <name>
 
 Default timeout: 30 seconds.
 
+**Claude Code note:** `wait-for` blocks the calling shell. Use `run_in_background: true` on the Bash tool so Claude Code can continue working while waiting. Chain `read-screen` after the wait to capture results in the same background call:
+
+```bash
+# run_in_background: true
+cmux wait-for build-done --timeout 120 && cmux read-screen --surface surface:9 --scrollback --lines 50
+```
+
 ### Example: Build then test
 
 ```bash
@@ -31,13 +38,13 @@ cmux wait-for tests-done --timeout 300
 ### Example: Server ready signal
 
 ```bash
-# Start server and signal when listening
-cmux send --surface surface:9 "npm run dev & sleep 3 && cmux wait-for -S server-ready\n"
+# Start server, then poll for ready text
+cmux send --surface surface:9 "npm run dev\n"
 
-# Wait in orchestrator
-cmux wait-for server-ready --timeout 30
+# Wait for server to report ready (run_in_background: true)
+$SKILL_DIR/scripts/poll-screen.sh surface:9 "ready|listening on" --timeout 30
 
-# Server is now ready — open browser
+# After background notification confirms ready — open browser
 cmux browser open http://localhost:3000
 ```
 

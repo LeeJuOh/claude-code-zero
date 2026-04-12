@@ -122,59 +122,75 @@ cmux browser surface:10 get text "h1"
 
 ### Remote Claude Code Control
 
-Run a separate Claude Code instance in another pane and feed it commands:
+Run a separate Claude Code instance in another pane and feed it commands.
 
 ```bash
-# 1. Create pane for the second Claude Code
-cmux new-split right
-# → OK surface:9 workspace:3
+# 1. Create pane
+cmux new-split right  # → surface:9
 
-# 2. Start Claude Code (interactive mode)
+# 2. Start Claude Code
 cmux send --surface surface:9 "claude\n"
 
-# 3. Wait for it to load, then send a prompt
-cmux read-screen --surface surface:9 --scrollback --lines 30
-# verify Claude Code is ready
+# 3. Wait for Claude to load (run_in_background: true)
+$SKILL_DIR/scripts/poll-screen.sh surface:9 "Claude Code|tips:" --timeout 60
+
+# (background notification confirms Claude is ready)
 
 # 4. Send a task
 cmux send --surface surface:9 "fix the login bug in src/auth.ts\n"
 
-# 5. Monitor progress
-cmux read-screen --surface surface:9 --scrollback --lines 50
+# 5. Monitor for completion (run_in_background: true)
+$SKILL_DIR/scripts/poll-screen.sh surface:9 "╭─|❯" --timeout 300 --interval 5 --lines 30
 ```
 
-## Timing Strategies
+Claude Code shows `╭─` or returns to `❯` when a task finishes. Poll for these markers instead of guessing a fixed delay.
 
-Claude Code blocks `sleep` over 2 seconds. Use these alternatives:
+## Completion Detection
 
-### Option A: Background read with delay
+Claude Code blocks foreground `sleep` over 2 seconds. Pick a strategy based on the command type — don't default to sleep.
 
-```bash
-# Run read-screen after a delay in the background
-sleep 5 && cmux read-screen --surface surface:9 --scrollback --lines 50
-```
+### Batch commands → `wait-for`
 
-Use `run_in_background: true` in the Bash tool to avoid the sleep block.
-
-### Option B: wait-for synchronization
-
-If you control both panes, use `wait-for` for reliable sequencing:
+For commands with a clear start and finish. Chain `cmux wait-for -S <signal>` to the command.
 
 ```bash
-# In the target pane (sent via cmux send):
 cmux send --surface surface:9 "npm run build && cmux wait-for -S build-done\n"
 
-# In the orchestrator (this pane):
-cmux wait-for build-done --timeout 120
-# continues only after build finishes
-cmux read-screen --surface surface:9 --scrollback --lines 50
+# run_in_background: true — Claude Code gets notified on completion
+cmux wait-for build-done --timeout 120 && cmux read-screen --surface surface:9 --scrollback --lines 50
 ```
 
-### Option C: Poll with read-screen
+`wait-for` uses filesystem event notification — no polling, no CPU waste. Default timeout: 30s.
 
-Read repeatedly and check for expected output:
+### Services → content poll for "ready"
+
+For servers and long-running processes. Poll `read-screen` for startup text.
 
 ```bash
-cmux read-screen --surface surface:9 --scrollback --lines 10
-# check if the expected output appeared, retry if not
+# run_in_background: true
+$SKILL_DIR/scripts/poll-screen.sh surface:9 "ready|listening on|started" --timeout 30
 ```
+
+Common ready patterns: `ready on`, `listening on port`, `started`, `Server running`, `compiled successfully`.
+
+### Interactive programs → content poll for prompt
+
+For Claude Code, REPLs, shells. Poll for prompt markers.
+
+```bash
+# run_in_background: true
+$SKILL_DIR/scripts/poll-screen.sh surface:9 "Claude Code|tips:|❯" --timeout 60
+```
+
+Task completion markers: `╭─`, `❯`, `$` (shell prompt returned).
+
+### Fixed delay (last resort)
+
+Only when you know approximate timing and can't signal or match content.
+
+```bash
+# run_in_background: true
+sleep 10 && cmux read-screen --surface surface:9 --scrollback --lines 50
+```
+
+Avoid this — it reads too early (incomplete) or too late (wasted time).
