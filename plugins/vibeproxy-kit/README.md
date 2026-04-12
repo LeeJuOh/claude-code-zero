@@ -40,5 +40,5 @@ Both files are backed up before each write and rolled back together if validatio
 
 - macOS with [VibeProxy.app](https://github.com/automazeio/vibeproxy) installed in `/Applications`
 - A paid subscription to at least one supported provider (OpenAI/Codex, GitHub Copilot, Antigravity, or Google Gemini)
-- Python 3 with `ruamel.yaml` (`pip install --user ruamel.yaml` — required before first run)
+- Python 3 with `ruamel.yaml` (auto-installed on first run if missing)
 - zsh with `~/.zshrc`
