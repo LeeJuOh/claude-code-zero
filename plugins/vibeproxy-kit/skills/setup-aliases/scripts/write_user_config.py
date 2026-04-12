@@ -69,11 +69,14 @@ def main() -> int:
     try:
         from ruamel.yaml import YAML
         from ruamel.yaml.comments import CommentedMap, CommentedSeq
-    except ImportError as exc:
-        raise SystemExit(
-            f"write_user_config.py: ruamel.yaml is required ({exc}). "
-            "Install with `pip install --user ruamel.yaml`."
+    except ImportError:
+        import subprocess
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "--user", "ruamel.yaml"],
+            stdout=sys.stderr, stderr=sys.stderr,
         )
+        from ruamel.yaml import YAML
+        from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
     yaml = YAML(typ="rt")
     yaml.preserve_quotes = True

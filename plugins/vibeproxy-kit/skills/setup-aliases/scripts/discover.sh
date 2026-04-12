@@ -67,6 +67,8 @@ BACKENDS = [
     {"token": "copilot", "config_key": "github-copilot", "display_name": "GitHub Copilot", "auth_prefix": "github-copilot-"},
     {"token": "gravity", "config_key": "antigravity",    "display_name": "Antigravity",    "auth_prefix": "antigravity-"},
     {"token": "gemini",  "config_key": "gemini-cli",     "display_name": "Gemini",         "auth_prefix": "gemini-"},
+    {"token": "qwen",    "config_key": "qwen",           "display_name": "Qwen",           "auth_prefix": "qwen-"},
+    {"token": "zai",     "config_key": "zai",            "display_name": "Z.AI GLM",       "auth_prefix": "zai-"},
 ]
 
 home = os.path.expanduser("~")
