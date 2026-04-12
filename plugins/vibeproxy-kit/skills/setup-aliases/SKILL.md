@@ -1,6 +1,6 @@
 ---
 name: setup-aliases
-description: "Discover, choose, and rewrite backend-specific VibeProxy cc-* aliases for Claude Code. Use when the user wants to set up, reset, reconfigure, inspect, or audit VibeProxy aliases for Codex, GitHub Copilot, Antigravity, or Gemini — including first-time setup, per-backend model selection, shortcut aliases, and rebuilding only the skill-managed pieces without clobbering manual edits."
+description: "Discover, choose, and rewrite backend-specific VibeProxy cc-* aliases for Claude Code. Use when the user wants to set up, reset, reconfigure, inspect, or audit VibeProxy aliases for Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM — including first-time setup, per-backend model selection, shortcut aliases, and rebuilding only the skill-managed pieces without clobbering manual edits."
 allowed-tools:
   - Bash(bash *)
   - Bash(python3 *)
@@ -65,7 +65,7 @@ These gates run before Phase 2. If the user is fully set up (VibeProxy installed
 
 Tell the user:
 
-> VibeProxy is not installed. It's a local HTTP proxy that lets Claude Code use models from Codex, GitHub Copilot, Antigravity, and Gemini through a unified endpoint.
+> VibeProxy is not installed. It's a local HTTP proxy that lets Claude Code use models from Codex, GitHub Copilot, Antigravity, Gemini, Qwen, and Z.AI GLM through a unified endpoint.
 >
 > Install it from: **https://github.com/automazeio/vibeproxy** (macOS only)
 >
@@ -87,14 +87,16 @@ Tell the user which backends are available and how to authenticate each one:
 
 > No backends are authenticated yet. VibeProxy supports these providers — each requires a paid subscription:
 >
-> | Backend | Subscription | How to authenticate |
-> |---------|-------------|---------------------|
-> | **Codex** | OpenAI API / ChatGPT Plus | VibeProxy menu bar → Codex → Sign in with your OpenAI account |
-> | **GitHub Copilot** | GitHub Copilot subscription | VibeProxy menu bar → GitHub Copilot → Sign in with your GitHub account |
-> | **Antigravity** | Antigravity subscription | VibeProxy menu bar → Antigravity → Sign in with your Antigravity account |
-> | **Gemini** | Google AI Studio / Gemini Advanced | VibeProxy menu bar → Gemini → Sign in with your Google account |
+> | Backend | How to authenticate |
+> |---------|---------------------|
+> | **Codex** | Settings → Codex → Connect (OAuth) |
+> | **GitHub Copilot** | Settings → GitHub Copilot → Connect (OAuth) |
+> | **Antigravity** | Settings → Antigravity → Connect (OAuth) |
+> | **Gemini** | Settings → Gemini → Connect (OAuth) |
+> | **Qwen** | Settings → Qwen → Connect (OAuth) |
+> | **Z.AI GLM** | Settings → Z.AI GLM → Add Account (API key) |
 >
-> Authenticate at least one backend through the VibeProxy menu bar, then re-run `/setup-aliases`.
+> Open VibeProxy Settings from the menu bar icon, authenticate at least one backend, then re-run `/setup-aliases`.
 
 Stop here.
 
@@ -160,6 +162,8 @@ Backend token in the alias comes from the spec table:
 | `copilot` | `copilot` |
 | `gravity` | `gravity` |
 | `gemini` | `gemini` |
+| `qwen` | `qwen` |
+| `zai` | `zai` |
 
 Model token rules: strip dots and dashes from the version (`gpt-5.4` → `gpt54`, `claude-opus-4.6` → `opus46`, `claude-sonnet-4.6` → `sonnet46`, `gemini-2.5-pro` → `gemini25pro`). Effort tokens are `low`, `med`, `high`, `max`.
 

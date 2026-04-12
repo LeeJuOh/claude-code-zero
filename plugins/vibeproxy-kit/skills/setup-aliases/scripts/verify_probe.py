@@ -33,6 +33,8 @@ BACKEND_SIGNATURES: dict[str, dict[str, set[str]]] = {
     "copilot": {"owned_by": {"github-copilot"}, "type": {"copilot"}},
     "gravity": {"owned_by": {"antigravity"},    "type": {"antigravity"}},
     "gemini":  {"owned_by": {"google"},         "type": {"gemini"}},
+    "qwen":    {"owned_by": {"qwen"},           "type": {"qwen"}},
+    "zai":     {"owned_by": {"zai"},            "type": {"zai"}},
 }
 
 # Inverse map: owned_by string → set of backend tokens that claim it.
