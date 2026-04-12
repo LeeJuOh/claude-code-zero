@@ -23,7 +23,7 @@
     {
       "name": "vibeproxy-kit",
       "source": "./plugins/vibeproxy-kit",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "description": "State-aware VibeProxy alias manager for Claude Code. Discover VibeProxy state, choose backend-specific cc-* aliases, and rewrite only managed config and shell blocks without clobbering manual edits."
     },
     {

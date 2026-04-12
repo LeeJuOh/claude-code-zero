@@ -14,7 +14,7 @@ set -euo pipefail
 #     "backup_dir": "...",
 #     "proxy_url": "http://localhost:8318",
 #     "canonical_aliases": [
-#       { "alias": "cc-codex-gpt54-high", "model": "gpt-5.4(high)", "label": "Codex · GPT-5.4 · high" }
+#       { "alias": "cc-codex-gpt54-high", "model": "gpt-5.4(high)", "request_model": "cc-codex-gpt54-high", "label": "Codex · GPT-5.4 · high" }
 #     ],
 #     "shortcut_aliases": [
 #       { "alias": "cc-copilot-opus", "target": "cc-copilot-opus46", "label": "Shortcut → cc-copilot-opus46" }
@@ -95,7 +95,7 @@ def build_block() -> str:
         lines.append("# canonical aliases")
     for entry in canonical_aliases:
         alias = entry.get("alias")
-        model = entry.get("model")
+        model = entry.get("request_model") or entry.get("model") or alias
         if not isinstance(alias, str) or not isinstance(model, str):
             continue
         lines.append(f"alias {alias}=\"$_VP_PROXY ANTHROPIC_MODEL={model} claude\"")
