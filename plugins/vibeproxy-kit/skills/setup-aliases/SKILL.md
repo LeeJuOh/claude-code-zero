@@ -38,9 +38,9 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/scripts/discover.sh > /tmp/vibep
 
 Then read `/tmp/vibeproxy_discover.json`. Key fields:
 
-- `vibeproxy_installed`, `vibeproxy_reachable` — bail early with an install/launch hint if either is false
+- `vibeproxy_installed`, `vibeproxy_reachable` — see **Onboarding gates** below if either is false
 - `user_overlay_exists`, `state_file_present` — determines whether we are first-run or rerun
-- `authenticated_backends` — array of `{token, config_key, display_name, auth_files}`; only these backends can be configured
+- `authenticated_backends` — array of `{token, config_key, display_name, auth_files}`; see **Onboarding gates** below if empty or missing backends the user wants
 - `managed_shell_aliases`, `managed_model_aliases`, `shortcut_shell_aliases` — what the skill currently owns
 - `backend_catalogs`, `partial_probe` — cached probe results and any aborted probe cycle
 - `conflicts` — pre-existing `cc-*` entries that are not tracked in state (potential clashes)
@@ -57,9 +57,58 @@ State file: present (last probe 2 days ago)
 
 If `partial_probe` is non-null, tell the user a previous run aborted mid-cycle and offer to resume or restart.
 
+### Onboarding gates
+
+These gates run before Phase 2. If the user is fully set up (VibeProxy installed, running, and at least one backend authenticated), skip straight to Phase 2.
+
+**Gate 1 — VibeProxy not installed** (`vibeproxy_installed: false`)
+
+Tell the user:
+
+> VibeProxy is not installed. It's a local HTTP proxy that lets Claude Code use models from Codex, GitHub Copilot, Antigravity, and Gemini through a unified endpoint.
+>
+> Install it from: **https://github.com/automazeio/vibeproxy** (macOS only)
+>
+> After installing, launch VibeProxy from `/Applications/VibeProxy.app` and come back here.
+
+Stop here. Do not proceed to Phase 2.
+
+**Gate 2 — VibeProxy not reachable** (`vibeproxy_installed: true`, `vibeproxy_reachable: false`)
+
+Tell the user:
+
+> VibeProxy is installed but not running. Launch it from the Applications folder or menu bar, then re-run `/setup-aliases`.
+
+Stop here.
+
+**Gate 3 — No authenticated backends** (`authenticated_backends` is empty)
+
+Tell the user which backends are available and how to authenticate each one:
+
+> No backends are authenticated yet. VibeProxy supports these providers — each requires a paid subscription:
+>
+> | Backend | Subscription | How to authenticate |
+> |---------|-------------|---------------------|
+> | **Codex** | OpenAI API / ChatGPT Plus | VibeProxy menu bar → Codex → Sign in with your OpenAI account |
+> | **GitHub Copilot** | GitHub Copilot subscription | VibeProxy menu bar → GitHub Copilot → Sign in with your GitHub account |
+> | **Antigravity** | Antigravity subscription | VibeProxy menu bar → Antigravity → Sign in with your Antigravity account |
+> | **Gemini** | Google AI Studio / Gemini Advanced | VibeProxy menu bar → Gemini → Sign in with your Google account |
+>
+> Authenticate at least one backend through the VibeProxy menu bar, then re-run `/setup-aliases`.
+
+Stop here.
+
+**Gate 4 — Missing backends the user wants** (some backends authenticated, user asks about others)
+
+If the user mentions a specific backend that is not in `authenticated_backends`, tell them:
+
+> `<backend>` is not authenticated yet. Open the VibeProxy menu bar → `<display_name>` → Sign in. Once authenticated, re-run `/setup-aliases` and it will appear in the backend list.
+
+This gate does not block — continue to Phase 2 with the backends that are available, but surface the gap so the user knows.
+
 ## Phase 2 — Warn, then pick a mode
 
-Before asking for the mode, warn the user once that Merge and Reset will temporarily disrupt their VibeProxy backend combination during the probe cycle. Recommend running this skill only when they are not mid-work — there is no way to programmatically capture their current menu-bar combination and restore it.
+Before asking for the mode, warn the user once that Merge and Reset will temporarily disrupt their VibeProxy backend combination during the probe cycle. Active `claude` sessions may route through a different provider while the menu bar is toggled. Recommend running this skill only when they are not mid-work — there is no way to programmatically capture their current menu-bar combination and restore it.
 
 Then ask via `AskUserQuestion`:
 
@@ -170,6 +219,8 @@ JSON
 Do not skip this step. Do not proceed to validation before the user confirms.
 
 ## Phase 10 — Per-alias validation
+
+Each validation call sends a real (billable) inference request with `max_tokens:1`. If the user has many aliases, warn them about the per-alias cost before proceeding.
 
 For each canonical alias, issue a minimal chat-completions request and check the status code:
 

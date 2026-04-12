@@ -15,11 +15,11 @@ VibeProxy lets you run Claude Code against Codex, GitHub Copilot, Antigravity, a
 
 ## Quick Start
 
-```bash
-/setup-aliases
-```
+1. Install [VibeProxy](https://github.com/automazeio/vibeproxy) and launch it
+2. Authenticate at least one backend via the VibeProxy menu bar (Codex, GitHub Copilot, Antigravity, or Gemini — each requires a paid subscription to the respective provider)
+3. Run `/setup-aliases`
 
-The skill discovers current VibeProxy state, lets you choose which backends and models to expose as `cc-*` aliases, and writes only the entries it manages — leaving your manual shell edits alone.
+The skill detects what you have installed and authenticated, walks you through any missing setup, then lets you choose which backends and models to expose as `cc-*` aliases — leaving your manual shell edits alone.
 
 ## Commands
 
@@ -38,6 +38,7 @@ Both files are backed up before each write and rolled back together if validatio
 
 ## Requirements
 
-- macOS with VibeProxy.app installed in `/Applications`
-- Python 3 with `ruamel.yaml` (auto-installed on first run via `pip install --user`)
+- macOS with [VibeProxy.app](https://github.com/automazeio/vibeproxy) installed in `/Applications`
+- A paid subscription to at least one supported provider (OpenAI/Codex, GitHub Copilot, Antigravity, or Google Gemini)
+- Python 3 with `ruamel.yaml` (`pip install --user ruamel.yaml` — required before first run)
 - zsh with `~/.zshrc`
