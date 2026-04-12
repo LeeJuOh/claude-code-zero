@@ -142,19 +142,72 @@ After all selected backends are probed, tell the user to restore their preferred
 
 ## Phase 5 — Model, effort, and shortcut selection
 
-For each probed backend's catalog, present the model list via `AskUserQuestion` and let the user pick. Filter the list to what is reasonable for Claude Code usage (claude-shaped, gpt-shaped, gemini-pro-shaped).
+### Step 1: Present ALL model families per backend
 
-For each selected model, check if the name carries an effort hint. Known patterns:
+For each probed backend's catalog, present the model list grouped by family. **Show every model family available in the probe results — do not filter by provider expectations.** The same model (e.g., `gpt-5.4`) can appear in multiple backends (Codex AND Copilot); show it in both. Filter out only:
+- Embedding models (`text-embedding-*`)
+- Internal router models (`accounts/*/routers/*`)
+- Legacy models the user is unlikely to want (gpt-3.5, gpt-4, gpt-4o variants unless nothing newer exists)
 
-- Codex `gpt-5.4`, `gpt-5.4(low)`, `gpt-5.4(medium)`, `gpt-5.4(high)`, `gpt-5.4(xhigh)` — the suffix IS the model name variant, not a separate parameter
-- Copilot `claude-opus-4.6(low|medium|high)` — same convention
-- Antigravity / Gemini — usually no effort variants
+Group into families:
+- **Claude models** — `claude-opus-*`, `claude-sonnet-*`, `claude-haiku-*`
+- **GPT models** — `gpt-5*` (skip gpt-4* and gpt-3* unless no gpt-5 exists)
+- **Gemini models** — `gemini-*-pro-*`, `gemini-*-flash` (skip `*-lite` and `*-image` variants)
+- **Other** — `grok-*`, `gpt-oss-*` (show but don't push)
 
-If variants exist, ask the user which variants to expose as separate aliases. Map each chosen variant to a canonical alias name using the convention:
+Use one multi-select `AskUserQuestion` per backend with all families mixed in.
 
-`cc-<backend-token>-<model-version>[-<effort>]`
+### Step 2: Auto-detect and present effort variants
 
-Backend token in the alias comes from the spec table:
+Effort variants are NOT separate models in `/v1/models` — they are constructed by appending a parenthesized suffix to the base model name at request time (e.g., `gpt-5.4(high)`). Detection uses two sources:
+
+1. **Probe data** — each model with `"thinking": true` in the probe output supports effort suffixes
+2. **Effort levels map** — the specific levels available per model ID (from VibeProxy's built-in model definitions)
+
+**Effort levels map:**
+
+| Model ID | Levels (codex) | Levels (copilot) |
+|---|---|---|
+| `gpt-5` | `minimal`, `low`, `medium`, `high` | `low`, `medium`, `high` |
+| `gpt-5.1` | `none`, `low`, `medium`, `high` | `none`, `low`, `medium`, `high` |
+| `gpt-5.2` | `none`, `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
+| `gpt-5.4` | `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
+| `gpt-5.4-mini` | `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
+| `claude-opus-4.6` | — | `low`, `medium`, `high` |
+| `claude-sonnet-4.6` | — | `low`, `medium`, `high` |
+| `claude-sonnet-4.5` | — | `low`, `medium`, `high` |
+| `claude-opus-4.5` | — | `low`, `medium`, `high` |
+
+| Model ID | Levels (antigravity) | Levels (gemini-cli) |
+|---|---|---|
+| `claude-opus-4-6-thinking` | budget-based (no discrete levels) | — |
+| `claude-sonnet-4-6` | budget-based (no discrete levels) | — |
+| `gemini-3.1-pro-high` | `low`, `medium`, `high` | — |
+| `gemini-3.1-pro-low` | `low`, `medium`, `high` | — |
+| `gemini-3-pro-high` | `low`, `high` | — |
+| `gemini-3-pro-low` | `low`, `high` | — |
+| `gemini-3.1-pro-preview` | — | `low`, `medium`, `high` |
+| `gemini-3-pro-preview` | — | `low`, `high` |
+
+**Detection logic:**
+
+1. For each selected model, check if `thinking: true` in probe data
+2. If yes, look up the model ID + backend token in the effort levels map above. **Normalize dots/hyphens before lookup** — Copilot uses dots (`claude-opus-4.6`) while direct API uses hyphens (`claude-opus-4-6`). The map uses dots for Copilot IDs and hyphens for Antigravity/Gemini IDs, matching how each backend reports them in `/v1/models`. If a probe returns a variant not in the map, try the other format before declaring a miss.
+3. **Map hit** → automatically present the levels as a multi-select `AskUserQuestion`
+4. **Map miss** (model has `thinking: true` but not in map after both formats tried) → tell the user: "This model supports effort levels but the available levels are unknown. What levels do you want to configure?" and let the user specify
+5. If `thinking` is absent or false → no effort variants, use base model name as-is
+
+**Do not skip effort detection.** If a model has `thinking: true`, always present effort selection — do not silently create only the base model alias.
+
+For Antigravity models with budget-based thinking (no discrete levels): these work with numeric budget suffixes (e.g., `claude-opus-4-6-thinking(16384)`), not effort levels. Present them as base models without effort selection.
+
+### Step 3: Build canonical alias names
+
+Map each selected model+effort combination to a canonical alias name:
+
+`cc-<backend-token>-<model-token>[-<effort>]`
+
+**Backend token table:**
 
 | `authenticated_backends[].token` | alias token |
 | --- | --- |
@@ -165,16 +218,39 @@ Backend token in the alias comes from the spec table:
 | `qwen` | `qwen` |
 | `zai` | `zai` |
 
-Model token rules: strip dots and dashes from the version (`gpt-5.4` → `gpt54`, `claude-opus-4.6` → `opus46`, `claude-sonnet-4.6` → `sonnet46`, `gemini-2.5-pro` → `gemini25pro`). Effort tokens are `low`, `med`, `high`, `max`.
+**Model token rules:** Strip dots from version numbers but **preserve hyphens between semantic segments**:
+- `gpt-5.4` → `gpt54`
+- `claude-opus-4.6` → `opus46`
+- `claude-sonnet-4.6` → `sonnet46`
+- `gemini-2.5-pro` → `gemini25-pro`  (preserve `-pro` as semantic qualifier)
+- `gemini-3.1-pro-high` → `gemini31-pro`  (drop `-high`/`-low` — those go in effort slot or are baked in)
+- `claude-opus-4-6-thinking` → `opus46`  (drop `-thinking` — implicit in antigravity)
 
-Finally ask whether any selected versioned alias should also get a shortcut (e.g. `cc-copilot-opus` pointing at `cc-copilot-opus46`). Shortcuts are shell-level aliases whose target is the canonical alias name, so they expand at command-line parse time. Never make a shortcut the canonical name.
+**Effort tokens:** `low`, `med`, `high`, `max` (maps from `xhigh` → `max`).
 
-## Phase 6 — Conflict resolution
+### Step 4: Shortcut aliases
 
-From Phase 1's `conflicts` array plus any new name collisions you can predict against the computed canonical aliases, ask the user per conflict via `AskUserQuestion`:
+Ask whether any selected versioned alias should also get a version-less shortcut (e.g. `cc-copilot-opus` → `cc-copilot-opus46`). Shortcuts are shell-level aliases whose target is the canonical alias name. Never make a shortcut the canonical name.
 
-- Rename the canonical alias
-- Delete the pre-existing entry
+For effort variants, shortcut = effort token only: `cc-codex-med` → `cc-codex-gpt54-med`.
+
+## Phase 6 — Conflict resolution and migration
+
+### First-run migration
+
+When `state_file_present` is false and `conflicts` is non-empty, the user has pre-existing manual `cc-*` aliases that predate this skill. Before treating them as conflicts, offer a migration path:
+
+1. Analyze each conflict entry — extract the model name and effort level from the existing alias definition in the zshrc backup (the old `ANTHROPIC_MODEL=...` value).
+2. Present a summary: "You have N existing manual cc-* aliases. Would you like to migrate them into skill management? Migrated aliases will be recreated as shortcuts pointing to the new canonical names."
+3. For each manual alias the user wants to migrate, create a shortcut alias mapping the old name to the new canonical name (e.g., `cc-codex-high` → `cc-codex-gpt54-high`). The old manual definition will be replaced by the managed block.
+4. Manual aliases the user does NOT want to migrate remain as conflicts — handle per the conflict resolution below.
+
+### Conflict resolution
+
+From Phase 1's `conflicts` array (minus any migrated aliases) plus any new name collisions you can predict against the computed canonical aliases, ask the user per conflict via `AskUserQuestion`:
+
+- Replace the pre-existing entry with the skill-managed version
+- Rename the canonical alias to avoid the collision
 - Skip this backend/model combination
 
 Never silently overwrite a conflict.
@@ -224,21 +300,27 @@ Do not skip this step. Do not proceed to validation before the user confirms.
 
 ## Phase 10 — Per-alias validation
 
-Each validation call sends a real (billable) inference request with `max_tokens:1`. If the user has many aliases, warn them about the per-alias cost before proceeding.
+Each validation call sends a real (billable) inference request. If the user has many aliases, warn them about the per-alias cost before proceeding.
 
-For each canonical alias, issue a minimal chat-completions request and check the status code:
+**Critical: use the actual model name, not the alias name.** Shell aliases set `ANTHROPIC_MODEL=<model>` — the model name is what VibeProxy routes (e.g., `gpt-5.4(medium)`). The alias name (e.g., `cc-codex-gpt54-med`) is unknown to VibeProxy's routing table and will fail with "unknown provider".
+
+For each canonical alias, use its `model` field (the value that goes into `ANTHROPIC_MODEL`):
 
 ```bash
 curl -s -o /tmp/vp_val.json -w '%{http_code}\n' \
   -X POST http://localhost:8318/v1/chat/completions \
   -H 'content-type: application/json' \
-  -d '{"model":"<alias>","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}'
+  -d '{"model":"<MODEL_NAME>","max_tokens":10,"messages":[{"role":"user","content":"ping"}]}'
 ```
+
+Where `<MODEL_NAME>` is the model field from `canonical_aliases` (e.g., `gpt-5.4(medium)`, `claude-opus-4.6(high)`, `claude-sonnet-4.6`), **not** the alias field (e.g., `cc-codex-gpt54-med`).
+
+Use `max_tokens:10` instead of `max_tokens:1` — some reasoning models reject `max_tokens:1` as too low.
 
 Interpret:
 
-- **HTTP 200** — alias resolves through routing, upstream accepted the request. Pass.
-- **HTTP 4xx with "model not found"-shaped error** — alias is missing or misconfigured. Fail, trigger rollback.
+- **HTTP 200** — model resolves through routing, upstream accepted the request. Pass.
+- **HTTP 4xx with "model not found"-shaped error** — model name is wrong or backend not active. Fail, trigger rollback.
 - **HTTP 5xx** — upstream outage unrelated to skill correctness. Log and continue; do not rollback for 5xx.
 
 Do **not** enumerate `/v1/models` to check existence. `/v1/models` uses a Last-Write-Wins registry that collapses same-named aliases from lower-priority backends into a single listing entry. Enumeration produces false negatives that trigger unnecessary rollbacks.
@@ -268,6 +350,9 @@ Transactional rollback is the default because shell aliases and model aliases fo
 - **Never read `~/.cli-proxy-api/merged-config.yaml` until after the restart gate.** Before restart it is stale. The one exception is `verify_probe.py` during Phase 4 — that is intentional because the hot-reload path triggered by a menu-bar toggle regenerates merged-config in place, and Layer 1 reads exactly that regenerated state.
 - **Do not preserve ambiguous shared model names.** If the user picks `gpt-5.4` from codex and also from copilot, generate `cc-codex-gpt54-high` and `cc-copilot-gpt54-high` as separate canonical aliases. Do not also create a bare `gpt-5.4` alias, because that re-introduces the routing-priority ambiguity the probe cycle was designed to avoid.
 - **5xx is not a rollback trigger.** If the upstream provider is down, the alias is still correctly configured. Log and keep going.
+- **Validate with model names, not alias names.** Shell aliases set `ANTHROPIC_MODEL=gpt-5.4(medium)` — the actual model name. The alias name `cc-codex-gpt54-med` is a shell convenience that VibeProxy has never seen. Sending the alias name as the model in a validation curl will always fail with "unknown provider". Use the `model` field from `canonical_aliases`.
+- **Effort variants are suffix-parsed, not registered.** `gpt-5.4(high)` is not a separate model in VibeProxy's registry — it's `gpt-5.4` with a `(high)` suffix parsed at request time by the thinking layer. This means effort-variant aliases will never appear in `/v1/models` listings, and validating them requires sending the full suffixed name (e.g., `gpt-5.4(high)`) as the model in a chat-completions request.
+- **Show ALL model families per backend.** Do not filter Copilot to only Claude models, or Codex to only GPT models. The same model (e.g., `gpt-5.4`) can appear in multiple backends with different effort levels or routing. Show everything the probe returns; let the user choose.
 
 ## Scripts
 
