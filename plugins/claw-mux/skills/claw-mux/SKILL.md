@@ -70,24 +70,59 @@ cmux log --level info --source claude-code "Starting build..."
 
 ## Terminal I/O Patterns
 
-The core workflow: split a pane, send a command, read the output.
+The core workflow: split a pane, send a command, **detect completion**, read the output.
+
+**Before sending any command, decide how you'll know when it finishes.** Claude Code blocks foreground `sleep` over 2 seconds — pick a completion strategy based on what you're running:
+
+| Command type | Example | Strategy |
+|---|---|---|
+| Batch (start→finish) | `npm run build`, `pytest` | `wait-for` signal |
+| Long-running service | `npm run dev`, `docker compose up` | Content poll for "ready" text |
+| Interactive program | `claude`, `node`, `psql` | Content poll for prompt marker |
+| Instant | `echo`, `ls`, `cat` | Immediate `read-screen` |
+
+### Batch commands → `wait-for`
+
+Chain `cmux wait-for -S <signal>` to the command. Run the wait with `run_in_background: true`.
 
 ```bash
-# 1. Split to create a new surface
-cmux new-split right
-# output: "OK surface:9 workspace:3" — remember surface:9
+cmux new-split right  # → surface:9
+cmux send --surface surface:9 "npm run build && cmux wait-for -S build-done\n"
 
-# 2. Send a command (include \n for Enter)
-cmux send --surface surface:9 "npm start\n"
-
-# 3. Read the output later
-cmux read-screen --surface surface:9 --scrollback --lines 50
-
-# 4. Stop the process when done
-cmux send-key --surface surface:9 ctrl+c
+# run_in_background: true — notified on completion
+cmux wait-for build-done --timeout 120 && cmux read-screen --surface surface:9 --scrollback --lines 50
 ```
 
-For detailed patterns (server monitoring, E2E testing, build pipelines), read the terminal-io reference.
+### Services / interactive programs → content poll
+
+Poll `read-screen` for expected text. Use the bundled helper with `run_in_background: true`:
+
+```bash
+# run_in_background: true
+$SKILL_DIR/scripts/poll-screen.sh surface:9 "ready|listening|Claude Code" --timeout 60
+```
+
+Common match patterns:
+- Server ready: `ready|listening on|started`
+- Claude Code ready: `Claude Code|tips:|❯`
+- Task complete: `╭─|❯|\\$\\s*$`
+- Build result: `✓|passed|error|failed`
+
+### Hybrid example
+
+Server start → wait for ready → then batch work:
+
+```bash
+cmux send --surface surface:9 "npm run dev\n"
+# run_in_background: true — poll for server ready
+$SKILL_DIR/scripts/poll-screen.sh surface:9 "ready on" --timeout 30
+
+# (after background notification confirms ready)
+cmux send --surface surface:9 "curl localhost:3000/health && cmux wait-for -S health-ok\n"
+cmux wait-for health-ok --timeout 10
+```
+
+For detailed patterns (server monitoring, E2E testing, build pipelines, remote Claude Code), read the terminal-io reference.
 
 ## Sidebar Metadata
 
@@ -123,8 +158,9 @@ cmux log --level error "Test suite failed"
 - **`send` includes `\n` for Enter** — `cmux send "command\n"` sends the command and presses Enter in one call. No need for a separate `send-key enter` unless you want explicit timing control.
 - **`send-keys` does not exist** — the command is `send` (text) and `send-key` (key event). This is different from tmux's `send-keys`.
 - **`press` does not exist** — to send Ctrl+C, use `cmux send-key --surface surface:N ctrl+c`.
-- **`read-screen` returns the current screen state** — if a command is still running, the output may be incomplete. Use `--scrollback --lines N` for history, or use `wait-for` signal synchronization for reliable sequencing.
-- **In Claude Code, `sleep` over 2 seconds is blocked** — use Bash with `run_in_background: true` for delayed `read-screen`, or use the `cmux wait-for` synchronization pattern.
+- **`read-screen` returns the current screen state** — if a command is still running, the output may be incomplete. Use `--scrollback --lines N` for history, or use a completion strategy (see Terminal I/O Patterns above).
+- **In Claude Code, `sleep` over 2 seconds is blocked in foreground** — use `wait-for` for batch commands, content polling for interactive programs. Both require `run_in_background: true`. Avoid `sleep N && read-screen` — it reads too early or too late.
+- **Always plan completion detection before sending a command** — decide upfront: is this batch (wait-for), service/interactive (content poll), or instant (immediate read)? Sending without a plan leads to blind retries.
 - `set-status --color` requires hex values (`"#34c759"`) — named colors like `green` are not supported.
 - `set-status` requires a key (e.g., `build`) as the first argument — the key allows multiple independent status pills per workspace.
 - If `cmux claude-teams` is active, it manages topology through a tmux-compat shim. Direct topology commands (`new-split`, `move-surface`) may conflict with Teams orchestration.

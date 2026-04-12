@@ -98,6 +98,8 @@ If `get url` is empty or `about:blank`, navigate first instead of waiting on loa
 | [Snapshot and Refs]($SKILL_DIR/references/snapshot-refs.md) | Ref lifecycle and stale-ref troubleshooting |
 | [Authentication]($SKILL_DIR/references/authentication.md) | Login/OAuth/2FA patterns and state save/load |
 | [Session Management]($SKILL_DIR/references/session-management.md) | Multi-surface isolation and state persistence patterns |
+| [Video Recording]($SKILL_DIR/references/video-recording.md) | Recording limitations and screenshot/snapshot alternatives |
+| [Proxy Support]($SKILL_DIR/references/proxy-support.md) | Proxy behavior in WKWebView and workarounds |
 
 ## Ready-to-Use Templates
 
@@ -125,6 +127,7 @@ Use supported high-level commands (`click`, `fill`, `press`, `scroll`, `wait`, `
 - `snapshot --interactive` can return `js_error` on complex pages — fall back to `get text body` or `get html body` for content extraction.
 - `browser open` targets the workspace of the calling terminal (via `$CMUX_WORKSPACE_ID`), even if a different workspace is currently focused. Use `--workspace` to override.
 - `goto` and `navigate` are aliases — both work for same-surface navigation.
+- **Always use `--json` with `browser open`** — without it, the output is plain text and the returned surface ref is harder to parse reliably. `cmux --json browser open <url>` returns structured JSON with the surface ref.
 
 ## Troubleshooting
 
