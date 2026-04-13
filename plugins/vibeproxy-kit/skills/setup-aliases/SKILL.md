@@ -83,7 +83,7 @@ Stop here.
 
 **Gate 3 — No authenticated backends** (`authenticated_backends` is empty)
 
-Tell the user which backends are available and how to authenticate each one:
+Tell the user which backends are available and how to authenticate each one. Instruct them to authenticate **all** backends they subscribe to before coming back — not just one. The probe cycle configures backends one at a time, but authentication should be done upfront for all of them so the user doesn't have to re-run the skill each time they want to add another backend.
 
 > No backends are authenticated yet. VibeProxy supports these providers — each requires a paid subscription:
 >
@@ -92,11 +92,20 @@ Tell the user which backends are available and how to authenticate each one:
 > | **Codex** | Settings → Codex → Connect (OAuth) |
 > | **GitHub Copilot** | Settings → GitHub Copilot → Connect (OAuth) |
 > | **Antigravity** | Settings → Antigravity → Connect (OAuth) |
-> | **Gemini** | Settings → Gemini → Connect (OAuth) |
+> | **Gemini** | **CLI login required** (see below) |
 > | **Qwen** | Settings → Qwen → Connect (OAuth) |
 > | **Z.AI GLM** | Settings → Z.AI GLM → Add Account (API key) |
 >
-> Open VibeProxy Settings from the menu bar icon, authenticate at least one backend, then re-run `/setup-aliases`.
+> Open VibeProxy Settings from the menu bar icon and authenticate **every backend you subscribe to**, then re-run `/setup-aliases`.
+>
+> **Gemini OAuth workaround:** The VibeProxy GUI cannot complete Gemini authentication — the OAuth flow succeeds in the browser but the account silently fails to register ([GitHub #286](https://github.com/automazeio/vibeproxy/issues/286), [#242](https://github.com/automazeio/vibeproxy/issues/242)). Use the CLI instead:
+>
+> ```bash
+> /Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus \
+>   -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml
+> ```
+>
+> When prompted for login mode, choose **1 (Code Assist)** for GCP projects or **2 (Google One)** for personal Google One AI Premium subscriptions. After CLI login completes, VibeProxy will detect the new auth file automatically.
 
 Stop here.
 
@@ -333,6 +342,7 @@ Transactional rollback is the default because shell aliases and model aliases fo
 - **`request_model` must match what VibeProxy sees after alias resolution.** When building `canonical_aliases`, set `request_model` to the alias name for non-suffix base models (because `fork: false` replaces the original name in the registry). For effort-suffix models like `gpt-5.4(medium)`, set `request_model` to the original suffix form (because suffix parsing happens before alias lookup and resolves the base model). The `model` field preserves the upstream name for documentation; `request_model` is what the shell actually sends.
 - **Effort variants are suffix-parsed, not registered.** `gpt-5.4(high)` is not a separate model in VibeProxy's registry — it's `gpt-5.4` with a `(high)` suffix parsed at request time by the thinking layer. This means effort-variant aliases will never appear in `/v1/models` listings, and validating them requires sending the full suffixed name (e.g., `gpt-5.4(high)`) as the model in a chat-completions request.
 - **Show ALL model families per backend.** Do not filter Copilot to only Claude models, or Codex to only GPT models. The same model (e.g., `gpt-5.4`) can appear in multiple backends with different effort levels or routing. Show everything the probe returns; let the user choose.
+- **Gemini OAuth fails silently through the GUI.** The VibeProxy Settings UI triggers `-login` but cannot handle the interactive "Code Assist vs Google One" mode selection prompt, so the auth process completes in the browser but VibeProxy never registers the account. Always direct users to the CLI workaround: `/Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml`. This is a known upstream bug ([#286](https://github.com/automazeio/vibeproxy/issues/286), [#242](https://github.com/automazeio/vibeproxy/issues/242)).
 
 ## Scripts
 

@@ -16,7 +16,7 @@ VibeProxy lets you run Claude Code against Codex, GitHub Copilot, Antigravity, G
 ## Quick Start
 
 1. Install [VibeProxy](https://github.com/automazeio/vibeproxy) and launch it
-2. Open Settings from the menu bar icon and authenticate at least one backend (Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM — each requires a subscription to the respective provider)
+2. Open Settings from the menu bar icon and authenticate **all backends you subscribe to** (Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM). **Gemini note:** GUI OAuth is broken — use the CLI instead: `/Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml` ([details](https://github.com/automazeio/vibeproxy/issues/286))
 3. Run `/setup-aliases`
 
 The skill detects what you have installed and authenticated, walks you through any missing setup, then lets you choose which backends and models to expose as `cc-*` aliases — leaving your manual shell edits alone.
@@ -58,6 +58,6 @@ Both files are backed up before each write and rolled back together if validatio
 ## Requirements
 
 - macOS with [VibeProxy.app](https://github.com/automazeio/vibeproxy) installed in `/Applications`
-- A paid subscription to at least one supported provider (Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM)
+- A paid subscription to one or more supported providers (Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM) — authenticate all of them before running `/setup-aliases`
 - Python 3 with `ruamel.yaml` (auto-installed on first run if missing)
 - zsh with `~/.zshrc`
