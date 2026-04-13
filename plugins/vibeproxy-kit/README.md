@@ -16,7 +16,7 @@ VibeProxy lets you run Claude Code against Codex, GitHub Copilot, Antigravity, G
 ## Quick Start
 
 1. Install [VibeProxy](https://github.com/automazeio/vibeproxy) and launch it
-2. Open Settings from the menu bar icon and authenticate at least one backend (Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM — each requires a subscription to the respective provider)
+2. Open Settings from the menu bar icon and authenticate **all backends you subscribe to** (Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM). **Gemini note:** GUI OAuth is broken — use the CLI instead: `/Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml` ([details](https://github.com/automazeio/vibeproxy/issues/286))
 3. Run `/setup-aliases`
 
 The skill detects what you have installed and authenticated, walks you through any missing setup, then lets you choose which backends and models to expose as `cc-*` aliases — leaving your manual shell edits alone.
@@ -26,6 +26,7 @@ The skill detects what you have installed and authenticated, walks you through a
 | Command | What it does |
 |---------|--------------|
 | `/setup-aliases` | Discover VibeProxy state, choose backends/models, rewrite managed aliases in `~/.cli-proxy-api/config.yaml` and `~/.zshrc`, validate against `/v1/models`. Idempotent and reversible. |
+| `cc-list` | Show all configured aliases grouped by backend, with model info and shortcut names. Added to `~/.zshrc` by `/setup-aliases`. |
 
 ## How it works
 
@@ -37,6 +38,12 @@ VibeProxy merges all active backends into a single `/v1/models` listing. When Co
 
 Models like `gpt-5.4` and `claude-opus-4.6` support effort suffixes: `gpt-5.4(high)`, `claude-opus-4.6(low)`. These are **not separate models** — VibeProxy parses the parenthesized suffix at request time and passes the effort level to the upstream provider. The setup skill detects which models support this via probe metadata and presents effort level selection automatically.
 
+### Shortcut aliases
+
+Every canonical alias gets an auto-generated shortcut following a fixed convention: `cc-{2char-backend}-{model}-{effort}`. Backend tokens: `cx` (Codex), `cp` (Copilot), `ag` (Antigravity), `gm` (Gemini), `qw` (Qwen), `za` (Z.AI). Model tokens are version-free (e.g., `opus`, `gpt`, `gemini-pro`).
+
+Examples: `cc-cx-med` → `cc-codex-gpt54-med`, `cc-cp-opus-high` → `cc-copilot-opus46-high`.
+
 ### config.yaml vs merged-config.yaml
 
 - `~/.cli-proxy-api/config.yaml` — your overlay configuration. The skill writes `oauth-model-alias` entries here so VibeProxy knows alias → model mappings.
@@ -44,7 +51,7 @@ Models like `gpt-5.4` and `claude-opus-4.6` support effort suffixes: `gpt-5.4(hi
 
 ### Validation
 
-Each alias is validated by sending a real chat-completions request with the same model name the shell alias sends (the `request_model` value). For `fork: false` base models this is the alias name itself (e.g., `cc-gravity-opus46`); for effort-suffix models it is the original suffixed form (e.g., `gpt-5.4(medium)`). This confirms end-to-end routing through VibeProxy to the upstream provider.
+Each alias is validated by sending a real chat-completions request with the same model name the shell alias sends (the `request_model` value). With `fork: false` (default), this is always alias-based: `cc-gravity-opus46` for base models, `cc-codex-gpt54-med(medium)` for effort models. Original upstream model names are never used — they no longer exist in VibeProxy's registry after alias resolution.
 
 ## How it treats your files
 
@@ -58,6 +65,6 @@ Both files are backed up before each write and rolled back together if validatio
 ## Requirements
 
 - macOS with [VibeProxy.app](https://github.com/automazeio/vibeproxy) installed in `/Applications`
-- A paid subscription to at least one supported provider (Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM)
+- A paid subscription to one or more supported providers (Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM) — authenticate all of them before running `/setup-aliases`
 - Python 3 with `ruamel.yaml` (auto-installed on first run if missing)
 - zsh with `~/.zshrc`

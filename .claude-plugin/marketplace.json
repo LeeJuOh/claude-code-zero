@@ -23,7 +23,7 @@
     {
       "name": "vibeproxy-kit",
       "source": "./plugins/vibeproxy-kit",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "description": "State-aware VibeProxy alias manager for Claude Code. Discover VibeProxy state, choose backend-specific cc-* aliases, and rewrite only managed config and shell blocks without clobbering manual edits."
     },
     {
@@ -35,8 +35,8 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "2.8.1",
-      "description": "Enhanced git worktree: base branch selection (name@base), custom branch prefix, remote tracking, selective copy/symlink for gitignored files, dirty check on removal"
+      "version": "2.8.2",
+      "description": "Enhanced git worktree: custom branch prefix, remote tracking, selective copy/symlink for gitignored files, dirty check on removal"
     },
     {
       "name": "skill-creator-pro",

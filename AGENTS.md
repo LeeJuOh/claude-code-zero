@@ -53,7 +53,7 @@ Applies to all plugin work: creation, modification, improvement, and refactoring
 1. **Docs** — For new plugins or structural changes, consult `docs/reference/` files and official documentation.
 2. **Analysis** — User provides the goal and specific reference files to read. Read ONLY those files.
 3. **Implementation** — Create or modify files under `plugins/`. Never modify files in `references/`.
-4. **Documentation** — If plugin behavior changed, update `README.md` to reflect the change.
+4. **Documentation** — If plugin behavior changed, update `README.md` to reflect the change. Also update `description` in both `plugin.json` and `marketplace.json` to reflect actual capabilities — removed features must be removed from descriptions too.
 5. **Registration** — Add the plugin entry to `.claude-plugin/marketplace.json` (new plugins only).
 6. **Validation** — Run `unset CLAUDECODE && claude plugin validate .`
 

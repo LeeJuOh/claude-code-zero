@@ -10,7 +10,7 @@ worktree-plus replaces Claude Code's `WorktreeCreate` and `WorktreeRemove` hooks
 
 ## How it works
 
-Claude Code fires `WorktreeCreate` and `WorktreeRemove` hook events whenever a worktree is created or removed. This plugin registers handlers for both events via `hooks.json` — no manual settings.json editing needed. Once installed, every worktree operation goes through worktree-plus automatically.
+Claude Code fires `WorktreeCreate` and `WorktreeRemove` hook events whenever a worktree is created or removed. However, `claude -w` creates the worktree before plugins load, so plugin `hooks.json` cannot intercept it in time. To work around this, the plugin auto-injects its hooks into your `settings.json` on first session start — settings.json hooks load early enough to catch all worktree operations, including `claude -w`.
 
 ## Features
 
@@ -32,9 +32,7 @@ Claude Code fires `WorktreeCreate` and `WorktreeRemove` hook events whenever a w
 /plugin install worktree-plus@claude-code-zero
 ```
 
-Restart Claude Code after install. No setup step needed — hooks register automatically.
-
-> **Upgrading from v2.7.0 or earlier?** Previous versions wrote hooks into your `settings.json`. The plugin now cleans those up automatically on first session start after update.
+Restart Claude Code after install. On first session start, hooks are auto-configured in your `settings.json` — no manual setup needed.
 
 ## Usage
 
