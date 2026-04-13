@@ -119,7 +119,7 @@ This gate does not block — continue to Phase 2 with the backends that are avai
 
 ## Phase 2 — Warn, then pick a mode
 
-Before asking for the mode, warn the user once that Merge and Reset will temporarily disrupt their VibeProxy backend combination during the probe cycle. Active `claude` sessions may route through a different provider while the menu bar is toggled. Recommend running this skill only when they are not mid-work — there is no way to programmatically capture their current menu-bar combination and restore it.
+Before asking for the mode, note that the probe cycle will temporarily toggle backends in the VibeProxy menu bar. Active `claude` sessions may route through a different provider while backends are toggled. Recommend running this skill when they are not mid-work.
 
 Then ask via `AskUserQuestion`:
 
@@ -138,16 +138,16 @@ From `authenticated_backends`, ask the user via `AskUserQuestion` which backends
 This is the most interaction-heavy phase. For each selected backend, in sequence:
 
 1. **Reuse cache?** In Merge mode, if `backend_catalogs[<token>].probed_at` is within 7 days, offer the user the option to reuse instead of re-probing. Reset mode always re-probes. The user may override with "force refresh".
-2. **Restart prompt.** Use `AskUserQuestion` to tell the user exactly what to do: *"Quit VibeProxy from the menu bar, then relaunch it with **only** `<display_name>` enabled and every other backend disabled. Toggling backends in the menu bar alone does not refresh the runtime registry — a full quit-and-relaunch is required. Click done when VibeProxy is running with only `<display_name>` active."* Wait for explicit confirmation.
+2. **Toggle prompt.** Use `AskUserQuestion` to tell the user: *"In the VibeProxy menu bar, disable all backends except `<display_name>`. Click done when only `<display_name>` is active."* Wait for explicit confirmation. **Do not** require a full quit-and-relaunch upfront — a menu bar toggle is sufficient in most cases. If the verify step (step 5) returns `reject` due to stale state, escalate to a full restart (see step 5).
 3. **Probe.** Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/scripts/probe_backend.sh <token> > /tmp/vibeproxy_probe_<token>.json`
 4. **Verify.** Run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/scripts/verify_probe.py --claimed <token> --claimed-channel-key <config_key> --all-channel-keys <comma-sep-list-of-all-authenticated-channel-keys> --probe-output /tmp/vibeproxy_probe_<token>.json > /tmp/vibeproxy_verify_<token>.json`
 5. **Act on verdict.**
    - `pass` — accept this backend's catalog
    - `warn` — Layer 2 saw `unknown_signatures`; surface the specific model IDs to the user and ask whether to trust them before accepting
-   - `reject` — show the `reason` from the verify output verbatim, re-issue the toggle prompt, and loop back to step 2. Do **not** accept a rejected probe under any circumstance.
+   - `reject` — show the `reason` from the verify output verbatim. On first rejection, escalate to a full restart: *"The menu bar toggle didn't refresh the registry. Quit VibeProxy completely, then relaunch with only `<display_name>` enabled."* Wait for confirmation, then loop back to step 3 (re-probe). Do **not** accept a rejected probe under any circumstance.
 6. **Persist partial probe on abort.** If the user aborts the cycle, write any completed backend catalogs into `${CLAUDE_PLUGIN_DATA}/config.json` under `partial_probe` with a timestamp, then exit cleanly. The next invocation will offer to resume.
 
-After all selected backends are probed, tell the user to restore their preferred backend combination in the VibeProxy UI before continuing to model selection.
+After all selected backends are probed, tell the user: *"Probing complete. Re-enable all the backends you just probed — turn every toggle back on in the VibeProxy menu bar."* Wait for confirmation before continuing to model selection.
 
 ## Phase 5 — Model, effort, and shortcut selection
 
@@ -179,7 +179,9 @@ Effort variants are NOT separate models in `/v1/models` — they are constructed
 1. **Probe data** — each model with `"thinking": true` in the probe output supports effort suffixes
 2. **Effort levels map** — read `${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/references/effort-levels.md` for the full per-model, per-backend effort levels table
 
-**Detection logic:**
+**Pre-filter — skip budget-based models:** Before running detection, check the effort levels map for any model marked "budget-based (no discrete levels)" (e.g., Antigravity's `claude-opus-4-6-thinking`, `claude-sonnet-4-6`). These use numeric budget suffixes (e.g., `claude-opus-4-6-thinking(16384)`), not discrete effort levels. **Exclude them from effort selection entirely** — present as base models only, even if `thinking: true` in probe data. Do not show effort UI for them.
+
+**Detection logic (remaining models only):**
 
 1. For each selected model, check if `thinking: true` in probe data
 2. If yes, look up the model ID + backend token in the effort levels map. **Normalize dots/hyphens before lookup** — Copilot uses dots (`claude-opus-4.6`) while direct API uses hyphens (`claude-opus-4-6`). The map uses dots for Copilot IDs and hyphens for Antigravity/Gemini IDs, matching how each backend reports them in `/v1/models`. If a probe returns a variant not in the map, try the other format before declaring a miss.
@@ -187,9 +189,7 @@ Effort variants are NOT separate models in `/v1/models` — they are constructed
 4. **Map miss** (model has `thinking: true` but not in map after both formats tried) → tell the user: "This model supports effort levels but the available levels are unknown. What levels do you want to configure?" and let the user specify
 5. If `thinking` is absent or false → no effort variants, use base model name as-is
 
-**Do not skip effort detection.** If a model has `thinking: true`, always present effort selection — do not silently create only the base model alias.
-
-For Antigravity models with budget-based thinking (no discrete levels): these work with numeric budget suffixes (e.g., `claude-opus-4-6-thinking(16384)`), not effort levels. Present them as base models without effort selection.
+**Do not skip effort detection.** If a non-budget-based model has `thinking: true`, always present effort selection — do not silently create only the base model alias.
 
 ### Step 3: Build canonical alias names
 
@@ -248,13 +248,13 @@ Shortcuts are automatically generated from a fixed convention — **do not ask t
 
 | Shortcut | Canonical | Description |
 | --- | --- | --- |
-| `cc-cx-med` | `cc-codex-gpt54-med` | Codex gpt-5.4 medium |
+| `cc-cx-gpt-med` | `cc-codex-gpt54-med` | Codex gpt-5.4 medium |
 | `cc-cp-opus-high` | `cc-copilot-opus46-high` | Copilot opus 4.6 high |
 | `cc-cp-sonnet-low` | `cc-copilot-sonnet46-low` | Copilot sonnet 4.6 low |
 | `cc-cp-gpt-max` | `cc-copilot-gpt54-max` | Copilot gpt-5.4 xhigh |
 | `cc-ag-opus` | `cc-gravity-opus46` | Antigravity opus (budget-based, no effort) |
 | `cc-ag-gemini-pro-low` | `cc-gravity-g31pro-low` | Antigravity Gemini 3.1 Pro low |
-| `cc-gm-low` | `cc-gemini-g31pro-low` | Gemini 3.1 Pro preview low |
+| `cc-gm-gemini-pro-low` | `cc-gemini-g31pro-low` | Gemini 3.1 Pro preview low |
 
 Generate shortcuts for every canonical alias. If a shortcut collides with another shortcut or canonical alias, skip it and log a warning.
 
@@ -315,10 +315,10 @@ JSON
 
 `~/.cli-proxy-api/merged-config.yaml` is regenerated only when VibeProxy launches. Validation before the restart will read a stale routing table and produce false negatives. Use `AskUserQuestion` with these exact steps:
 
-1. Quit VibeProxy from the menu bar
-2. Enable **exactly** the backends you configured aliases for — no more, no less
-3. Relaunch VibeProxy
-4. Click done when the menu bar shows the configured combination
+1. Quit VibeProxy completely from the menu bar
+2. Relaunch VibeProxy
+3. Enable **all** the backends you configured aliases for — turn every toggle on
+4. Click done when all configured backends are active
 
 Do not skip this step. Do not proceed to validation before the user confirms.
 
@@ -368,6 +368,7 @@ Transactional rollback is the default because shell aliases and model aliases fo
 
 - **Discover never calls `/v1/models`.** If you find yourself wanting more info than `discover.sh` returns, that means you want a probe — run Phase 4 explicitly, do not hack it into Phase 1.
 - **One backend at a time during probe.** If you ever call `probe_backend.sh` with more than one backend active in the VibeProxy UI, the Plus binary's registry collapses same-named models from lower-priority backends and you will get a silently truncated catalog. The verifier will catch this, but do not bypass it.
+- **Toggle first, restart only on failure.** Menu bar toggles are usually sufficient for probe isolation — a full quit-and-relaunch is disruptive and only needed when merged-config fails to regenerate. Always try a toggle first; escalate to restart only when Layer 1 verification rejects the probe.
 - **`type` field is often absent.** The Plus fork only emits `type` when `ModelInfo.Type` is non-empty. In practice, `owned_by` is the primary Layer 2 signature field. `verify_probe.py` handles this, but know it when reading its output — do not insist on `type` matching.
 - **Write state before touching config.yaml or ~/.zshrc.** If you crash between steps, a consistent state file with no matching writes is recoverable (next run detects drift). Writes without state are orphaned managed entries that nothing knows how to clean up.
 - **Backup paths live in `${CLAUDE_PLUGIN_DATA}/backups/`, not next to the original files.** Keep them inside the plugin data directory so upgrades do not wipe them.
@@ -376,6 +377,7 @@ Transactional rollback is the default because shell aliases and model aliases fo
 - **5xx is not a rollback trigger.** If the upstream provider is down, the alias is still correctly configured. Log and keep going.
 - **Validate with `request_model`, not the upstream `name`.** With `fork: false`, the original upstream model name is gone from VibeProxy's registry — the alias name is the only routable name. Sending the original name (e.g., `claude-opus-4-6-thinking` or `gpt-5.4`) will fail with "unknown provider". For effort models, the alias name with the effort suffix (e.g., `cc-codex-gpt54-med(medium)`) is routable because suffix parsing resolves the base alias. Always use the `request_model` field from `canonical_aliases`.
 - **`request_model` is always alias-based.** Set `request_model` to the alias name for all models. For effort-suffix models, append the effort suffix to the alias name: `cc-codex-gpt54-med(medium)`, not `gpt-5.4(medium)`. The `model` field preserves the upstream name for documentation; `request_model` is what the shell actually sends.
+- **Never add effort variants to budget-based models.** Antigravity's reasoning models (`claude-opus-4-6-thinking`, `claude-sonnet-4-6`) already have built-in thinking via numeric budget suffixes. Adding discrete effort levels (low/medium/high) on top creates invalid, unroutable aliases. Check the effort levels map for "budget-based" before offering effort selection.
 - **Effort variants are suffix-parsed, not registered.** `cc-codex-gpt54-med(medium)` is not a separate model in VibeProxy's registry — it's `cc-codex-gpt54-med` with a `(medium)` suffix parsed at request time by the thinking layer. This means effort-variant aliases will never appear in `/v1/models` listings, and validating them requires sending the full suffixed name (e.g., `cc-codex-gpt54-med(medium)`) as the model in a chat-completions request.
 - **Show ALL model families per backend.** Do not filter Copilot to only Claude models, or Codex to only GPT models. The same model (e.g., `gpt-5.4`) can appear in multiple backends with different effort levels or routing. Show everything the probe returns; let the user choose.
 - **Gemini OAuth fails silently through the GUI.** The VibeProxy Settings UI triggers `-login` but cannot handle the interactive "Code Assist vs Google One" mode selection prompt, so the auth process completes in the browser but VibeProxy never registers the account. Always direct users to the CLI workaround: `/Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml`. This is a known upstream bug ([#286](https://github.com/automazeio/vibeproxy/issues/286), [#242](https://github.com/automazeio/vibeproxy/issues/242)).
