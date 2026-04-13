@@ -99,6 +99,20 @@ for b in BACKENDS:
         "auth_files": [tildify(os.path.join(auth_dir, f)) for f in matches],
     })
 
+# Claude Code channel detection (not a probe backend — informational only).
+# When aliases set ANTHROPIC_BASE_URL to the proxy, ALL requests go through it,
+# including Claude Code's internal calls (session titles, /advisor, sub-agents
+# with model overrides like haiku/sonnet). Without the Claude Code channel
+# these internal requests have no matching provider and fail silently.
+claude_auth_files = [
+    f for f in auth_files
+    if f.endswith(".json") and f.startswith("claude-")
+]
+claude_code_channel = {
+    "connected": len(claude_auth_files) > 0,
+    "account_count": len(claude_auth_files),
+}
+
 state = None
 if os.path.isfile(state_file_path):
     try:
@@ -259,6 +273,7 @@ out = {
     "zshrc_path": tildify(zshrc_path),
     "overlay_load_error": overlay_load_error,
     "authenticated_backends": authenticated,
+    "claude_code_channel": claude_code_channel,
     "managed_shell_aliases": managed_shell_aliases,
     "managed_model_aliases": managed_model_aliases,
     "shortcut_shell_aliases": state_shortcut_shell,

@@ -44,6 +44,16 @@ Every canonical alias gets an auto-generated shortcut following a fixed conventi
 
 Examples: `cc-cx-med` → `cc-codex-gpt54-med`, `cc-cp-opus-high` → `cc-copilot-opus46-high`.
 
+### fork: false and default alias suppression
+
+All aliases are created with `fork: false` (default). This removes the original upstream model name from VibeProxy's registry — only the `cc-*` alias is routable. This prevents ambiguous routing when the same model appears in multiple backends.
+
+A side effect: VibeProxy auto-injects default Claude aliases for GitHub Copilot (e.g., `claude-opus-4.6`, `claude-haiku-4.5`) when no explicit config exists. Because this plugin writes explicit `oauth-model-alias` entries, the auto-injection is suppressed — only your chosen aliases appear in the registry.
+
+### Port 8318 (not 8317)
+
+VibeProxy documentation (Factory/Amp setup guides) references port **8317**. That's the ThinkingProxy layer — it parses `-thinking-NUMBER` model suffixes before forwarding to the actual proxy engine on port **8318** (CLIProxyAPIPlus). Claude Code has its own thinking parameter support, so this plugin connects directly to **8318**, bypassing the ThinkingProxy.
+
 ### config.yaml vs merged-config.yaml
 
 - `~/.cli-proxy-api/config.yaml` — your overlay configuration. The skill writes `oauth-model-alias` entries here so VibeProxy knows alias → model mappings.

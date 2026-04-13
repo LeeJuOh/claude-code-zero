@@ -41,6 +41,7 @@ Then read `/tmp/vibeproxy_discover.json`. Key fields:
 - `vibeproxy_installed`, `vibeproxy_reachable` — see **Onboarding gates** below if either is false
 - `user_overlay_exists`, `state_file_present` — determines whether we are first-run or rerun
 - `authenticated_backends` — array of `{token, config_key, display_name, auth_files}`; see **Onboarding gates** below if empty or missing backends the user wants
+- `claude_code_channel` — `{connected, account_count}`; see **Claude Code channel note** below
 - `managed_shell_aliases`, `managed_model_aliases`, `shortcut_shell_aliases` — what the skill currently owns
 - `backend_catalogs`, `partial_probe` — cached probe results and any aborted probe cycle
 - `conflicts` — pre-existing `cc-*` entries that are not tracked in state (potential clashes)
@@ -50,12 +51,28 @@ Present a compact summary back to the user (do not dump raw JSON):
 ```
 VibeProxy: installed ✓ | reachable ✓
 Authenticated backends: codex, copilot, gravity, gemini (4/4)
+Claude Code channel: not connected
 Currently managed: 3 model aliases, 4 shell aliases, 1 shortcut
 Manual conflicts detected: 0
 State file: present (last probe 2 days ago)
 ```
 
 If `partial_probe` is non-null, tell the user a previous run aborted mid-cycle and offer to resume or restart.
+
+### Claude Code channel note
+
+If `claude_code_channel.connected` is `false`, append the following informational note after the summary. This is **not a gate** — setup continues regardless.
+
+> ℹ **Claude Code channel is not connected in VibeProxy.**
+> Alias models work normally for main conversations. However, when `ANTHROPIC_BASE_URL` points to the proxy, Claude Code's internal requests also go through it — session title generation, `/advisor`, and sub-agents with `model: haiku/sonnet` all use raw Anthropic model IDs that have no matching provider in the proxy.
+>
+> Without the Claude Code channel, these internal calls will fail silently. Main conversations using alias models are not affected.
+>
+> VibeProxy's documentation notes that routing requests through OAuth tokens may carry account risk. Review their documentation before connecting any provider: https://github.com/automazeio/vibeproxy
+>
+> Note: The OAuth login flow uses port 3000 for the callback — if a dev server is running on that port, the login will fail silently.
+
+If `claude_code_channel.connected` is `true`, show `Claude Code channel: connected (N accounts)` in the summary and skip the note.
 
 ### Onboarding gates
 
@@ -381,6 +398,9 @@ Transactional rollback is the default because shell aliases and model aliases fo
 - **Effort variants are suffix-parsed, not registered.** `cc-codex-gpt54-med(medium)` is not a separate model in VibeProxy's registry — it's `cc-codex-gpt54-med` with a `(medium)` suffix parsed at request time by the thinking layer. This means effort-variant aliases will never appear in `/v1/models` listings, and validating them requires sending the full suffixed name (e.g., `cc-codex-gpt54-med(medium)`) as the model in a chat-completions request.
 - **Show ALL model families per backend.** Do not filter Copilot to only Claude models, or Codex to only GPT models. The same model (e.g., `gpt-5.4`) can appear in multiple backends with different effort levels or routing. Show everything the probe returns; let the user choose.
 - **Gemini OAuth fails silently through the GUI.** The VibeProxy Settings UI triggers `-login` but cannot handle the interactive "Code Assist vs Google One" mode selection prompt, so the auth process completes in the browser but VibeProxy never registers the account. Always direct users to the CLI workaround: `/Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml`. This is a known upstream bug ([#286](https://github.com/automazeio/vibeproxy/issues/286), [#242](https://github.com/automazeio/vibeproxy/issues/242)).
+- **Token expiration has no automatic re-authentication.** When an OAuth token expires and refresh fails after max retries, the proxy silently returns 502 for all requests through that credential. There is no auto-recovery — the user must re-authenticate manually in the VibeProxy menu bar (or via CLI). If a previously working alias suddenly returns 502 and the provider is not down, suggest the user check their auth status in VibeProxy Settings.
+- **config.yaml changes hot-reload automatically.** After `write_user_config.py` updates `config.yaml`, CLIProxyAPIPlus detects the file change and reloads the config (including `oauth-model-alias` changes) without a full restart. The restart gate in Phase 7 is still required because `merged-config.yaml` regeneration may not always reflect alias changes until the next full server cycle.
+- **OAuth callback uses port 3000.** When connecting the Claude Code channel (or Codex) in VibeProxy, the OAuth flow starts a temporary callback server on port 3000. If a dev server (Next.js, Vite, etc.) is occupying that port, the login will fail silently. Users should stop conflicting servers before authenticating.
 
 ## Scripts
 
