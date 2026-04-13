@@ -133,58 +133,64 @@ def build_block() -> str:
         if isinstance(alias, str) and isinstance(target, str):
             target_to_shortcuts.setdefault(target, []).append(alias)
 
-    all_names: list[str] = []
-    all_descs: list[str] = []
+    # Calculate column widths across all entries
+    all_aliases_w: list[int] = [len("Alias")]
+    all_models_w: list[int] = [len("Model")]
+    all_shorts_w: list[int] = [len("Shortcut")]
+    has_shortcuts = bool(target_to_shortcuts)
     for _, entries in backend_groups:
         for a, d in entries:
-            all_names.append(a)
-            all_descs.append(d)
-    if not all_names:
-        all_names.append("")
-        all_descs.append("")
+            all_aliases_w.append(len(a))
+            all_models_w.append(len(d))
+            shortcuts = target_to_shortcuts.get(a, [])
+            if shortcuts:
+                all_shorts_w.append(len(", ".join(shortcuts)))
 
-    col1 = max(len(n) for n in all_names) + 2
-    col2 = max(len(d) for d in all_descs) + 2
-    has_shortcuts = bool(target_to_shortcuts)
-    hdr_alias = "Alias"
-    hdr_model = "Model"
-    hdr_short = "Shortcut"
-    rule_width = 2 + col1 + col2 + (len(hdr_short) + 4 if has_shortcuts else 0)
+    col_a = max(all_aliases_w) + 2  # padding after text
+    col_m = max(all_models_w) + 2
+    col_s = max(all_shorts_w)
+    total_width = 2 + col_a + 3 + col_m + (3 + col_s if has_shortcuts else 0)
 
     lines.append("")
     lines.append("cc-list() {")
 
-    # Column header — once at the top
-    if has_shortcuts:
-        hdr_line = f"  {hdr_alias.ljust(col1)}{hdr_model.ljust(col2)}{hdr_short}"
-    else:
-        hdr_line = f"  {hdr_alias.ljust(col1)}{hdr_model}"
-    lines.append(f"  printf '\\033[1m%s\\033[0m\\n' {shell_quote(hdr_line)}")
-
-    first_group = True
-    for backend, entries in backend_groups:
-        if not first_group:
-            lines.append("  echo")
-        # Backend separator — bold with padding
+    for i, (backend, entries) in enumerate(backend_groups):
+        # Backend separator — bold with blank lines
         sep = f"\u2500\u2500 {backend} "
-        sep += "\u2500" * max(0, rule_width - len(sep))
-        lines.append(f"  printf '\\033[1m%s\\033[0m\\n' {shell_quote(sep)}")
-        first_group = False
+        sep += "\u2500" * max(0, total_width - len(sep))
+        lines.append(f"  printf '\\n\\033[1m%s\\033[0m\\n\\n' {shell_quote(sep)}")
+
+        # Column header (per section, bold)
+        if has_shortcuts:
+            hdr = f"  {'Alias'.ljust(col_a)}\u2502 {'Model'.ljust(col_m)}\u2502 Shortcut"
+        else:
+            hdr = f"  {'Alias'.ljust(col_a)}\u2502 Model"
+        lines.append(f"  printf '\\033[1m%s\\033[0m\\n' {shell_quote(hdr)}")
+
+        # Separator line with box-drawing
+        if has_shortcuts:
+            rule = f"  {'\u2500' * col_a}\u253c{'\u2500' * (col_m + 1)}\u253c{'\u2500' * (col_s + 1)}"
+        else:
+            rule = f"  {'\u2500' * col_a}\u253c{'\u2500' * (col_m + 1)}"
+        lines.append(f"  printf '%s\\n' {shell_quote(rule)}")
+
+        # Data rows
         for alias_name, model_desc in entries:
             shortcuts = target_to_shortcuts.get(alias_name, [])
             shortcut_str = ", ".join(shortcuts) if shortcuts else ""
-            padded_alias = alias_name.ljust(col1)
-            padded_desc = model_desc.ljust(col2)
-            if shortcut_str:
-                lines.append(
-                    f"  printf '  %s%s\\033[36m%s\\033[0m\\n' "
-                    f"{shell_quote(padded_alias)} {shell_quote(padded_desc)} {shell_quote(shortcut_str)}"
-                )
+            if has_shortcuts:
+                if shortcut_str:
+                    row_prefix = f"  {alias_name.ljust(col_a)}\u2502 {model_desc.ljust(col_m)}\u2502 "
+                    lines.append(
+                        f"  printf '%s\\033[36m%s\\033[0m\\n' "
+                        f"{shell_quote(row_prefix)} {shell_quote(shortcut_str)}"
+                    )
+                else:
+                    row = f"  {alias_name.ljust(col_a)}\u2502 {model_desc.ljust(col_m)}\u2502"
+                    lines.append(f"  printf '%s\\n' {shell_quote(row)}")
             else:
-                lines.append(
-                    f"  printf '  %s%s\\n' "
-                    f"{shell_quote(padded_alias)} {shell_quote(model_desc)}"
-                )
+                row = f"  {alias_name.ljust(col_a)}\u2502 {model_desc}"
+                lines.append(f"  printf '%s\\n' {shell_quote(row)}")
 
     lines.append("}")
 

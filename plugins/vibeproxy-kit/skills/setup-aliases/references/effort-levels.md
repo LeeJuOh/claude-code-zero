@@ -33,4 +33,5 @@ Effort variants are NOT separate models in `/v1/models` — they are constructed
 
 - Copilot uses dots in model IDs (`claude-opus-4.6`), Antigravity/Gemini use hyphens (`claude-opus-4-6`). Normalize before lookup.
 - Antigravity models with budget-based thinking (no discrete levels) use numeric budget suffixes (e.g., `claude-opus-4-6-thinking(16384)`), not effort levels. Present them as base models without effort selection.
+- **Antigravity Gemini presets:** `gemini-3.1-pro-high` and `gemini-3.1-pro-low` are the **same Gemini 3.1 Pro model** exposed with different thinking intensity presets (aggressive vs conservative). They are not separate models — treat them as one model with a preset sub-selection. The same applies to `gemini-3-pro-high` / `gemini-3-pro-low`.
 - If a probe returns a model with `thinking: true` that is not in this table (after normalizing both dot/hyphen formats), surface it to the user and let them specify levels manually.

@@ -138,7 +138,7 @@ From `authenticated_backends`, ask the user via `AskUserQuestion` which backends
 This is the most interaction-heavy phase. For each selected backend, in sequence:
 
 1. **Reuse cache?** In Merge mode, if `backend_catalogs[<token>].probed_at` is within 7 days, offer the user the option to reuse instead of re-probing. Reset mode always re-probes. The user may override with "force refresh".
-2. **Toggle prompt.** Use `AskUserQuestion` to tell the user exactly what to do: *"In the VibeProxy menu bar, enable **only** `<display_name>` and disable every other backend (Codex, GitHub Copilot, Antigravity, Gemini). Click done when the menu bar reflects that state."* Wait for explicit confirmation.
+2. **Restart prompt.** Use `AskUserQuestion` to tell the user exactly what to do: *"Quit VibeProxy from the menu bar, then relaunch it with **only** `<display_name>` enabled and every other backend disabled. Toggling backends in the menu bar alone does not refresh the runtime registry — a full quit-and-relaunch is required. Click done when VibeProxy is running with only `<display_name>` active."* Wait for explicit confirmation.
 3. **Probe.** Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/scripts/probe_backend.sh <token> > /tmp/vibeproxy_probe_<token>.json`
 4. **Verify.** Run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/scripts/verify_probe.py --claimed <token> --claimed-channel-key <config_key> --all-channel-keys <comma-sep-list-of-all-authenticated-channel-keys> --probe-output /tmp/vibeproxy_probe_<token>.json > /tmp/vibeproxy_verify_<token>.json`
 5. **Act on verdict.**
@@ -165,6 +165,12 @@ Group into families:
 - **Other** — `grok-*`, `gpt-oss-*` (show but don't push)
 
 Use one multi-select `AskUserQuestion` per backend with all families mixed in.
+
+**Antigravity Gemini presets:** Antigravity exposes the same Gemini model (e.g., Gemini 3.1 Pro) under two names with different thinking intensity presets: `gemini-3.1-pro-high` (aggressive thinking) and `gemini-3.1-pro-low` (conservative thinking). These are **not separate models** — present them as one model with a preset sub-selection:
+
+- Show "Gemini 3.1 Pro" once, with preset options (high / low / both)
+- If only one preset selected: alias is `cc-gravity-g31pro-{effort}` (no preset suffix)
+- If both presets selected: aliases are `cc-gravity-g31pro-hi-{effort}` / `cc-gravity-g31pro-lo-{effort}`
 
 ### Step 2: Auto-detect and present effort variants
 
@@ -214,13 +220,43 @@ Map each selected model+effort combination to a canonical alias name:
 
 **`fork` field:** Omit the `fork` field (defaults to `false`). With `fork: false`, VibeProxy replaces the original model name in its registry with the alias name — the alias name itself becomes the routable model name. Only set `fork: true` if the user explicitly needs both the original model name and the alias to coexist as separate routes.
 
-**`request_model` field:** For non-suffix base models with `fork: false`, set `request_model` to the alias name (e.g., `cc-gravity-opus46`). For effort-suffix models (e.g., `gpt-5.4(medium)`), set `request_model` to the original suffixed form. This field determines what the shell alias sends as `ANTHROPIC_MODEL` and what validation uses.
+**`request_model` field:** Always set `request_model` to the alias name — never the original upstream model name. With `fork: false` (default), the original name no longer exists in VibeProxy's registry, so sending it will fail with "unknown provider". For effort-suffix models, the shell alias appends the effort suffix to the alias name:
 
-### Step 4: Shortcut aliases
+- Base model: `request_model = cc-gravity-opus46` → shell sends `ANTHROPIC_MODEL=cc-gravity-opus46`
+- Effort model: `request_model = cc-codex-gpt54-med` → shell sends `ANTHROPIC_MODEL=cc-codex-gpt54-med(medium)`
 
-Ask whether any selected versioned alias should also get a version-less shortcut (e.g. `cc-copilot-opus` → `cc-copilot-opus46`). Shortcuts are shell-level aliases whose target is the canonical alias name. Never make a shortcut the canonical name.
+The `model` field preserves the upstream name for documentation only. `request_model` is what the shell actually sends and what validation tests.
 
-For effort variants, shortcut = effort token only: `cc-codex-med` → `cc-codex-gpt54-med`.
+### Step 4: Shortcut aliases (auto-generated)
+
+Shortcuts are automatically generated from a fixed convention — **do not ask the user via `AskUserQuestion`**. Shortcuts are shell-level aliases whose target is the canonical alias name. Never make a shortcut the canonical name.
+
+**Convention:** `cc-{2char-backend}-{model}-{effort}`
+
+| Backend | 2-char token |
+| --- | --- |
+| codex | `cx` |
+| copilot | `cp` |
+| gravity (Antigravity) | `ag` |
+| gemini | `gm` |
+| qwen | `qw` |
+| zai | `za` |
+
+**Model token:** Version-free latest model name — `opus`, `sonnet`, `gpt`, `gemini-pro` (not `g31pro`).
+
+**Examples:**
+
+| Shortcut | Canonical | Description |
+| --- | --- | --- |
+| `cc-cx-med` | `cc-codex-gpt54-med` | Codex gpt-5.4 medium |
+| `cc-cp-opus-high` | `cc-copilot-opus46-high` | Copilot opus 4.6 high |
+| `cc-cp-sonnet-low` | `cc-copilot-sonnet46-low` | Copilot sonnet 4.6 low |
+| `cc-cp-gpt-max` | `cc-copilot-gpt54-max` | Copilot gpt-5.4 xhigh |
+| `cc-ag-opus` | `cc-gravity-opus46` | Antigravity opus (budget-based, no effort) |
+| `cc-ag-gemini-pro-low` | `cc-gravity-g31pro-low` | Antigravity Gemini 3.1 Pro low |
+| `cc-gm-low` | `cc-gemini-g31pro-low` | Gemini 3.1 Pro preview low |
+
+Generate shortcuts for every canonical alias. If a shortcut collides with another shortcut or canonical alias, skip it and log a warning.
 
 ## Phase 6 — Conflict resolution and migration
 
@@ -290,7 +326,7 @@ Do not skip this step. Do not proceed to validation before the user confirms.
 
 Each validation call sends a real (billable) inference request. If the user has many aliases, warn them about the per-alias cost before proceeding.
 
-**Critical: use the `request_model` value — the same model name the shell alias sends.** Because the plugin uses `fork: false` by default, the original upstream model name is replaced by the alias name in VibeProxy's registry. For non-suffix base models, this means the alias name (e.g., `cc-gravity-opus46`) is the routable name, not the original (e.g., `claude-opus-4-6-thinking`). For effort-suffix models (e.g., `gpt-5.4(medium)`), the original suffix form is still routable because VibeProxy parses the suffix at request time and resolves the base model.
+**Critical: use the `request_model` value — the same model name the shell alias sends.** With `fork: false` (default), the original upstream model name is replaced by the alias name in VibeProxy's registry. The alias name is the only routable name — sending the original upstream name (e.g., `claude-opus-4-6-thinking` or `gpt-5.4`) will fail with "unknown provider". For effort-suffix models, the shell alias sends the alias name with the effort suffix appended (e.g., `cc-codex-gpt54-med(medium)`), and VibeProxy parses the suffix at request time.
 
 For each canonical alias, use its `request_model` field (the value that goes into `ANTHROPIC_MODEL`):
 
@@ -301,7 +337,7 @@ curl -s -o /tmp/vp_val.json -w '%{http_code}\n' \
   -d '{"model":"<REQUEST_MODEL>","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}'
 ```
 
-Where `<REQUEST_MODEL>` is the `request_model` field from `canonical_aliases` — for non-suffix base models this is the alias name (e.g., `cc-gravity-opus46`), for effort-suffix models this is the original suffix form (e.g., `gpt-5.4(medium)`).
+Where `<REQUEST_MODEL>` is the `request_model` field from `canonical_aliases` — always alias-based (e.g., `cc-gravity-opus46` for base models, `cc-codex-gpt54-med(medium)` for effort models).
 
 Use `max_tokens:16` — many models enforce a minimum of 16 tokens and reject lower values.
 
@@ -338,9 +374,9 @@ Transactional rollback is the default because shell aliases and model aliases fo
 - **Never read `~/.cli-proxy-api/merged-config.yaml` until after the restart gate.** Before restart it is stale. The one exception is `verify_probe.py` during Phase 4 — that is intentional because the hot-reload path triggered by a menu-bar toggle regenerates merged-config in place, and Layer 1 reads exactly that regenerated state.
 - **Do not preserve ambiguous shared model names.** If the user picks `gpt-5.4` from codex and also from copilot, generate `cc-codex-gpt54-high` and `cc-copilot-gpt54-high` as separate canonical aliases. Do not also create a bare `gpt-5.4` alias, because that re-introduces the routing-priority ambiguity the probe cycle was designed to avoid.
 - **5xx is not a rollback trigger.** If the upstream provider is down, the alias is still correctly configured. Log and keep going.
-- **Validate with `request_model`, not the upstream `name`.** With `fork: false`, the upstream model name is replaced by the alias name in VibeProxy's registry. For non-suffix base models, the alias name (e.g., `cc-gravity-opus46`) is the routable name — sending the original upstream name (e.g., `claude-opus-4-6-thinking`) will fail with "unknown provider". For effort-suffix models (e.g., `gpt-5.4(medium)`), the original suffix form is still routable because suffix parsing resolves the base model. Always use the `request_model` field from `canonical_aliases`.
-- **`request_model` must match what VibeProxy sees after alias resolution.** When building `canonical_aliases`, set `request_model` to the alias name for non-suffix base models (because `fork: false` replaces the original name in the registry). For effort-suffix models like `gpt-5.4(medium)`, set `request_model` to the original suffix form (because suffix parsing happens before alias lookup and resolves the base model). The `model` field preserves the upstream name for documentation; `request_model` is what the shell actually sends.
-- **Effort variants are suffix-parsed, not registered.** `gpt-5.4(high)` is not a separate model in VibeProxy's registry — it's `gpt-5.4` with a `(high)` suffix parsed at request time by the thinking layer. This means effort-variant aliases will never appear in `/v1/models` listings, and validating them requires sending the full suffixed name (e.g., `gpt-5.4(high)`) as the model in a chat-completions request.
+- **Validate with `request_model`, not the upstream `name`.** With `fork: false`, the original upstream model name is gone from VibeProxy's registry — the alias name is the only routable name. Sending the original name (e.g., `claude-opus-4-6-thinking` or `gpt-5.4`) will fail with "unknown provider". For effort models, the alias name with the effort suffix (e.g., `cc-codex-gpt54-med(medium)`) is routable because suffix parsing resolves the base alias. Always use the `request_model` field from `canonical_aliases`.
+- **`request_model` is always alias-based.** Set `request_model` to the alias name for all models. For effort-suffix models, append the effort suffix to the alias name: `cc-codex-gpt54-med(medium)`, not `gpt-5.4(medium)`. The `model` field preserves the upstream name for documentation; `request_model` is what the shell actually sends.
+- **Effort variants are suffix-parsed, not registered.** `cc-codex-gpt54-med(medium)` is not a separate model in VibeProxy's registry — it's `cc-codex-gpt54-med` with a `(medium)` suffix parsed at request time by the thinking layer. This means effort-variant aliases will never appear in `/v1/models` listings, and validating them requires sending the full suffixed name (e.g., `cc-codex-gpt54-med(medium)`) as the model in a chat-completions request.
 - **Show ALL model families per backend.** Do not filter Copilot to only Claude models, or Codex to only GPT models. The same model (e.g., `gpt-5.4`) can appear in multiple backends with different effort levels or routing. Show everything the probe returns; let the user choose.
 - **Gemini OAuth fails silently through the GUI.** The VibeProxy Settings UI triggers `-login` but cannot handle the interactive "Code Assist vs Google One" mode selection prompt, so the auth process completes in the browser but VibeProxy never registers the account. Always direct users to the CLI workaround: `/Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml`. This is a known upstream bug ([#286](https://github.com/automazeio/vibeproxy/issues/286), [#242](https://github.com/automazeio/vibeproxy/issues/242)).
 
