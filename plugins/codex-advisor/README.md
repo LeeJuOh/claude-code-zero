@@ -34,34 +34,65 @@ prompt and double-check". All four failures were wrapper bugs.
 ## Quick Start
 
 ```shell
-# 1. Install the Official Codex plugin (required)
+# 1. Install the Official Codex plugin — required (provides companion.mjs)
 /plugin install codex@openai-codex
-/codex:setup
+/codex:setup                          # one-time auth + Codex CLI check
 
 # 2. Install codex-advisor
 /plugin install codex-advisor@claude-code-zero
 
-# 3. Configure defaults (optional)
+# 3. (optional) Hide the Official plugin's /codex:* slash menu so only our
+#    /codex-* commands are visible. The companion script stays on disk and
+#    we keep calling it directly.
+/plugin disable codex@openai-codex
+
+# 4. Configure defaults (optional — every skill can also override on the fly)
 /codex-setup --model gpt-5.4-mini --effort high
 
-# 4. Use
+# 5. Use
 /codex-review                          # review + double-check
 /codex-adversarial check auth flow     # skeptical review with focus text
 /codex-rescue implement rate limiter   # delegate a task + review the diff
 /codex-verify docs/plan.md             # plan review + PASS/FAIL verdict
 /codex-research GraphQL vs tRPC 2026   # deep-dive + cross-model synthesis
+/codex-status                          # who's running, what's stored
+/codex-result <job-id>                 # fetch final output of a job
+/codex-cancel <job-id>                 # stop a runaway task
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/codex-setup` | Preflight check + model/effort config via config.toml |
-| `/codex-review` | Code review + double-check, flags `--base` / `--scope` |
-| `/codex-adversarial` | Adversarial review + focus text + skeptical evaluation |
-| `/codex-rescue` | Task delegation + implementation review |
+| `/codex-setup` | Preflight (CLI, auth, Official plugin) + `config.toml` editor |
+| `/codex-review` | Code review + double-check |
+| `/codex-adversarial` | Adversarial (skeptical) review + focus text |
+| `/codex-rescue` | Task delegation + diff review |
 | `/codex-verify` | Document/plan verification, PASS/FAIL verdict |
 | `/codex-research` | Deep-dive research, cross-model synthesis |
+| `/codex-status` | Active + recent Codex jobs plus saved reports |
+| `/codex-result` | Final stored output of a completed job |
+| `/codex-cancel` | Cancel an active background job |
+
+## Model & effort
+
+**Every skill accepts `--model <slug>` and `--effort <level>`.** They route through `scripts/apply-codex-config.py` and update `~/.codex/config.toml` before the Codex CLI runs — necessary because the Official `/codex:review` handler silently ignores its own `--model` flag, so config.toml is the only lever that actually takes effect.
+
+Examples:
+
+```shell
+/codex-review --base main --model gpt-5.4-mini
+/codex-adversarial --effort xhigh focus on SQL injection
+/codex-rescue --model spark implement the rate limiter
+/codex-setup --model gpt-5.4 --effort high    # or set defaults once
+```
+
+Common slugs (your actual availability depends on subscription tier):
+`gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`, `spark` → expands to `gpt-5.3-codex-spark`.
+
+Efforts: `none` / `minimal` / `low` / `medium` / `high` / `xhigh`. Support varies by model; the script saves unknown values but surfaces a warning. Codex CLI rejects at runtime if the combination is unsupported.
+
+**The change is global and persistent.** config.toml is read by every Codex invocation — Official plugin, direct CLI, every codex-advisor skill — until you change it again. The skill tells you before/after whenever it mutates.
 
 ## How a call is translated
 
@@ -77,8 +108,8 @@ The key discipline: **Claude never reads your source code before Codex runs.** T
 
 ## Prerequisites
 
-- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) — **required**
-- [OpenAI Codex CLI](https://github.com/openai/codex) — installed and authenticated
+- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) — **install required**. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu.
+- [OpenAI Codex CLI](https://github.com/openai/codex) — installed and authenticated (`/codex-setup` verifies both).
 
 ## License
 

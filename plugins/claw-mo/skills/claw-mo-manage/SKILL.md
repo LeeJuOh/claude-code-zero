@@ -42,13 +42,20 @@ Current project: project-a (:6342)
 
 Match config entries with running servers to show accurate status (● running / ○ stopped). Also list any running servers found by `mo --status --json` that are not in config (user may have started them manually).
 
-If the current project's configured groups and live groups differ, show an explicit warning:
+If the current project's configured groups and live groups differ, show an explicit warning that flags **both** possible causes — runtime drift and config drift:
 
 ```
 ⚠ current project is out of sync
 configured: docs, articles, default
 live: harness, docs, issues, skills, agents
-recommended action: reset session, then restart with saved config
+
+possible causes:
+  - runtime is stale (mo restored a previous session with extra groups)
+  - config is outdated (docs structure changed since setup, new groups never saved)
+
+recommended actions:
+  - if config is correct → Server control → Reset session
+  - if config is outdated → Modify patterns/groups (add/remove) or re-run /claw-mo-setup
 ```
 
 ### 3. Ask What to Do

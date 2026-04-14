@@ -47,8 +47,8 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "4.1.1",
-      "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Review, adversarial, rescue, verify, research."
+      "version": "4.2.0",
+      "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel. Every skill accepts --model/--effort via config.toml."
     },
     {
       "name": "rubber-duck-tutor",
@@ -66,7 +66,7 @@
     {
       "name": "claw-mo",
       "source": "./plugins/claw-mo",
-      "version": "2.4.0",
+      "version": "2.5.0",
       "description": "Manage mo markdown viewer sessions with group-based organization: auto-start, browser integration, per-project watch patterns, port isolation",
       "category": "lab"
     },

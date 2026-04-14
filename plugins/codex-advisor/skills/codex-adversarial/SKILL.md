@@ -1,7 +1,7 @@
 ---
 name: codex-adversarial
 description: "Run Codex adversarial review with Claude's double-check. Actively tries to break confidence in the change. Use when the user asks \"adversarial review\", \"적대적 리뷰\", \"코드 공격\", wants thorough security/correctness challenge."
-argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [focus text]"
+argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL] [focus text]"
 allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -34,7 +34,9 @@ joined into the prompt by the companion (`lib/args.mjs:47-49` +
 
 You are a translator. Use LM intelligence, not regex tables.
 
-**Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`, and **positional focus text** (natural-language attack hints, e.g., "check for SQL injection in login handler").
+**Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`, `--model <slug>`, `--effort <level>`, and **positional focus text** (natural-language attack hints, e.g., "check for SQL injection in login handler").
+
+`--model` and `--effort` never reach the companion (adversarial shares `handleReviewCommand` with review — it also ignores them). They route through `scripts/apply-codex-config.py` to update `~/.codex/config.toml` before the companion launches.
 
 Rules:
 
@@ -58,11 +60,27 @@ git rev-parse --verify "<literal clean base>" >/dev/null 2>&1 \
   || { echo "Unknown revision: <literal clean base>" >&2; git branch --list | head -20 >&2; exit 1; }
 ```
 
-**Before Phase 2, print exactly one line:**
+### Apply model/effort (if either flag was provided)
+
+Run before Phase 2 so the companion sees the new `config.toml`:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
+  "<literal clean model from Phase 1 or empty>" \
+  "<literal clean effort from Phase 1 or empty>"
+```
+
+Relay the `Model: ... | Effort: ...` stdout line verbatim, plus any stderr advisories. **config.toml is global** — the change affects every Codex invocation until changed again. Flag that to the user when values changed.
+
+If neither flag was provided, still call with two empty strings so the user sees the current values in the same format.
+
+**Before Phase 2, also print the Parsed line:**
 
 ```
 Parsed: base=develop, scope=auto, focus="check SQL injection in login"   (meta: "빨리" obeyed)
 ```
+
+Order: apply-codex-config.py output first, Parsed line second.
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 

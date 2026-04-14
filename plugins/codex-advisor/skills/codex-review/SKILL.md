@@ -1,7 +1,7 @@
 ---
 name: codex-review
 description: "Run Codex code review with Claude's independent double-check. Use when the user asks \"codex review\", \"codex 리뷰\", \"코드 리뷰\", wants Codex to review code changes, diff, branch, or commit. For adversarial review use /codex-adversarial."
-argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch]"
+argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -36,7 +36,9 @@ there is NO post-hoc detection. Phase 1 whitelist is the only safety net.
 
 You are a translator. Use LM intelligence, not regex tables.
 
-**Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`. Nothing else.
+**Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`, `--model <slug>`, `--effort <level>`. Nothing else.
+
+`--model` and `--effort` never reach the companion (the Official `/codex:review` handler silently ignores them). They route through `scripts/apply-codex-config.py` to update `~/.codex/config.toml` *before* the companion launches — see the Apply block below.
 
 Rules:
 
@@ -61,11 +63,28 @@ git rev-parse --verify "<literal clean base>" >/dev/null 2>&1 \
   || { echo "Unknown revision: <literal clean base>" >&2; git branch --list | head -20 >&2; exit 1; }
 ```
 
-**Before Phase 2, print exactly one line:**
+### Apply model/effort (if either flag was provided)
+
+Run this *before* Phase 2 so the companion sees the new `config.toml`:
+
+```bash
+# Empty string for either arg = no change. Alias `spark` auto-expands.
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
+  "<literal clean model from Phase 1 or empty>" \
+  "<literal clean effort from Phase 1 or empty>"
+```
+
+The script writes one line to stdout: `Model: <before> -> <after> | Effort: <before> -> <after>`. Relay it verbatim. Advisory stderr warnings (slug not in local cache) pass through — keep them visible. **config.toml is global**: the change affects every Codex invocation (Official plugin, direct CLI, every codex-advisor skill) until the user changes it again. Say so when anything changed.
+
+If the user passed *neither* flag, still call the script with two empty strings so the user sees the current values in the same format.
+
+**Before Phase 2, also print the Parsed line:**
 
 ```
 Parsed: base=develop, scope=auto   (meta: "분석 먼저 하지마" obeyed)
 ```
+
+Order: apply-codex-config.py output first, Parsed line second.
 
 For edge cases (flag conflicts, unusual phrasings, classification
 details), read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.

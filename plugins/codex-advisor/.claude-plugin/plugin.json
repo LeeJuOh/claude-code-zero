@@ -1,7 +1,7 @@
 {
   "name": "codex-advisor",
-  "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Review, adversarial, rescue, verify, research.",
+  "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel. Every skill accepts --model/--effort via config.toml.",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
-  "keywords": ["codex", "double-check", "cross-model", "evaluation", "review", "verification", "research"]
+  "keywords": ["codex", "double-check", "cross-model", "evaluation", "review", "verification", "research", "status", "cancel"]
 }
