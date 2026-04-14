@@ -24,11 +24,19 @@ fi
 # Get branch name directly from git
 BRANCH=$(git -C "$WORKTREE_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
 
-# Find the main repository
-PROJECT_ROOT=$(cd "$WORKTREE_PATH" && git rev-parse --show-superproject-working-tree 2>/dev/null || true)
-if [ -z "$PROJECT_ROOT" ]; then
-  PROJECT_ROOT=$(echo "$WORKTREE_PATH" | sed 's|/\.claude/worktrees/.*$||')
+# Find the main repository via the shared .git directory.
+# `git rev-parse --git-common-dir` returns the path (may be relative) to the
+# .git directory shared across all worktrees. Its parent is the main repo root.
+# --show-superproject-working-tree is unrelated (it's for submodules, not
+# worktrees) and was always returning empty — the old sed fallback assumed the
+# .claude/worktrees/ layout which no longer holds once dirBase is configurable.
+GIT_COMMON=$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir 2>/dev/null || true)
+if [ -z "$GIT_COMMON" ]; then
+  echo "Error: cannot locate main repo for worktree: $WORKTREE_PATH" >&2
+  exit 1
 fi
+# git-common-dir may be relative — resolve against the worktree, then go up one.
+PROJECT_ROOT=$(cd "$WORKTREE_PATH" && cd "$GIT_COMMON" && cd .. && pwd)
 
 # --- Log to worktree's own .worktree.log (same file as create) ---
 LOG_FILE="${WORKTREE_PATH}/.worktree.log"
@@ -87,15 +95,17 @@ fi
 
 # --- Remove worktree ---
 echo "Removing worktree: $WORKTREE_PATH" >&2
-git -C "$PROJECT_ROOT" worktree remove "$WORKTREE_PATH" --force >&2 2>/dev/null || {
-  rm -rf "$WORKTREE_PATH"
-  git -C "$PROJECT_ROOT" worktree prune >&2 2>/dev/null || true
-}
+if ! git -C "$PROJECT_ROOT" worktree remove "$WORKTREE_PATH" --force >&2; then
+  echo "Failed to remove worktree via git; directory left untouched: $WORKTREE_PATH" >&2
+  exit 1
+fi
 
-# Clean up branch
-if [ -n "$BRANCH" ]; then
+# Clean up branch only when upstream exists (hook-created tracking or pushed branches)
+if [ -n "$BRANCH" ] && [ -n "$UPSTREAM" ]; then
   git -C "$PROJECT_ROOT" branch -D "$BRANCH" >&2 2>/dev/null || true
   echo "Deleted branch: $BRANCH" >&2
+else
+  echo "Preserved branch: ${BRANCH:-<detached>}" >&2
 fi
 
 log_entry "REMOVED" ""

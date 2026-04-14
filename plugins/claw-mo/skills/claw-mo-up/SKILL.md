@@ -18,17 +18,16 @@ For config schema, port logic, groups, and browser opening: read `${CLAUDE_PLUGI
 4. No config found → tell user to run `/claw-mo-setup`, stop
 5. If config has `patterns` (v1), migrate to `groups` format and save back
 6. `mo --status --json 2>/dev/null` → check if server already running on this port
-7. If a server is running on this port, compare live groups to config:
-   - Extract group names from the JSON output for the matching port
-   - Sort and compare against the sorted config group names
-   - **Match** → reuse the running session, skip to step 9
-   - **Mismatch** → show which groups differ (e.g., "live: [docs, plans] vs config: [docs, plans, default]"), note that either side can be stale, and present three options via `AskUserQuestion`:
-     1. **Restart runtime** — treat config as source of truth, clear and restart (pick this when config is correct)
-     2. **Update config** — config itself may be outdated (e.g., new docs dirs added since last setup). Stop this skill and tell the user to run `/claw-mo-setup` (full re-scan) or `/claw-mo-manage` (targeted group edits), then re-run `/claw-mo-up`
-     3. **Keep as-is** — skip the reconcile, proceed to step 9 with the current runtime
-   - If user picks Restart runtime: `printf 'y\n' | mo --clear -p PORT`, then continue to step 8
-   - If user picks Update config: exit the skill with clear next-step instructions
-   - If user picks Keep as-is: skip to step 9
+7. If a server is running on this port, compare live runtime to config using the full group→patterns mapping:
+   - Extract the matching server from `mo --status --json`
+   - Build a live map: each group name → sorted `patterns` array from the JSON output
+   - Build a config map: each configured group name → sorted patterns after normalizing each configured pattern to an absolute path under the project root (because mo status reports absolute patterns)
+   - **Exact match** → reuse the running session, skip to step 9
+   - **Mismatch** → treat saved config as source of truth:
+     1. Show a concise diff so the user can see whether the drift is in groups, patterns, or both
+     2. Run `printf 'y\n' | mo --clear -p PORT`
+     3. Continue to step 8 to rebuild the runtime from saved config automatically
+     4. Mention that ad-hoc runtime edits were discarded because `/claw-mo-up` reconciles to saved config
 8. Not running (or just cleared) → start mo for each group **sequentially**:
    ```bash
    # First group starts the server
@@ -49,8 +48,9 @@ For config schema, port logic, groups, and browser opening: read `${CLAUDE_PLUGI
 
 - Always `--no-open` when starting mo — the skill controls browser opening separately
 - Start groups sequentially, not in parallel — the first invocation must start the server before others can add to it
-- mo auto-restores previous sessions from its backup file — a matching port alone does not guarantee a correct session. Always compare live groups to config.
-- A live-vs-config mismatch does not automatically mean runtime is stale. config can also drift when the project's docs structure changes after setup. Always present "update config" as an explicit option alongside "restart runtime" — do not silently assume config is the source of truth.
+- mo auto-restores previous sessions from its backup file — a matching port alone does not guarantee a correct session. Always compare the full live group→patterns mapping to saved config.
+- mo status reports watch patterns as absolute paths, while claw-mo config stores relative globs. Normalize config patterns to absolute paths under the project root before comparing, then sort patterns within each group so ordering differences do not create false mismatches.
+- `/claw-mo-up` now treats saved config as source of truth. If runtime drift is detected, automatically clear and rebuild; ad-hoc runtime-only edits belong in `/claw-mo-manage` or `/claw-mo-setup` if they should persist.
 - `printf 'y\n' | mo --clear` — the clear command prompts for confirmation. Always pipe `y`.
 - Prefer cmux over the system `open` command whenever cmux is reachable. `$CMUX_SURFACE_ID` may be unset even inside a cmux pane (e.g., nested shells). Check `command -v cmux` too before falling back.
 - In cmux, always check `cmux list-pane-surfaces` before calling `browser open` — `open` stacks duplicate tabs

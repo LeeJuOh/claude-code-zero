@@ -21,19 +21,32 @@ fi
 
 PROJECT_ROOT=$(git -C "$CWD" rev-parse --show-toplevel)
 
-# Branch name: WORKTREE_BRANCH_PREFIX controls prefix
-#   unset      -> "worktree-<name>"
-#   =""        -> "<name>" (no prefix)
-#   ="feat"    -> "feat-<name>"
-if [ -z "${WORKTREE_BRANCH_PREFIX+x}" ]; then
-  BRANCH="worktree-${NAME}"
-elif [ -z "$WORKTREE_BRANCH_PREFIX" ]; then
-  BRANCH="${NAME}"
-else
-  BRANCH="${WORKTREE_BRANCH_PREFIX}-${NAME}"
-fi
+# Branch name: worktreeplus.branchPrefix controls the prefix.
+#   unset  -> "worktree-<name>" (built-in default, matches Claude Code baseline)
+#   =""    -> "<name>" (no prefix)
+#   ="feat-" -> "feat-<name>" (literal — user controls the separator)
+PREFIX=$(git -C "$PROJECT_ROOT" config --get worktreeplus.branchPrefix 2>/dev/null) || PREFIX="worktree-"
+# --get returns exit 1 when unset, which set -e would trip on — guard with `|| fallback`.
+# Literal join: `$PREFIX` is prepended as-is. If user wants "feat-xxx" they set "feat-".
+BRANCH="${PREFIX}${NAME}"
 
-WORKTREE_DIR="${PROJECT_ROOT}/.claude/worktrees/${NAME}"
+# Worktree directory base: worktreeplus.dirBase controls where worktrees live.
+#   unset or empty  -> ".claude/worktrees" (relative to PROJECT_ROOT)
+#   relative path   -> "$PROJECT_ROOT/<path>/<name>"
+#   absolute path   -> "<path>/<name>" (verbatim)
+# Strip trailing slash so joining doesn't produce "//".
+DIR_BASE=$(git -C "$PROJECT_ROOT" config --get worktreeplus.dirBase 2>/dev/null) || DIR_BASE=""
+[ -z "$DIR_BASE" ] && DIR_BASE=".claude/worktrees"
+DIR_BASE="${DIR_BASE%/}"
+
+case "$DIR_BASE" in
+  '~'|'~/'*)
+    echo "Error: worktreeplus.dirBase does not expand '~' — use an absolute path (e.g., \"$HOME/worktrees\")." >&2
+    exit 1
+    ;;
+  /*) WORKTREE_DIR="${DIR_BASE}/${NAME}" ;;
+  *)  WORKTREE_DIR="${PROJECT_ROOT}/${DIR_BASE}/${NAME}" ;;
+esac
 
 # --- Pre-checks ---
 
@@ -85,8 +98,8 @@ else
   fi
   if [ "$TRACKED" = false ]; then
     # 3. No branch found -> new from base
-    # Priority: WORKTREE_BASE_BRANCH env var > worktreeplus.baseBranch git config > HEAD
-    BASE="${WORKTREE_BASE_BRANCH:-$(git -C "$PROJECT_ROOT" config --get worktreeplus.baseBranch 2>/dev/null || echo HEAD)}"
+    # worktreeplus.baseBranch git config (default: HEAD)
+    BASE=$(git -C "$PROJECT_ROOT" config --get worktreeplus.baseBranch 2>/dev/null) || BASE="HEAD"
     echo "Creating new branch '${BRANCH}' from ${BASE}" >&2
     git -C "$PROJECT_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" "$BASE" >&2
   fi

@@ -22,17 +22,17 @@ This plugin saves per-project config and organizes files into groups so it all c
 
 **First-time setup** (`/claw-mo-setup`): scans your project for markdown files, groups them by directory (docs, plans, specs, etc.), and saves the config. Shows file counts before accepting broad patterns, so you don't accidentally load thousands of vendored markdown files.
 
-**Daily use** (`/claw-mo-up`): checks if mo is already running before starting anything. If the running session drifted from your saved config, it flags the mismatch and presents three options — restart runtime, update config (in case config itself is stale), or keep as-is — instead of silently reusing a stale session. In cmux, it reuses the existing browser panel instead of opening a duplicate tab.
+**Daily use** (`/claw-mo-up`): checks if mo is already running before starting anything. It compares the full saved config (groups + watch patterns) against the live mo runtime, not just group names. If the running session drifted, it automatically clears and rebuilds the runtime from saved config before opening the browser, so new files appear under the patterns you configured. In cmux, it reuses the existing browser panel instead of opening a duplicate tab.
 
-**Ad-hoc viewing** (`/claw-mo-open path/to/file.md`): adds a file to the running server without touching your saved config. If no server is running and no config exists, it starts a quick session and saves a minimal config so other commands can find it.
+**Ad-hoc viewing** (`/claw-mo-open path/to/file.md`): adds a file to the running server without touching your saved config. That is intentionally temporary — the next `/claw-mo-up` will reconcile the runtime back to saved config unless you persist the change through `/claw-mo-manage` or `/claw-mo-setup`. If no server is running and no config exists, it starts a quick session and saves a minimal config so other commands can find it.
 
-**Troubleshooting** (`/claw-mo-manage`): shows a dashboard of all running mo servers across projects, highlights any sync mismatches, and lets you add/remove patterns, stop servers, or reset sessions interactively.
+**Troubleshooting** (`/claw-mo-manage`): shows a dashboard of all running mo servers across projects, highlights sync mismatches in groups or watch patterns, and lets you add/remove patterns, stop servers, or reset sessions interactively.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/claw-mo-up` | Start or reuse the project server, then open/reuse browser |
+| `/claw-mo-up` | Reconcile runtime to saved config, then open/reuse browser |
 | `/claw-mo-down` | Stop server for current project |
 | `/claw-mo-setup` | Configure groups, watch patterns, and port |
 | `/claw-mo-open <path>` | Add a file or directory to mo and open it |

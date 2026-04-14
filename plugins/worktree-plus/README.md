@@ -16,11 +16,12 @@ Claude Code fires `WorktreeCreate` and `WorktreeRemove` hook events whenever a w
 
 | Feature | Built-in | worktree-plus |
 |---------|----------|---------------|
-| Branch base | Remote default branch | HEAD (configurable via env/git config) |
-| Remote tracking | None | `--guess-remote` support |
-| Branch prefix | `worktree-` (fixed) | Configurable via `WORKTREE_BRANCH_PREFIX` |
+| Branch base | Remote default branch | HEAD (configurable via `worktreeplus.baseBranch`) |
+| Worktree path | `.claude/worktrees/<name>` (fixed) | Configurable via `worktreeplus.dirBase` |
+| Remote tracking | None | `--guess-remote` support (respects `worktree.guessRemote`) |
+| Branch prefix | `worktree-` (fixed) | Configurable via `worktreeplus.branchPrefix` |
 | Gitignored files | Not copied | `.worktreeinclude` copy / `.worktreelink` symlink |
-| Cleanup protection | None | Blocks removal if uncommitted changes or unpushed commits |
+| Cleanup protection | None | Blocks removal if uncommitted changes, untracked files, or unpushed commits; only deletes branches with upstream |
 
 ## Prerequisites
 
@@ -45,6 +46,10 @@ claude -w my-feature                 # named worktree
 
 Mid-session, ask Claude to "create a worktree" — it uses `EnterWorktree` which triggers the same hooks. Subagents with `isolation: "worktree"` also benefit.
 
+### Removal safety
+
+When a worktree is removed through the hook, worktree-plus blocks removal if the worktree has staged or unstaged changes, untracked files, or commits not pushed to upstream. Branches without an upstream are preserved on removal — only the worktree directory is cleaned up. If `git worktree remove` fails, the directory is left untouched.
+
 ### Gitignored files
 
 **`.worktreeinclude`** — files to copy (independent per worktree):
@@ -55,17 +60,52 @@ config/secrets.yaml
 
 **`.worktreelink`** — files to symlink (shared, zero disk overhead):
 ```
-references/
 node_modules/
+.venv/
 ```
+
+Good `.worktreelink` candidates are large gitignored directories that don't need per-worktree isolation (dependency caches, build artifacts). Git-tracked directories are already checked out into each worktree automatically — don't link them.
 
 ### Configuration
 
-| Setting | Method | Default | Example |
-|---------|--------|---------|---------|
-| Branch base | `WORKTREE_BASE_BRANCH` env var or `worktreeplus.baseBranch` git config | HEAD | `develop` |
-| Branch prefix | `WORKTREE_BRANCH_PREFIX` env var | `worktree-` | `feat` (→ `feat-name`), `""` (no prefix) |
-| Remote tracking | `worktree.guessRemote` git config | `true` | `false` to disable |
+All settings live in git config. Use `--local` for this repo only (default) or `--global` for all your repos.
+
+**Plugin extensions** (worktree-plus adds these):
+
+| Key | Default | Example |
+|---|---|---|
+| `worktreeplus.baseBranch` | `HEAD` | `git config worktreeplus.baseBranch develop` |
+| `worktreeplus.branchPrefix` | `worktree-` | `git config worktreeplus.branchPrefix "feat-"` (literal — include your own separator) |
+| `worktreeplus.dirBase` | `.claude/worktrees` | `git config worktreeplus.dirBase ".worktrees"` (relative to repo root, or absolute) |
+
+**Git native** (standard [git-worktree config](https://git-scm.com/docs/git-worktree#_configuration)):
+
+| Key | worktree-plus default | Git default |
+|---|---|---|
+| `worktree.guessRemote` | `true` (auto-track matching remote branches) | `false` |
+
+View active settings:
+```
+git config --get-regexp '^worktreeplus\.|^worktree\.guessRemote'
+```
+
+**Notes:**
+- `branchPrefix` is literal — `feat-` produces `feat-name`, `feat` produces `featname`.
+- `dirBase` does not expand `~`; use an absolute path if you want `$HOME`.
+- Changing `dirBase` does not move existing worktrees. Finish or remove pending worktrees first.
+
+### Migrating from v2.x env vars
+
+v2.x used `WORKTREE_BASE_BRANCH` and `WORKTREE_BRANCH_PREFIX` environment variables. v3 reads only git config.
+
+On first session start after upgrade, SessionStart auto-migrates any set env var to `--global` git config (one-time, flagged in `${CLAUDE_PLUGIN_DATA}/migrated-envvars`). Remove the `export` lines from your shell profile afterward — env vars are no longer read.
+
+Prefer to migrate manually? Do it before upgrading:
+```
+git config --global worktreeplus.baseBranch "$WORKTREE_BASE_BRANCH"
+git config --global worktreeplus.branchPrefix "${WORKTREE_BRANCH_PREFIX}-"   # note the trailing '-'
+```
+Then unset the env vars and delete `${CLAUDE_PLUGIN_DATA}/migrated-envvars` (so the migration still fires as a no-op and records the flag).
 
 ## License
 
