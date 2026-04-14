@@ -95,15 +95,17 @@ fi
 
 # --- Remove worktree ---
 echo "Removing worktree: $WORKTREE_PATH" >&2
-git -C "$PROJECT_ROOT" worktree remove "$WORKTREE_PATH" --force >&2 2>/dev/null || {
-  rm -rf "$WORKTREE_PATH"
-  git -C "$PROJECT_ROOT" worktree prune >&2 2>/dev/null || true
-}
+if ! git -C "$PROJECT_ROOT" worktree remove "$WORKTREE_PATH" --force >&2; then
+  echo "Failed to remove worktree via git; directory left untouched: $WORKTREE_PATH" >&2
+  exit 1
+fi
 
-# Clean up branch
-if [ -n "$BRANCH" ]; then
+# Clean up branch only when upstream exists (hook-created tracking or pushed branches)
+if [ -n "$BRANCH" ] && [ -n "$UPSTREAM" ]; then
   git -C "$PROJECT_ROOT" branch -D "$BRANCH" >&2 2>/dev/null || true
   echo "Deleted branch: $BRANCH" >&2
+else
+  echo "Preserved branch: ${BRANCH:-<detached>}" >&2
 fi
 
 log_entry "REMOVED" ""

@@ -21,7 +21,7 @@ Claude Code fires `WorktreeCreate` and `WorktreeRemove` hook events whenever a w
 | Remote tracking | None | `--guess-remote` support (respects `worktree.guessRemote`) |
 | Branch prefix | `worktree-` (fixed) | Configurable via `worktreeplus.branchPrefix` |
 | Gitignored files | Not copied | `.worktreeinclude` copy / `.worktreelink` symlink |
-| Cleanup protection | None | Blocks removal if uncommitted changes or unpushed commits |
+| Cleanup protection | None | Blocks removal if uncommitted changes, untracked files, or unpushed commits; only deletes branches with upstream |
 
 ## Prerequisites
 
@@ -45,6 +45,10 @@ claude -w my-feature                 # named worktree
 ```
 
 Mid-session, ask Claude to "create a worktree" — it uses `EnterWorktree` which triggers the same hooks. Subagents with `isolation: "worktree"` also benefit.
+
+### Removal safety
+
+When a worktree is removed through the hook, worktree-plus blocks removal if the worktree has staged or unstaged changes, untracked files, or commits not pushed to upstream. Branches without an upstream are preserved on removal — only the worktree directory is cleaned up. If `git worktree remove` fails, the directory is left untouched.
 
 ### Gitignored files
 
