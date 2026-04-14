@@ -95,4 +95,59 @@ if [ ${#CHANGES[@]} -gt 0 ]; then
     '{ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: $msg } }'
 fi
 
+# --- One-shot env-var → git config migration (v3.0.0) ---
+# Legacy env vars: WORKTREE_BASE_BRANCH, WORKTREE_BRANCH_PREFIX.
+# Migrate once per install; users who only used env vars as transient overrides
+# won't get them silently pinned on every session.
+#
+# Flag location: ${CLAUDE_PLUGIN_DATA}/migrated-envvars
+# The flag file's presence means migration already ran. Its content records the
+# migration version + timestamp for forensic purposes — we don't parse it, we
+# only check existence. Keeping the filename version-independent avoids needing
+# a new filename on every future major bump.
+PLUGIN_DATA="${CLAUDE_PLUGIN_DATA:-}"
+MIGRATED=()
+if [ -n "$PLUGIN_DATA" ]; then
+  FLAG="${PLUGIN_DATA}/migrated-envvars"
+  if [ ! -f "$FLAG" ]; then
+    mkdir -p "$PLUGIN_DATA"
+
+    if [ -n "${WORKTREE_BASE_BRANCH:-}" ]; then
+      if ! git config --get worktreeplus.baseBranch >/dev/null 2>&1; then
+        if git config --global worktreeplus.baseBranch "$WORKTREE_BASE_BRANCH" 2>/dev/null; then
+          MIGRATED+=("WORKTREE_BASE_BRANCH=$WORKTREE_BASE_BRANCH -> git config --global worktreeplus.baseBranch")
+        else
+          echo "worktree-plus: WARNING — failed to migrate WORKTREE_BASE_BRANCH to git config --global. Check \$HOME and git config permissions." >&2
+        fi
+      fi
+    fi
+
+    if [ -n "${WORKTREE_BRANCH_PREFIX+x}" ]; then
+      # +x: detect even when set to empty string (explicit "no prefix")
+      if ! git config --get worktreeplus.branchPrefix >/dev/null 2>&1; then
+        # Preserve the legacy "-" join: old behavior was "${PREFIX}-${NAME}".
+        # New behavior is literal, so append "-" when migrating a non-empty value.
+        LEGACY="$WORKTREE_BRANCH_PREFIX"
+        [ -n "$LEGACY" ] && LEGACY="${LEGACY}-"
+        if git config --global worktreeplus.branchPrefix "$LEGACY" 2>/dev/null; then
+          MIGRATED+=("WORKTREE_BRANCH_PREFIX='$WORKTREE_BRANCH_PREFIX' -> git config --global worktreeplus.branchPrefix='$LEGACY'")
+        else
+          echo "worktree-plus: WARNING — failed to migrate WORKTREE_BRANCH_PREFIX to git config --global. Check \$HOME and git config permissions." >&2
+        fi
+      fi
+    fi
+
+    # Record migration version + timestamp in the flag so we can forensically
+    # confirm when/what ran if a user asks later. Format: "v<version> <iso8601>".
+    echo "v3.0.0 $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$FLAG"
+
+    if [ ${#MIGRATED[@]} -gt 0 ]; then
+      MIG_SUMMARY=$(IFS=$'\n'; printf '%s\n' "${MIGRATED[@]}")
+      jq -n --arg msg "worktree-plus v3: migrated legacy env vars to git config. Env vars are no longer read — unset them from your shell profile.
+${MIG_SUMMARY}" \
+        '{ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: $msg } }'
+    fi
+  fi
+fi
+
 exit 0
