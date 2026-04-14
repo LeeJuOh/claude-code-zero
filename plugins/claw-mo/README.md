@@ -22,7 +22,7 @@ This plugin saves per-project config and organizes files into groups so it all c
 
 **First-time setup** (`/claw-mo-setup`): scans your project for markdown files, groups them by directory (docs, plans, specs, etc.), and saves the config. Shows file counts before accepting broad patterns, so you don't accidentally load thousands of vendored markdown files.
 
-**Daily use** (`/claw-mo-up`): checks if mo is already running before starting anything. If the running session drifted from your saved config (e.g., groups were added/removed manually), it flags the mismatch and asks what to do instead of silently reusing a stale session. In cmux, it reuses the existing browser panel instead of opening a duplicate tab.
+**Daily use** (`/claw-mo-up`): checks if mo is already running before starting anything. If the running session drifted from your saved config, it flags the mismatch and presents three options — restart runtime, update config (in case config itself is stale), or keep as-is — instead of silently reusing a stale session. In cmux, it reuses the existing browser panel instead of opening a duplicate tab.
 
 **Ad-hoc viewing** (`/claw-mo-open path/to/file.md`): adds a file to the running server without touching your saved config. If no server is running and no config exists, it starts a quick session and saves a minimal config so other commands can find it.
 

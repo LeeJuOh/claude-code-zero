@@ -130,12 +130,12 @@ curl -s "$BASE/_/api/search?query=keyword&limit=10"
 
 ## Browser Opening
 
-Check cmux availability first, then fallback:
+Prefer cmux whenever it is reachable. `$CMUX_SURFACE_ID` alone is not a reliable signal — nested shells inside a cmux pane often lose it. Also check `command -v cmux`:
 
 ```bash
 URL="http://localhost:$PORT"  # or http://localhost:$PORT/GROUP_NAME for a specific group
 
-if [ -n "$CMUX_SURFACE_ID" ]; then
+if [ -n "$CMUX_SURFACE_ID" ] || command -v cmux >/dev/null 2>&1; then
   cmux browser open "$URL"
 else
   open "$URL"
