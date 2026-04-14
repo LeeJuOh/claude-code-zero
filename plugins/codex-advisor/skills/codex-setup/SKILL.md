@@ -65,26 +65,40 @@ Include the setup output in the status report.
 
 ## Configuration Management
 
-Read current config:
+### Read current config
 
 ```bash
 cat ~/.codex/config.toml 2>/dev/null || echo "NO_CONFIG"
 ```
 
-### Set Model (`--model`)
+### Set Model / Effort (`--model`, `--effort`)
 
-Valid models: `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex-spark`, or any model string.
+Both flags are handled by one call. Empty string = no change for that field:
 
-1. Ensure directory exists: `mkdir -p ~/.codex`
-2. If `~/.codex/config.toml` doesn't exist, create it with `model = "NEW_MODEL"`
-3. If it exists, use the **Edit tool** to replace the `model = "..."` line. If no model line exists, append it.
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" "<model or empty>" "<effort or empty>"
+```
 
-### Set Reasoning Effort (`--effort`)
+The script prints one line to stdout:
 
-Valid levels: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`.
+```
+Model: <before> -> <after> | Effort: <before> -> <after>
+```
 
-1. If `~/.codex/config.toml` doesn't exist, create with `model_reasoning_effort = "NEW_EFFORT"`
-2. If it exists, use the **Edit tool** to replace the `model_reasoning_effort = "..."` line. If no such line exists, append it.
+Relay that line verbatim to the user — it shows before/after so they can confirm.
+
+**Model handling**
+
+- Accepts any slug your Codex account supports. Common slugs: `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`.
+- Alias: `spark` → `gpt-5.3-codex-spark` (subscription-gated; saved as-is).
+- Slugs missing from `~/.codex/models_cache.json` trigger an advisory warning to stderr but are saved. The cache reflects *your* account — gated or new models may be absent even when valid.
+
+**Effort handling**
+
+- Standard set: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` (per the Official companion's validator).
+- Model support varies (e.g. `minimal` is only supported by `gpt-5`). Out-of-set values warn but still save; Codex CLI will reject at runtime if the combination is unsupported.
+
+The underlying script preserves other keys in `config.toml` (e.g. `model_context_window`) and writes atomically via a temp file.
 
 ## Status Report
 
@@ -111,6 +125,6 @@ To change: `/codex-setup --model gpt-5.4-mini --effort high`
 
 ## Gotchas
 
-- **config.toml applies globally.** Changes affect all Codex commands system-wide, not just codex-advisor.
-- **Official `/codex:review` ignores `--model` flag.** The only way to change the review model is via config.toml — that's why this skill exists.
-- **Don't create config.toml if user only asked for status.** Only write when explicitly setting values.
+- **config.toml applies globally.** Changes affect all Codex commands system-wide — Official plugin, direct CLI, and every codex-advisor skill. Warn the user when you mutate it.
+- **Official `/codex:review` silently ignores its own `--model` flag** (see `codex-companion.mjs:handleReviewCommand`). That's why codex-advisor reroutes model/effort changes through `config.toml` instead of CLI flags. Every skill (`review`, `adversarial`, `research`, `verify`, `rescue`) now accepts `--model`/`--effort` and writes via `scripts/apply-codex-config.py` — so the user doesn't have to call `codex-setup` separately.
+- **Don't create config.toml if the user only asked for status.** `apply-codex-config.py "" ""` is safe (no-op, prints current values) but avoid it when just reporting — `grep`/`cat` is enough.

@@ -39,10 +39,9 @@ safety net.
 You are a translator. Use LM intelligence, not regex tables.
 
 **Whitelist for this skill:**
-- `--write` (bool; default ON for implementation, OFF for read-only investigation)
-- `--model <name>` (passes `spark` alias through; other values forwarded verbatim)
-- `--effort <level>` — must be one of `{none, minimal, low, medium, high, xhigh}`. **Validate before invoking.** An out-of-range value triggers `Unsupported reasoning effort "<value>"` from the companion (`:119-122`).
-- `--resume-last` / `--resume` / `--fresh` — mutually exclusive. Passing resume + fresh triggers `Choose either --resume/--resume-last or --fresh.` (`:721-723`). If ANALYZE produces a conflict, AskUserQuestion; never forward both.
+- `--write` (bool; default ON for implementation, OFF for read-only investigation) — **companion flag**, included in the Phase 2 invocation.
+- `--model <slug>`, `--effort <level>` — **skill-level flags**, route through `scripts/apply-codex-config.py` (see Apply block below) and **never reach the companion**. The alias `spark` auto-expands to `gpt-5.3-codex-spark`. The script validates effort against `{none, minimal, low, medium, high, xhigh}` as an advisory — out-of-set values still save but surface a warning so the user sees it. If the user gives an obviously wrong value (typo), prefer `AskUserQuestion` in Phase 1 over letting it propagate.
+- `--resume-last` / `--resume` / `--fresh` — mutually exclusive companion flags. Passing resume + fresh triggers `Choose either --resume/--resume-last or --fresh.` (`:721-723`). If ANALYZE produces a conflict, `AskUserQuestion`; never forward both.
 
 **Everything else in `$ARGUMENTS` is the task description**, which
 becomes the prompt body. Translate it cleanly:
@@ -53,11 +52,27 @@ becomes the prompt body. Translate it cleanly:
 - **Unknown flag** (e.g., `--foo`, `--background`, `--wait`) → `AskUserQuestion`. `--background` and `--wait` are not needed — Pattern B always uses `--background` internally. `--wait` on task is **silent prompt corruption**; we never accept it.
 - **Ambiguous effort / model value** → `AskUserQuestion`.
 
-**Before Phase 2, print exactly one line:**
+### Apply model/effort (if either flag was provided)
+
+Run before Phase 2 so the companion sees the new `config.toml`:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
+  "<literal clean model from Phase 1 or empty>" \
+  "<literal clean effort from Phase 1 or empty>"
+```
+
+Relay the `Model: ... | Effort: ...` stdout line verbatim; pass stderr advisories through. **config.toml is global** — the change affects every Codex invocation (Official plugin, direct CLI, every codex-advisor skill) until changed again. Flag that to the user when values changed.
+
+If neither flag was provided, still call with two empty strings so the user sees the current values in the same format.
+
+**Before Phase 2, also print the Parsed line:**
 
 ```
-Parsed: task="implement login rate limiter", write=true, effort=high, model=(default)
+Parsed: task="implement login rate limiter", write=true, resume=(last)
 ```
+
+Order: apply-codex-config.py output first, Parsed line second. (Model/effort already shown by the apply script — don't duplicate them in Parsed.)
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 
@@ -97,14 +112,14 @@ EOF
 # Launch via stdin pipe. Each flag line below is optional — include only
 # what Phase 1 parsed. Omit the entire line for flags not provided.
 # --write: include for implementation (default ON); omit for read-only.
-# --model/--effort: omit to use config.toml defaults.
+# Model/effort are NOT passed as companion flags — they were written to
+#   config.toml by apply-codex-config.py in Phase 1 and the companion
+#   picks them up from there.
 # --resume-last/--resume/--fresh: mutually exclusive; omit if none.
 # NEVER pass a positional arg — readTaskPrompt short-circuits on
 # positionalPrompt (:591), silently dropping stdin.
 cat "$PROMPT_FILE" | node "$CODEX_COMPANION" task --background --json \
   --write \
-  --model "<literal model from Phase 1>" \
-  --effort "<literal effort from Phase 1>" \
   --resume-last \
   > "$JOB_JSON_FILE" 2> "${JOB_JSON_FILE}.stderr" \
   || { echo "task launch failed:" >&2; cat "${JOB_JSON_FILE}.stderr" >&2; exit 1; }
@@ -227,7 +242,7 @@ rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_
 
 ## Gotchas
 
-- **Validate `--effort` against `{none, minimal, low, medium, high, xhigh}` BEFORE invoking.** An invalid value triggers a companion error and wastes a round-trip.
+- **`--model` / `--effort` go through `apply-codex-config.py`, not the companion.** config.toml becomes the single source of truth; companion flags were silent no-ops on review/adversarial and needlessly inconsistent between skills. `apply-codex-config.py` warns on out-of-set effort but still writes — surface the warning to the user rather than swallowing it.
 - **Never combine `--resume` / `--resume-last` with `--fresh`.** The companion rejects the combination (`:721-723`).
 - **Never pass a positional argument with Pattern B's stdin pipe.** `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:591`); a positional silently drops the entire task description.
 - **`--wait` on task is silent prompt corruption.** It becomes part of the task prompt body. ANALYZE must reject it.

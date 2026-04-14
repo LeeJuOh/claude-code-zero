@@ -1,7 +1,7 @@
 ---
 name: codex-verify
 description: "Verify a plan or document using Codex as independent reviewer with Claude's double-check for PASS/FAIL verdict. Use when the user asks \"codex 검수\", \"검수해줘\", \"verify this plan\", \"codex double-check\", \"플랜 검수\"."
-argument-hint: "path/to/document.md"
+argument-hint: "path/to/document.md [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -41,7 +41,7 @@ Unknown flags silently become task prompt content
 
 ### Parse `$ARGUMENTS`
 
-**Whitelist for this skill:** (no user-controllable companion flags) — the document path is a **skill input**, not a companion flag.
+**Whitelist for this skill:** `--model <slug>`, `--effort <level>` (skill-level, route through `apply-codex-config.py` — never reach the companion). The document path is another skill input, not a companion flag.
 
 Rules:
 
@@ -50,7 +50,7 @@ Rules:
 - **Multiple paths** → `AskUserQuestion` which one.
 - **Meta-instructions addressed to YOU** ("한국어로 평가해", "엄격하게") → obey for your own behavior, never include in the prompt.
 - **No args** → `AskUserQuestion`: "What document should I verify?"
-- **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. verify has no companion flags to forward.
+- **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. verify has no companion flags to forward. `--model`/`--effort` are skill-level and route through `apply-codex-config.py`.
 
 ### Resolve the document path
 
@@ -119,14 +119,27 @@ cat "<literal doc path>" >> "$PROMPT_FILE"
 printf '\n</document>\n' >> "$PROMPT_FILE"
 ```
 
-**Before Phase 2, print exactly one line:**
+### Apply model/effort (if either flag was provided)
+
+Run after payload assembly, before Phase 2, so the companion sees the new `config.toml`:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
+  "<literal clean model from Phase 1 or empty>" \
+  "<literal clean effort from Phase 1 or empty>"
+```
+
+Relay the `Model: ... | Effort: ...` stdout line verbatim; pass stderr advisories through. **config.toml is global** — the change affects every Codex invocation until changed again. Flag that to the user when values changed.
+
+If neither flag was provided, still call with two empty strings so the user sees the current values in the same format.
+
+**Before Phase 2, also print the Parsed line:**
 
 ```
 Parsed: doc="docs/plan.md" (DOC_LINES=247), payload=PROMPT_FILE
 ```
 
-Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, and `USER_DOC`
-paths. They are needed in later phases.
+Order: apply-codex-config.py output first, Parsed line second. Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, and `USER_DOC` paths. They are needed in later phases.
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (ANALYZE rules) and `§8` (blind-payload details).
 
