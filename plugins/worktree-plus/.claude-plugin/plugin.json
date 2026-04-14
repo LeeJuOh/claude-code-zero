@@ -1,6 +1,6 @@
 {
   "name": "worktree-plus",
-  "description": "Enhanced git worktree: custom branch prefix, remote tracking, selective copy/symlink for gitignored files",
+  "description": "Enhanced git worktree: git-config-driven settings, remote tracking, copy/symlink for gitignored files, safe removal",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
   "keywords": ["worktree", "git", "hooks"]
