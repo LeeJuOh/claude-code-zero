@@ -21,8 +21,8 @@ Then run in parallel:
 - Read `${CLAUDE_PLUGIN_DATA}/config.json` — get all configured projects
 - Get current project key: `git rev-parse --show-toplevel`
 
-For the current project, extract group names from the JSON output and compare against config group names:
-- If the port is running and the live groups differ from config, mark the session as **out of sync**
+For the current project, extract the full live group→patterns mapping from the JSON output and compare it against the saved config mapping:
+- If the port is running and the live groups or patterns differ from config, mark the session as **out of sync**
 - Show that mismatch in the dashboard before offering any action
 
 ### 2. Display Dashboard
@@ -42,20 +42,20 @@ Current project: project-a (:6342)
 
 Match config entries with running servers to show accurate status (● running / ○ stopped). Also list any running servers found by `mo --status --json` that are not in config (user may have started them manually).
 
-If the current project's configured groups and live groups differ, show an explicit warning that flags **both** possible causes — runtime drift and config drift:
+If the current project's configured mapping and live mapping differ, show an explicit warning that highlights the exact drift and explains what `/claw-mo-up` will do next time:
 
 ```
 ⚠ current project is out of sync
-configured: docs, articles, default
-live: harness, docs, issues, skills, agents
+configured: {docs: [docs/**/*.md], default: [*.md]}
+live: {docs: [/abs/path/docs/*.md], default: [/abs/path/*.md]}
 
-possible causes:
-  - runtime is stale (mo restored a previous session with extra groups)
-  - config is outdated (docs structure changed since setup, new groups never saved)
+what this means:
+  - the running mo session is not watching the same patterns as saved config
+  - the next `/claw-mo-up` will clear this runtime and rebuild it from saved config
 
 recommended actions:
-  - if config is correct → Server control → Reset session
-  - if config is outdated → Modify patterns/groups (add/remove) or re-run /claw-mo-setup
+  - if saved config is correct → Server control → Reset session
+  - if saved config is outdated → Modify patterns/groups (add/remove) or re-run /claw-mo-setup
 ```
 
 ### 3. Ask What to Do
@@ -128,8 +128,8 @@ After completing an action, show the updated dashboard and ask if they want to d
 
 - Always pipe `y` to `mo --clear` — it prompts for confirmation and will hang without it
 - Config is desired state — update config AND runtime (via API) together to keep them in sync
-- Compare live groups to config before assuming a running server is reusable — matching port alone is not enough
-- If the session is out of sync, prefer reset/restart before making multiple runtime edits; otherwise stale groups persist
+- Compare the full live group→patterns mapping to config before assuming a running server is reusable — matching port or group names alone is not enough
+- If the session is out of sync, prefer reset/restart before making multiple runtime edits; otherwise stale groups or stale watch patterns persist and `/claw-mo-up` will discard runtime-only changes anyway
 - Group names must be simple lowercase — they become URL path segments
 - If server is not running, only update config (skip API calls)
 - "Stop a server" only stops the process — config is preserved so `/claw-mo-up` can restart it later

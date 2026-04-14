@@ -24,11 +24,12 @@ For config schema, HTTP API, and browser opening: read `${CLAUDE_PLUGIN_ROOT}/re
 4. Read config from `${CLAUDE_PLUGIN_DATA}/config.json`
 5. Resolve the file path to absolute: `realpath <path>`
 
-6. If config exists and the server is already running on this port, compare live groups to config groups before adding:
+6. If config exists and the server is already running on this port, compare the full live group→patterns mapping to saved config before adding:
    - If they match, continue
-   - If they differ, tell the user and ask whether to restart first
-   - If the user approves restart: clear and restart with configured groups, then continue
-   - If the user declines, continue only if they explicitly want to add into the current live session
+   - If they differ, tell the user that `/claw-mo-up` would automatically clear and rebuild this runtime from saved config
+   - Ask whether they want to resync first or intentionally add into the current drifted runtime
+   - If the user approves resync: clear and restart with configured groups, then continue
+   - If the user declines, continue only if they explicitly want to add into the current live session and remind them the change will not survive the next `/claw-mo-up` unless config is updated
 
 7. **If server is running** (`mo --status --json` shows this port):
    - **File**: Use HTTP API to add it (group goes in the URL path):
@@ -62,8 +63,8 @@ For config schema, HTTP API, and browser opening: read `${CLAUDE_PLUGIN_ROOT}/re
 ## Gotchas
 
 - HTTP API needs absolute paths — always `realpath` before sending
-- Compare live groups to config before reusing a running session — a matching port alone doesn't guarantee correctness
-- If the user adds into an out-of-sync session without restarting, be explicit that runtime state may now differ from saved config
+- Compare the full live group→patterns mapping to config before reusing a running session — a matching port or group list alone doesn't guarantee correctness
+- If the user adds into an out-of-sync session without restarting, be explicit that runtime state may now differ from saved config and will be discarded by the next `/claw-mo-up` unless they persist it through config
 - If the group doesn't exist in mo yet, the API creates it automatically
 - Adding a file that's already in mo is safe — mo deduplicates by path
 - Quick-open now saves a minimal config so `/claw-mo-up`, `/claw-mo-down`, and `/claw-mo-manage` can detect the session

@@ -70,35 +70,47 @@ Returns JSON with running servers, their ports, PIDs, groups, and file counts.
 
 ### Sync Comparison
 
-To determine if a running session matches saved config, extract the group names from `mo --status --json` and compare against config:
+To determine if a running session matches saved config, compare the full group→patterns mapping, not just group names:
 
 ```bash
-# Get live group names from the server on PORT
-LIVE_GROUPS=$(mo --status --json 2>/dev/null | python3 -c "
+# Get live groups + patterns from the server on PORT
+LIVE_MAP=$(mo --status --json 2>/dev/null | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
+result = {}
 for s in data.get('servers', []):
     if s.get('port') == $PORT:
-        print(' '.join(sorted(g['name'] for g in s.get('groups', []))))
+        for g in s.get('groups', []):
+            result[g['name']] = sorted(g.get('patterns', []))
+print(json.dumps(result, sort_keys=True))
 ")
 
-# Get configured group names
-CONFIG_GROUPS=$(python3 -c "
-import json
+# Normalize configured patterns to absolute paths because mo status reports absolute patterns
+CONFIG_MAP=$(python3 -c "
+import json, os
 cfg = json.load(open('${CLAUDE_PLUGIN_DATA}/config.json'))
 proj = cfg.get('$PROJECT_ROOT', {})
-print(' '.join(sorted(proj.get('groups', {}).keys())))
+root = '$PROJECT_ROOT'
+normalized = {}
+for group, patterns in proj.get('groups', {}).items():
+    normalized[group] = sorted(
+        p if os.path.isabs(p) else os.path.join(root, p)
+        for p in patterns
+    )
+print(json.dumps(normalized, sort_keys=True))
 ")
 
 # Compare
-if [ "$LIVE_GROUPS" = "$CONFIG_GROUPS" ]; then
+if [ "$LIVE_MAP" = "$CONFIG_MAP" ]; then
   echo "in sync"
 else
-  echo "out of sync: live=[$LIVE_GROUPS] config=[$CONFIG_GROUPS]"
+  echo "out of sync"
+  echo "live=$LIVE_MAP"
+  echo "config=$CONFIG_MAP"
 fi
 ```
 
-If out of sync, tell the user which groups differ before reusing the session.
+If out of sync, `/claw-mo-up` should treat saved config as the desired state: clear the runtime and rebuild it from config before opening the browser.
 
 ## mo HTTP API
 
@@ -157,7 +169,7 @@ For first-time setup, `cmux browser open-split` opens the browser alongside the 
 
 ### Config & Port
 - **Same port = merged session**: If two projects share a port, mo merges their files. The hash-based assignment prevents this, but verify with `mo --status --json` if something looks wrong.
-- **Config is desired state, not runtime state**: Users may add files to mo directly via CLI. The skill's config tracks what the plugin manages, not everything mo has loaded.
+- **Config is desired state for `/claw-mo-up`**: Users may add files to mo directly via CLI or `/claw-mo-open`, but `/claw-mo-up` should reconcile the runtime back to saved config. Runtime-only additions do not persist unless the config is updated.
 - **v1 config migration**: Always check for `patterns` key and migrate to `groups` format before processing. Write back migrated config.
 
 ### mo CLI Behavior
