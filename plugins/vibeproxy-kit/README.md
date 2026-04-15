@@ -13,6 +13,13 @@ VibeProxy lets you run Claude Code against Codex, GitHub Copilot, Antigravity, G
 
 `vibeproxy-kit` makes that configuration explicit, state-aware, and reversible.
 
+> [!WARNING]
+> This plugin automates local alias and config management for routing Claude Code through VibeProxy/CLIProxyAPIPlus-backed providers.
+> Depending on the provider and account type, this usage pattern may violate Terms of Service and may lead to account restrictions, suspension, or permanent bans.
+> You are solely responsible for how you use this setup. Review the upstream provider and proxy documentation before enabling it.
+> This plugin does not make unofficial provider routing safe, compliant, or supported.
+> For upstream warnings and public reports involving Antigravity/Gemini routing, see [VibeProxy's warning](https://github.com/automazeio/vibeproxy/blob/main/FACTORY_SETUP.md), [Antigravity Account Banned](https://github.com/1rgs/claude-code-proxy/issues/95), and [Accounts getting banned due to TOS violation](https://github.com/badrisnarayanan/antigravity-claude-proxy/issues/277).
+
 ## Quick Start
 
 1. Install [VibeProxy](https://github.com/automazeio/vibeproxy) and launch it
