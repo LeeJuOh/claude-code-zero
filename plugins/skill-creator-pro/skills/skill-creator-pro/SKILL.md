@@ -98,7 +98,7 @@ Before drafting, identify which of 9 categories the skill fits into. This shapes
 | 1 | Library & API Reference | Reference snippets + gotchas list |
 | 2 | Product Verification | External tool pairing + programmatic assertions |
 | 3 | Data Fetching & Analysis | Credential helpers + dashboard IDs + workflows |
-| 4 | Business Process Automation | Simple instructions + log-based consistency |
+| 4 | Business Process & Team Automation | Simple instructions + log-based consistency |
 | 5 | Code Scaffolding & Templates | Composable scripts + natural-language requirements |
 | 6 | Code Quality & Review | Deterministic scripts + hooks/CI integration |
 | 7 | CI/CD & Deployment | Multi-skill composition + error-rate monitoring |
