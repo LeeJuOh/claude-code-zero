@@ -1,6 +1,6 @@
 # Platform Reference
 
-Quick reference for Claude Code platform features used in skill development. Reflects Claude Code v2.1.98.
+Quick reference for Claude Code platform features used in skill development. Reflects Claude Code v2.1.112.
 
 For the latest spec, fetch official docs: `WebFetch https://code.claude.com/docs/en/<page>`. Key pages: `skills.md`, `hooks.md`, `hooks-guide.md`, `plugins-reference.md`, `sub-agents.md`.
 

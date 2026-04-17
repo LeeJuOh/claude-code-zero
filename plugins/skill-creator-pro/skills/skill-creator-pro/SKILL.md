@@ -348,7 +348,7 @@ If the user wants hands-off optimization instead of the manual review loop above
 
 The description field is the primary triggering mechanism. It's not a summary -- it's a trigger condition written for the model. Write it to be slightly "pushy" to combat undertriggering.
 
-**Display cap:** The `/skills` listing truncates descriptions to 250 characters. The full description is still used for triggering, but front-load the most important trigger phrases so they're visible in the menu.
+**Front-load trigger phrases.** The model reads the full description when deciding whether to invoke, but attention is strongest at the start — put the core trigger conditions (user phrasings, contexts) in the first sentence. Keep the description under ~1024 characters; longer ones dilute trigger signal and risk platform-side truncation warnings.
 
 **Step 1: Generate 20 trigger eval queries**
 
@@ -379,6 +379,7 @@ Before packaging, verify:
 - [ ] No YAML sequence syntax in `argument-hint` (e.g., `[topic: foo | bar]` — use a plain string)
 - [ ] Skill name does not contain "claude" or "anthropic" (reserved, will be rejected)
 - [ ] Skill name is not a YAML boolean keyword (`on`, `off`, `yes`, `no`, `true`, `false`) — these parse as booleans and break the slash command picker
+- [ ] Skill name does not collide with built-in slash commands (`init`, `review`, `security-review`, etc.) — since v2.1.108 the model can invoke built-ins via the Skill tool, and same-name skills will clash
 - [ ] No README.md inside the skill folder (all documentation goes in SKILL.md or references/)
 - [ ] Gotchas section exists with at least 2-3 entries
 - [ ] SKILL.md under 500 lines / 5,000 words (body budget scales to ~2% of context window)
@@ -432,4 +433,4 @@ python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path/to/skill-folder>
 
 ## Compatibility
 
-Written and tested against **Claude Code v2.1.98**. If something breaks after a Claude Code update, check `${CLAUDE_SKILL_DIR}/references/platform-reference.md` and fetch official docs for spec changes.
+Written and tested against **Claude Code v2.1.112**. If something breaks after a Claude Code update, check `${CLAUDE_SKILL_DIR}/references/platform-reference.md` and fetch official docs for spec changes.
