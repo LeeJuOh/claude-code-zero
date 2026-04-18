@@ -20,6 +20,7 @@ HTML structure and CSS classes.
     "context_budget": { ... },
     "skill_health": { ... },
     "trigger_analysis": { ... },
+    "plugin_components": { ... },
     "hooks_and_mcp": { ... },
     "claude_md_memory": { ... },
     "recommendations": { ... }
@@ -53,6 +54,7 @@ HTML structure and CSS classes.
 | `estimate_caveat` | string | Fixed text: "Values are estimates. Run `/context` for ground truth." (hidden if `--paste-context` was used) |
 | `summary` | string | 1-2 sentence overall assessment |
 | `quick_stats` | object | `{plugins, skills, hooks, mcp_servers, est_startup_tokens, context_window_size}` |
+| `env_flags` | array | `[{flag, text, severity: "info"}]` — surface environment switches that materially change behavior. Emit an entry when `agent_teams_enabled=true` (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS — see costs.md for per-teammate session token impact), `desc_budget_override` is set, or `auto_memory_disabled=true`. Observational, no severity |
 
 ---
 
@@ -63,8 +65,10 @@ HTML structure and CSS classes.
 | `area_type` | string | Fixed: `"observational"` — §1 Plugin Inventory has no official thresholds |
 | `chart_data` | object | Chart.js data: `{labels: ["Skills","Commands","Agents","Hooks","MCP"], datasets: [{data: [N,...]}]}` |
 | `plugins` | array | `[{name, description, skill_count, command_count, enabled_state: "active"\|"disabled"}]` (renamed from `status` to avoid confusion with health tiers — this is the plugin's enabled state, not a grading) |
-| `totals` | object | `{active_plugins, disabled_plugins, stale_in_cache, total_skills, total_commands, local_skills}` |
-| `info_notes` | array | `[{text, severity: "info"}]` — neutral observations (e.g. stale cache cleanup suggestion), never severity-flagged |
+| `totals` | object | `{active_plugins, disabled_plugins, stale_in_cache, orphaned_cache_count, total_skills, total_commands, local_skills}` — `orphaned_cache_count` is separate from `stale_in_cache`: orphans are cache directories not pointed at by any `installed_plugins.json` installPath (old versions remaining on disk), while stale = enabled-in-settings-but-missing-from-cache |
+| `orphans` | array | `[<plugin_name>]` — cache entries without an active `installPath`. Per plugins-reference.md, old versions are kept for a 7-day grace period after an update before being cleaned up |
+| `plugin_options` | object | `{<plugin_name>: [<option_key>]}` — per-plugin option keys pulled from `settings.*.json → pluginConfigs[<id>].options`. **Keys only, values excluded** — option payloads can hold sensitive tokens (per plugins-reference.md). Observational |
+| `info_notes` | array | `[{text, severity: "info"}]` — neutral observations (e.g. stale cache cleanup suggestion, 7-day orphan grace window), never severity-flagged |
 
 ---
 
@@ -73,7 +77,7 @@ HTML structure and CSS classes.
 | Field | Type | Description |
 |-------|------|-------------|
 | `context_window_size` | number | Current window size in tokens (200000 or 1000000) |
-| `env_and_settings` | object | `{enable_tool_search, add_dir_claude_md, auto_memory_disabled, desc_budget_override, claude_md_excludes}` — shows how env affects calculation |
+| `env_and_settings` | object | `{enable_tool_search: {raw, effective_mode: "deferred"\|"upfront"\|"auto"\|"unknown", threshold_pct, proxy_fallback_applied, note}, anthropic_base_url, add_dir_claude_md, auto_memory_disabled, agent_teams_enabled, desc_budget_override, claude_md_excludes}` — shows how env affects calculation. `enable_tool_search` is the normalized object from `normalizeEnableToolSearch()` per mcp.md's 5-value table |
 | `always_loaded` | object | `{system_prompt, memory, env_info, mcp_names, skill_descriptions, claude_md, rules, total}` — each with `tokens` and `label` and `source_citation` |
 | `deferred` | object | `{mcp_tools, on_demand_rules, disabled_skills, total}` — each with `tokens` and `label` |
 | `est_load_pct` | number | `always_loaded.total / context_window_size` |
@@ -87,12 +91,18 @@ HTML structure and CSS classes.
 
 ## sections.skill_health
 
+Section §3 (Description Obesity) is split into three axes per `health-criteria.md`.
+Render each axis as its own card so the user can see which mechanism is firing.
+
 | Field | Type | Description |
 |-------|------|-------------|
-| `description_budget` | object | `{total_chars, effective_budget, budget_source: "SLASH_COMMAND_TOOL_CHAR_BUDGET env"\|"1% of 200K"\|"8K fallback", pct, over_250_char_entries: [{plugin, skill, chars}], status}` |
-| `at_rest_body_sizes` | object | `{skills: [{plugin, skill, body_lines, over_500: bool}], over_500_count, status}` — section 4a |
-| `post_compact_risk` | object | `{skills_over_5k: [{plugin, skill, est_tokens}], total_est_tokens, would_exceed_25k: bool, status}` — section 4b, labeled as LATENT risk |
-| `disable_model_invocation` | object | `{using_count, not_using: [{plugin, skill, desc_chars}]}` — skills that could benefit from the flag |
+| `description_axis_a_cap` | object | Axis A — per-entry 1,536-char hard cap. `{over_cap_entries: [{plugin, skill, combined_chars, overflow_chars}], over_cap_count, status}` |
+| `description_axis_b_budget` | object | Axis B — total budget saturation. `{total_combined_chars, effective_budget, budget_source: "SLASH_COMMAND_TOOL_CHAR_BUDGET env"\|"1% of <window>"\|"8K fallback", pct_of_budget, status}` |
+| `description_axis_c_balance` | object | Axis C — unbalanced consumption (observational, no tier). `{top_consumers: [{plugin, skill, combined_chars, pct_of_total}], avg_combined_chars, outliers: [{plugin, skill, multiple_of_avg}]}` |
+| `at_rest_body_sizes` | object | §4a `{skills: [{plugin, skill, body_lines, over_500: bool}], over_500_count, status}` |
+| `post_compact_risk` | object | §4b `{skills_over_5k: [{plugin, skill, est_tokens}], total_est_tokens, would_exceed_25k: bool, status}` — LATENT risk |
+| `disable_model_invocation` | object | `{using_count, not_using: [{plugin, skill, combined_chars, user_invocable}]}` — listing-included skills that could benefit from the flag, sorted by `combined_chars` descending |
+| `subagent_preloads` | object | `{agents_with_preload: [{plugin, agent, preload_skills: [<skill>]}], total_preloaded_skills}` — per sub-agents.md, subagents with `skills:` frontmatter inject the full skill body (not just description) when the subagent starts. Observational — no tier. Included here because the preload cost hits the skill-health budget (body, not description) |
 
 ---
 
@@ -108,12 +118,27 @@ HTML structure and CSS classes.
 
 ---
 
+## sections.plugin_components
+
+Section §9 — plugin-level components beyond skills/commands/agents/hooks/MCP. Per
+plugins-reference.md: `bin/` executables, `monitors/`, `.lsp.json`, `output-styles/`,
+and `channels`. Observational — count only, no severity.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `area_type` | string | Fixed: `"observational"` — §9 has no official thresholds |
+| `per_plugin` | object | `{<plugin_name>: {bin, monitors, lsp_servers, output_styles, channels}}` — zero counts omitted |
+| `totals` | object | `{bin, monitors, lsp_servers, output_styles, channels}` — aggregate across enabled plugins |
+| `info_notes` | array | `[{text, severity: "info"}]` — e.g. "LSP servers are persistent subprocesses", "monitors run for the whole session" |
+
+---
+
 ## sections.hooks_and_mcp
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `hooks` | object | `{total, type_counts: {command,http,prompt,agent}, event_counts: {}, event_collisions: [], llm_hooks, status}` |
-| `mcp` | object | `{server_count, effective_mode: "deferred"\|"auto"\|"false", est_tokens, servers: [{name, source_scope}], status}` |
+| `mcp` | object | `{server_count, effective_mode: "deferred"\|"upfront"\|"auto"\|"unknown", threshold_pct, proxy_fallback_applied, servers: [{name, source_scope: "user"\|"project"\|"local"\|"plugin:<name>"\|"plugin:<name> (inline)"}], status}` — token cost not included; point users to `/context` |
 | `chart_data` | object | Chart.js data for hook type distribution |
 
 ---
@@ -122,7 +147,7 @@ HTML structure and CSS classes.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `claude_md` | object | `{files: [{path,scope,lines,bytes,over_200}], total_lines, total_tokens, imports: [{from,target}], excluded_by_settings: [paths], status}` |
+| `claude_md` | object | `{files: [{path, scope: "project-root"\|"ancestor"\|"ancestor-local"\|"nested"\|"local-root"\|"user", load_mode: "always-loaded"\|"lazy-loaded", compact_resilient: bool, lines, bytes, over_200}], total_lines, total_bytes, total_est_tokens, nested_lines, nested_bytes, nested_est_tokens, imports: [{from, target}], excluded_by_settings: [paths], status}` — `total_*` fields count always-loaded files only; `nested_*` are lazy-loaded and reported separately. `compact_resilient: true` marks the project-root files that are re-injected after `/compact` per memory.md; nested and ancestor files are not re-injected |
 | `memory` | object | `{path, lines, bytes, pct_of_limit, over_200_lines, over_25kb, topic_files, status}` |
 
 ---

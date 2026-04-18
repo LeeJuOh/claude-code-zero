@@ -16,8 +16,8 @@ allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(node *), Bash(open
 # Environment Health
 
 Diagnose the user's Claude Code environment health. Outputs either an inline markdown
-report or a self-contained interactive HTML dashboard. Covers 8 diagnostic areas — 6
-graded against official thresholds, 2 observational (raw numbers, no tier).
+report or a self-contained interactive HTML dashboard. Covers 9 diagnostic areas — 5
+graded against official thresholds, 4 observational (raw numbers, no tier).
 
 ## Instructions
 
@@ -51,13 +51,24 @@ node ${CLAUDE_PLUGIN_ROOT}/skills/environment-health/scripts/env-health-scan.js 
 
 The script writes a JSON blob to stdout with these sections:
 
-- `scan_date`, `context_window_size`, `env_and_settings`
-- `installed_plugins`, `disabled_plugins`
-- `installed_skills`, `installed_commands`, `local_skills`
+- `scan_date`, `context_window_size`, `env_and_settings` (normalized
+  `enable_tool_search` per mcp.md's 5-value table, `agent_teams_enabled`,
+  `anthropic_base_url`)
+- `installed_plugins` (`{plugins, orphan_count, orphans}`), `disabled_plugins`
+- `installed_skills`, `installed_commands`, `local_skills` (each entry carries
+  `desc_chars`, `when_to_use_chars`, `combined_chars`, `disabled`, `user_invocable`)
 - `skill_bodies` (at-rest 500-line flag + post-compact 5K-token flag)
-- `hook_inventory` (type counts, event collisions, `llm_hooks`)
-- `context_metrics` (MCP server count + source scopes)
-- `claude_md` (walks cwd → $HOME + `~/.claude/CLAUDE.md`, respects `claudeMdExcludes`)
+- `hook_inventory` (type counts, event collisions, `llm_hooks` — includes inline
+  hooks from `plugin.json`'s `hooks` field)
+- `context_metrics` (MCP server count + source scopes — includes plugin `.mcp.json`
+  files AND inline `mcpServers` from `plugin.json`)
+- `plugin_components` (`bin` / `monitors` / `lsp_servers` / `output_styles` /
+  `channels` per plugin + totals)
+- `subagent_preloads` (agents with `skills:` frontmatter that preload bodies at start)
+- `plugin_options` (per-plugin option **keys only**, values omitted — sensitive)
+- `claude_md` (walks cwd → filesystem root + `~/.claude/CLAUDE.md`, plus enumerates
+  lazy-loaded nested files below cwd; respects `claudeMdExcludes`; each entry carries
+  `scope`, `load_mode`, `compact_resilient`)
 - `rules`, `memory`
 
 Save to `/tmp/env-health-<pid>/scan.json`.
@@ -85,13 +96,14 @@ effective_budget = env_and_settings.desc_budget_override
                 ?? max(8000, floor(context_window_size * 0.01))
 ```
 
-**Graded areas** (§3, §4a, §4b, §5, §6, §7, §8): classify into
+**Graded areas** (§3, §4a, §4b, §7, §8): classify into
 🟢 healthy / 🟡 attention / 🔴 critical using the rules in `health-criteria.md`. Every
 threshold you apply must cite its docs source.
 
-**Observational areas** (§1 Plugin Inventory, §2 Startup Context Budget aggregate): do
-NOT assign a tier. Emit raw numbers and info-level notes only. Delegate individual
-component grading in §2 to the owner area per the status-delegation table.
+**Observational areas** (§1 Plugin Inventory, §2 Startup Context Budget aggregate,
+§5 Trigger Collisions, §6 Hook Complexity, §9 Plugin Components): do NOT assign a
+tier. Emit raw numbers and info-level notes only. Delegate individual component
+grading in §2 to the owner area per the status-delegation table.
 
 **Trigger collisions (§5):** delegate to the `trigger-collision-inspector` subagent.
 Build the input inventory by concatenating every installed skill and command
@@ -103,11 +115,9 @@ description, one per line:
 
 Invoke the subagent via the `Agent` tool with `subagent_type` set to
 `trigger-collision-inspector`. The subagent returns `{total_descriptions_analyzed,
-collisions: [...]}`. Status mapping:
-
-- No collisions → 🟢 healthy
-- 1-2 OVERLAP pairs → 🟡 attention
-- ≥1 DUPLICATE OR 3+ OVERLAP → 🔴 critical
+collisions: [...]}`. Surface the pairs verbatim — DUPLICATE / OVERLAP classification
+is shown as reported, without aggregating into a tier (the prior 1-2 vs 3+ OVERLAP
+thresholds had no official basis and were removed in favor of raw observation).
 
 Do NOT implement Jaccard or pairwise comparison in the orchestrator or the scan
 script. The subagent owns the entire comparison (direct adoption of Waza
@@ -117,9 +127,10 @@ script. The subagent owns the entire comparison (direct adoption of Waza
 tokens saved) — not by severity — so observational areas can still surface a lever.
 Examples:
 
-- Adding `disable-model-invocation: true` to the N skills with the largest `desc_chars`
-  that are user-invocable → frees `sum(desc_chars) chars (pct% of budget)`
-- Trimming any entry over 250 chars → frees `chars - 250` per entry
+- Adding `disable-model-invocation: true` to the N skills with the largest
+  `combined_chars` → frees `sum(combined_chars)` (% of budget). Prefer skills users
+  invoke manually (`/commit`, `/deploy`, `/release`)
+- Trimming entries over 1,536 chars → frees `combined_chars - 1536` per entry
 - Moving body content of a 5K+ token SKILL.md to `references/` → removes it from both
   at-rest and compact budgets
 
@@ -128,7 +139,7 @@ header + recommendations top card.
 
 ### Phase 3 — Report Generation
 
-**Principle:** HTML is the default because a dashboard renders the 8 diagnostic areas as KPI cards, bars, and collision heatmaps that markdown can't match. Only choose `md` when running in a non-browser context (cowork, headless CI), when the user asks for markdown explicitly, or when pasting into a chat thread is more useful than opening a file.
+**Principle:** HTML is the default because a dashboard renders the 9 diagnostic areas as KPI cards, bars, and collision heatmaps that markdown can't match. Only choose `md` when running in a non-browser context (cowork, headless CI), when the user asks for markdown explicitly, or when pasting into a chat thread is more useful than opening a file.
 
 **Markdown mode (`--format md`):**
 
@@ -137,35 +148,38 @@ Emit an inline markdown report with this structure:
 ```
 # Environment Health — <scan_date>
 
-**Graded:** N 🟢 / N 🟡 / N 🔴 (6 areas) · **Observational:** Plugin Inventory, Context Budget
+**Graded:** N 🟢 / N 🟡 / N 🔴 (5 areas) · **Observational:** Plugin Inventory, Context Budget, Trigger Collisions, Hook Complexity, Plugin Components
 
 **Top lever:** <one sentence>
 
 **Estimated startup load:** ~N tokens (X% of <window> window) — *estimate, run `/context` for ground truth*
 
 ## §1 Plugin & Skill Inventory ℹ️
-<raw tables, info notes>
+<raw tables, orphan/7-day-grace notes, plugin-option keys>
 
 ## §2 Startup Context Budget ℹ️
 <component breakdown, delegation references>
 
 ## §3 Skill Description Obesity <status>
-<numbers, truncated entries, disable-model-invocation candidates>
+<numbers, truncated entries, disable-model-invocation candidates, subagent preload totals>
 
 ## §4 Skill Body Size <status>
 <4a at-rest, 4b post-compact — report separately>
 
-## §5 Trigger Collisions <status>
-<collision pairs>
+## §5 Trigger Collisions ℹ️
+<subagent-returned DUPLICATE/OVERLAP pairs, verbatim, no tier>
 
-## §6 Hook Complexity <status>
-<type breakdown, event collisions>
+## §6 Hook Complexity ℹ️
+<type breakdown, event collisions, inline-vs-file sources>
 
 ## §7 MCP Overview <status>
-<server count, effective loading mode>
+<server count, ENABLE_TOOL_SEARCH 5-value table, effective mode, proxy fallback>
 
 ## §8 CLAUDE.md & Memory Health <status>
-<file list, MEMORY.md capacity>
+<file list with scope/load_mode/compact_resilient, MEMORY.md capacity, nested lazy-loaded totals>
+
+## §9 Plugin Components ℹ️
+<bin / monitors / lsp_servers / output_styles / channels per plugin>
 
 ## Recommendations
 <grouped by severity, top lever promoted>
@@ -184,7 +198,7 @@ with these parameters:
 | `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/<scan_date>-environment-health.html` |
 | `{template-name}` | `environment-health.html` |
 | `{skill-prefix}` | `env-health` |
-| `{expected-sections}` | `8` |
+| `{expected-sections}` | `9` |
 | `{report-title}` | `"Environment Health — <scan_date>"` |
 | `{aesthetic-hint}` | `"Dashboard"` |
 | `{agent-prompt-data}` | The analyzed scan data, subagent collision results, computed tiers per area, top lever, and info notes. Pass the raw `scan.json` separately so the writer can reference exact numbers. |
@@ -216,10 +230,16 @@ If the user enabled the `InstructionsLoaded` hook, remind them to revert it now.
   / 16K chars. The official number (skills.md — "Skill descriptions are cut short") is
   1% scaling, 8,000-char fallback. Use the effective budget formula:
   `SLASH_COMMAND_TOOL_CHAR_BUDGET ?? max(8000, floor(context_window * 0.01))`.
-- **Per-entry description cap is 250 chars.** Descriptions longer than 250 characters
-  are silently truncated in the listing regardless of total budget. Flag these as
-  critical — Claude cannot see the tail, which affects triggering. Front-load the key
-  use case.
+- **Skill description loading is a 3-layer model, not a single number.** Per skills.md:
+  (A) each entry's combined `description` + `when_to_use` is truncated at **1,536
+  characters** — hard per-entry cap. (B) Total across all listing-included entries is
+  capped at `effective_budget = SLASH_COMMAND_TOOL_CHAR_BUDGET ?? max(8000, floor(window
+  × 0.01))`. When the total exceeds budget, every entry is **dynamically shortened**
+  (keywords stripped). (C) Even below saturation, a few oversize entries can dominate.
+  Earlier drafts cited "250 chars" — that number does not appear anywhere in the docs.
+  §3 of the report evaluates all three axes separately. `disable-model-invocation: true`
+  removes a skill from the listing entirely per the frontmatter table, so it contributes
+  zero to the budget.
 - **5K/25K skill body limit is POST-COMPACT, not at-rest.** The 5,000-tokens-per-skill
   / 25,000-total limit applies only to re-injection after `/compact`, and only for
   skills that were **invoked** in the session. The at-rest recommendation is separate:
@@ -229,6 +249,14 @@ If the user enabled the `InstructionsLoaded` hook, remind them to revert it now.
   survive compaction. The always-loaded description budget vanishes after compact,
   which changes what "always-loaded cost" means mid-session. Mention this caveat in
   the report.
+- **Auto-compaction can enter a thrashing state and halt.** Per how-claude-code-works.md:
+  "If a single file or tool output is so large that context refills immediately after
+  each summary, Claude Code stops auto-compacting after a few attempts and shows an
+  error." The scan cannot detect thrashing directly, but it can surface its
+  ingredients — large SKILL.md bodies, many rules without `paths:`, and large
+  CLAUDE.md chains all amplify the risk. When all three co-occur, flag it in the
+  report and link users to
+  `https://code.claude.com/docs/en/troubleshooting#auto-compaction-stops-with-a-thrashing-error`.
 - **Trigger collision uses a subagent, not inline orchestrator logic.** The
   `trigger-collision-inspector` subagent owns the entire comparison (Waza-style). Do
   NOT add Jaccard code in the scanner or do the comparison in the main orchestrator —
@@ -278,11 +306,19 @@ If the user enabled the `InstructionsLoaded` hook, remind them to revert it now.
   `export`ed them from their shell init. Env vars set only inside a Claude Code
   session (not exported before CC launched) are invisible. Surface this caveat next
   to any env-var-derived field.
-- **CLAUDE.md loading walks parent directories.** Per memory.md, Claude Code loads
-  CLAUDE.md from every ancestor directory from cwd up to `$HOME` (inclusive), plus
-  `~/.claude/CLAUDE.md`. The scan walks that chain — scanning only cwd +
-  `~/.claude/CLAUDE.md` undercounts the always-loaded CLAUDE.md budget on projects
-  nested multiple levels deep inside home.
+- **CLAUDE.md walk scope: cwd → filesystem root, plus `~/.claude/CLAUDE.md`.** Per
+  memory.md, Claude Code loads CLAUDE.md from every ancestor directory above cwd plus
+  `~/.claude/CLAUDE.md`. The docs do NOT specify a `$HOME` boundary. The scan walks up
+  to the filesystem root so that projects under `/tmp`, `/var`, or other non-home
+  locations still get a complete ancestor chain. Scope is reported as one of
+  `project-root` / `ancestor` / `ancestor-local` / `nested` / `local-root` / `user`.
+- **Nested CLAUDE.md files are lazy-loaded and NOT re-injected after `/compact`.**
+  Per memory.md, nested CLAUDE.md files (below cwd) load only when files in their
+  subtree are read. Unlike project-root `./CLAUDE.md` / `./.claude/CLAUDE.md`, they
+  don't survive compaction — only always-loaded project-root files are re-injected.
+  The scan reports `load_mode` and `compact_resilient` per file, and keeps
+  `nested_lines` / `nested_bytes` / `nested_est_tokens` separate from always-loaded
+  totals so the report doesn't exaggerate startup load.
 - **Observational areas never contribute to the tally.** §1 and §2 emit raw numbers
   and info-level notes only. They are counted separately from the graded tally. A
   report showing `0 critical` means zero critical among graded areas — observational
