@@ -7,17 +7,20 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-pr.sh",
-            "if": "Bash(gh *)"
+            "if": "Bash(gh *)",
+            "statusMessage": "duck: checking for PR creation..."
           },
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-pr.sh",
-            "if": "Bash(glab *)"
+            "if": "Bash(glab *)",
+            "statusMessage": "duck: checking for MR creation..."
           },
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-push.sh",
-            "if": "Bash(git *)"
+            "if": "Bash(git *)",
+            "statusMessage": "duck: checking for git push..."
           }
         ]
       },
@@ -26,7 +29,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-plan.sh"
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-plan.sh",
+            "statusMessage": "duck: plan detected, considering review offer..."
           }
         ]
       },
@@ -35,7 +39,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-write-plan.sh"
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-write-plan.sh",
+            "statusMessage": "duck: checking if written file is a plan/spec..."
           }
         ]
       }

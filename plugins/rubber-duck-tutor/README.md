@@ -14,14 +14,15 @@ This plugin builds that questioning habit into your workflow. The duck asks you 
 
 | Mode | When | What it checks |
 |------|------|----------------|
+| `/duck design` | *Before* asking AI to implement | Can you sketch the shape yourself first, so you'll spot where the AI answer differs? |
 | `/duck plan` | After a plan is created | Do you understand the decisions and trade-offs? |
-| `/duck verify` | After implementation | Can you explain the code and find edge cases? |
-| `/duck review` | Before commit/merge | Can you justify every change in the diff? |
+| `/duck verify` | After implementation | Can you explain the code, find edge cases, and fix a bug with your own hands? |
+| `/duck review` | Before commit/merge | Can you justify every change — and predict where it'll hurt in 6 months? |
 | `/duck orient` | New to a codebase | Can you navigate and explain the repo structure? |
 
 `/duck` with no argument auto-detects the right mode from context.
 
-Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents, PR/MR creation, and git push. When triggered, the duck suggests `/branch` + `/duck` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session.
+Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents, PR/MR creation, and git push. When triggered, the duck suggests `/branch` + `/duck <mode>` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session.
 
 ## Prerequisites
 
@@ -37,6 +38,7 @@ Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec
 
 ```
 /duck              # auto-detect mode
+/duck design       # sketch before asking AI to implement
 /duck plan         # review a plan
 /duck verify       # verify implementation
 /duck review       # review changes before commit
