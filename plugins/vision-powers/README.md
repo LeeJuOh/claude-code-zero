@@ -12,7 +12,7 @@ vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js
 
 | Skill | Description |
 |-------|-------------|
-| `agent-extension-visual` | Claude Code plugin deep analysis — 4 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
+| `agent-extension-visualizing` | Claude Code plugin deep analysis — 4 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
 | `diff-visual` | Visualize git diffs with architecture diagrams and code review cards |
 | `plan-visual` | Review implementation plans with blast radius analysis and risk assessment |
 | `project-recap` | Rebuild mental model — recent activity, key decisions, cognitive debt hotspots |

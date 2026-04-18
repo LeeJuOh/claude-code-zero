@@ -1041,7 +1041,7 @@ function gaugeRow(label, pct, tier, valueText) {
 }
 
 function renderHealthHeader(d) {
-  const tally = d.status_tally || { healthy: 0, attention: 0, critical: 0, graded_total: 6, observational: [] };
+  const tally = d.status_tally || { healthy: 0, attention: 0, critical: 0, graded_total: 5, observational: [] };
   const qs = d.quick_stats || {};
   const obs = Array.isArray(tally.observational) ? tally.observational.join(", ") : "";
   const kpis = [
@@ -1066,7 +1066,7 @@ ${kpis.map(k => `    <div class="kpi-card kpi-card--info"><span class="kpi-value
     <span class="ve-tier ve-tier--healthy">🟢 ${esc(tally.healthy || 0)} healthy</span>
     <span class="ve-tier ve-tier--attention">🟡 ${esc(tally.attention || 0)} attention</span>
     <span class="ve-tier ve-tier--critical">🔴 ${esc(tally.critical || 0)} critical</span>
-    <span class="scope-badge">Graded: ${esc(tally.graded_total || 6)} areas</span>
+    <span class="scope-badge">Graded: ${esc(tally.graded_total || 5)} areas</span>
     ${obs ? `<span class="scope-badge">Observational: ${esc(obs)}</span>` : ""}
     ${d.scan_date ? `<span class="scope-badge">${esc(d.scan_date)}</span>` : ""}
   </div>
@@ -1148,10 +1148,21 @@ function renderContextBudget(d) {
     : "";
 
   const env = d.env_and_settings || {};
+  const toolSearch = env.enable_tool_search;
+  const toolSearchHtml = toolSearch && typeof toolSearch === "object"
+    ? [
+        `<li><code>ENABLE_TOOL_SEARCH</code> object provided</li>`,
+        `<li><code>Raw value</code> = ${esc(toolSearch.raw || "unset")}</li>`,
+        `<li><code>Effective mode</code> = ${esc(toolSearch.effective_mode || "unknown")}</li>`,
+        toolSearch.threshold_pct != null ? `<li><code>Threshold</code> = ${esc(toolSearch.threshold_pct)}%</li>` : "",
+        toolSearch.proxy_fallback_applied != null ? `<li><code>Proxy fallback applied</code> = ${toolSearch.proxy_fallback_applied ? "yes" : "no"}</li>` : "",
+        toolSearch.note ? `<li><code>Note</code> = ${esc(toolSearch.note)}</li>` : "",
+      ].filter(Boolean).join("\n")
+    : `<li><code>ENABLE_TOOL_SEARCH</code> = ${esc(toolSearch || "deferred")}</li>`;
   const envHtml = `  <div class="ve-card ve-card--recessed" style="margin-bottom: 12px">
     <div class="ve-card__label">Environment</div>
     <ul>
-      <li><code>ENABLE_TOOL_SEARCH</code> = ${esc(env.enable_tool_search || "deferred")}</li>
+      ${toolSearchHtml}
       <li><code>SLASH_COMMAND_TOOL_CHAR_BUDGET</code> = ${env.desc_budget_override != null ? esc(env.desc_budget_override) : "<em>unset</em>"}</li>
       <li><code>CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD</code> = ${env.add_dir_claude_md ? "1" : "0"}</li>
       <li><code>CLAUDE_CODE_DISABLE_AUTO_MEMORY</code> = ${env.auto_memory_disabled ? "1" : "0"}</li>
@@ -1170,26 +1181,51 @@ ${refsHtml}
 }
 
 function renderSkillHealth(d) {
-  const db = d.description_budget || {};
+  const axisA = d.description_axis_a_cap || {};
+  const axisB = d.description_axis_b_budget || {};
+  const axisC = d.description_axis_c_balance || {};
   const ar = d.at_rest_body_sizes || {};
   const pc = d.post_compact_risk || {};
   const dmi = d.disable_model_invocation || {};
+  const preloads = d.subagent_preloads || {};
 
-  const budgetTier = db.status || tierFromPct(db.pct || 0);
-  const budgetGauge = gaugeRow(
-    `Descriptions (${db.budget_source || "budget"})`,
-    db.pct || 0,
+  const budgetTier = axisB.status || tierFromPct(axisB.pct_of_budget || 0);
+  const sectionTier = [axisA.status, axisB.status, ar.status, pc.status].includes("critical")
+    ? "critical"
+    : [axisA.status, axisB.status, ar.status, pc.status].includes("attention")
+      ? "attention"
+      : "healthy";
+
+  const axisAGauge = gaugeRow(
+    "Description axis A (per-entry cap)",
+    axisA.over_cap_count ? 100 : 0,
+    axisA.status || (axisA.over_cap_count ? "attention" : "healthy"),
+    `${formatNum(axisA.over_cap_count || 0)} entries over 1,536 chars`
+  );
+  const axisAEntries = Array.isArray(axisA.over_cap_entries) ? axisA.over_cap_entries : [];
+  const axisAHtml = axisAEntries.length > 0
+    ? `  <div class="table-wrapper">
+    <table><thead><tr><th>Plugin</th><th>Skill</th><th>Combined chars</th><th>Overflow</th></tr></thead>
+    <tbody>${axisAEntries.map(e => `<tr><td>${esc(e.plugin)}</td><td>${esc(e.skill)}</td><td>${esc(formatNum(e.combined_chars))}</td><td>${esc(formatNum(e.overflow_chars))}</td></tr>`).join("")}</tbody></table>
+  </div>`
+    : `  <p class="text-dim" style="color: var(--text-dim)">No entries exceed the per-entry cap.</p>`;
+
+  const axisBGauge = gaugeRow(
+    `Description axis B (${axisB.budget_source || "budget"})`,
+    axisB.pct_of_budget || 0,
     budgetTier,
-    `${formatNum(db.total_chars || 0)} / ${formatNum(db.effective_budget || 0)} chars`
+    `${formatNum(axisB.total_combined_chars || 0)} / ${formatNum(axisB.effective_budget || 0)} chars`
   );
 
-  const over250 = Array.isArray(db.over_250_char_entries) ? db.over_250_char_entries : [];
-  const over250Html = over250.length > 0
-    ? `  <h4>Entries over 250-char cap (truncated in listing)</h4>
-  <div class="table-wrapper">
-    <table><thead><tr><th>Plugin</th><th>Skill</th><th>Chars</th></tr></thead>
-    <tbody>${over250.map(e => `<tr><td>${esc(e.plugin)}</td><td>${esc(e.skill)}</td><td>${esc(e.chars)}</td></tr>`).join("")}</tbody></table>
-  </div>`
+  const topConsumers = Array.isArray(axisC.top_consumers) ? axisC.top_consumers.slice(0, 5) : [];
+  const axisCHtml = topConsumers.length > 0
+    ? `  <details class="collapsible">
+    <summary>Description axis C — top consumers (${topConsumers.length} shown)</summary>
+    <div class="table-wrapper">
+      <table><thead><tr><th>Plugin</th><th>Skill</th><th>Chars</th><th>% of total</th></tr></thead>
+      <tbody>${topConsumers.map(s => `<tr><td>${esc(s.plugin)}</td><td>${esc(s.skill)}</td><td>${esc(formatNum(s.combined_chars))}</td><td>${esc(s.pct_of_total)}%</td></tr>`).join("")}</tbody></table>
+    </div>
+  </details>`
     : "";
 
   const atRestSkills = Array.isArray(ar.skills) ? ar.skills.filter(s => s.over_500) : [];
@@ -1216,22 +1252,34 @@ function renderSkillHealth(d) {
     ? `  <details class="collapsible">
     <summary>disable-model-invocation candidates (${notUsing.length} shown)</summary>
     <div class="table-wrapper">
-      <table><thead><tr><th>Plugin</th><th>Skill</th><th>Desc chars</th></tr></thead>
-      <tbody>${notUsing.map(s => `<tr><td>${esc(s.plugin)}</td><td>${esc(s.skill)}</td><td>${esc(s.desc_chars)}</td></tr>`).join("")}</tbody></table>
+      <table><thead><tr><th>Plugin</th><th>Skill</th><th>Combined chars</th></tr></thead>
+      <tbody>${notUsing.map(s => `<tr><td>${esc(s.plugin)}</td><td>${esc(s.skill)}</td><td>${esc(formatNum(s.combined_chars ?? s.desc_chars))}</td></tr>`).join("")}</tbody></table>
     </div>
   </details>`
     : "";
 
+  const preloadAgents = Array.isArray(preloads.agents_with_preload) ? preloads.agents_with_preload : [];
+  const preloadHtml = preloadAgents.length > 0
+    ? `  <details class="collapsible">
+    <summary>Subagent preload exposure (${esc(preloads.total_preloaded_skills || preloadAgents.length)} skills)</summary>
+    <ul>${preloadAgents.map(a => `<li><strong>${esc(a.plugin)}/${esc(a.agent)}</strong>: ${esc((a.preload_skills || []).join(", "))}</li>`).join("")}</ul>
+  </details>`
+    : "";
+
   return `<section id="skill-health" class="ve-card ve-card--elevated" style="--i: 3">
-  <h2>Skill Health ${tierBadge(budgetTier)}</h2>
-  <h3>Description budget (§3)</h3>
-${budgetGauge}
-${over250Html}
+  <h2>Skill Health ${tierBadge(sectionTier)}</h2>
+  <h3>Description axis A (§3) ${tierBadge(axisA.status || "healthy")}</h3>
+${axisAGauge}
+${axisAHtml}
+  <h3>Description axis B (§3) ${tierBadge(budgetTier)}</h3>
+${axisBGauge}
+${axisCHtml}
   <h3>At-rest SKILL.md size (§4a) ${tierBadge(ar.status || "healthy")}</h3>
 ${atRestHtml}
   <h3>Post-compact re-injection budget (§4b) ${tierBadge(pc.status || "healthy")}</h3>
 ${pcHtml}
 ${dmiHtml}
+${preloadHtml}
 </section>`;
 }
 
@@ -1274,6 +1322,7 @@ function renderHooksAndMcp(d) {
   const types = h.type_counts || {};
   const collisions = Array.isArray(h.event_collisions) ? h.event_collisions : [];
   const servers = Array.isArray(m.servers) ? m.servers : [];
+  const infoNotes = Array.isArray(d.info_notes) ? d.info_notes : [];
 
   const hookKpis = `  <div class="kpi-grid">
     <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(h.total || 0)}</span><span class="kpi-label">Total hooks</span></div>
@@ -1286,8 +1335,8 @@ function renderHooksAndMcp(d) {
   const collisionHtml = collisions.length > 0
     ? `  <h4>Event collisions</h4>
   <div class="table-wrapper">
-    <table><thead><tr><th>Event</th><th>Matcher</th><th>Sources</th></tr></thead>
-    <tbody>${collisions.map(c => `<tr><td>${esc(c.event)}</td><td><code>${esc(c.matcher)}</code></td><td>${esc((c.sources || []).join(", "))}</td></tr>`).join("")}</tbody></table>
+    <table><thead><tr><th>Event</th><th>Matcher</th><th>Entries</th></tr></thead>
+    <tbody>${collisions.map(c => `<tr><td>${esc(c.event)}</td><td><code>${esc(c.matcher)}</code></td><td>${esc((c.entries || []).map(e => e.source).join(", "))}</td></tr>`).join("")}</tbody></table>
   </div>`
     : "";
 
@@ -1298,14 +1347,19 @@ function renderHooksAndMcp(d) {
   </div>`
     : `  <p class="text-dim" style="color: var(--text-dim)">No MCP servers configured.</p>`;
 
+  const notesHtml = infoNotes.length > 0
+    ? `  <div class="ve-card ve-card--recessed" style="margin-top: 12px"><div class="ve-card__label">Observations</div><ul>${infoNotes.map(n => `<li>ℹ️ ${esc(n.text || n)}</li>`).join("")}</ul></div>`
+    : "";
+
   return `<section id="hooks-mcp" class="ve-card ve-card--elevated" style="--i: 5">
-  <h2>Hooks &amp; MCP ${tierBadge(h.status || "healthy")}</h2>
-  <h3>Hooks</h3>
+  <h2>Hooks &amp; MCP ${tierBadge(m.status || "healthy")}</h2>
+  <h3>Hooks ${tierBadge(h.area_type || "observational")}</h3>
 ${hookKpis}
 ${collisionHtml}
   <h3>MCP ${tierBadge(m.status || "healthy")}</h3>
-  <p class="hero-insight">${esc(m.server_count || 0)} servers · Loading mode: <code>${esc(m.effective_mode || "deferred")}</code>${m.est_tokens ? ` · Est. ${formatNum(m.est_tokens)} tok` : ""}</p>
+  <p class="hero-insight">${esc(m.server_count || 0)} servers · Loading mode: <code>${esc(m.effective_mode || "deferred")}</code></p>
 ${serverRows}
+${notesHtml}
 </section>`;
 }
 
@@ -1320,6 +1374,8 @@ function renderClaudeMdMemory(d) {
     return `<tr>
       <td><code>${esc(f.path)}</code></td>
       <td><span class="scope-badge">${esc(f.scope)}</span></td>
+      <td><span class="scope-badge">${esc(f.load_mode || "always-loaded")}</span></td>
+      <td>${f.compact_resilient ? "yes" : "no"}</td>
       <td style="text-align: right">${esc(f.lines)}</td>
       <td style="min-width: 180px"><div class="ve-gauge"><span class="ve-gauge__fill ve-gauge__fill--${tier}" style="width: ${pct}%"></span></div></td>
     </tr>`;
@@ -1328,8 +1384,9 @@ function renderClaudeMdMemory(d) {
   const filesHtml = files.length > 0
     ? `  <h3>CLAUDE.md files ${tierBadge(cm.status || "healthy")}</h3>
   <div class="table-wrapper">
-    <table><thead><tr><th>Path</th><th>Scope</th><th>Lines</th><th>vs 200-line target</th></tr></thead><tbody>${fileRows}</tbody></table>
-  </div>`
+    <table><thead><tr><th>Path</th><th>Scope</th><th>Load mode</th><th>Compact resilient</th><th>Lines</th><th>vs 200-line target</th></tr></thead><tbody>${fileRows}</tbody></table>
+  </div>
+  <p class="text-dim" style="font-size: 12px; color: var(--text-dim)">Always-loaded total: ${formatNum(cm.total_lines || 0)} lines · ${formatNum(cm.total_est_tokens || 0)} est. tokens. Nested lazy-loaded total: ${formatNum(cm.nested_lines || 0)} lines · ${formatNum(cm.nested_est_tokens || 0)} est. tokens.</p>`
     : `  <p class="text-dim" style="color: var(--text-dim)">No CLAUDE.md files found in the walk.</p>`;
 
   const memTier = mem.status || (mem.over_25kb ? "critical" : mem.pct_of_limit > 90 ? "attention" : "healthy");
@@ -1350,12 +1407,47 @@ function renderClaudeMdMemory(d) {
   </details>`
     : "";
 
-  return `<section id="claude-md-memory" class="ve-card ve-card--elevated" style="--i: 6">
+  return `<section id="claude-md-memory" class="ve-card ve-card--elevated" style="--i: 7">
   <h2>CLAUDE.md &amp; Memory Health</h2>
 ${filesHtml}
   <h3>MEMORY.md ${tierBadge(memTier)}</h3>
 ${memGauge}
 ${importsHtml}
+</section>`;
+}
+
+function renderPluginComponents(d) {
+  const perPlugin = d.per_plugin || {};
+  const entries = Object.entries(perPlugin);
+  const totals = d.totals || {};
+  const notes = Array.isArray(d.info_notes) ? d.info_notes : [];
+
+  const totalCards = `  <div class="kpi-grid">
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.bin || 0)}</span><span class="kpi-label">bin</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.monitors || 0)}</span><span class="kpi-label">monitors</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.lsp_servers || 0)}</span><span class="kpi-label">lsp_servers</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.output_styles || 0)}</span><span class="kpi-label">output_styles</span></div>
+    <div class="kpi-card kpi-card--info"><span class="kpi-value">${esc(totals.channels || 0)}</span><span class="kpi-label">channels</span></div>
+  </div>`;
+
+  const tableHtml = entries.length > 0
+    ? `  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Plugin</th><th>bin</th><th>monitors</th><th>lsp_servers</th><th>output_styles</th><th>channels</th></tr></thead>
+      <tbody>${entries.map(([name, counts]) => `<tr><td>${esc(name)}</td><td>${esc(counts.bin || 0)}</td><td>${esc(counts.monitors || 0)}</td><td>${esc(counts.lsp_servers || 0)}</td><td>${esc(counts.output_styles || 0)}</td><td>${esc(counts.channels || 0)}</td></tr>`).join("")}</tbody>
+    </table>
+  </div>`
+    : `  <p class="text-dim" style="color: var(--text-dim)">No plugin-level components detected.</p>`;
+
+  const notesHtml = notes.length > 0
+    ? `  <div class="ve-card ve-card--recessed" style="margin-top: 12px"><div class="ve-card__label">Observations</div><ul>${notes.map(n => `<li>ℹ️ ${esc(n.text || n)}</li>`).join("")}</ul></div>`
+    : "";
+
+  return `<section id="plugin-components" class="ve-card ve-card--elevated" style="--i: 6">
+  <h2>Plugin Components ${tierBadge(d.area_type || "observational")}</h2>
+${totalCards}
+${tableHtml}
+${notesHtml}
 </section>`;
 }
 
@@ -1409,6 +1501,7 @@ function generateHealthToc(sections) {
     { id: "context-budget", label: "Context Budget" },
     { id: "skill-health", label: "Skill Health" },
     { id: "trigger-analysis", label: "Triggers" },
+    { id: "plugin-components", label: "Plugin Components" },
     { id: "hooks-mcp", label: "Hooks & MCP" },
     { id: "claude-md-memory", label: "CLAUDE.md & Memory" },
     { id: "recommendations", label: "Recommendations" },
@@ -1934,13 +2027,14 @@ function main() {
   let defaultTitle;
 
   if (reportType === "environment-health") {
-    // Environment Health: 8 sections, no agent-extension normalization/validation
+    // Environment Health: 9 sections, no agent-extension normalization/validation
     rendered = [
       renderHealthHeader(sections.header || {}),
       renderHealthOverview(sections.overview || {}),
       renderContextBudget(sections.context_budget || {}),
       renderSkillHealth(sections.skill_health || {}),
       renderTriggerAnalysis(sections.trigger_analysis || {}),
+      renderPluginComponents(sections.plugin_components || {}),
       renderHooksAndMcp(sections.hooks_and_mcp || {}),
       renderClaudeMdMemory(sections.claude_md_memory || {}),
       renderRecommendations(sections.recommendations || {}),
