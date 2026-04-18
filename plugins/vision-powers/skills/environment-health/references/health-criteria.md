@@ -445,9 +445,10 @@ channels}}, totals: {...}}`. Observational — no tier assignment.
 
 **No single letter grade.** The report shows:
 
-1. **Status tally** across the **6 graded areas**, with observational areas listed
-   separately:
-   e.g. `Graded: 5 🟢 / 1 🟡 / 0 🔴 (6 areas) · Observational: Plugin Inventory, Context Budget`.
+1. **Status tally** across the **5 graded areas** (§3, §4a, §4b, §7, §8), with
+   observational areas listed separately:
+   e.g. `Graded: 4 🟢 / 1 🟡 / 0 🔴 (5 areas) · Observational: Plugin Inventory,
+   Context Budget, Trigger Collisions, Hook Complexity, Plugin Components`.
    Observational areas never contribute to the tally — they emit raw data and
    info-level notes only.
 2. **Top lever:** the single change with the largest projected savings, computed from

@@ -2,8 +2,8 @@
 name: environment-health
 description: >
   Diagnose Claude Code environment health — context budget, description obesity,
-  trigger collisions, hooks, MCP, CLAUDE.md and memory. Graded (6 areas) plus
-  observational (2 areas) with actionable levers ranked by impact.
+  trigger collisions, hooks, MCP, plugin components, CLAUDE.md and memory.
+  5 graded areas plus 4 observational areas with actionable levers ranked by impact.
   Use when asked to audit the environment, check context budget, review plugins,
   investigate trigger collisions or skill obesity — including phrases like
   "audit my environment", "why does Claude feel slow", "check my context budget",

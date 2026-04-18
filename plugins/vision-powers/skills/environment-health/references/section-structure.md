@@ -48,7 +48,7 @@ HTML structure and CSS classes.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status_tally` | object | `{healthy: N, attention: N, critical: N, graded_total: 6, observational: ["Plugin Inventory", "Startup Context Budget"]}` — tally is for graded areas only; observational areas listed separately |
+| `status_tally` | object | `{healthy: N, attention: N, critical: N, graded_total: 5, observational: ["Plugin Inventory", "Startup Context Budget", "Trigger Collisions", "Hook Complexity", "Plugin Components"]}` — tally is for graded areas only (§3, §4a, §4b, §7, §8); observational areas listed separately |
 | `top_lever` | string | Single-sentence top action: "Adding `disable-model-invocation: true` to 3 skills frees 840 chars (10.5%) from desc budget" |
 | `scan_date` | string | ISO date of scan |
 | `estimate_caveat` | string | Fixed text: "Values are estimates. Run `/context` for ground truth." (hidden if `--paste-context` was used) |
@@ -110,11 +110,12 @@ Render each axis as its own card so the user can see which mechanism is firing.
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `area_type` | string | Fixed: `"observational"` — §5 has no official threshold for overlap severity; the subagent's DUPLICATE/OVERLAP output is surfaced verbatim |
 | `inspector` | string | Fixed: "trigger-collision-inspector subagent (Waza-style lexical pairwise)" |
 | `total_descriptions_analyzed` | number | Count of skill descriptions passed to the subagent |
 | `collisions` | array | `[{skill_a, skill_b, classification: "DUPLICATE"\|"OVERLAP", shared_keywords: [string], note}]` — COMPLEMENT pairs are not returned |
 | `mermaid_diagram` | string | Mermaid graph showing collision clusters |
-| `status` | string | "healthy" \| "attention" \| "critical" |
+| `info_notes` | array | `[{text, severity: "info"}]` — e.g. "DUPLICATE pairs trigger unpredictably (skills.md)" when any DUPLICATE returned |
 
 ---
 
@@ -135,11 +136,14 @@ and `channels`. Observational — count only, no severity.
 
 ## sections.hooks_and_mcp
 
+§6 hooks is observational (no grading), §7 mcp is graded on effective loading mode.
+
 | Field | Type | Description |
 |-------|------|-------------|
-| `hooks` | object | `{total, type_counts: {command,http,prompt,agent}, event_counts: {}, event_collisions: [], llm_hooks, status}` |
-| `mcp` | object | `{server_count, effective_mode: "deferred"\|"upfront"\|"auto"\|"unknown", threshold_pct, proxy_fallback_applied, servers: [{name, source_scope: "user"\|"project"\|"local"\|"plugin:<name>"\|"plugin:<name> (inline)"}], status}` — token cost not included; point users to `/context` |
+| `hooks` | object | `{area_type: "observational", total, type_counts: {command, http, prompt, agent}, event_counts: {}, event_collisions: [{event, matcher, entries: [{source}]}], llm_hooks, inline_sources: [{plugin, source: "inline"\|"file"}]}` — no `status` field; prompt/agent hook cost and collision ordering are surfaced as info notes rather than tiers |
+| `mcp` | object | `{server_count, effective_mode: "deferred"\|"upfront"\|"auto"\|"unknown", threshold_pct, proxy_fallback_applied, servers: [{name, source_scope: "user"\|"project"\|"local"\|"plugin:<name>"\|"plugin:<name> (inline)"}], status}` — graded on effective_mode per §7; token cost not included, point users to `/context` |
 | `chart_data` | object | Chart.js data for hook type distribution |
+| `info_notes` | array | `[{text, severity: "info"}]` — e.g. "N prompt/agent hooks — each invocation incurs an LLM call (hooks.md)", "event collision: X hooks on <event>/<matcher>, ordering unpredictable" |
 
 ---
 
