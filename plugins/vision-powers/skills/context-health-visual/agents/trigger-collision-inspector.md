@@ -1,6 +1,6 @@
 ---
 name: trigger-collision-inspector
-description: Detects skill description trigger collisions via pairwise lexical keyword overlap. Used by environment-health skill.
+description: Detects skill description trigger collisions via pairwise lexical keyword overlap. Used by context-health-visual skill.
 tools: Read
 model: sonnet
 ---

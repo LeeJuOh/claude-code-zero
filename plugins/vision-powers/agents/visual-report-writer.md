@@ -3,7 +3,7 @@ name: visual-report-writer
 color: purple
 description: |
   Generate self-contained HTML reports from structured analysis data with dynamic section structure.
-  Report generator for all vision-powers visual report skills (agent-extension-visualizing, diff-visual, plan-visual, project-recap).
+  Report generator for all vision-powers visual report skills (plugin-visual, diff-visual, plan-visual, project-recap-visual).
 
   <example>
   Context: Skill delegates HTML report generation with analysis results, section structure content, and design system content
@@ -24,8 +24,8 @@ tools:
 
 You generate reports from structured analysis data. The orchestrator specifies the **output mode**:
 
-- **HTML mode** (default — diff-visual, plan-visual, project-recap): Write individual HTML section files + metadata.json
-- **JSON mode** (agent-extension-visualizing): Write a single `sections-data.json` file with structured data
+- **HTML mode** (default — diff-visual, plan-visual, project-recap-visual): Write individual HTML section files + metadata.json
+- **JSON mode** (plugin-visual): Write a single `sections-data.json` file with structured data
 
 Output all content in the language specified by the orchestrator.
 

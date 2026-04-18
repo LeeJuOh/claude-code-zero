@@ -1,5 +1,5 @@
 ---
-name: environment-health
+name: context-health-visual
 description: >
   Diagnose Claude Code environment health — context budget, description obesity,
   trigger collisions, hooks, MCP, plugin components, CLAUDE.md and memory.
@@ -47,7 +47,7 @@ the correct denominator.
 **Run the scan:**
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/environment-health/scripts/env-health-scan.js --window-size=<N>
+node ${CLAUDE_PLUGIN_ROOT}/skills/context-health-visual/scripts/env-health-scan.js --window-size=<N>
 ```
 
 The script writes a JSON blob to stdout with these sections:
@@ -87,7 +87,7 @@ Save to `/tmp/env-health-<pid>/scan.json`.
 
 ### Phase 2 — Analysis
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/environment-health/references/health-criteria.md`
+Read `${CLAUDE_PLUGIN_ROOT}/skills/context-health-visual/references/health-criteria.md`
 for the full threshold specification. Apply it as follows:
 
 **Compute the effective description budget:**
@@ -190,23 +190,23 @@ Cite sources inline where a threshold fires. Keep it under 200 lines.
 
 **HTML mode (default, `--format html`):**
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/environment-health/references/section-structure.md`
+Read `${CLAUDE_PLUGIN_ROOT}/skills/context-health-visual/references/section-structure.md`
 for the JSON schema. Then follow `${CLAUDE_PLUGIN_ROOT}/references/report-generation-workflow.md`
 with these parameters:
 
 | Parameter | Value |
 |-----------|-------|
-| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/<scan_date>-environment-health.html` |
-| `{template-name}` | `environment-health.html` |
+| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/<scan_date>-context-health-visual.html` |
+| `{template-name}` | `context-health-visual.html` |
 | `{skill-prefix}` | `env-health` |
 | `{expected-sections}` | `9` |
 | `{report-title}` | `"Environment Health — <scan_date>"` |
 | `{aesthetic-hint}` | `"Dashboard"` |
 | `{agent-prompt-data}` | The analyzed scan data, subagent collision results, computed tiers per area, top lever, and info notes. Pass the raw `scan.json` separately so the writer can reference exact numbers. |
 
-The sections-data.json must set `metadata.report_type = "environment-health"` so
-`render-sections.js` dispatches to the environment-health renderers (not the
-agent-extension ones).
+The sections-data.json must set `metadata.report_type = "context-health-visual"` so
+`render-sections.js` dispatches to the context-health-visual renderers (not the
+plugin-visual ones).
 
 **Privacy guard (both modes):** strip any raw file content before rendering. The
 report emits counts, sizes, line numbers, and file paths — never CLAUDE.md body text,

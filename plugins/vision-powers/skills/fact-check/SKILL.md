@@ -49,8 +49,8 @@ Determine what to verify from `$1`:
 |--------------|-----------|-------------------|
 | diff-visual report | Contains "Diff Visual" in title/heading | Verify against the git ref the review was based on |
 | plan-visual report | Contains "Plan Visual" in title/heading | Verify file references, names, architecture claims |
-| project-recap report | Contains "Project Recap" in title/heading | Re-run git commands, verify activity narrative |
-| agent-extension-visual report | Contains plugin analysis markers | Verify plugin structure, file paths, feature descriptions |
+| project-recap-visual report | Contains "Project Recap" in title/heading | Re-run git commands, verify activity narrative |
+| plugin-visual report | Contains plugin analysis markers | Verify plugin structure, file paths, feature descriptions |
 | Markdown document | `.md` extension | Verify file references, function/type names, behavior descriptions |
 | Other | Fallback | Extract and verify whatever factual claims about code it contains |
 

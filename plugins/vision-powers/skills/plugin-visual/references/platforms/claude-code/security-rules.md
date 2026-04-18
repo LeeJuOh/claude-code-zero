@@ -76,7 +76,7 @@ Context modifiers adjust severity based on how a pattern is actually used. The a
 **Applies to**: `rm -rf`, `rm -f`, other destructive commands
 **Condition**: Target path is clearly a temp/cleanup path:
 - `/tmp/*`, `$TMPDIR/*`, or similar temp directories
-- Plugin-generated output directories (e.g., `/tmp/agent-extension-visual-*`)
+- Plugin-generated output directories (e.g., `/tmp/plugin-visual-*`)
 - Build artifacts (e.g., `dist/`, `node_modules/`, `.cache/`)
 
 **Why**: Cleanup scripts are standard development practice. The risk is a stray path, not the `rm` command itself. When the target is visibly scoped to temp files, the actual risk is LOW.
@@ -171,7 +171,7 @@ When a Context Modifier was applied, append a brief note:
 ```
 [LOW] #3: Destructive command in cleanup script
 > [HOOK] PostToolUse | hooks/cleanup.sh:12
-Uses `rm -rf /tmp/agent-extension-visual-*` to clean up temporary clone directories.
+Uses `rm -rf /tmp/plugin-visual-*` to clean up temporary clone directories.
 **Note**: Severity reduced from MEDIUM — cleanup pattern targeting temp directory.
 ```
 

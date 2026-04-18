@@ -47,7 +47,7 @@ A simplified overview showing the whole pipeline at a glance. Place near the top
 ### Level 2 — Section Boundaries
 Labeled regions (Mermaid `subgraph`) grouping related components. Creates visual "rooms" that show what belongs together.
 
-*Example for an agent-extension-visual architecture diagram:*
+*Example for an plugin-visual architecture diagram:*
 ```
 subgraph Skills
   SkillA
@@ -95,8 +95,8 @@ Each concept has a visual pattern that mirrors its behavior. Pick the pattern th
 |---|---|
 | `diff-visual` | Architecture impact = Tree + Fan-out (new modules); Housekeeping = side-by-side for before/after; Decisions = timeline |
 | `plan-visual` | Blast radius = Fan-out from plan node; Risk = convergence; Steps = timeline |
-| `project-recap` | Activity = timeline; Decisions = fan-out from key commits; Cognitive debt = tree |
-| `agent-extension-visualizing` | Component map = tree with subgraphs; Flow of invocation = sequence |
+| `project-recap-visual` | Activity = timeline; Decisions = fan-out from key commits; Cognitive debt = tree |
+| `plugin-visual` | Component map = tree with subgraphs; Flow of invocation = sequence |
 
 These are starting points, not rules. Pick the pattern that fits the actual data.
 

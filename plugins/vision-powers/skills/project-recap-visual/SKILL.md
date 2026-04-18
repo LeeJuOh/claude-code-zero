@@ -1,5 +1,5 @@
 ---
-name: project-recap
+name: project-recap-visual
 description: >
   Generate a visual project recap — rebuild mental model of a project's
   current state, recent activity, key decisions, and cognitive debt hotspots.
@@ -9,7 +9,7 @@ description: >
   "what's been going on", or "give me the big picture". Accepts a time window
   (2w, 30d, 3m).
 argument-hint: "[time-window: 2w|30d|3m] [--format html|md] [--lang <code>]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git log *), Bash(git shortlog *), Bash(git status *), Bash(git branch *), Bash(git rev-parse *), Bash(git diff *), Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/project-recap-*)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git log *), Bash(git shortlog *), Bash(git status *), Bash(git branch *), Bash(git rev-parse *), Bash(git diff *), Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/project-recap-visual-*)
 ---
 
 # Project Recap
@@ -132,9 +132,9 @@ Follow `../../references/report-generation-workflow.md` with these parameters:
 
 | Parameter | Value |
 |-----------|-------|
-| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{project-name}-project-recap.html` — where `{project-name}` is the project directory name |
-| `{template-name}` | `project-recap.html` |
-| `{skill-prefix}` | `project-recap` |
+| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{project-name}-project-recap-visual.html` — where `{project-name}` is the project directory name |
+| `{template-name}` | `project-recap-visual.html` |
+| `{skill-prefix}` | `project-recap-visual` |
 | `{expected-sections}` | `8` |
 | `{report-title}` | `"Project Recap: {project-name} ({time-window})"` |
 | `{aesthetic-hint}` | `"Paper-ink"` |

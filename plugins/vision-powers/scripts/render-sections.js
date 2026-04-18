@@ -2019,14 +2019,14 @@ function main() {
   const meta = input.metadata || {};
   const sections = input.sections || {};
   const srcCtx = input.source_context || null;
-  const reportType = meta.report_type || "agent-extension-visualizing";
+  const reportType = meta.report_type || "plugin-visual";
 
   let rendered;
   let tocContent;
   let chartData;
   let defaultTitle;
 
-  if (reportType === "environment-health") {
+  if (reportType === "context-health-visual") {
     // Environment Health: 9 sections, no agent-extension normalization/validation
     rendered = [
       renderHealthHeader(sections.header || {}),

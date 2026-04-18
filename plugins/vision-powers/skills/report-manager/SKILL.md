@@ -142,5 +142,5 @@ Harvesting is optional — always fall through to the conventional "ask what to 
 - **`$CLAUDE_PLUGIN_DATA` is a shell env var**, not a SKILL.md substitution. It only works inside `Bash()` commands. Use `${CLAUDE_SKILL_DIR}` for relative paths to skill/plugin files.
 - **Don't call config.js before listing.** `list-reports.js` already checks config internally for custom `reports_dir`. Calling config.js separately wastes a tool call and exits 1 when the key doesn't exist.
 - **Don't call log-report.js for listing.** The log file may not exist. `list-reports.js` reads the filesystem directly — no log needed.
-- **Report type detection is filename-based**: `*-diff-visual` → diff-visual, `*-plan-visual` → plan-visual, `*-project-recap` → project-recap, `*-report` → agent-extension-visual.
+- **Report type detection is filename-based**: `*-diff-visual` → diff-visual, `*-plan-visual` → plan-visual, `*-project-recap-visual` → project-recap-visual, `*-context-health-visual` → context-health-visual, `*-report` → plugin-visual.
 - **Refine edits must preserve `style="--i: N"`** on `<li>` and animated elements — these drive staggered CSS animations. Removing them makes items invisible (opacity: 0).

@@ -1,7 +1,7 @@
 # Environment Health — Grading Criteria
 
 This reference defines the status tiers, thresholds, and recommendation mappings used by
-the `environment-health` skill. Every graded threshold cites its source in the official
+the `context-health-visual` skill. Every graded threshold cites its source in the official
 Claude Code docs — if a number has no official basis, the area is reported as
 **observational** (raw data only, no 🟢/🟡/🔴 label).
 

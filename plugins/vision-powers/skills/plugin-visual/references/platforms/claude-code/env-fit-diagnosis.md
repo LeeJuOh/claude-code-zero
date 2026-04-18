@@ -1,6 +1,6 @@
 # Environment Fit Diagnosis — Detailed Steps
 
-This reference contains the detailed procedure for Phase 4.5 of the agent-extension-visualizing workflow. The orchestrator SKILL.md references this file for the full step-by-step process.
+This reference contains the detailed procedure for Phase 4.5 of the plugin-visual workflow. The orchestrator SKILL.md references this file for the full step-by-step process.
 
 ## Step 1: Extract Plugin Characteristics
 

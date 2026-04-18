@@ -489,7 +489,7 @@ function scanContextMetrics(enabledPlugins, activeInstallPaths, pluginManifests)
 }
 
 // ---------------------------------------------------------------------------
-// New scanners for environment-health
+// New scanners for context-health-visual
 // ---------------------------------------------------------------------------
 
 /**

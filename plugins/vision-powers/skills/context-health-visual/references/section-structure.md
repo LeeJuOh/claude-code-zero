@@ -1,7 +1,7 @@
 # Environment Health — JSON Data Schema
 
 This document defines the JSON structure for `sections-data.json` used by the
-`environment-health` skill. The visual-report-writer outputs this file;
+`context-health-visual` skill. The visual-report-writer outputs this file;
 `render-sections.js` converts it into HTML section files.
 
 **Key principle:** Focus on content, not presentation. The render script handles all
@@ -40,7 +40,7 @@ HTML structure and CSS classes.
 | `css_variables` | string | CSS variable overrides |
 | `css_variables_dark` | string | Dark mode overrides |
 | `mermaid_theme` | string | Additional Mermaid themeVariables |
-| `report_type` | string | Fixed: `"environment-health"` — explicit type marker for render-sections.js dispatch |
+| `report_type` | string | Fixed: `"context-health-visual"` — explicit type marker for render-sections.js dispatch |
 
 ---
 

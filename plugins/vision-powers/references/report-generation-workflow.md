@@ -1,6 +1,6 @@
 # Report Generation Workflow
 
-Shared workflow for generating HTML reports. All report-generating skills (agent-extension-visualizing, diff-visual, plan-visual, project-recap) follow this sequence after completing their analysis phase.
+Shared workflow for generating HTML reports. All report-generating skills (plugin-visual, diff-visual, plan-visual, project-recap-visual) follow this sequence after completing their analysis phase.
 
 Each skill provides these parameters before entering the workflow:
 

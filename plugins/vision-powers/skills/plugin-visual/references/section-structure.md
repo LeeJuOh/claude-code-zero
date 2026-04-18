@@ -1,6 +1,6 @@
 # Agent Extension Visual — Section Structure
 
-This document defines the 11-section HTML structure for agent-extension-visual reports. All CSS classes referenced below are pre-defined in the HTML template — do not add `<style>` blocks or inline styles except `style="--i: N"` for animation stagger.
+This document defines the 11-section HTML structure for plugin-visual reports. All CSS classes referenced below are pre-defined in the HTML template — do not add `<style>` blocks or inline styles except `style="--i: N"` for animation stagger.
 
 **Class name rule**: Use ONLY the exact CSS class names shown in the HTML examples below. The template CSS is pre-built — inventing class names (e.g., `stat-row` instead of `kpi-grid`, `chart-wrap` instead of `chart-container`) will produce unstyled, broken layouts. Copy the class names verbatim from the examples.
 
