@@ -529,9 +529,9 @@ When a session starts, Claude builds a listing of every skill with its descripti
 [What to use it for] + [Specific trigger contexts] + [What NOT to use it for (optional)]
 ```
 
-### Display Cap and Character Budget
+### Description Length and Body Budget
 
-The `/skills` listing truncates descriptions to **250 characters** — front-load key trigger phrases. The full description is still used for triggering, but users can't see past the cap in the menu.
+Keep the description **under ~1024 characters**. The model reads the full string when deciding to invoke, but attention is strongest at the start — front-load trigger phrases (user phrasings, contexts). Long descriptions dilute the trigger signal and gain nothing.
 
 The skill body budget scales to ~2% of the context window. With 1M context, that's ~20K characters; with 200K, ~4K. Keep SKILL.md lean and push detail to reference files.
 
