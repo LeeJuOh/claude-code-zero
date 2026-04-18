@@ -3,14 +3,14 @@ name: security-auditor
 color: red
 description: |
   Analyze security posture, permission models, and risk levels
-  of agent plugin components (Claude Code). Delegated by the agent-extension-visualizing skill.
+  of agent plugin components (Claude Code). Delegated by the plugin-visual skill.
 
   <example>
   Context: Skill delegates security analysis with metadata and file paths
   user: "Analyze security for plugin at ./plugins/my-plugin with components: [SKILL] my-skill, [AGENT] my-agent"
   assistant: "I'll audit the permission model, tool scope, hook scripts, and MCP trust boundaries."
   <commentary>
-  The agent-extension-visualizing skill provides metadata and file paths. This agent reads the actual files and performs security analysis.
+  The plugin-visual skill provides metadata and file paths. This agent reads the actual files and performs security analysis.
   </commentary>
   </example>
 effort: high

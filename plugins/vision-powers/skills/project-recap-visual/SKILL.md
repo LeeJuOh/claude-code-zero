@@ -1,5 +1,5 @@
 ---
-name: project-recap
+name: project-recap-visual
 description: >
   Generate a visual project recap — rebuild mental model of a project's
   current state, recent activity, key decisions, and cognitive debt hotspots.
@@ -8,15 +8,25 @@ description: >
   recently", "catch me up", "status update",
   "what's been going on", or "give me the big picture". Accepts a time window
   (2w, 30d, 3m).
-argument-hint: "[time-window: 2w|30d|3m] [--lang <code>]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git log *), Bash(git shortlog *), Bash(git status *), Bash(git branch *), Bash(git rev-parse *), Bash(git diff *), Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/project-recap-*)
+argument-hint: "[time-window: 2w|30d|3m] [--format html|md] [--lang <code>]"
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git log *), Bash(git shortlog *), Bash(git status *), Bash(git branch *), Bash(git rev-parse *), Bash(git diff *), Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/project-recap-visual-*)
 ---
 
 # Project Recap
 
-Generate a visual project recap as a self-contained interactive HTML report. Rebuilds mental model of a project's current state, recent activity, architecture, decisions, and cognitive debt hotspots.
+Generate a project recap as either a self-contained interactive HTML report (default) or an inline markdown report. Rebuilds mental model of a project's current state, recent activity, architecture, decisions, and cognitive debt hotspots. Markdown is the lighter alternative for pasting into a standup note, Slack, or PR description.
 
 ## Instructions
+
+### Format Detection
+
+Parse `--format` first:
+
+| Flag | Values | Default | Meaning |
+|------|--------|---------|---------|
+| `--format` | `html` \| `md` | `html` | `html` → full interactive dashboard at `${CLAUDE_PLUGIN_DATA}/reports/`. `md` → inline markdown report, delivered in the response |
+
+**Principle:** HTML is the default because a recap benefits from activity charts and dependency graphs. Only choose `md` when the user wants something they can paste into a standup doc, a Slack message, or when running in a non-browser context.
 
 ### Input Parsing
 
@@ -114,17 +124,67 @@ If any claim cannot be sourced, mark it as uncertain rather than stating it as f
 
 Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
 
+Branch on `--format`:
+
+#### HTML mode (default)
+
 Follow `../../references/report-generation-workflow.md` with these parameters:
 
 | Parameter | Value |
 |-----------|-------|
-| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{project-name}-project-recap.html` — where `{project-name}` is the project directory name |
-| `{template-name}` | `project-recap.html` |
-| `{skill-prefix}` | `project-recap` |
+| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{project-name}-project-recap-visual.html` — where `{project-name}` is the project directory name |
+| `{template-name}` | `project-recap-visual.html` |
+| `{skill-prefix}` | `project-recap-visual` |
 | `{expected-sections}` | `8` |
 | `{report-title}` | `"Project Recap: {project-name} ({time-window})"` |
 | `{aesthetic-hint}` | `"Paper-ink"` |
 | `{agent-prompt-data}` | All gathered data: identity, activity, state, decisions, architecture, cognitive debt |
+
+#### Markdown mode (`--format md`)
+
+Assemble an inline markdown report and deliver it directly in the response. Do NOT write to disk. Use this structure:
+
+```
+# Project Recap: <project-name> (<time-window>)
+
+**As of:** <YYYY-MM-DD> · **Window:** <time-window> · **Commits:** N · **Contributors:** M
+
+## Executive Summary
+<1-paragraph mental-model refresh: what this project is, where it's at, what's moving.>
+
+## Recent Activity
+- **Themes:** <list top 3-5 themes: feature work, bug fixes, refactors, infrastructure — with commit counts>
+- **Most-changed files (top 10):**
+  | File | Commits | +/− |
+  |------|---------|-----|
+  | `path/to/file` | N | +A/-B |
+
+## Key Decisions
+| Decision | Source | Confidence |
+|----------|--------|------------|
+| <decision> | commit hash / ADR / plan | Confirmed / Inferred / Uncertain |
+
+## Architecture Snapshot
+<2-3 paragraphs on module structure, entry points, public API surface. Cite files.>
+
+## Current State
+- **Branch status:** N unmerged branches (list the active ones)
+- **Uncommitted changes:** yes/no (summary if yes)
+- **Open work:** <TODO/FIXME count in recently changed files, top 10>
+- **Plans/RFCs:** <active plan docs, if any>
+
+## Cognitive Debt Hotspots
+- **Churn hotspots:** <files changed repeatedly without stabilizing>
+- **Outdated docs:** <README / CHANGELOG staleness>
+- **Stale branches:** <branches with no recent activity>
+
+## What's Next
+<Infer direction from recent commits and open plan docs. If signal is weak, say so — do not fabricate roadmap.>
+```
+
+**Translation:** Translate section headers and prose to the detected language. Keep file paths, branch names, commit hashes, and technical terms untranslated.
+
+**Length cap:** Keep the markdown report under 250 lines. Truncate with `(+N more)` notes when needed.
 
 ### Gotchas
 

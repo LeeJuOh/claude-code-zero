@@ -61,9 +61,11 @@ For config schema, port logic, and groups: read `${CLAUDE_PLUGIN_ROOT}/reference
 8. **Save config** to `${CLAUDE_PLUGIN_DATA}/config.json` (create file if needed, merge if exists). Use v2 `groups` format.
 
 9. **Offer to start**: "Setup complete! Want me to start the server with `/claw-mo-up`?"
+   - If a mo server is already running on `$PORT` (e.g., from a previous setup in this project), note that `/claw-mo-up` will apply the new config by clearing and rebuilding — since configured patterns changed, this is expected.
 
 ## Gotchas
 
 - **`**/*.md` can explode**: Projects with vendored code may contain thousands of .md files. Always show the count before accepting broad patterns. Guide users toward specific directory patterns.
 - **Large top-level directories need one more pass**: If a directory contains a massive subtree, inspect its immediate children before suggesting patterns. Otherwise Claude tends to recommend broad watches like `raw/**/*.md` that swamp mo with irrelevant files.
 - **Group names become URL paths**: Keep them simple lowercase, no spaces or special chars.
+- **Changing config while a server is running**: `/claw-mo-up` reconciles by detecting drift and running `printf 'y\n' | mo --clear` then rebuilding. Tell the user this is the expected side effect of reconfiguring, not a bug.

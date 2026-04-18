@@ -40,8 +40,9 @@ function getReportsDir() {
 function detectType(filename) {
   if (filename.includes("-diff-visual")) return "diff-visual";
   if (filename.includes("-plan-visual")) return "plan-visual";
-  if (filename.includes("-project-recap")) return "project-recap";
-  if (filename.includes("-report")) return "agent-extension-visual";
+  if (filename.includes("-project-recap-visual")) return "project-recap-visual";
+  if (filename.includes("-report")) return "plugin-visual";
+  if (filename.includes("-context-health-visual")) return "context-health-visual";
   return "unknown";
 }
 

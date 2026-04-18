@@ -12,12 +12,12 @@ vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js
 
 | Skill | Description |
 |-------|-------------|
-| `agent-extension-visual` | Claude Code plugin deep analysis — 4 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
+| `plugin-visual` | Claude Code plugin deep analysis — 4 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
 | `diff-visual` | Visualize git diffs with architecture diagrams and code review cards |
 | `plan-visual` | Review implementation plans with blast radius analysis and risk assessment |
-| `project-recap` | Rebuild mental model — recent activity, key decisions, cognitive debt hotspots |
+| `project-recap-visual` | Rebuild mental model — recent activity, key decisions, cognitive debt hotspots |
 | `fact-check` | Verify document accuracy against the actual codebase and git history |
-| `environment-health` | Diagnose Claude Code environment — context budget, description obesity, trigger collisions, hook/MCP overhead, CLAUDE.md & memory health, with actionable levers |
+| `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, plugin components, CLAUDE.md & memory health. 5 graded areas + 4 observational, each threshold cited to official docs |
 | `report-manager` | List, open, delete, and search generated reports |
 
 4 specialized agents: `visual-report-writer`, `feature-architect`, `security-auditor`, `coherence-reviewer`
@@ -31,15 +31,23 @@ vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js
 ## Usage
 
 ```
-analyze ./plugins/my-plugin          # wiki report
-visualize diff HEAD                  # diff report
-review plan docs/my-plan.md          # plan review
-recap this project                   # project recap
+analyze ./plugins/my-plugin          # wiki report (HTML)
+analyze ./plugins/my-plugin --format md  # same, but inline markdown
+visualize diff HEAD                  # diff report (HTML)
+visualize diff HEAD --format md      # inline markdown for PR/chat
+review plan docs/my-plan.md          # plan review (HTML)
+recap this project                   # project recap (HTML)
 fact-check the last report           # verify accuracy
 list reports                         # manage reports
 ```
 
-Reports are saved to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback.
+**Output formats.** Every report skill accepts `--format html` (default) or `--format md`. HTML reports go to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback. Markdown reports are delivered in the chat response — suitable for pasting into PR descriptions, Slack, or any non-browser context.
+
+**Aesthetic rotation.** Consecutive reports automatically pick different palette and font pairings so the same skill called repeatedly doesn't produce identical-looking output. Rotation state lives at `${CLAUDE_PLUGIN_DATA}/aesthetic-history.json`.
+
+**Visual self-audit.** After generating a report, the workflow runs a best-effort visual check: it renders the HTML to a PNG via headless Chrome and inspects the rendered image — catching broken Mermaid diagrams, blank Chart.js canvases, and layout breaks that pass static validation. Static validation is always mandatory; the visual pass is skipped (non-blocking) when Chrome or Chromium isn't on a standard install path and `CHROME_BIN` isn't set.
+
+**In-browser feedback.** Every report embeds a per-section feedback UI (✎ button). When the user invokes `/report-manager refine` after leaving notes, the skill harvests those notes — via MCP if `claude-in-chrome` is connected, otherwise by asking the user to click Copy in the feedback bar and paste.
 
 ## License
 

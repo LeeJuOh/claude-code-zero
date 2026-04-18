@@ -114,6 +114,24 @@ function main() {
   fs.writeFileSync(args.output, html, "utf-8");
   const lineCount = html.split("\n").length;
   console.log(`Assembled: ${args.output} (${lineCount} lines)`);
+
+  // Record the chosen palette/font to aesthetic-history.json so the next run
+  // can avoid repeating it. Best-effort — a failure here must never block the
+  // report from being delivered.
+  try {
+    const { spawnSync } = require("child_process");
+    const rotationScript = path.join(__dirname, "aesthetic-rotation.js");
+    const skillName = args["skill-prefix"] || args.skill || null;
+    if (fs.existsSync(rotationScript)) {
+      const argsList = ["extract", "--metadata", args.metadata];
+      if (skillName) argsList.push("--skill", skillName);
+      spawnSync("node", [rotationScript, ...argsList], {
+        stdio: ["ignore", "ignore", "inherit"],
+      });
+    }
+  } catch {
+    // swallow — history is a nice-to-have, not a contract
+  }
 }
 
 main();

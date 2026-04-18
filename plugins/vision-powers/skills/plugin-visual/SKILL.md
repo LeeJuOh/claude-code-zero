@@ -1,5 +1,5 @@
 ---
-name: agent-extension-visualizing
+name: plugin-visual
 description: >
   Analyze agent extensions and generate self-contained HTML wiki reports
   with security audit, architecture diagrams, and plugin profiles.
@@ -10,7 +10,7 @@ description: >
   for this plugin". Also triggers on GitHub plugin URLs or local plugin paths.
   Default output is an interactive HTML report; use --format md for inline markdown.
 argument-hint: "path-or-url [--format html|md] [--lang code]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/agent-extension-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/plugin-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
 ---
 
 # Agent Extension Visual
@@ -86,11 +86,11 @@ Pass audience and focus context to the analysis and report generation phases.
 
 - **Local path**: Verify directory exists, proceed directly
 - **Installed plugin**: Search `~/.claude/plugins/cache/` for matching directory
-- **GitHub URL**: Clone to `/tmp/agent-extension-visual-{dirname}`:
+- **GitHub URL**: Clone to `/tmp/plugin-visual-{dirname}`:
   1. Generate `{dirname}` — pick any 8-character hex string yourself (e.g., `a1b2c3d4`)
   2. Clone directly (no mkdir needed — git creates the target directory):
      ```
-     Bash(gh repo clone {owner/repo} /tmp/agent-extension-visual-{dirname})
+     Bash(gh repo clone {owner/repo} /tmp/plugin-visual-{dirname})
      ```
      This is the only Bash command needed for cloning. Do not add extra commands for saving state or generating random strings.
   For subpath URLs (`github.com/owner/repo/tree/branch/plugins/foo`):
@@ -107,8 +107,8 @@ If source cannot be found, inform user and stop.
 |-------------|--------------|---------------|-------------|
 | Local path | `local` | `{absolute-path}` | — |
 | Installed plugin | `local` | `{cache-path}` | — |
-| GitHub URL (root) | `github` | `/tmp/agent-extension-visual-{dirname}` | `https://github.com/{owner}/{repo}/blob/{branch}` |
-| GitHub URL (subpath) | `github` | `/tmp/agent-extension-visual-{dirname}/{subpath}` | `https://github.com/{owner}/{repo}/blob/{branch}/{subpath}` |
+| GitHub URL (root) | `github` | `/tmp/plugin-visual-{dirname}` | `https://github.com/{owner}/{repo}/blob/{branch}` |
+| GitHub URL (subpath) | `github` | `/tmp/plugin-visual-{dirname}/{subpath}` | `https://github.com/{owner}/{repo}/blob/{branch}/{subpath}` |
 
 When cloning a subpath URL (e.g., `github.com/owner/repo/tree/main/plugins/foo`), include the subpath in both `source_base` and `github_url` so that relative paths from the plugin root produce correct source links.
 
@@ -236,7 +236,7 @@ Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 
 Diagnose whether this plugin is a good fit for the user's current environment — not just "can it run?" but "should it be installed here?"
 
-**Full procedure**: Read `references/platforms/claude-code/env-fit-diagnosis.md` for the detailed 5-step process covering:
+**Full procedure**: Read `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/env-fit-diagnosis.md` for the detailed 5-step process covering:
 1. Extract plugin characteristics from feature-architect output (including rules, CLAUDE.md @imports, bundle source)
 2. Run the environment scan script (`env-fit-scan.js`) — collects installed plugins, skills, commands, hooks, MCP servers, context metrics
 3. Perform eight diagnostic analyses:
@@ -261,18 +261,18 @@ Save the combined `environment_fit` data for Phase 5/5R. Omit empty categories.
 
 For `security` mode, `overview` mode, or `analyze` mode with `--format md` — assemble inline markdown report:
 
-Assemble the report using `references/platforms/claude-code/report-template.md` format:
+Assemble the report using `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/report-template.md` format:
 
 - **`overview` mode**: Identity + Component Inventory sections only
 - **`security` mode**: Security-focused report with risk summary, permission matrix, findings
 - **`analyze` mode (--format md)**: Full report with analysis, Environment Fit Diagnosis, Skill Design Quality, and Plugin Profile
 
-For Plugin Profile and Skill Design Quality, apply criteria from `references/platforms/claude-code/analysis-criteria.md`.
-For risk levels, apply rules from `references/platforms/claude-code/security-rules.md`.
+For Plugin Profile and Skill Design Quality, apply criteria from `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/analysis-criteria.md`.
+For risk levels, apply rules from `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/security-rules.md`.
 Environment Fit Diagnosis is a standalone section between Feature Deep Dive and Usage (not part of Plugin Profile). Include the full diagnosis from Phase 4.5: verdict, context budget (200K/1M scenarios), installation status, dependency check, overlap/trigger findings, hook impact, component dependencies, and recommendations.
 Skill Design Quality includes: skill category distribution, per-skill design assessment (description quality, progressive disclosure, gotchas, scripts, hooks, data persistence, maturity level), and improvement recommendations. This data comes from the feature-architect's Skill Design Quality output.
 
-Output the report in the detected language, using `references/platforms/claude-code/report-template.md` format.
+Output the report in the detected language, using `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/report-template.md` format.
 Translate all section headers, labels, and descriptions to the target language.
 Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, LOW) untranslated.
 
@@ -308,25 +308,36 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    - If no existing reports found → proceed with default dated path without asking
 
 2. **Resolve paths and read references**:
-   - Template: resolve `../../templates/agent-extension-visual.html` to absolute path
-   - JSON schema: resolve `references/sections-data-schema.md` to absolute path
-   - Font system: resolve `../../references/design-system/font-system.md` to absolute path
-   - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
-   - Render script: resolve `../../scripts/render-sections.js` to absolute path
-   - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
-   - Shared directory: resolve `../../shared/` to absolute path
 
-   **Read 3 reference files** in a single parallel Read call:
-   1. JSON schema (`references/sections-data-schema.md`)
-   2. Font system (`../../references/design-system/font-system.md`)
-   3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
+   Use `${CLAUDE_PLUGIN_ROOT}` — it expands to the plugin install directory at invocation time, which is stable across local/marketplace installs and does not depend on the current working directory.
 
-   Save their content for step 4. Do NOT read the template, assembler, render script, or shared directory — those are passed as paths.
+   - Template: `${CLAUDE_PLUGIN_ROOT}/templates/plugin-visual.html`
+   - JSON schema: `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/sections-data-schema.md`
+   - Font system: `${CLAUDE_PLUGIN_ROOT}/references/design-system/font-system.md`
+   - Anti-slop rules: `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-rules.md`
+   - Color palette: `${CLAUDE_PLUGIN_ROOT}/references/design-system/color-palette.md`
+   - Render script: `${CLAUDE_PLUGIN_ROOT}/scripts/render-sections.js`
+   - Assembler script: `${CLAUDE_PLUGIN_ROOT}/scripts/assemble-report.js`
+   - Rotation script: `${CLAUDE_PLUGIN_ROOT}/scripts/aesthetic-rotation.js`
+   - Shared directory: `${CLAUDE_PLUGIN_ROOT}/shared/`
+
+   **Read 4 reference files** in a single parallel Read call:
+   1. JSON schema (`${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/sections-data-schema.md`)
+   2. Font system (`${CLAUDE_PLUGIN_ROOT}/references/design-system/font-system.md`)
+   3. Anti-slop rules (`${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-rules.md`)
+   4. Color palette (`${CLAUDE_PLUGIN_ROOT}/references/design-system/color-palette.md`)
+
+   Also fetch recent aesthetic choices to pass as an avoid list:
+   ```
+   Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/aesthetic-rotation.js recent --n 3)
+   ```
+
+   Save their content for step 4. Do NOT read the template, assembler, render script, rotation script, or shared directory — those are passed as paths or executed as CLIs.
 
 3. **Create sections temp directory**:
-   The sections directory path: `/tmp/agent-extension-visual-{dirname}-sections/`
+   The sections directory path: `/tmp/plugin-visual-{dirname}-sections/`
    (reuse the same `{dirname}` from Phase 1 if GitHub clone, or generate one for local sources)
-   The JSON data file path: `/tmp/agent-extension-visual-{dirname}-sections/sections-data.json`
+   The JSON data file path: `/tmp/plugin-visual-{dirname}-sections/sections-data.json`
    No mkdir needed — Write auto-creates directories, and render-sections.js creates the sections dir.
 
 4. **Delegate to visual-report-writer agent (JSON mode)**:
@@ -423,12 +434,12 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
 Clean up temporary files:
 ```
-Bash(rm -rf /tmp/agent-extension-visual-{dirname}-sections)
+Bash(rm -rf /tmp/plugin-visual-{dirname}-sections)
 ```
 
 If the source was also cloned from GitHub:
 ```
-Bash(rm -rf /tmp/agent-extension-visual-{dirname})
+Bash(rm -rf /tmp/plugin-visual-{dirname})
 ```
 
 After cleanup, suggest optional next steps:
@@ -446,7 +457,7 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **Plugin cache has multiple versions**: `~/.claude/plugins/cache/` stores every installed version (e.g., `2.6.0/`, `2.7.1/`). Phase 4.5 uses the session context directly (not cache scanning), but if you ever need to inspect the cache manually, always pick the latest version per plugin to avoid counting stale entries.
 - **Large plugin batching threshold**: The 15-component threshold for splitting feature-architect is approximate. Plugins with many small commands but few skills may not need splitting, while plugins with 10 dense skills might. Use judgment — the goal is keeping each agent under context limits.
 - **Existing report overwrite prompt**: The "create new or update" prompt uses AskUserQuestion. If the user is running non-interactively or in a pipeline, this blocks. Default to "create new" if no user response is available.
-- **Temp directory collision**: The 8-char hex `{dirname}` has a negligible collision risk, but if a previous run crashed without cleanup, `/tmp/agent-extension-visual-*` directories may linger. The cleanup phase handles the current run only — it does not garbage-collect stale dirs.
+- **Temp directory collision**: The 8-char hex `{dirname}` has a negligible collision risk, but if a previous run crashed without cleanup, `/tmp/plugin-visual-*` directories may linger. The cleanup phase handles the current run only — it does not garbage-collect stale dirs.
 - **Skill category misclassification**: Skills that span multiple categories (e.g., a deploy skill with review features) should be classified by primary purpose — what the user invokes it for. Don't try to assign multiple categories; pick the best fit and note the overlap in the description.
 - **Design quality false negatives**: A skill with no `scripts/` directory isn't necessarily "Basic" — some skills genuinely don't need scripts (pure knowledge/reference skills). Apply the N/A classification for criteria that don't apply to the skill type.
 - **New hook events**: The security-auditor knows about 22 hook events as of 2026-03. If new events are added to Claude Code, the event list in `security-rules.md` and `security-auditor.md` may need updating.
@@ -477,7 +488,7 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - `references/platforms/claude-code/env-fit-diagnosis.md` — Environment Fit Diagnosis detailed steps (Phase 4.5)
 - `references/sections-data-schema.md` — JSON data schema for all 11 report sections. Visual-report-writer reads it to generate `sections-data.json`
 - `references/section-structure.md` — HTML structure patterns for each report section (used by render-sections.js, not by the writer in JSON mode)
-- `../../templates/agent-extension-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
+- `../../templates/plugin-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
 - `../../scripts/render-sections.js` — Render script (Node.js) that converts `sections-data.json` into HTML section files + metadata.json with correct CSS class names
 - `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
 - `../../references/design-system/font-system.md` — Font pairing selection guide. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer

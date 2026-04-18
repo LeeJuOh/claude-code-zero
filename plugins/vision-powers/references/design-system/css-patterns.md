@@ -637,6 +637,288 @@ Arrows between cards in CSS Grid architecture layouts. Use instead of Mermaid wh
 }
 ```
 
+## Directory Tree
+
+For rendering file structures, use `<pre>` with monospace + `white-space: pre`. Tree connectors (`├──`, `└──`, `│`) only align vertically when text doesn't wrap — they become noise inside a flex/grid child.
+
+```css
+.dir-tree {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  white-space: pre;
+}
+.dir-tree .ann { color: var(--text-dim); font-size: 11px; font-style: italic; }
+.dir-tree .hl  { color: var(--accent); font-weight: 600; }
+```
+
+```html
+<pre class="dir-tree">plugins/my-plugin/
+├── <span class="hl">SKILL.md</span>       <span class="ann">— 342 lines</span>
+├── scripts/
+│   └── <span class="hl">runner.js</span>  <span class="ann">(142 lines)</span>
+├── references/         <span class="ann">(4 files)</span>
+└── .claude-plugin/
+    └── plugin.json</pre>
+```
+
+For side-by-side tree comparisons (before/after refactors, plan vs. current):
+
+```css
+.dir-tree-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.dir-tree-card__header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.dir-tree-card .dir-tree { border: none; border-radius: 0; }
+
+.dir-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .dir-compare { grid-template-columns: 1fr; } }
+```
+
+**Never** render tree connectors inside wrapping text (`white-space: normal`), flex children, or grid items — the vertical pipes lose alignment and the hierarchy becomes unreadable.
+
+## Grid Layouts
+
+Named layout primitives for report sections. Compose these with `.ve-card` rather than reinventing CSS grids per report.
+
+### Architecture (sidebar + main)
+
+```css
+.arch-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.arch-grid__sidebar { grid-column: 1; }
+.arch-grid__main    { grid-column: 2; }
+.arch-grid__full    { grid-column: 1 / -1; }
+
+@media (max-width: 900px) {
+  .arch-grid { grid-template-columns: 1fr; }
+}
+```
+
+### Pipeline (horizontal steps)
+
+```css
+.pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.pipeline__step { min-width: 130px; flex-shrink: 0; }
+.pipeline__arrow {
+  display: flex; align-items: center; padding: 0 4px;
+  color: var(--border-bright); font-size: 18px; flex-shrink: 0;
+}
+
+/* Parallel branch inside a pipeline */
+.pipeline__parallel { display: flex; flex-direction: column; gap: 6px; }
+```
+
+### Card Grid (dashboard / metrics)
+
+```css
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+```
+
+## KPI / Metric Cards
+
+Hero numbers with labels and optional trend indicators. For executive summaries, review impact dashboards, and any top-of-report data surface.
+
+```css
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.kpi-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.kpi-card__value {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-card__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+.kpi-card__trend {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.kpi-card__trend--up   { color: var(--success); }
+.kpi-card__trend--down { color: var(--danger); }
+
+/* Tier variants — tint the whole card by severity */
+.kpi-card--success { border-color: color-mix(in srgb, var(--success) 40%, var(--border)); }
+.kpi-card--warning { border-color: color-mix(in srgb, var(--warning) 40%, var(--border)); }
+.kpi-card--danger  { border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
+.kpi-card--info    { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+```
+
+```html
+<div class="kpi-grid">
+  <div class="kpi-card kpi-card--success">
+    <div class="kpi-card__value">247</div>
+    <div class="kpi-card__label">Lines Added</div>
+    <div class="kpi-card__trend kpi-card__trend--up">+34%</div>
+  </div>
+  <!-- ... more cards -->
+</div>
+```
+
+## Badges and Tags
+
+Inline labels for categories, severities, or status markers. Use monospace to distinguish from prose.
+
+```css
+.tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--node-a-dim);
+  color: var(--node-a);
+  white-space: nowrap;
+}
+
+/* Severity variants */
+.tag--success { background: color-mix(in srgb, var(--success) 12%, transparent); color: var(--success); }
+.tag--warning { background: color-mix(in srgb, var(--warning) 12%, transparent); color: var(--warning); }
+.tag--danger  { background: color-mix(in srgb, var(--danger) 12%, transparent);  color: var(--danger);  }
+.tag--neutral { background: var(--surface-elevated); color: var(--text-dim); }
+```
+
+## Lists Inside Cards
+
+For tool inventories, feature bullets, file lists inside a card. The chevron bullet reads cleaner than default disc markers and plays well with inline code.
+
+```css
+.node-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.node-list li {
+  padding-left: 14px;
+  position: relative;
+}
+
+.node-list li::before {
+  content: '›';
+  color: var(--text-dim);
+  font-weight: 600;
+  position: absolute;
+  left: 0;
+}
+
+.node-list code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+```
+
+## Sparklines (Pure SVG)
+
+Inline trend indicators for KPI cards or table rows. No JS, no libraries.
+
+```html
+<svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+  <polyline points="0,15 20,12 40,8 60,10 80,6 100,4"
+            fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+</svg>
+```
+
+```css
+.sparkline {
+  width: 80px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: middle;
+}
+```
+
+For filled sparklines, add a `<polygon>` with `fill="var(--accent-dim)"` behind the `<polyline>`.
+
+## Generated Images (Optional)
+
+When an image-generation tool is available (surf-cli, image API), embed as base64 for self-containment:
+
+```css
+.hero-image {
+  width: 100%;
+  max-height: 360px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: var(--shadow-hero);
+  margin-bottom: 24px;
+}
+
+.inline-illustration {
+  max-width: 480px;
+  margin: 16px auto;
+  display: block;
+  border-radius: 8px;
+}
+
+figure.illustration {
+  margin: 24px 0;
+  text-align: center;
+}
+figure.illustration figcaption {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+```
+
+**Always degrade gracefully.** If the generator isn't available, skip images without erroring. The report should stand on its own through typography and CSS alone — images are accents, not scaffolding.
+
 ## Feedback System
 
 Per-section feedback capture UI for PR review-style inline comments on report sections. Entirely client-side (localStorage + JSON download). Added to all 4 HTML templates.

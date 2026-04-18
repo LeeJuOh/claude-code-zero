@@ -8,15 +8,25 @@ description: >
   "is this plan feasible", "review the implementation plan", or "what could go
   wrong with this plan". Accepts plan file paths or reads from the current
   Claude Code plan.
-argument-hint: "<plan-file-path> [codebase-path] [--lang <code>]"
+argument-hint: "<plan-file-path> [codebase-path] [--format html|md] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(wc -l *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/plan-visual-*)
 ---
 
 # Plan Visual
 
-Review implementation plans as self-contained interactive HTML reports with architecture diagrams, blast radius analysis, risk assessment, change-by-change breakdowns, and understanding gap detection.
+Review implementation plans as either self-contained interactive HTML reports (default) or inline markdown reports. HTML includes architecture diagrams, blast radius analysis, risk assessment, change-by-change breakdowns, and understanding gap detection. Markdown is the lighter alternative for review in-chat or pasting into a PR/spec doc.
 
 ## Instructions
+
+### Format Detection
+
+Parse `--format` first:
+
+| Flag | Values | Default | Meaning |
+|------|--------|---------|---------|
+| `--format` | `html` \| `md` | `html` | `html` → full interactive dashboard at `${CLAUDE_PLUGIN_DATA}/reports/`. `md` → inline markdown report, delivered in the response |
+
+**Principle:** HTML is the default because plan reviews benefit from blast-radius diagrams and risk heat maps that don't render well in markdown. Only choose `md` when the user explicitly asks for markdown, when running in a non-browser context, or when the reviewer wants to comment on it inside the plan document itself.
 
 ### Input Parsing
 
@@ -128,6 +138,10 @@ Document discrepancies as "Understanding Gaps" for Section 9.
 
 Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
 
+Branch on `--format`:
+
+#### HTML mode (default)
+
 Follow `../../references/report-generation-workflow.md` with these parameters:
 
 | Parameter | Value |
@@ -139,6 +153,54 @@ Follow `../../references/report-generation-workflow.md` with these parameters:
 | `{report-title}` | `"Plan Visual: {plan-name}"` |
 | `{aesthetic-hint}` | `"Blueprint"` (or `"Paper-ink"` for narrative-heavy plans) |
 | `{agent-prompt-data}` | Plan extraction + codebase cross-reference + blast radius + verification results |
+
+#### Markdown mode (`--format md`)
+
+Assemble an inline markdown report and deliver it directly in the response. Do NOT write to disk. Use this structure:
+
+```
+# Plan Visual: <plan-name>
+
+**Plan file:** `<path>` · **Codebase:** `<path>` · **Audience:** <audience> · **Focus:** <focus>
+
+## Problem & Goal
+<1-2 paragraphs extracted from the plan. If the plan lacks a clear problem statement, say so — do not fabricate.>
+
+## Proposed Changes
+| File | Action | Purpose |
+|------|--------|---------|
+| `path/to/file` | create / modify / delete | <1-liner> |
+
+## Blast Radius
+- **Direct impact:** N files (explicitly mentioned)
+- **Import dependents:** N files (ripple via Grep)
+- **Test coverage:** N test files affected
+- **Config/CI:** N files
+- **Public API:** <yes/no + summary>
+
+<Table of "likely missed" files the plan doesn't address but that will be affected>
+
+## Risk Assessment
+| Risk | Severity | Evidence | Mitigation |
+|------|----------|----------|------------|
+| <risk> | HIGH / MEDIUM / LOW | file:line or commit | <action> |
+
+## Understanding Gaps
+- <thing the plan doesn't address, or contradiction with the actual codebase>
+
+## Verification Findings
+- **File existence:** N/N mentioned files verified (⚠ M missing)
+- **Import accuracy:** <summary>
+- **Ordering safety:** <summary>
+- **Assumption check:** <list of assumptions that hold / don't hold>
+
+## Recommendations
+1. <action to strengthen the plan, ordered by impact>
+```
+
+**Translation:** Translate section headers and prose to the detected language. Keep file paths, function names, severity levels (HIGH/MEDIUM/LOW), and classification terms untranslated.
+
+**Length cap:** Keep the markdown report under 300 lines. Truncate with `(+N more)` notes when needed.
 
 ### Gotchas
 

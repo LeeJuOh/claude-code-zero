@@ -9,7 +9,7 @@ description: >
   accurate", "double-check this report", "verify the numbers", or "are these
   claims correct". Accepts a file path or auto-detects the most recent HTML
   report.
-argument-hint: "[file-path] [--lang <code>]"
+argument-hint: "[file-path] [--format html|md] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(git shortlog *), Bash(wc -l *), Bash(ls -t *)
 ---
 
@@ -21,15 +21,25 @@ This is not a re-review. It does not second-guess analysis, opinions, or design 
 
 ## Instructions
 
+### Format Detection
+
+`--format` controls which verification-summary block to inject:
+
+| Flag | Values | Default | Meaning |
+|------|--------|---------|---------|
+| `--format` | `html` \| `md` | auto | Auto-detected from the input file extension (`.html` → html block, `.md` → markdown block). Override when the input is a generic text file or when you want a markdown summary inside an HTML document |
+
+**Principle:** Fact-check edits the source document in place. The format flag only governs the **verification summary** appended at the end — HTML summary uses KPI cards + `<details>` blocks, markdown summary uses a table + bullet lists. Auto-detection is almost always correct; override only for edge cases.
+
 ### Target File Detection
 
 Determine what to verify from `$1`:
 
 1. **Explicit path**: Verify that specific file (`.html`, `.md`, or any text document)
    - Resolve relative paths against cwd
-2. **No argument**: Auto-detect the most recent HTML report:
+2. **No argument**: Auto-detect the most recent report of either format:
    ```
-   ls -t ${CLAUDE_PLUGIN_DATA}/reports/*.html | head -1
+   ls -t ${CLAUDE_PLUGIN_DATA}/reports/*.html ${CLAUDE_PLUGIN_DATA}/reports/*.md 2>/dev/null | head -1
    ```
    If no reports found, inform the user and stop.
 
@@ -39,8 +49,8 @@ Determine what to verify from `$1`:
 |--------------|-----------|-------------------|
 | diff-visual report | Contains "Diff Visual" in title/heading | Verify against the git ref the review was based on |
 | plan-visual report | Contains "Plan Visual" in title/heading | Verify file references, names, architecture claims |
-| project-recap report | Contains "Project Recap" in title/heading | Re-run git commands, verify activity narrative |
-| agent-extension-visual report | Contains plugin analysis markers | Verify plugin structure, file paths, feature descriptions |
+| project-recap-visual report | Contains "Project Recap" in title/heading | Re-run git commands, verify activity narrative |
+| plugin-visual report | Contains plugin analysis markers | Verify plugin structure, file paths, feature descriptions |
 | Markdown document | `.md` extension | Verify file references, function/type names, behavior descriptions |
 | Other | Fallback | Extract and verify whatever factual claims about code it contains |
 
@@ -154,7 +164,7 @@ If a section contains a factual error, fix only the factual part. If a section i
 
 *Why: Transparency — readers can see what was checked, what changed, and what couldn't be verified.*
 
-Insert a verification summary into the document.
+Insert a verification summary into the document. Choose block type based on resolved `--format` (explicit flag wins, otherwise auto-detect from file extension: `.html` → HTML block, `.md` → Markdown block, other text → Markdown block).
 
 **For HTML files** — insert a verification section matching the page's existing design:
 

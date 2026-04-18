@@ -3,7 +3,7 @@
  * Environment Fit Scanner for vision-powers.
  *
  * Scans the user's Claude Code environment to collect data for the
- * Environment Fit Diagnosis in agent-extension-visualizing reports.
+ * Environment Fit Diagnosis in plugin-visual reports.
  *
  * Outputs a JSON object with sections:
  *   install_status, installed_plugins, installed_skills, local_skills,

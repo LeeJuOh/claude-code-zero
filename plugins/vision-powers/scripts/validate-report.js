@@ -2,20 +2,26 @@
 /**
  * Validate an assembled HTML report for structural issues.
  *
- * Checks:
+ * Checks (errors — fail on any):
  *   1. Unreplaced section placeholders (<!-- SECTION_N -->)
  *   2. Unreplaced metadata placeholders (<!-- TITLE -->, etc.)
  *   3. Section content — every <section> must have meaningful text
- *   4. Mermaid blocks — must contain a valid diagram-type keyword
+ *   4. Mermaid blocks — diagram keyword, stub size, parser-breakers (rgba/color in classDef,
+ *      unquoted special chars, invalid subgraph class, stateDiagram br/parens,
+ *      sequenceDiagram message specials)
  *   5. Chart.js — data arrays must not be empty
  *   6. Empty inline elements — detects blank <li>, <p>, <td> tags in sections
+ *
+ * Warnings (do not fail, but surface for agent attention):
+ *   W1. Generic diagram labels — standalone "Component"/"Data"/"Service"/etc.
+ *       in graph/flowchart node labels (see anti-slop-rules.md §Generic Diagram Labels)
  *
  * Usage:
  *   node validate-report.js <report.html> [--expected-sections N]
  *
  * Exit codes:
- *   0 = all checks passed
- *   1 = one or more issues found
+ *   0 = all error checks passed (warnings may still be printed)
+ *   1 = one or more errors found
  *   2 = usage / file error
  */
 
@@ -108,6 +114,11 @@ function checkMermaid(html) {
       issues.push(`Mermaid block #${count} appears to be a stub (${content.length} chars)`);
     }
 
+    // Detect diagram type for type-specific checks
+    const firstKeyword = (content.match(validKeywords) || [""])[0];
+    const isStateDiagram = /^stateDiagram/.test(firstKeyword);
+    const isSequenceDiagram = /^sequenceDiagram/.test(firstKeyword);
+
     // Deep syntax checks for common parser-breaking patterns
     const lines = content.split("\n");
     for (let i = 0; i < lines.length; i++) {
@@ -126,7 +137,7 @@ function checkMermaid(html) {
 
       // Unquoted special characters in node labels
       const nodeLabel = line.match(/\w+\[([^\]"'][^\]]*)\]/);
-      if (nodeLabel && /[(){}:;/\\<>]/.test(nodeLabel[1])) {
+      if (nodeLabel && /[(){}:;/\\<>&]/.test(nodeLabel[1])) {
         issues.push(`Mermaid #${count} L${ln}: unquoted special chars in node label, wrap in quotes`);
       }
 
@@ -138,6 +149,25 @@ function checkMermaid(html) {
       // classDef applied to subgraph declaration
       if (/subgraph\s.*:::/.test(line)) {
         issues.push(`Mermaid #${count} L${ln}: classDef on subgraph is invalid syntax`);
+      }
+
+      // stateDiagram-v2: <br/> and parentheses in labels break the parser
+      if (isStateDiagram) {
+        if (/<br\s*\/?>/i.test(line)) {
+          issues.push(`Mermaid #${count} L${ln}: <br/> in stateDiagram breaks parser, use flowchart instead`);
+        }
+        const stateLabel = line.match(/state\s+"([^"]+)"/);
+        if (stateLabel && /[()]/.test(stateLabel[1])) {
+          issues.push(`Mermaid #${count} L${ln}: parentheses in stateDiagram label break parser`);
+        }
+      }
+
+      // sequenceDiagram: { } [ ] < > & in message text break the parser
+      if (isSequenceDiagram) {
+        const seqMsg = line.match(/^\s*[\w\-]+\s*(?:->|-->|->>|-->>|-x|--x|-\)|--\))\s*[\w\-]+\s*:\s*(.+)$/);
+        if (seqMsg && /[{}\[\]<>&]/.test(seqMsg[1])) {
+          issues.push(`Mermaid #${count} L${ln}: special chars in sequenceDiagram message break parser, use plain text`);
+        }
       }
     }
   }
@@ -158,6 +188,44 @@ function checkChartJs(html) {
   }
 
   return { issues, count };
+}
+
+// Generic diagram label warnings — standalone category words that teach nothing.
+// Sourced from anti-slop-rules.md §Generic Diagram Labels.
+// Only applied to graph/flowchart blocks; stateDiagram/sequenceDiagram have different
+// label semantics (state names, participant aliases) where single-word labels are normal.
+function checkGenericLabels(html) {
+  const warnings = [];
+  const forbidden = new Set([
+    "Component", "Components",
+    "Data", "Payload",
+    "API", "Endpoint",
+    "Service", "Module",
+    "Database", "DB",
+    "Event", "Message",
+    "Process", "Step",
+  ]);
+  const mermaidRegex = /<pre\s+class="mermaid">([\s\S]*?)<\/pre>/g;
+  let blockIdx = 0;
+  let m;
+  while ((m = mermaidRegex.exec(html)) !== null) {
+    blockIdx++;
+    const content = m[1];
+    if (!/^\s*(graph|flowchart)\b/m.test(content)) continue;
+    const lines = content.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const labelRe = /[\[\(\{]+\s*"?([A-Za-z][A-Za-z]*)"?\s*[\]\)\}]+/g;
+      let lm;
+      while ((lm = labelRe.exec(line)) !== null) {
+        const label = lm[1].trim();
+        if (forbidden.has(label)) {
+          warnings.push(`Mermaid #${blockIdx} L${i + 1}: generic label "${label}" standing alone — use a concrete identifier (see anti-slop-rules.md §Generic Diagram Labels)`);
+        }
+      }
+    }
+  }
+  return warnings;
 }
 
 function checkEmptyElements(html) {
@@ -228,12 +296,20 @@ function main() {
     allIssues.push(`Expected ${args.expectedSections} sections, found ${sections.count}`);
   }
 
+  // Warnings — surface, but don't fail the run
+  const warnings = checkGenericLabels(html);
+
   // Report
   console.log(`Validated: ${args.reportPath}`);
   console.log(`Sections: ${sections.count} | Mermaid: ${mermaid.count} | Charts: ${charts.count}`);
 
+  if (warnings.length > 0) {
+    console.log(`Warnings: ${warnings.length}`);
+    warnings.forEach((w, i) => console.log(`  ! ${i + 1}. ${w}`));
+  }
+
   if (allIssues.length === 0) {
-    console.log("Result: PASS");
+    console.log(`Result: PASS${warnings.length > 0 ? " (with warnings)" : ""}`);
     process.exit(0);
   } else {
     console.log(`Result: FAIL — ${allIssues.length} issue(s):`);
