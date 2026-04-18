@@ -6,7 +6,7 @@
 
 Claude Code's built-in worktree differs from native `git worktree` in ways that matter: it branches from the remote default instead of HEAD, doesn't track remote branches, uses a fixed prefix, and ignores gitignored files like `.env` or `node_modules/`.
 
-worktree-plus replaces Claude Code's `WorktreeCreate` and `WorktreeRemove` hooks to restore native git behavior. This applies everywhere Claude Code creates worktrees — `claude -w` at startup, `EnterWorktree` mid-session, and subagent `isolation: "worktree"`. It also adds `.worktreeinclude` / `.worktreelink` for selectively bringing gitignored files into worktrees, and protects uncommitted work on cleanup.
+worktree-plus replaces Claude Code's `WorktreeCreate` and `WorktreeRemove` hooks to restore native git behavior. This applies everywhere Claude Code creates worktrees — `claude -w` at startup, `EnterWorktree` mid-session, and subagent `isolation: "worktree"`. It also adds `.worktreeinclude` / `.worktreelink` for selectively bringing gitignored files into worktrees, reuses existing worktrees when the directory or branch is already checked out (no more "already exists" errors on re-entry), protects uncommitted work on cleanup, and records every create/remove event to a per-worktree `.worktree.log` audit trail. A bundled `/worktree-config` skill configures and resets settings conversationally.
 
 ## How it works
 
@@ -21,7 +21,10 @@ Claude Code fires `WorktreeCreate` and `WorktreeRemove` hook events whenever a w
 | Remote tracking | None | `--guess-remote` support (respects `worktree.guessRemote`) |
 | Branch prefix | `worktree-` (fixed) | Configurable via `worktreeplus.branchPrefix` |
 | Gitignored files | Not copied | `.worktreeinclude` copy / `.worktreelink` symlink |
+| Re-entry behavior | Fails if directory/branch exists | Reuses existing worktree (idempotent) |
+| Audit trail | None | Per-worktree `.worktree.log` with create/remove events, base branch, include/link outcomes, and BLOCKED reasons |
 | Cleanup protection | None | Blocks removal if uncommitted changes, untracked files, or unpushed commits; only deletes branches with upstream |
+| Conversational config | N/A | Bundled `/worktree-config` skill to view, set, or reset settings |
 
 ## Prerequisites
 
@@ -33,7 +36,7 @@ Claude Code fires `WorktreeCreate` and `WorktreeRemove` hook events whenever a w
 /plugin install worktree-plus@claude-code-zero
 ```
 
-Restart Claude Code after install. On first session start, hooks are auto-configured in your `settings.json` — no manual setup needed.
+Start a new Claude Code session after install. On first session start, hooks are auto-configured in your `settings.json` (local or global — chosen based on where the plugin is enabled) and the SessionStart message summarizes what was injected. No manual setup needed.
 
 ## Usage
 
