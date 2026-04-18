@@ -3,7 +3,7 @@ name: environment-health
 description: >
   Diagnose Claude Code environment health — context budget, description obesity,
   trigger collisions, hooks, MCP, plugin components, CLAUDE.md and memory.
-  5 graded areas plus 4 observational areas with actionable levers ranked by impact.
+  5 graded scores plus 5 observational areas with actionable levers ranked by impact.
   Use when asked to audit the environment, check context budget, review plugins,
   investigate trigger collisions or skill obesity — including phrases like
   "audit my environment", "why does Claude feel slow", "check my context budget",
@@ -17,7 +17,8 @@ allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(node *), Bash(open
 
 Diagnose the user's Claude Code environment health. Outputs either an inline markdown
 report or a self-contained interactive HTML dashboard. Covers 9 diagnostic areas — 5
-graded against official thresholds, 4 observational (raw numbers, no tier).
+graded scores against official thresholds (§4 splits into §4a CLAUDE.md and §4b Memory)
+plus 5 observational areas (raw numbers, no tier).
 
 ## Instructions
 
@@ -328,7 +329,7 @@ If the user enabled the `InstructionsLoaded` hook, remind them to revert it now.
 
 - `references/health-criteria.md` — Grading thresholds (cites every docs source) and
   recommendation templates
-- `references/section-structure.md` — JSON schema for the 8-section HTML report
+- `references/section-structure.md` — JSON schema for the 9-section HTML report
 - `agents/trigger-collision-inspector.md` — Subagent spec for trigger collision
   detection (Waza-adapted)
 - `scripts/env-health-scan.js` — Data collection script

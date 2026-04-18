@@ -120,12 +120,12 @@ If FAIL: fix the reported issues via Edit on the output file, then re-run the sc
 *Why: The static validator catches parser-breaking syntax. The visual audit catches what only becomes visible after rendering — Mermaid diagrams that produce empty SVGs despite valid syntax, truncated labels, broken layouts, chart canvases that failed to paint, overlapping elements at the chosen viewport width.*
 
 ```
-Bash(node {plugin-root}/scripts/render-report.js {output-path})
+Bash(node {plugin-root}/scripts/render-report.js {output-path}; echo "EXIT=$?")
 ```
 
-The script prints the absolute PNG path to stdout on success, or exits 1 with a stderr error if Chrome is not installed.
+The script prints the absolute PNG path to stdout on success, or writes a stderr error if Chrome is not installed. The trailing `echo "EXIT=$?"` appends a literal `EXIT=0` or `EXIT=1` marker as the last stdout line so the branching below is decidable without relying on stderr heuristics.
 
-**If the render script succeeded** (exit 0, PNG path returned): use the `Read` tool on the PNG path. Inspect the rendered image for:
+**If the last stdout line is `EXIT=0`** (PNG path on the preceding line): use the `Read` tool on the PNG path. Inspect the rendered image for:
 
 - Mermaid diagrams: did each `<pre class="mermaid">` block render to an SVG? Any showing raw code means Mermaid failed silently.
 - Chart.js canvases: are charts actually drawn, or blank?
@@ -135,7 +135,7 @@ The script prints the absolute PNG path to stdout on success, or exits 1 with a 
 
 If any visual issue is found, fix via Edit on the HTML and re-run `render-report.js` until the visual audit passes or shows only acceptable artifacts.
 
-**If the render script failed** (exit 1, Chrome not found or crash): log a one-line note that visual audit was skipped, continue to Step 6. Do not block the workflow — static validation alone is acceptable.
+**If the last stdout line is `EXIT=1`** (Chrome not found or crash, stderr has the cause): log a one-line note that visual audit was skipped, continue to Step 6. Do not block the workflow — static validation alone is acceptable.
 
 ### Step 6: Coherence Review (optional)
 

@@ -45,7 +45,7 @@ list reports                         # manage reports
 
 **Aesthetic rotation.** Consecutive reports automatically pick different palette and font pairings so the same skill called repeatedly doesn't produce identical-looking output. Rotation state lives at `${CLAUDE_PLUGIN_DATA}/aesthetic-history.json`.
 
-**Visual self-audit.** After generating a report, the workflow renders the HTML to a PNG via headless Chrome and inspects the rendered image before delivery — catching broken Mermaid diagrams, blank Chart.js canvases, and layout breaks that pass static validation. Requires Google Chrome or Chromium in a standard install path, or `CHROME_BIN` set. If Chrome is not found, the audit is skipped and the report is still delivered (static validation alone).
+**Visual self-audit.** After generating a report, the workflow runs a best-effort visual check: it renders the HTML to a PNG via headless Chrome and inspects the rendered image — catching broken Mermaid diagrams, blank Chart.js canvases, and layout breaks that pass static validation. Static validation is always mandatory; the visual pass is skipped (non-blocking) when Chrome or Chromium isn't on a standard install path and `CHROME_BIN` isn't set.
 
 **In-browser feedback.** Every report embeds a per-section feedback UI (✎ button). When the user invokes `/report-manager refine` after leaving notes, the skill harvests those notes — via MCP if `claude-in-chrome` is connected, otherwise by asking the user to click Copy in the feedback bar and paste.
 

@@ -118,7 +118,7 @@ Every vision-powers HTML report embeds a per-section feedback UI (the ✎ pencil
 
 When the user invokes `/refine` without specifying what to change (e.g., "refine the last report"), try to harvest their in-browser notes first — they may have already written the feedback.
 
-**Path A: MCP available** — if `mcp__claude-in-chrome__*` tools are callable in this session:
+**Path A: MCP available** — detect by attempting `tabs_context_mcp` first; if it returns without a "tool not found" error, Path A is live and you proceed with the steps below. If the call errors out (tool unavailable, extension disconnected), fall through to Path B.
 
 1. `tabs_context_mcp` with `createIfEmpty: true` — get a tab
 2. `navigate` to the report's `file://` URL

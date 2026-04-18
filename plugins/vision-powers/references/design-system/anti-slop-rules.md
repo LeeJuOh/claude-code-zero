@@ -25,6 +25,8 @@ These signal "AI-generated template" — never use:
 
 ## Generic Diagram Labels
 
+> **Canonical examples live in this file.** `diagram-argumentation.md` references these labels for reasoning and multi-zoom context; when adding or revising forbidden labels or fix examples, edit this section and leave `diagram-argumentation.md` to point at it. The validator (`scripts/validate-report.js`) also reads from this list.
+
 Mermaid/Chart nodes and cards must carry **concrete identifiers**, not category placeholders. A diagram labeled with generic category names teaches nothing and reads as AI boilerplate.
 
 ### Forbidden (as standalone labels)
