@@ -117,17 +117,22 @@ Returns JSON with running servers, their ports, PIDs, groups, and file counts.
 Compare the full group→patterns mapping, not just group names. mo reports **absolute** patterns in status output, while config stores **relative** globs:
 
 ```bash
-# Live map from server on PORT
+# Live map from server on PORT. `--status --json` returns a JSON array; each
+# entry has `url` and `status` but no explicit `port` field — parse the URL.
+# Entries with status "stopped" are session backups, not live servers — skip them.
 LIVE_MAP=$(mo --status --json 2>/dev/null | python3 -c "
-import sys, json
+import sys, json, re
 data = json.load(sys.stdin)
-# --status returns a list (see mo docs), not a dict with 'servers'
 servers = data if isinstance(data, list) else data.get('servers', [])
 out = {}
 for s in servers:
-    if s.get('port') == $PORT or str(s.get('url','')).endswith(':$PORT'):
-        for g in s.get('groups', []):
-            out[g['name']] = sorted(g.get('patterns', []))
+    if s.get('status') != 'running':
+        continue
+    m = re.search(r':(\d+)$', str(s.get('url', '')))
+    if not m or int(m.group(1)) != $PORT:
+        continue
+    for g in s.get('groups', []):
+        out[g['name']] = sorted(g.get('patterns', []))
 print(json.dumps(out, sort_keys=True))
 ")
 
@@ -173,8 +178,8 @@ curl -s -X DELETE "$BASE/_/api/patterns?pattern=specs/**/*.md&group=specs"
 # Server status (equivalent to `mo --status --json` but scoped to this port)
 curl -s "$BASE/_/api/status"
 
-# Full-text search
-curl -s "$BASE/_/api/search?query=keyword&limit=10"
+# Full-text search (query param is `q`, not `query`; optional group + limit + context)
+curl -s "$BASE/_/api/search?q=keyword&limit=10"
 ```
 
 ### CLI-first wrappers
