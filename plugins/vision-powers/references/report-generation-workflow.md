@@ -39,20 +39,23 @@ Resolve these relative paths (from the skill directory) to absolute paths:
 - Font system: `../../references/design-system/font-system.md`
 - Anti-slop rules: `../../references/design-system/anti-slop-rules.md`
 - Color palette: `../../references/design-system/color-palette.md`
+- Diagram argumentation: `../../references/design-system/diagram-argumentation.md`
 - Assembler script: `../../scripts/assemble-report.js`
 - Validator script: `../../scripts/validate-report.js`
+- Renderer script: `../../scripts/render-report.js`
 - Rotation script: `../../scripts/aesthetic-rotation.js`
 - Shared directory: `../../shared/`
 
-**Read 4 reference files** in a single parallel Read call:
+**Read 5 reference files** in a single parallel Read call:
 1. Section structure (`references/section-structure.md`)
 2. Font system (`../../references/design-system/font-system.md`)
 3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
 4. Color palette (`../../references/design-system/color-palette.md`)
+5. Diagram argumentation (`../../references/design-system/diagram-argumentation.md`)
 
 Save their content for Step 3 — the visual-report-writer receives content directly so it can start writing immediately without a read turn.
 
-Do NOT read the template, assembler, validator, rotation, or shared directory — those are passed as paths to the assembler script or executed as CLIs.
+Do NOT read the template, assembler, validator, renderer, rotation, or shared directory — those are passed as paths to the assembler script or executed as CLIs.
 
 **Fetch recent aesthetic choices** so the next report avoids repeating the same palette+font:
 
@@ -78,6 +81,7 @@ Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
   font system content (full text read in Step 1),
   anti-slop rules content (full text read in Step 1),
   color palette content (full text read in Step 1),
+  diagram argumentation content (full text read in Step 1),
   recent aesthetics to avoid (JSON from Step 1: {recent-aesthetics}),
   Output language: {detected language},
   Report title: {report-title},
@@ -97,23 +101,41 @@ The agent writes `section-1.html` through `section-N.html` and `metadata.json` t
 Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
 ```
 
-### Step 5: Validate report
+### Step 5: Validate report (static + visual)
+
+Validation runs in two passes. The static pass is always on; the visual pass is best-effort (skipped if Chrome is not installed).
+
+#### 5a. Static validation (always)
 
 ```
 Bash(node {validator-path} {output-path} --expected-sections {expected-sections})
 ```
 
-The script checks: unreplaced placeholders (section + metadata), section content density, Mermaid diagram-type keywords, Chart.js data arrays, and section count. Exits 0 on PASS, 1 on FAIL with a list of issues.
+Checks: unreplaced placeholders, section content density, Mermaid diagram keywords and parser-breakers (rgba/color in classDef, unquoted special chars, stateDiagram `<br/>` and parenthesized labels, sequenceDiagram message specials), Chart.js data arrays, expected section count. Exits 0 on PASS, 1 on FAIL with a list of issues.
 
 If FAIL: fix the reported issues via Edit on the output file, then re-run the script until PASS.
 
-**Optional Chrome visual verification** — only if `mcp__claude-in-chrome__*` tools are available:
-1. Start a local HTTP server: `Bash(python3 -m http.server 0 -d "$(dirname {output-path})" 2>&1 & echo $!)`
-2. Call `tabs_context_mcp` (with `createIfEmpty: true`) to get or create an MCP tab group.
-3. Use `navigate` to open `http://localhost:{port}/{filename}` in the MCP tab.
-4. Use `javascript_tool` to check for Mermaid render errors and empty sections.
-5. Fix any issues found via Edit on the output file.
-6. Kill the server: `Bash(kill {pid} 2>/dev/null)`
+#### 5b. Visual self-audit (best-effort)
+
+*Why: The static validator catches parser-breaking syntax. The visual audit catches what only becomes visible after rendering — Mermaid diagrams that produce empty SVGs despite valid syntax, truncated labels, broken layouts, chart canvases that failed to paint, overlapping elements at the chosen viewport width.*
+
+```
+Bash(node {plugin-root}/scripts/render-report.js {output-path})
+```
+
+The script prints the absolute PNG path to stdout on success, or exits 1 with a stderr error if Chrome is not installed.
+
+**If the render script succeeded** (exit 0, PNG path returned): use the `Read` tool on the PNG path. Inspect the rendered image for:
+
+- Mermaid diagrams: did each `<pre class="mermaid">` block render to an SVG? Any showing raw code means Mermaid failed silently.
+- Chart.js canvases: are charts actually drawn, or blank?
+- Layout: any text overlapping, clipped, or flowing outside its container?
+- Completeness: does the screenshot show all sections the report is supposed to have? (The default viewport captures 8000px tall; long reports may be truncated — re-render with `--height` larger if needed.)
+- Diagram clarity: are node labels readable? Are connections routing cleanly?
+
+If any visual issue is found, fix via Edit on the HTML and re-run `render-report.js` until the visual audit passes or shows only acceptable artifacts.
+
+**If the render script failed** (exit 1, Chrome not found or crash): log a one-line note that visual audit was skipped, continue to Step 6. Do not block the workflow — static validation alone is acceptable.
 
 ### Step 6: Coherence Review (optional)
 

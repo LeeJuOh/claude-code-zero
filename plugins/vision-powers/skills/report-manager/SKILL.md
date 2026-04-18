@@ -95,15 +95,47 @@ Surgically edit a section of an existing report without full regeneration.
 *Why: Full regeneration re-rolls fonts, colors, and all content. Targeted edits preserve what works.*
 
 1. **Resolve target report**: filename, number, partial name, or most recent if none given
-2. **Identify section**: Parse section number/name from user message. If ambiguous, Read the report, list `<section id="...">` headings, and use AskUserQuestion to let the user pick
-3. **Gather context**: If feedback references source code or git data, use Grep/Read to get correct info
-4. **Apply edit**: Read the target section, use Edit to modify it. Preserve HTML structure, CSS classes, `style="--i: N"` values, and Mermaid/Chart.js formatting. Do not touch other sections
-5. **Validate**:
+2. **Harvest in-browser feedback (optional, see "Feedback harvesting" below)**: if the user has been leaving notes via the ✎ UI, read them before asking for more
+3. **Identify section**: If feedback (from step 2 or user message) names specific sections, use those. Otherwise parse from message; if still ambiguous, Read the report, list `<section id="...">` headings, and use AskUserQuestion to let the user pick
+4. **Gather context**: If feedback references source code or git data, use Grep/Read to get correct info
+5. **Apply edit**: Read the target section, use Edit to modify it. Preserve HTML structure, CSS classes, `style="--i: N"` values, and Mermaid/Chart.js formatting. Do not touch other sections
+6. **Validate**:
    ```
    node ${CLAUDE_SKILL_DIR}/../../scripts/validate-report.js <report-path>
    ```
    If FAIL, fix issues and re-validate.
-6. **Report**: Print `file://` URL, summarize what changed
+7. **Report**: Print `file://` URL, summarize what changed
+
+### Feedback harvesting
+
+Every vision-powers HTML report embeds a per-section feedback UI (the ✎ pencil button next to each section). Notes are saved to the browser's `localStorage` under key `vp-feedback-<pathname>` with shape:
+
+```json
+{
+  "<section-id>": { "text": "<user note>", "status": "issue", "timestamp": "..." }
+}
+```
+
+When the user invokes `/refine` without specifying what to change (e.g., "refine the last report"), try to harvest their in-browser notes first — they may have already written the feedback.
+
+**Path A: MCP available** — if `mcp__claude-in-chrome__*` tools are callable in this session:
+
+1. `tabs_context_mcp` with `createIfEmpty: true` — get a tab
+2. `navigate` to the report's `file://` URL
+3. `javascript_tool` with:
+   ```js
+   JSON.parse(localStorage.getItem('vp-feedback-' + location.pathname) || '{}')
+   ```
+4. If the returned object has any sections with non-empty `text`, those are the user's feedback items — use them to drive step 3 of refine.
+5. If the object is empty `{}`, the user hasn't left any ✎ notes. Ask them what to change.
+
+**Path B: No MCP** — the user can still export their notes manually:
+
+Tell the user: *"Open the report, click Copy in the feedback bar at the bottom of the page, then paste the JSON here."* Parse the pasted JSON (same shape as Path A) and proceed.
+
+**Path C: User wrote feedback directly in the message** — skip harvesting, use the message content.
+
+Harvesting is optional — always fall through to the conventional "ask what to change" flow if no feedback is discoverable. Never block refine on feedback retrieval.
 
 ## Gotchas
 

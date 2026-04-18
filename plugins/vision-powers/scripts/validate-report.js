@@ -6,7 +6,9 @@
  *   1. Unreplaced section placeholders (<!-- SECTION_N -->)
  *   2. Unreplaced metadata placeholders (<!-- TITLE -->, etc.)
  *   3. Section content — every <section> must have meaningful text
- *   4. Mermaid blocks — must contain a valid diagram-type keyword
+ *   4. Mermaid blocks — diagram keyword, stub size, parser-breakers (rgba/color in classDef,
+ *      unquoted special chars, invalid subgraph class, stateDiagram br/parens,
+ *      sequenceDiagram message specials)
  *   5. Chart.js — data arrays must not be empty
  *   6. Empty inline elements — detects blank <li>, <p>, <td> tags in sections
  *
@@ -108,6 +110,11 @@ function checkMermaid(html) {
       issues.push(`Mermaid block #${count} appears to be a stub (${content.length} chars)`);
     }
 
+    // Detect diagram type for type-specific checks
+    const firstKeyword = (content.match(validKeywords) || [""])[0];
+    const isStateDiagram = /^stateDiagram/.test(firstKeyword);
+    const isSequenceDiagram = /^sequenceDiagram/.test(firstKeyword);
+
     // Deep syntax checks for common parser-breaking patterns
     const lines = content.split("\n");
     for (let i = 0; i < lines.length; i++) {
@@ -138,6 +145,25 @@ function checkMermaid(html) {
       // classDef applied to subgraph declaration
       if (/subgraph\s.*:::/.test(line)) {
         issues.push(`Mermaid #${count} L${ln}: classDef on subgraph is invalid syntax`);
+      }
+
+      // stateDiagram-v2: <br/> and parentheses in labels break the parser
+      if (isStateDiagram) {
+        if (/<br\s*\/?>/i.test(line)) {
+          issues.push(`Mermaid #${count} L${ln}: <br/> in stateDiagram breaks parser, use flowchart instead`);
+        }
+        const stateLabel = line.match(/state\s+"([^"]+)"/);
+        if (stateLabel && /[()]/.test(stateLabel[1])) {
+          issues.push(`Mermaid #${count} L${ln}: parentheses in stateDiagram label break parser`);
+        }
+      }
+
+      // sequenceDiagram: { } [ ] < > & in message text break the parser
+      if (isSequenceDiagram) {
+        const seqMsg = line.match(/^\s*[\w\-]+\s*(?:->|-->|->>|-->>|-x|--x|-\)|--\))\s*[\w\-]+\s*:\s*(.+)$/);
+        if (seqMsg && /[{}\[\]<>&]/.test(seqMsg[1])) {
+          issues.push(`Mermaid #${count} L${ln}: special chars in sequenceDiagram message break parser, use plain text`);
+        }
       }
     }
   }

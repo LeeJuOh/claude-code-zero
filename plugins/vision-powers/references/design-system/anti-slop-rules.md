@@ -23,6 +23,34 @@ These signal "AI-generated template" — never use:
 7. **Three-dot code block chrome** — fake macOS window controls on code blocks
 8. **Perfectly centered everything** — uniform padding with no spatial variation
 
+## Generic Diagram Labels
+
+Mermaid/Chart nodes and cards must carry **concrete identifiers**, not category placeholders. A diagram labeled with generic category names teaches nothing and reads as AI boilerplate.
+
+### Forbidden (as standalone labels)
+
+| Forbidden | Why | Fix |
+|---|---|---|
+| `Component` / `Components` | Names nothing | Use the actual component name: `Auth middleware`, `Payment router` |
+| `Data` / `Payload` | Shape is invisible | Show field names or sample shape: `{ user_id, amount, status }` |
+| `API` / `Endpoint` | Hides the contract | Use the route: `POST /checkout`, `GET /users/:id` |
+| `Service` / `Module` | Empty structure | Use the module path: `src/payments/stripe.js` |
+| `Database` / `DB` | Vague | Name it: `users table (Postgres)`, `orders collection (Mongo)` |
+| `Event` / `Message` | Misses the spec | Use actual event names: `RUN_STARTED`, `STATE_DELTA` |
+| `Process` / `Step` | Black box | Name the action: `Validate token`, `Publish to SQS` |
+
+**Rule:** If you can swap a label into any unrelated report and it still fits, it's too generic. The test is specificity — a reader should learn something concrete from each node.
+
+### When generic labels are OK
+
+- **Timeline markers** that represent phases (`Phase 1`, `Setup`, `Teardown`) when the phase itself is the content
+- **Role boxes** on a high-level overview (`User`, `System`, `External`) when personas are the abstraction
+- **Category buckets** in a distribution chart where the label is the metric (`Features`, `Refactor`, `Tests`)
+
+Even here, prefer specific over generic whenever domain names exist.
+
+See `diagram-argumentation.md` for the full Evidence Artifacts requirement that complements this rule.
+
 ## Approved Aesthetics
 
 Pick ONE and commit for the entire report:

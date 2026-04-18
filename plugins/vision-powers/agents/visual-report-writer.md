@@ -130,7 +130,8 @@ You receive from the orchestrator skill:
 - **Section structure content** (full text of `section-structure.md` — HTML patterns for each section)
 - **Font system content** (full text of `font-system.md` — font pairings and rotation rules)
 - **Color palette content** (full text of `color-palette.md` — approved accent palettes)
-- **Anti-slop rules content** (full text of `anti-slop-rules.md` — forbidden patterns, quality checklist)
+- **Anti-slop rules content** (full text of `anti-slop-rules.md` — forbidden patterns, quality checklist, Generic Diagram Labels rule)
+- **Diagram argumentation content** (full text of `diagram-argumentation.md` — ARGUE-not-DISPLAY principle, Isomorphism/Education tests, Evidence Artifacts, Multi-zoom Architecture, Pattern Map)
 - **Recent aesthetics to avoid** (JSON array — each entry has `accent`, `body_font`, `heading_font`. Pick a palette+font-pair that does NOT match any entry)
 - **Output language** (e.g., "ko", "en", "ja")
 - **Report title** (e.g., "Diff Visual: feature/auth..main", "Plan Visual: auth-redesign")
@@ -307,3 +308,4 @@ Before completing, verify:
 9. **TOC-section ID match**: Every `href="#..."` has a matching `<section id="...">`.
 10. **Mermaid syntax**: No `rgba()` or `color:` in classDef. All blocks contain valid diagram code.
 11. **Clickable nodes**: Architecture diagrams include `click NodeId "#section-id"` events.
+12. **Diagram argumentation**: Every diagram passes the Isomorphism and Education tests from `diagram-argumentation.md`. No generic labels (`Component`, `Data`, `API` standing alone). Technical diagrams carry evidence artifacts (real names, paths, counts). Visual patterns (fan-out, convergence, timeline, cycle, side-by-side) match the concept being argued.
