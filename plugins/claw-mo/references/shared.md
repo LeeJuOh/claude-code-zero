@@ -1,5 +1,7 @@
 # claw-mo Shared Context
 
+Single source of truth for all claw-mo skills. Read this once per session; do not duplicate into individual skills.
+
 ## Prerequisites
 
 ```bash
@@ -38,7 +40,7 @@ If config has `patterns` (array) instead of `groups` (object), migrate on read:
 
 Write back the migrated format. Don't break existing configs.
 
-### Common Operations
+## Common Operations
 
 **Project key**: `git rev-parse --show-toplevel` (fallback: `$PWD` for non-git dirs).
 
@@ -60,6 +62,48 @@ mo --no-open -w '*.md' --target default -p $PORT
 
 mo uses single-instance detection — if a server is already running on the port, it adds files/patterns to it instead of spawning a new process.
 
+## Server State: Three Primitives
+
+mo exposes three distinct lifecycle primitives that the skills must use correctly. Mixing them up causes the "new files not showing" bug.
+
+| Command | What it does | Session backup? | When to use |
+|---|---|---|---|
+| `mo --restart -p PORT` | Stops & restarts server process | **Preserved** — all files/groups/patterns come back, fsnotify watchers re-initialize, directory scan re-runs | User re-ran `/claw-mo-up`, docs exist on disk but not in mo, or you otherwise need a fresh re-scan with the same logical session |
+| `mo --clear -p PORT` | Wipes saved session then restarts on empty state | **Destroyed** — group/pattern state is gone | Config drift detected and you need to rebuild runtime from saved config as source of truth |
+| `mo --shutdown -p PORT` | Stops process, leaves session backup | Preserved (loads on next start) | Explicit user "stop" intent; `/claw-mo-down` |
+
+> [!IMPORTANT]
+> `mo --clear` prompts for confirmation and hangs without input. Always pipe `y`:
+>
+> ```bash
+> printf 'y\n' | mo --clear -p $PORT
+> ```
+
+> [!NOTE]
+> `mo --restart` does **not** prompt — safe to call directly.
+
+## Decision Tree: What `/claw-mo-up` Should Do
+
+```
+┌─ mo --status --json shows server on this port?
+│
+├── NO → start mo per group (see "Starting mo with Groups"), open browser
+│
+└── YES → compare live group→patterns mapping to saved config
+         │
+         ├── MATCH → mo --restart -p PORT         (force re-scan, preserve session)
+         │          ─ ensures new files on disk become visible
+         │          ─ addresses silent fsnotify misses
+         │
+         └── DIFFER → printf 'y\n' | mo --clear   (rebuild from config as SoT)
+                     then start per group again
+```
+
+Reasoning:
+- Users run `/claw-mo-up` when they want to *see* current docs. Reusing silently is surprising when files are missing.
+- `--restart` is cheap (<1s) and idempotent. No semantic risk.
+- `--clear` is only for drift because it destroys the backup file — overkill for a plain re-scan.
+
 ## Checking Server Status and Sync
 
 ```bash
@@ -70,85 +114,109 @@ Returns JSON with running servers, their ports, PIDs, groups, and file counts.
 
 ### Sync Comparison
 
-To determine if a running session matches saved config, compare the full group→patterns mapping, not just group names:
+Compare the full group→patterns mapping, not just group names. mo reports **absolute** patterns in status output, while config stores **relative** globs:
 
 ```bash
-# Get live groups + patterns from the server on PORT
+# Live map from server on PORT
 LIVE_MAP=$(mo --status --json 2>/dev/null | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
-result = {}
-for s in data.get('servers', []):
-    if s.get('port') == $PORT:
+# --status returns a list (see mo docs), not a dict with 'servers'
+servers = data if isinstance(data, list) else data.get('servers', [])
+out = {}
+for s in servers:
+    if s.get('port') == $PORT or str(s.get('url','')).endswith(':$PORT'):
         for g in s.get('groups', []):
-            result[g['name']] = sorted(g.get('patterns', []))
-print(json.dumps(result, sort_keys=True))
+            out[g['name']] = sorted(g.get('patterns', []))
+print(json.dumps(out, sort_keys=True))
 ")
 
-# Normalize configured patterns to absolute paths because mo status reports absolute patterns
+# Configured map, normalized to absolute paths
 CONFIG_MAP=$(python3 -c "
 import json, os
 cfg = json.load(open('${CLAUDE_PLUGIN_DATA}/config.json'))
 proj = cfg.get('$PROJECT_ROOT', {})
 root = '$PROJECT_ROOT'
-normalized = {}
+out = {}
 for group, patterns in proj.get('groups', {}).items():
-    normalized[group] = sorted(
+    out[group] = sorted(
         p if os.path.isabs(p) else os.path.join(root, p)
         for p in patterns
     )
-print(json.dumps(normalized, sort_keys=True))
+print(json.dumps(out, sort_keys=True))
 ")
 
-# Compare
-if [ "$LIVE_MAP" = "$CONFIG_MAP" ]; then
-  echo "in sync"
-else
-  echo "out of sync"
-  echo "live=$LIVE_MAP"
-  echo "config=$CONFIG_MAP"
-fi
+[ "$LIVE_MAP" = "$CONFIG_MAP" ] && echo match || echo differ
 ```
-
-If out of sync, `/claw-mo-up` should treat saved config as the desired state: clear the runtime and rebuild it from config before opening the browser.
 
 ## mo HTTP API
 
-When the server is running, use the HTTP API for runtime file management (no restart needed):
+When the server is running, these endpoints exist. Prefer the **mo CLI** (`--unwatch`, `--close`, `--restart`) when available — it is the officially supported path and survives API changes.
 
 ```bash
 BASE="http://localhost:$PORT"
+
+# List all groups with files (used for deep-linking by file ID)
+curl -s "$BASE/_/api/groups"
 
 # Add a file to a group (group is in the URL path, not the body)
 curl -s -X POST "$BASE/_/api/groups/docs/files" -H 'Content-Type: application/json' \
   -d "{\"path\": \"$(realpath file.md)\"}"
 
-# Add a watch pattern to a group
+# Add a watch pattern (prefer `mo -w` CLI instead — same effect)
 curl -s -X POST "$BASE/_/api/patterns" -H 'Content-Type: application/json' \
   -d "{\"pattern\": \"specs/**/*.md\", \"group\": \"specs\"}"
 
-# Remove a watch pattern
+# Remove a watch pattern (prefer `mo --unwatch` CLI)
 curl -s -X DELETE "$BASE/_/api/patterns?pattern=specs/**/*.md&group=specs"
 
-# Get server status
+# Server status (equivalent to `mo --status --json` but scoped to this port)
 curl -s "$BASE/_/api/status"
-
-# Get all groups with files
-curl -s "$BASE/_/api/groups"
 
 # Full-text search
 curl -s "$BASE/_/api/search?query=keyword&limit=10"
 ```
+
+### CLI-first wrappers
+
+```bash
+# Remove a pattern from a group
+mo --unwatch 'specs/**/*.md' -t specs -p $PORT
+
+# Close a specific file (by path)
+mo --close "$(realpath file.md)" -t docs -p $PORT
+```
+
+## Deep-linking to a Specific File
+
+mo's frontend uses `?file=<id>` to select a file in the sidebar. IDs are the first 8 hex chars of SHA-256(absolute path):
+
+```bash
+FILE_ID=$(curl -s "http://localhost:$PORT/_/api/groups" | python3 -c "
+import sys, json, os
+target = os.path.abspath('$1')
+for g in json.load(sys.stdin):
+    for f in g.get('files', []):
+        if f.get('path') == target:
+            print(f['id']); sys.exit(0)
+")
+
+URL="http://localhost:$PORT/$GROUP"
+[ -n "$FILE_ID" ] && URL="$URL?file=$FILE_ID"
+```
+
+If the file isn't in any group yet, add it first (see HTTP API), then re-query its ID.
 
 ## Browser Opening
 
 Prefer cmux whenever it is reachable. `$CMUX_SURFACE_ID` alone is not a reliable signal — nested shells inside a cmux pane often lose it. Also check `command -v cmux`:
 
 ```bash
-URL="http://localhost:$PORT"  # or http://localhost:$PORT/GROUP_NAME for a specific group
+URL="http://localhost:$PORT"  # or with /$GROUP?file=$ID for deep links
 
 if [ -n "$CMUX_SURFACE_ID" ] || command -v cmux >/dev/null 2>&1; then
-  cmux browser open "$URL"
+  # see Surface Reuse below
+  :
 else
   open "$URL"
 fi
@@ -156,32 +224,42 @@ fi
 
 ### cmux Surface Reuse
 
-`cmux browser open` creates a **new browser surface** each time. To avoid duplicate browser tabs on repeated calls:
+`cmux browser open` creates a **new** browser surface each time — repeated calls stack tabs. To avoid duplicates:
 
-1. Run `cmux list-pane-surfaces` to check for an existing browser surface
-2. If found, reuse it with the exact surface identifier (e.g., `surface:4` — do not strip the `surface:` prefix)
+1. Run `cmux list-pane-surfaces` to find an existing browser surface pointing at `localhost:$PORT`
+2. Reuse it with the exact identifier (e.g., `surface:4` — keep the `surface:` prefix)
 3. Navigate: `cmux browser "surface:4" navigate "$URL"`
-4. Only call `cmux browser open` when no reusable mo browser surface exists
+4. Only call `cmux browser open` (or `open-split` for first-time split) when no reusable surface exists
 
-For first-time setup, `cmux browser open-split` opens the browser alongside the terminal in a split pane.
+## Stdin Pipe (Quick-view)
+
+mo supports `cat file.md | mo` for piped content. The plugin's `/claw-mo-open -` routes stdin to mo, attaching it to the running server (or starting one). Content is deduped by hash; piping the same content twice reuses the entry.
+
+```bash
+# Inside /claw-mo-open when the first arg is `-` or --stdin
+cat | mo --no-open -p $PORT -t "$GROUP"  # attaches or starts
+```
 
 ## Gotchas
 
 ### Config & Port
 - **Same port = merged session**: If two projects share a port, mo merges their files. The hash-based assignment prevents this, but verify with `mo --status --json` if something looks wrong.
-- **Config is desired state for `/claw-mo-up`**: Users may add files to mo directly via CLI or `/claw-mo-open`, but `/claw-mo-up` should reconcile the runtime back to saved config. Runtime-only additions do not persist unless the config is updated.
+- **Config is desired state for `/claw-mo-up`**: Users may add files to mo directly via CLI or `/claw-mo-open`, but `/claw-mo-up` reconciles the runtime back to saved config. Runtime-only additions do not persist unless the config is updated.
 - **v1 config migration**: Always check for `patterns` key and migrate to `groups` format before processing. Write back migrated config.
 
 ### mo CLI Behavior
-- **Always `--no-open` when starting**: The skill controls browser opening separately (cmux vs open). Never let mo auto-open a browser.
+- **Always `--no-open` when starting**: The skill controls browser opening separately. Never let mo auto-open a browser.
 - **mo survives shell exit**: mo runs as a background daemon. Don't start a new server without checking status first.
-- **`echo "y" | mo --clear`**: The `--clear` command prompts for confirmation. Always pipe `y` to avoid hanging.
-- **`--watch` and file arguments are mutually exclusive**: `mo --watch '*.md' README.md` fails. Use either `--watch` patterns or explicit file arguments, not both. Directory arguments are the exception.
+- **`printf 'y\n' | mo --clear`**: `--clear` prompts for confirmation. Always pipe `y`.
+- **`--restart` does NOT prompt**: Safe to invoke directly, no pipe needed.
+- **`--watch` and file arguments are mutually exclusive**: `mo --watch '*.md' README.md` fails. Use either watch patterns or explicit file arguments, not both. Directory arguments are the exception (converted to `dir/*.md`).
 - **mo auto-restores previous sessions**: mo restores its backup and merges with CLI-specified files. A matching port alone doesn't guarantee a correct session — compare live groups to config before reusing.
+- **fsnotify can silently miss new files**: Especially when new subdirectories appear under a non-recursive watch, or when the OS drops events under load. Treat `mo --restart` as the safe fix — that's why `/claw-mo-up` restarts by default.
 
 ### HTTP API
 - **Absolute paths only**: When adding files via API, always `realpath` the path first.
-- **Group name = URL path**: Group names become URL segments (`/docs`, `/plans`). Keep them simple lowercase — no spaces or special chars.
+- **Group name = URL path**: Group names become URL segments. Keep them simple lowercase — no spaces or special chars.
+- **Prefer CLI over API for destructive ops**: Use `mo --unwatch` / `mo --close` rather than DELETE endpoints — CLI is the officially supported long-term path.
 
 ### cmux
 - **`browser open` stacks tabs**: Repeated calls create new surfaces. Use `browser navigate` to reuse existing surfaces.

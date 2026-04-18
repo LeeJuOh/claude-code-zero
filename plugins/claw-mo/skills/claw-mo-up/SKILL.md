@@ -1,57 +1,73 @@
 ---
 name: claw-mo-up
 description: "Start or reopen the mo markdown viewer for the current project. Use when mo is already configured and the user wants to view docs, start mo, open documentation viewer, or preview markdown."
-allowed-tools: Bash, Read
+allowed-tools: Bash, Read, Write
+argument-hint: "[--reuse]"
 ---
 
 # claw-mo-up
 
-Start the mo markdown viewer server for the current project and open it in the browser.
+Bring up the mo markdown viewer for the current project and open the browser. When a server is already running, **restart it by default** so new files on disk become visible (fsnotify can silently miss events).
 
-For config schema, port logic, groups, and browser opening: read `${CLAUDE_PLUGIN_ROOT}/references/shared.md`
+For config schema, decision tree, `--restart` vs `--clear` semantics, and browser opening: read `${CLAUDE_PLUGIN_ROOT}/references/shared.md`
+
+## Arguments
+
+- `$ARGUMENTS` (optional)
+  - `--reuse` — Skip `mo --restart` when live matches config. Use this when the running session is known-good and the user explicitly wants zero interruption.
 
 ## Steps
 
-1. Check prerequisites: `command -v mo >/dev/null 2>&1`
-2. Get project key: `git rev-parse --show-toplevel` (fallback: `$PWD`)
-3. Read config from `${CLAUDE_PLUGIN_DATA}/config.json` for this project key
-4. No config found → tell user to run `/claw-mo-setup`, stop
-5. If config has `patterns` (v1), migrate to `groups` format and save back
-6. `mo --status --json 2>/dev/null` → check if server already running on this port
-7. If a server is running on this port, compare live runtime to config using the full group→patterns mapping:
-   - Extract the matching server from `mo --status --json`
-   - Build a live map: each group name → sorted `patterns` array from the JSON output
-   - Build a config map: each configured group name → sorted patterns after normalizing each configured pattern to an absolute path under the project root (because mo status reports absolute patterns)
-   - **Exact match** → reuse the running session, skip to step 9
-   - **Mismatch** → treat saved config as source of truth:
-     1. Show a concise diff so the user can see whether the drift is in groups, patterns, or both
-     2. Run `printf 'y\n' | mo --clear -p PORT`
-     3. Continue to step 8 to rebuild the runtime from saved config automatically
-     4. Mention that ad-hoc runtime edits were discarded because `/claw-mo-up` reconciles to saved config
-8. Not running (or just cleared) → start mo for each group **sequentially**:
+1. **Prerequisites**: `command -v mo >/dev/null 2>&1`. If missing, tell user `brew install k1LoW/tap/mo` and stop.
+
+2. **Project key**: `git rev-parse --show-toplevel` (fallback: `$PWD`).
+
+3. **Read config** from `${CLAUDE_PLUGIN_DATA}/config.json`. If no entry for this project, tell the user to run `/claw-mo-setup` and stop.
+
+4. **v1 migration**: If the entry has `patterns` instead of `groups`, migrate to `groups` format and save back.
+
+5. **Probe server**: `mo --status --json 2>/dev/null`. Extract the server whose port matches `$PORT`.
+
+6. **Branch on state** — see the decision tree in `shared.md`:
+
+   **(a) No server on this port** → start per group sequentially:
    ```bash
-   # First group starts the server
-   mo --no-open -w 'pattern1' -w 'pattern2' --target groupName -p PORT
-   # Subsequent groups add to the running server
-   mo --no-open -w 'pattern3' --target anotherGroup -p PORT
+   mo --no-open -w 'pattern1' -w 'pattern2' --target groupName -p $PORT
+   mo --no-open -w 'pattern3' --target anotherGroup -p $PORT
    ```
-9. Open browser. **Always prefer cmux when available** — do not fall back to system `open` just because `$CMUX_SURFACE_ID` is unset:
-   - **cmux** (`$CMUX_SURFACE_ID` is set **OR** `command -v cmux >/dev/null 2>&1`):
-     1. Run `cmux list-pane-surfaces` to inspect reusable browser surfaces in the current pane
-     2. If an mo browser surface already exists, reuse it with the exact surface identifier (e.g., `surface:4` — do not strip the prefix)
-     3. Navigate that existing surface to `http://localhost:$PORT`
-     4. Only call `cmux browser open` when no reusable mo browser surface exists
-   - **Fallback** (cmux not available at all): `open "http://localhost:$PORT"`
-10. Report: whether the session was reused or restarted, which groups are active, and the URL
+
+   **(b) Server running, live matches config**:
+   - **Default**: `mo --restart -p $PORT` — fresh fsnotify scan, session preserved. This is the main fix for the "docs exist on disk but don't show up in mo" class of bug.
+   - **If `--reuse` flag was passed**: skip restart, reuse as-is.
+
+   **(c) Server running, live differs from config** (treat config as source of truth):
+   1. Show a concise diff (groups added/removed, patterns changed) so the user sees why a clear is happening
+   2. `printf 'y\n' | mo --clear -p $PORT`
+   3. Start per group as in (a)
+   4. Mention that ad-hoc runtime edits were discarded; persist via `/claw-mo-manage` or `/claw-mo-setup` next time
+
+7. **Open browser** — prefer cmux whenever reachable. `$CMUX_SURFACE_ID` alone is not a reliable signal:
+
+   - **cmux path** (`$CMUX_SURFACE_ID` set **OR** `command -v cmux`):
+     1. `cmux list-pane-surfaces` to inspect existing surfaces
+     2. If a surface already targets `localhost:$PORT`, reuse it: `cmux browser "surface:N" navigate "http://localhost:$PORT"` (keep the `surface:` prefix)
+     3. Otherwise `cmux browser open "http://localhost:$PORT"` (or `open-split` for first-time split layout)
+
+   - **Fallback**: `open "http://localhost:$PORT"`
+
+8. **Report** what actually happened:
+   - `started` / `restarted (fresh scan)` / `reused as-is` / `cleared + rebuilt (config drift)`
+   - active groups + file counts (from `mo --status --json`)
+   - the URL
 
 ## Gotchas
 
-- Always `--no-open` when starting mo — the skill controls browser opening separately
-- Start groups sequentially, not in parallel — the first invocation must start the server before others can add to it
-- mo auto-restores previous sessions from its backup file — a matching port alone does not guarantee a correct session. Always compare the full live group→patterns mapping to saved config.
-- mo status reports watch patterns as absolute paths, while claw-mo config stores relative globs. Normalize config patterns to absolute paths under the project root before comparing, then sort patterns within each group so ordering differences do not create false mismatches.
-- `/claw-mo-up` now treats saved config as source of truth. If runtime drift is detected, automatically clear and rebuild; ad-hoc runtime-only edits belong in `/claw-mo-manage` or `/claw-mo-setup` if they should persist.
-- `printf 'y\n' | mo --clear` — the clear command prompts for confirmation. Always pipe `y`.
-- Prefer cmux over the system `open` command whenever cmux is reachable. `$CMUX_SURFACE_ID` may be unset even inside a cmux pane (e.g., nested shells). Check `command -v cmux` too before falling back.
-- In cmux, always check `cmux list-pane-surfaces` before calling `browser open` — `open` stacks duplicate tabs
-- When reusing a cmux surface, pass the exact identifier (e.g., `surface:4` not just `4`)
+- **Restart is the default** because fsnotify can silently miss file creation events (new subdirectories, high load, macOS FSEvents coalescing). `mo --restart` is cheap (<1s), preserves the session, and forces a full re-scan. The old "reuse silently" behavior hid missing files.
+- **Always `--no-open`** when starting mo — the skill controls browser opening separately.
+- **Start groups sequentially, not in parallel** — the first invocation must start the server before others can add to it.
+- **mo auto-restores previous sessions** from its backup file. A matching port alone does not guarantee a correct session. Always compare the full live group→patterns mapping to config; if it drifts, clear and rebuild.
+- **mo status reports absolute patterns**; config stores relative globs. Normalize config patterns to absolute paths under the project root before comparing, and sort within each group so ordering differences don't create false mismatches.
+- **`mo --restart` does NOT prompt** — safe to call directly. Only `--clear` needs `printf 'y\n' |`.
+- **`/claw-mo-up` is the reconcile point**: ad-hoc runtime-only edits belong in `/claw-mo-manage` or `/claw-mo-setup` if they should persist.
+- **Prefer cmux over `open`** whenever cmux is reachable. `$CMUX_SURFACE_ID` may be unset even inside a cmux pane (nested shells). Check `command -v cmux` too.
+- **Reuse cmux surface** before `browser open` — `open` stacks duplicate tabs. Pass the exact identifier (e.g., `surface:4`, not `4`).

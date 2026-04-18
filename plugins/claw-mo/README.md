@@ -2,9 +2,9 @@
 
 Manage [mo](https://github.com/k1LoW/mo) markdown viewer sessions from Claude Code.
 
-`cmux markdown open` is simple but can't render Mermaid diagrams, KaTeX math, or Shiki syntax highlighting. [mo](https://github.com/k1LoW/mo) is a browser-based markdown viewer that handles all of these, but using it directly means remembering port numbers, typing watch patterns every time, managing groups, and checking if the server is already running.
+`cmux markdown open` is simple but can't render Mermaid diagrams, KaTeX math, or Shiki syntax highlighting. [mo](https://github.com/k1LoW/mo) handles all of those in the browser — but using it by hand means remembering port numbers, retyping watch patterns every time, herding groups, and checking whether the server is already running.
 
-This plugin saves per-project config and organizes files into groups so it all comes down to one command. In cmux, it opens in a browser panel right next to your terminal.
+This plugin saves per-project config and organizes files into groups so every daily action comes down to one command. In cmux, it opens in a browser panel right next to your terminal.
 
 ## Prerequisites
 
@@ -15,28 +15,36 @@ This plugin saves per-project config and organizes files into groups so it all c
 
 ```
 /claw-mo-setup     <- once: configure which .md files to watch, grouped
-/claw-mo-up        <- every time after: start server + open browser
+/claw-mo-up        <- every time after: restart + open browser
 ```
 
 ## How It Works in Practice
 
-**First-time setup** (`/claw-mo-setup`): scans your project for markdown files, groups them by directory (docs, plans, specs, etc.), and saves the config. Shows file counts before accepting broad patterns, so you don't accidentally load thousands of vendored markdown files.
+**First-time setup** (`/claw-mo-setup`): scans your project for markdown files, groups them by directory (docs, plans, specs, etc.), and saves the config. Shows file counts before accepting broad patterns so you don't accidentally load thousands of vendored markdown files.
 
-**Daily use** (`/claw-mo-up`): checks if mo is already running before starting anything. It compares the full saved config (groups + watch patterns) against the live mo runtime, not just group names. If the running session drifted, it automatically clears and rebuilds the runtime from saved config before opening the browser, so new files appear under the patterns you configured. In cmux, it reuses the existing browser panel instead of opening a duplicate tab.
+**Daily use** (`/claw-mo-up`): restarts the mo server by default whenever one is already running on this project's port. mo preserves the session across restarts but forces a fresh filesystem scan, which is the reliable fix for "docs exist on disk but don't show up in the sidebar" — `fsnotify` can silently miss file creation events under load or on new subdirectories. If the running session's patterns don't match saved config (someone edited runtime-only, or config changed), it instead clears and rebuilds from saved config. Pass `--reuse` if you explicitly want to skip the restart.
 
-**Ad-hoc viewing** (`/claw-mo-open path/to/file.md`): adds a file to the running server without touching your saved config. That is intentionally temporary — the next `/claw-mo-up` will reconcile the runtime back to saved config unless you persist the change through `/claw-mo-manage` or `/claw-mo-setup`. If no server is running and no config exists, it starts a quick session and saves a minimal config so other commands can find it.
+**Ad-hoc viewing** (`/claw-mo-open path/to/file.md`): adds a file to the running server and opens the browser directly on that file (deep-link via `?file=<id>`), without touching your saved config. You can also pipe markdown in:
 
-**Troubleshooting** (`/claw-mo-manage`): shows a dashboard of all running mo servers across projects, highlights sync mismatches in groups or watch patterns, and lets you add/remove patterns, stop servers, or reset sessions interactively.
+```
+some-tool --format md | /claw-mo-open -
+```
+
+Ad-hoc changes are intentionally temporary — the next `/claw-mo-up` will reconcile the runtime back to saved config unless you persist the change through `/claw-mo-manage` or `/claw-mo-setup`.
+
+**Troubleshooting** (`/claw-mo-manage`): dashboard of all running mo servers across projects, highlights sync mismatches in groups or watch patterns, and lets you add/remove patterns, close individual files, refresh (rescan), stop servers, or reset sessions interactively. Pattern removal uses `mo --unwatch` and file closing uses `mo --close` — the officially supported CLI paths.
+
+**Shutdown** (`/claw-mo-down`): stops the server for the current project. Checks `mo --status --json` first so you get an accurate "was actually running" message instead of a silent no-op.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/claw-mo-up` | Reconcile runtime to saved config, then open/reuse browser |
-| `/claw-mo-down` | Stop server for current project |
+| `/claw-mo-up [--reuse]` | Restart or start the server (restart is the default — forces fresh fs scan), then open/reuse browser |
+| `/claw-mo-down` | Stop the server for the current project (verifies actual running state) |
 | `/claw-mo-setup` | Configure groups, watch patterns, and port |
-| `/claw-mo-open <path>` | Add a file or directory to mo and open it |
-| `/claw-mo-manage` | Interactive management (status, patterns, groups, reset) |
+| `/claw-mo-open <path \| - \| --stdin> [--group name]` | Add a file, directory, or piped content to mo and deep-link to it |
+| `/claw-mo-manage` | Interactive management: status, patterns, groups, refresh, close files, reset, stop |
 
 ## Configuration
 
@@ -55,5 +63,11 @@ Generated by `setup`. Stored per-project in `${CLAUDE_PLUGIN_DATA}/config.json`:
 }
 ```
 
-- **port**: auto-assigned from project path hash (6300-6399), overridable in setup
-- **groups**: group name -> watch glob patterns. Each group becomes a separate tab in mo
+- **port**: auto-assigned from a hash of the project path (6300-6399), overridable in setup
+- **groups**: group name → watch glob patterns. Each group becomes a separate tab in mo
+
+## Why `claw-mo-up` Restarts By Default
+
+mo uses `fsnotify` to watch directories for new markdown files. On macOS under load, or when a new subdirectory appears outside the watched tree, events can be dropped silently — mo keeps running but doesn't see the new files. Previously this plugin would quietly "reuse" a running session whenever the configured pattern set matched live state, which hid those drops.
+
+`mo --restart` is cheap (<1 second), preserves the session (files, groups, watch patterns all come back), and re-initializes the watcher with a fresh scan. That's the tradeoff: a brief interruption every time you run `/claw-mo-up` in exchange for never wondering whether your docs are actually showing up. Pass `--reuse` if you're certain the running session is fine and want to skip the restart.
