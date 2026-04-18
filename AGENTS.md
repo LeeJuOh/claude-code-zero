@@ -34,7 +34,21 @@ Everything detailed is in `docs/`. Direct entry points:
 | Skill practical guide | `docs/reference/skill-lessons-from-anthropic.md` |
 | Release process (8 steps) | `docs/release-workflow.md` |
 | Active plans & specs | `docs/superpowers/plans/`, `docs/superpowers/specs/` |
-| Marketplace schema, hooks, SKILL.md format, env vars | Official docs — see `CLAUDE.md` |
+| Marketplace schema, hooks, SKILL.md format, env vars | Official docs — see below |
+
+## Official Claude Code Docs
+
+Always start with `https://code.claude.com/docs/llms.txt` — the full index of every Claude Code docs page. Fetch specific pages as `https://code.claude.com/docs/en/<page>`. Don't rely on memory or plan-internal citations; the index is the only authoritative source.
+
+**Mandatory fetch when:**
+- Creating new plugins, components (skills/agents/hooks/MCP), or schema changes
+- Reviewing plans (`docs/superpowers/plans/*.md`) that cite official docs — verify each cited number against source. Plan-internal tables may contain invented or outdated values.
+
+Skip only for minor text edits or bug fixes inside existing logic.
+
+**Common starting pages (not exhaustive):** `plugins.md`, `plugins-reference.md`, `plugin-marketplaces.md`, `hooks.md`, `hooks-guide.md`, `skills.md`, `sub-agents.md`, `memory.md`, `env-vars.md`, `context-window.md`, `costs.md`, `how-claude-code-works.md`, `settings.md`.
+
+**Other agents' docs:** For Codex (OpenAI): `https://developers.openai.com/llms.txt`.
 
 ## Plugin Development
 
