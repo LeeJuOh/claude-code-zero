@@ -1,7 +1,15 @@
 ---
 name: environment-health
-description: "Diagnose Claude Code environment health: context, description obesity, trigger collisions, hooks, MCP, CLAUDE.md/memory. Graded + observational areas with actionable levers. Use for setup audits or when Claude feels slow."
-argument-hint: "[--format=html|md] [--lang <code>] [--paste-context] [--use-instructions-loaded-hook]"
+description: >
+  Diagnose Claude Code environment health — context budget, description obesity,
+  trigger collisions, hooks, MCP, CLAUDE.md and memory. Graded (6 areas) plus
+  observational (2 areas) with actionable levers ranked by impact.
+  Use when asked to audit the environment, check context budget, review plugins,
+  investigate trigger collisions or skill obesity — including phrases like
+  "audit my environment", "why does Claude feel slow", "check my context budget",
+  "am I hitting description truncation", "review my plugins",
+  "show environment health", "run an environment health check".
+argument-hint: "[--format html|md] [--lang <code>] [--paste-context] [--use-instructions-loaded-hook]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(node *), Bash(open *), Bash(rm -rf /tmp/env-health-*)
 ---
 
@@ -11,13 +19,6 @@ Diagnose the user's Claude Code environment health. Outputs either an inline mar
 report or a self-contained interactive HTML dashboard. Covers 8 diagnostic areas — 6
 graded against official thresholds, 2 observational (raw numbers, no tier).
 
-## Trigger phrases
-
-Invoke on requests like "audit my environment", "why does Claude feel slow", "check my
-context budget", "am I hitting description truncation", "review my plugins", "show
-environment health", "trigger collisions", "skill obesity", "run an environment
-health check".
-
 ## Instructions
 
 ### Input Parsing
@@ -26,7 +27,7 @@ Parse these arguments:
 
 | Flag | Values | Default | Meaning |
 |------|--------|---------|---------|
-| `--format` | `html` \| `md` | `html` | Output mode. `md` produces an inline markdown report; `html` generates a full dashboard |
+| `--format` | `html` \| `md` | `html` | Output mode. `html` generates a full interactive dashboard (default — recommended). `md` produces an inline markdown report for non-browser contexts or chat pasting |
 | `--lang` | ISO code (`en`, `ko`, `fr`, etc.) | detected | Report language. Falls back to detecting the user message language, then `en` |
 | `--paste-context` | (flag) | off | Ask the user to paste their `/context` output and use it to correct the estimated startup load |
 | `--use-instructions-loaded-hook` | (flag) | off | Guide the user through temporarily enabling the `InstructionsLoaded` hook for file-level ground-truth data, then offer to revert it |
@@ -127,7 +128,9 @@ header + recommendations top card.
 
 ### Phase 3 — Report Generation
 
-**Markdown mode (`--format=md`):**
+**Principle:** HTML is the default because a dashboard renders the 8 diagnostic areas as KPI cards, bars, and collision heatmaps that markdown can't match. Only choose `md` when running in a non-browser context (cowork, headless CI), when the user asks for markdown explicitly, or when pasting into a chat thread is more useful than opening a file.
+
+**Markdown mode (`--format md`):**
 
 Emit an inline markdown report with this structure:
 
@@ -170,7 +173,7 @@ Emit an inline markdown report with this structure:
 
 Cite sources inline where a threshold fires. Keep it under 200 lines.
 
-**HTML mode (default, `--format=html`):**
+**HTML mode (default, `--format html`):**
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/environment-health/references/section-structure.md`
 for the JSON schema. Then follow `${CLAUDE_PLUGIN_ROOT}/references/report-generation-workflow.md`

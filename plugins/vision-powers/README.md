@@ -31,15 +31,19 @@ vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js
 ## Usage
 
 ```
-analyze ./plugins/my-plugin          # wiki report
-visualize diff HEAD                  # diff report
-review plan docs/my-plan.md          # plan review
-recap this project                   # project recap
+analyze ./plugins/my-plugin          # wiki report (HTML)
+analyze ./plugins/my-plugin --format md  # same, but inline markdown
+visualize diff HEAD                  # diff report (HTML)
+visualize diff HEAD --format md      # inline markdown for PR/chat
+review plan docs/my-plan.md          # plan review (HTML)
+recap this project                   # project recap (HTML)
 fact-check the last report           # verify accuracy
 list reports                         # manage reports
 ```
 
-Reports are saved to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback.
+**Output formats.** Every report skill accepts `--format html` (default) or `--format md`. HTML reports go to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback. Markdown reports are delivered in the chat response — suitable for pasting into PR descriptions, Slack, or any non-browser context.
+
+**Aesthetic rotation.** Consecutive reports automatically pick different palette and font pairings so the same skill called repeatedly doesn't produce identical-looking output. Rotation state lives at `${CLAUDE_PLUGIN_DATA}/aesthetic-history.json`.
 
 ## License
 

@@ -8,15 +8,25 @@ description: >
   "show me the changes", "review this PR visually",
   or "make a visual diff report". Accepts branch names, commit hashes, HEAD,
   PR numbers, or commit ranges.
-argument-hint: "<branch|commit|HEAD|#PR|range> [--lang <code>]"
+argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
 
 # Diff Visual
 
-Visualize git diffs as self-contained interactive HTML reports with architecture diagrams, KPI dashboards, code review assessments, and side-by-side comparisons.
+Visualize git diffs as either self-contained interactive HTML reports (default) or inline markdown reports. HTML includes architecture diagrams, KPI dashboards, code review assessments, and side-by-side comparisons. Markdown is the lighter alternative for terminal review or chat sharing.
 
 ## Instructions
+
+### Format Detection
+
+Parse `--format` first:
+
+| Flag | Values | Default | Meaning |
+|------|--------|---------|---------|
+| `--format` | `html` \| `md` | `html` | `html` → full interactive dashboard at `${CLAUDE_PLUGIN_DATA}/reports/`. `md` → inline markdown report, delivered in the response |
+
+**Principle:** HTML is the default because visual reporting is the point of this skill. Only choose `md` when the user explicitly asks for markdown, when running in a non-browser context (cowork, headless CI), or when the user wants something they can paste into a PR description or chat.
 
 ### Scope Detection
 
@@ -133,6 +143,10 @@ If any claim cannot be sourced, remove it or mark it as uncertain.
 
 Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
 
+Branch on `--format`:
+
+#### HTML mode (default)
+
 Follow `../../references/report-generation-workflow.md` with these parameters:
 
 | Parameter | Value |
@@ -144,6 +158,52 @@ Follow `../../references/report-generation-workflow.md` with these parameters:
 | `{report-title}` | `"Diff Visual: {scope description}"` |
 | `{aesthetic-hint}` | `"Editorial"` (or `"Blueprint"` for infrastructure-heavy diffs) |
 | `{agent-prompt-data}` | All gathered data: stats, metrics, architecture, features, code review, decisions |
+
+#### Markdown mode (`--format md`)
+
+Assemble an inline markdown report and deliver it directly in the response. Do NOT write to disk — markdown mode is intentionally ephemeral. Use this structure:
+
+```
+# Diff Visual: <scope description>
+
+**Scope:** `<git ref or range>` · **Audience:** <audience> · **Focus:** <focus>
+
+## Overview
+- **Commits:** N
+- **Files changed:** N (M new · P deleted)
+- **Lines:** +A / −B
+- **Test delta:** +X files, +Y lines
+- **Housekeeping ratio:** feature N% · refactor N% · test N% · docs N% · config N%
+- **CHANGELOG updated:** yes/no · **Docs updated:** yes/no/not-applicable
+
+## Architecture Impact
+<1-2 paragraphs summarizing module-level changes: new/removed modules, dependency shifts, API surface changes. Cite files as `path/to/file.ext`.>
+
+## Feature Changes
+| Change | Scope | Files | Notes |
+|--------|-------|-------|-------|
+| <feature or change> | added/modified/removed | <file list> | <1-liner> |
+
+## Code Review
+<Assessment organized by focus area: code quality, test coverage, architecture impact, migration completeness. Bullet-style with file:line references.>
+
+## Decisions & Rationale
+| Decision | Source | Confidence |
+|----------|--------|------------|
+| <decision> | commit hash / plan file / inferred | Confirmed / Inferred / Uncertain |
+
+## Risks & Gaps
+- <risk or gap with file:line reference>
+
+## File-Level Changes (top 20)
+| File | +/− | Classification |
+|------|-----|----------------|
+| `path/to/file` | +42/-10 | feature / refactor / test / docs / config |
+```
+
+**Translation:** Translate section headers and prose to the detected language. Keep file paths, function names, commit hashes, and technical classifications (feature/refactor/test/docs/config) untranslated.
+
+**Length cap:** Keep the markdown report under 300 lines. If data exceeds this, truncate with `(+N more)` notes rather than expanding the report.
 
 ### Gotchas
 

@@ -236,7 +236,7 @@ Task(subagent_type: "vision-powers:security-auditor", prompt: {all file paths})
 
 Diagnose whether this plugin is a good fit for the user's current environment — not just "can it run?" but "should it be installed here?"
 
-**Full procedure**: Read `references/platforms/claude-code/env-fit-diagnosis.md` for the detailed 5-step process covering:
+**Full procedure**: Read `${CLAUDE_PLUGIN_ROOT}/skills/agent-extension-visualizing/references/platforms/claude-code/env-fit-diagnosis.md` for the detailed 5-step process covering:
 1. Extract plugin characteristics from feature-architect output (including rules, CLAUDE.md @imports, bundle source)
 2. Run the environment scan script (`env-fit-scan.js`) — collects installed plugins, skills, commands, hooks, MCP servers, context metrics
 3. Perform eight diagnostic analyses:
@@ -261,18 +261,18 @@ Save the combined `environment_fit` data for Phase 5/5R. Omit empty categories.
 
 For `security` mode, `overview` mode, or `analyze` mode with `--format md` — assemble inline markdown report:
 
-Assemble the report using `references/platforms/claude-code/report-template.md` format:
+Assemble the report using `${CLAUDE_PLUGIN_ROOT}/skills/agent-extension-visualizing/references/platforms/claude-code/report-template.md` format:
 
 - **`overview` mode**: Identity + Component Inventory sections only
 - **`security` mode**: Security-focused report with risk summary, permission matrix, findings
 - **`analyze` mode (--format md)**: Full report with analysis, Environment Fit Diagnosis, Skill Design Quality, and Plugin Profile
 
-For Plugin Profile and Skill Design Quality, apply criteria from `references/platforms/claude-code/analysis-criteria.md`.
-For risk levels, apply rules from `references/platforms/claude-code/security-rules.md`.
+For Plugin Profile and Skill Design Quality, apply criteria from `${CLAUDE_PLUGIN_ROOT}/skills/agent-extension-visualizing/references/platforms/claude-code/analysis-criteria.md`.
+For risk levels, apply rules from `${CLAUDE_PLUGIN_ROOT}/skills/agent-extension-visualizing/references/platforms/claude-code/security-rules.md`.
 Environment Fit Diagnosis is a standalone section between Feature Deep Dive and Usage (not part of Plugin Profile). Include the full diagnosis from Phase 4.5: verdict, context budget (200K/1M scenarios), installation status, dependency check, overlap/trigger findings, hook impact, component dependencies, and recommendations.
 Skill Design Quality includes: skill category distribution, per-skill design assessment (description quality, progressive disclosure, gotchas, scripts, hooks, data persistence, maturity level), and improvement recommendations. This data comes from the feature-architect's Skill Design Quality output.
 
-Output the report in the detected language, using `references/platforms/claude-code/report-template.md` format.
+Output the report in the detected language, using `${CLAUDE_PLUGIN_ROOT}/skills/agent-extension-visualizing/references/platforms/claude-code/report-template.md` format.
 Translate all section headers, labels, and descriptions to the target language.
 Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, LOW) untranslated.
 
@@ -308,20 +308,31 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
    - If no existing reports found → proceed with default dated path without asking
 
 2. **Resolve paths and read references**:
-   - Template: resolve `../../templates/agent-extension-visual.html` to absolute path
-   - JSON schema: resolve `references/sections-data-schema.md` to absolute path
-   - Font system: resolve `../../references/design-system/font-system.md` to absolute path
-   - Anti-slop rules: resolve `../../references/design-system/anti-slop-rules.md` to absolute path
-   - Render script: resolve `../../scripts/render-sections.js` to absolute path
-   - Assembler script: resolve `../../scripts/assemble-report.js` to absolute path
-   - Shared directory: resolve `../../shared/` to absolute path
 
-   **Read 3 reference files** in a single parallel Read call:
-   1. JSON schema (`references/sections-data-schema.md`)
-   2. Font system (`../../references/design-system/font-system.md`)
-   3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
+   Use `${CLAUDE_PLUGIN_ROOT}` — it expands to the plugin install directory at invocation time, which is stable across local/marketplace installs and does not depend on the current working directory.
 
-   Save their content for step 4. Do NOT read the template, assembler, render script, or shared directory — those are passed as paths.
+   - Template: `${CLAUDE_PLUGIN_ROOT}/templates/agent-extension-visual.html`
+   - JSON schema: `${CLAUDE_PLUGIN_ROOT}/skills/agent-extension-visualizing/references/sections-data-schema.md`
+   - Font system: `${CLAUDE_PLUGIN_ROOT}/references/design-system/font-system.md`
+   - Anti-slop rules: `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-rules.md`
+   - Color palette: `${CLAUDE_PLUGIN_ROOT}/references/design-system/color-palette.md`
+   - Render script: `${CLAUDE_PLUGIN_ROOT}/scripts/render-sections.js`
+   - Assembler script: `${CLAUDE_PLUGIN_ROOT}/scripts/assemble-report.js`
+   - Rotation script: `${CLAUDE_PLUGIN_ROOT}/scripts/aesthetic-rotation.js`
+   - Shared directory: `${CLAUDE_PLUGIN_ROOT}/shared/`
+
+   **Read 4 reference files** in a single parallel Read call:
+   1. JSON schema (`${CLAUDE_PLUGIN_ROOT}/skills/agent-extension-visualizing/references/sections-data-schema.md`)
+   2. Font system (`${CLAUDE_PLUGIN_ROOT}/references/design-system/font-system.md`)
+   3. Anti-slop rules (`${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-rules.md`)
+   4. Color palette (`${CLAUDE_PLUGIN_ROOT}/references/design-system/color-palette.md`)
+
+   Also fetch recent aesthetic choices to pass as an avoid list:
+   ```
+   Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/aesthetic-rotation.js recent --n 3)
+   ```
+
+   Save their content for step 4. Do NOT read the template, assembler, render script, rotation script, or shared directory — those are passed as paths or executed as CLIs.
 
 3. **Create sections temp directory**:
    The sections directory path: `/tmp/agent-extension-visual-{dirname}-sections/`

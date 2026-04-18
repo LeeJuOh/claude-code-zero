@@ -38,18 +38,29 @@ Resolve these relative paths (from the skill directory) to absolute paths:
 - Section structure: `references/section-structure.md`
 - Font system: `../../references/design-system/font-system.md`
 - Anti-slop rules: `../../references/design-system/anti-slop-rules.md`
+- Color palette: `../../references/design-system/color-palette.md`
 - Assembler script: `../../scripts/assemble-report.js`
 - Validator script: `../../scripts/validate-report.js`
+- Rotation script: `../../scripts/aesthetic-rotation.js`
 - Shared directory: `../../shared/`
 
-**Read 3 reference files** in a single parallel Read call:
+**Read 4 reference files** in a single parallel Read call:
 1. Section structure (`references/section-structure.md`)
 2. Font system (`../../references/design-system/font-system.md`)
 3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
+4. Color palette (`../../references/design-system/color-palette.md`)
 
 Save their content for Step 3 — the visual-report-writer receives content directly so it can start writing immediately without a read turn.
 
-Do NOT read the template, assembler, validator, or shared directory — those are passed as paths to the assembler script.
+Do NOT read the template, assembler, validator, rotation, or shared directory — those are passed as paths to the assembler script or executed as CLIs.
+
+**Fetch recent aesthetic choices** so the next report avoids repeating the same palette+font:
+
+```
+Bash(node {rotation-script-path} recent --n 3)
+```
+
+The script prints a JSON array (newest last) of the last 3 recorded choices. If the file doesn't exist yet, it prints `[]`. Save this output as `{recent-aesthetics}` for Step 3.
 
 ### Step 2: Create sections temp directory
 
@@ -66,6 +77,8 @@ Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
   section structure content (full text read in Step 1),
   font system content (full text read in Step 1),
   anti-slop rules content (full text read in Step 1),
+  color palette content (full text read in Step 1),
+  recent aesthetics to avoid (JSON from Step 1: {recent-aesthetics}),
   Output language: {detected language},
   Report title: {report-title},
   Aesthetic hint: {aesthetic-hint}
@@ -74,7 +87,7 @@ Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
 
 Pass the **file contents** read in Step 1, not paths. This eliminates the agent's read turn — it can start writing sections immediately.
 
-The agent writes `section-1.html` through `section-N.html` and `metadata.json` to the sections directory.
+The agent writes `section-1.html` through `section-N.html` and `metadata.json` to the sections directory. It selects a palette and font pairing that do **not** match any entry in the recent-aesthetics list (unless only one palette or one pairing exists in the design system — in which case repetition is unavoidable and the agent should note it).
 
 **Do NOT background this agent.** Plugin-defined agents silently ignore `permissionMode`, so the visual-report-writer needs user approval for each Write call. Backgrounded agents cannot prompt for permissions and will fail silently. Always run in the foreground.
 

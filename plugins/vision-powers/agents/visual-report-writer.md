@@ -31,6 +31,21 @@ Output all content in the language specified by the orchestrator.
 
 ---
 
+## FORBIDDEN (zero-tolerance — check before every Write)
+
+These produce instantly recognizable AI slop. If any appear in your output, the report fails.
+
+- **Body fonts:** `Inter`, `Roboto`, `Arial`, `Helvetica`, `system-ui` alone. Always use a distinctive pairing from `font-system.md`.
+- **Accent colors:** `#8b5cf6`, `#7c3aed`, `#a78bfa` (indigo/violet), `#d946ef` (fuchsia), and any cyan+magenta+pink combination. These are Tailwind defaults with zero design intent.
+- **Animations:** glowing box-shadow keyframes (`@keyframes glow { box-shadow: 0 0 20px ... }`), pulsing/breathing effects on static content, any continuous animation that runs after page load.
+- **Aesthetics:** neon dashboard (cyan + magenta + purple on dark), gradient mesh (pink/purple/cyan blobs). Always produce slop.
+- **The hat-trick of slop:** Inter font + indigo/violet accent + gradient text. Even one of these is a warning; all three together is grounds to discard and restart.
+- **Emoji:** zero emoji in any report output, at any size, in any language.
+
+If you catch yourself reaching for any of these, stop and pick from the approved palettes/fonts in `font-system.md` and `color-palette.md`.
+
+---
+
 ## Mode: JSON
 
 When the orchestrator specifies **JSON mode**, write a single `sections-data.json` file following the schema provided by the orchestrator (`sections-data-schema.md`).
@@ -42,7 +57,9 @@ You receive from the orchestrator:
 - **Output file path** (absolute path for `sections-data.json`)
 - **JSON schema content** (full text of `sections-data-schema.md` — field definitions for all 11 sections)
 - **Font system content** (full text of `font-system.md` — font pairings and rotation rules)
+- **Color palette content** (full text of `color-palette.md` — approved accent palettes)
 - **Anti-slop rules content** (full text of `anti-slop-rules.md` — forbidden patterns, quality checklist)
+- **Recent aesthetics to avoid** (JSON array — each entry has `accent`, `body_font`, `heading_font`. Pick a palette+font-pair that does NOT match any entry)
 - **Output language** (e.g., "ko", "en", "ja")
 - **Report title** (e.g., "Agent Extension Visual: plugin-name")
 - **Aesthetic hint** (optional — one of: Blueprint, Editorial, Paper-ink, Monochrome)
@@ -112,7 +129,9 @@ You receive from the orchestrator skill:
 - **Sections output directory** (absolute path — write all output files here)
 - **Section structure content** (full text of `section-structure.md` — HTML patterns for each section)
 - **Font system content** (full text of `font-system.md` — font pairings and rotation rules)
+- **Color palette content** (full text of `color-palette.md` — approved accent palettes)
 - **Anti-slop rules content** (full text of `anti-slop-rules.md` — forbidden patterns, quality checklist)
+- **Recent aesthetics to avoid** (JSON array — each entry has `accent`, `body_font`, `heading_font`. Pick a palette+font-pair that does NOT match any entry)
 - **Output language** (e.g., "ko", "en", "ja")
 - **Report title** (e.g., "Diff Visual: feature/auth..main", "Plan Visual: auth-redesign")
 - **Aesthetic hint** (optional — one of: Blueprint, Editorial, Paper-ink, Monochrome)
@@ -204,9 +223,25 @@ Use `<a href="{url}" class="source-link" target="_blank">{relative_path}</a>`.
 
 ---
 
-## Font Pairing Selection (both modes)
+## Aesthetic Selection (both modes)
 
-Select a font pairing from the font system content provided in your prompt. Choose based on the aesthetic hint if provided, or pick freely from the 12 pairings. Follow the rotation rule: never use the same pairing consecutively.
+You pick **two things**: a color palette and a font pairing. Both must differ from the last 3 reports.
+
+**Inputs to check:**
+- The `Recent aesthetics to avoid` JSON array passed in your prompt
+- The font system content (pairings)
+- The color palette content (approved accents)
+
+**Selection algorithm:**
+1. Read the recent-aesthetics list. Each entry has `accent` (hex) and `body_font` (name).
+2. If an `aesthetic hint` is provided (Blueprint, Editorial, Paper-ink, Monochrome, Dashboard), bias selection toward that family.
+3. From the approved palettes, pick an `accent` color that does NOT appear in any recent entry.
+4. From the approved font pairings, pick one whose `body_font` does NOT appear in any recent entry.
+5. If the recent list exhausts the available options (rare — only if there are <3 palettes or pairings), pick the least-recently-used one and note it in a comment-style log line in stderr.
+
+**Why this matters:** Without rotation, the same skill called repeatedly converges on the same look. A recap generated every Monday would be visually identical to the previous Monday's recap, defeating the purpose of a visual report. The rotation script at `scripts/aesthetic-rotation.js` records each choice automatically when the report is assembled — you only need to respect the avoid list.
+
+**Font selection rules:**
 
 Each pairing defines three fonts: **Heading** (`--font-heading`), **Body** (`--font-body`), **Mono** (`--font-mono`). When heading != body (serif pairings like #2, #8, #9), load both fonts via Google Fonts and set them as separate CSS variables. The body font must always be a readable sans-serif — serif/display fonts go to `--font-heading` only.
 
