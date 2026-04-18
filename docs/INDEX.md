@@ -40,6 +40,7 @@ Empty placeholders (reserved, currently unused): `enhancement/`, `plan/`.
 |---|---|
 | `research/ai-context-tools-comparison.md` | Graphify, CodeSight, code-review-graph, Repomix 비교 분석 |
 | `research/deeptutor-analysis.md` | DeepTutor 분석 |
+| `research/token-efficiency-tools-comparison.md` | caveman, claude-token-efficient, rtk 토큰 효율 도구 비교 — 공격 지점/메커니즘/조합 |
 
 ## Session Handoff
 
