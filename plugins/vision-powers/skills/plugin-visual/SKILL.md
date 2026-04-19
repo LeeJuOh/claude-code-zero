@@ -313,19 +313,21 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
 
    - Template: `${CLAUDE_PLUGIN_ROOT}/templates/plugin-visual.html`
    - JSON schema: `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/sections-data-schema.md`
-   - Font system: `${CLAUDE_PLUGIN_ROOT}/references/design-system/font-system.md`
-   - Anti-slop rules: `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-rules.md`
-   - Color palette: `${CLAUDE_PLUGIN_ROOT}/references/design-system/color-palette.md`
+   - Semantic tokens: `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md`
+   - Diagram type selection: `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md`
+   - Diagram density rules: `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md`
+   - Taste gate: `${CLAUDE_PLUGIN_ROOT}/references/design-system/taste-gate.md`
    - Render script: `${CLAUDE_PLUGIN_ROOT}/scripts/render-sections.js`
    - Assembler script: `${CLAUDE_PLUGIN_ROOT}/scripts/assemble-report.js`
    - Rotation script: `${CLAUDE_PLUGIN_ROOT}/scripts/aesthetic-rotation.js`
    - Shared directory: `${CLAUDE_PLUGIN_ROOT}/shared/`
 
-   **Read 4 reference files** in a single parallel Read call:
+   **Read 5 reference files** in a single parallel Read call:
    1. JSON schema (`${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/sections-data-schema.md`)
-   2. Font system (`${CLAUDE_PLUGIN_ROOT}/references/design-system/font-system.md`)
-   3. Anti-slop rules (`${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-rules.md`)
-   4. Color palette (`${CLAUDE_PLUGIN_ROOT}/references/design-system/color-palette.md`)
+   2. Semantic tokens (`${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md`)
+   3. Diagram type selection (`${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md`)
+   4. Diagram density rules (`${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md`)
+   5. Taste gate (`${CLAUDE_PLUGIN_ROOT}/references/design-system/taste-gate.md`)
 
    Also fetch recent aesthetic choices to pass as an avoid list:
    ```
@@ -351,8 +353,8 @@ For `analyze` mode with HTML format (the default), generate a self-contained HTM
      plugin metadata (name, version, author, license, keywords, description),
      output language,
      JSON schema content (full text read in step 2),
-     font system content (full text read in step 2),
-     anti-slop rules content (full text read in step 2),
+     semantic tokens content (full text read in step 2),
+     taste gate content (full text read in step 2),
      report title: "Agent Extension Visual: {plugin-name}",
      aesthetic hint: "Editorial",
      source context: { source_type, source_base, github_url (if applicable) },
@@ -491,5 +493,5 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - `../../templates/plugin-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
 - `../../scripts/render-sections.js` — Render script (Node.js) that converts `sections-data.json` into HTML section files + metadata.json with correct CSS class names
 - `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
-- `../../references/design-system/font-system.md` — Font pairing selection guide. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
-- `../../references/design-system/anti-slop-rules.md` — Quality checklist for report writing. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
+- `../../references/design-system/semantic-tokens.md` — Font pairing and color token selection guide. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
+- `../../references/design-system/taste-gate.md` — Quality checklist for report writing. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer

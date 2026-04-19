@@ -17,7 +17,7 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.13.0",
+      "version": "1.14.0",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -29,8 +29,8 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "3.0.0",
-      "description": "Visual report generation suite with full HTML + Markdown parity across every skill: wiki analysis, diff review, plan review, project recap, fact-checking, environment health diagnostics, and report management. Interactive HTML dashboards with rotating palette/font pairings to prevent visual repetition, or inline markdown for chat/PR contexts."
+      "version": "4.1.1",
+      "description": "Analyze Claude Code plugins and visualize text artifacts (markdown docs, git diffs, plugins) as interactive HTML or diagram-enhanced markdown reports. Skills: doc-visual, diff-visual, plugin-visual, context-health-visual, fact-check, report-manager. context-health-visual now includes skill security scan (6 pattern categories) and hook schema validation."
     },
     {
       "name": "worktree-plus",
@@ -76,16 +76,6 @@
       "version": "1.2.0",
       "description": "cmux terminal integration: terminal I/O, topology control, browser automation, markdown viewer, notifications",
       "tags": ["cmux", "terminal", "browser-automation", "terminal-io"],
-      "category": "lab"
-    },
-    {
-      "name": "lab-harness-zero",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/LeeJuOh/harness-zero.git",
-        "ref": "develop"
-      },
-      "description": "[Lab] Install once, repo becomes agent-friendly. Scaffolds structure, organizes docs, enforces principles via hooks, prepares evaluator separation.",
       "category": "lab"
     }
   ]

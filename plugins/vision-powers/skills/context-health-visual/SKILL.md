@@ -2,13 +2,17 @@
 name: context-health-visual
 description: >
   Diagnose Claude Code environment health — context budget, description obesity,
-  trigger collisions, hooks, MCP, plugin components, CLAUDE.md and memory.
-  5 graded scores plus 5 observational areas with actionable levers ranked by impact.
+  trigger collisions, hooks, MCP, plugin components, CLAUDE.md and memory, plus a
+  skill-security scan (prompt injection, data exfil, destructive, credentials,
+  obfuscation, safety override) and hook schema validation. 6 graded scores plus
+  5 observational areas with actionable levers ranked by impact.
   Use when asked to audit the environment, check context budget, review plugins,
-  investigate trigger collisions or skill obesity — including phrases like
-  "audit my environment", "why does Claude feel slow", "check my context budget",
+  investigate trigger collisions or skill obesity, or scan installed skills for
+  risky patterns — including phrases like "audit my environment",
+  "why does Claude feel slow", "check my context budget",
   "am I hitting description truncation", "review my plugins",
-  "show environment health", "run an environment health check".
+  "show environment health", "run an environment health check",
+  "scan my skills for suspicious patterns".
 argument-hint: "[--format html|md] [--lang <code>] [--paste-context] [--use-instructions-loaded-hook]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(node *), Bash(open *), Bash(rm -rf /tmp/env-health-*)
 ---
@@ -16,8 +20,9 @@ allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(node *), Bash(open
 # Environment Health
 
 Diagnose the user's Claude Code environment health. Outputs either an inline markdown
-report or a self-contained interactive HTML dashboard. Covers 9 diagnostic areas — 5
-graded scores against official thresholds (§4 splits into §4a CLAUDE.md and §4b Memory)
+report or a self-contained interactive HTML dashboard. Covers 10 diagnostic areas — 6
+graded scores against official thresholds (§4 splits into §4a at-rest and §4b post-compact;
+§9 Skill Security Scan uses security baselines rather than docs-cited thresholds)
 plus 5 observational areas (raw numbers, no tier).
 
 ## Instructions
@@ -60,7 +65,11 @@ The script writes a JSON blob to stdout with these sections:
   `desc_chars`, `when_to_use_chars`, `combined_chars`, `disabled`, `user_invocable`)
 - `skill_bodies` (at-rest 500-line flag + post-compact 5K-token flag)
 - `hook_inventory` (type counts, event collisions, `llm_hooks` — includes inline
-  hooks from `plugin.json`'s `hooks` field)
+  hooks from `plugin.json`'s `hooks` field: `schema_issues` and `schema_issue_counts`
+  for hook schema validation)
+- `skill_security` (scanned_count, findings with confidence levels, counts_by_severity,
+  counts_by_category — covers 6 pattern categories: prompt_injection, data_exfil,
+  destructive, hardcoded_credential, obfuscation, safety_override)
 - `context_metrics` (MCP server count + source scopes — includes plugin `.mcp.json`
   files AND inline `mcpServers` from `plugin.json`)
 - `plugin_components` (`bin` / `monitors` / `lsp_servers` / `output_styles` /
@@ -97,12 +106,13 @@ effective_budget = env_and_settings.desc_budget_override
                 ?? max(8000, floor(context_window_size * 0.01))
 ```
 
-**Graded areas** (§3, §4a, §4b, §7, §8): classify into
+**Graded areas** (§3, §4a, §4b, §7, §8, §9): classify into
 🟢 healthy / 🟡 attention / 🔴 critical using the rules in `health-criteria.md`. Every
-threshold you apply must cite its docs source.
+threshold you apply must cite its docs source. (§9 Skill Security Scan is an exception —
+graded on security baselines without docs-cited thresholds; see health-criteria.md §9.)
 
 **Observational areas** (§1 Plugin Inventory, §2 Startup Context Budget aggregate,
-§5 Trigger Collisions, §6 Hook Complexity, §9 Plugin Components): do NOT assign a
+§5 Trigger Collisions, §6 Hook Complexity, §10 Plugin Components): do NOT assign a
 tier. Emit raw numbers and info-level notes only. Delegate individual component
 grading in §2 to the owner area per the status-delegation table.
 
@@ -140,7 +150,9 @@ header + recommendations top card.
 
 ### Phase 3 — Report Generation
 
-**Principle:** HTML is the default because a dashboard renders the 9 diagnostic areas as KPI cards, bars, and collision heatmaps that markdown can't match. Only choose `md` when running in a non-browser context (cowork, headless CI), when the user asks for markdown explicitly, or when pasting into a chat thread is more useful than opening a file.
+**Principle:** HTML is the default because a dashboard renders the 10 diagnostic areas as KPI cards, bars, and collision heatmaps that markdown can't match. Only choose `md` when running in a non-browser context (cowork, headless CI), when the user asks for markdown explicitly, or when pasting into a chat thread is more useful than opening a file.
+
+Mermaid generation force-loads Layer 0's semantic-tokens.md (tokens) / diagram-type-selection.md (type mapping) / diagram-density-rules.md (budget) / taste-gate.md (checklist), and is auto-validated by `scripts/taste-gate.js`.
 
 **Markdown mode (`--format md`):**
 
@@ -149,7 +161,7 @@ Emit an inline markdown report with this structure:
 ```
 # Environment Health — <scan_date>
 
-**Graded:** N 🟢 / N 🟡 / N 🔴 (5 areas) · **Observational:** Plugin Inventory, Context Budget, Trigger Collisions, Hook Complexity, Plugin Components
+**Graded:** N 🟢 / N 🟡 / N 🔴 (6 areas) · **Observational:** Plugin Inventory, Context Budget, Trigger Collisions, Hook Complexity, Plugin Components
 
 **Top lever:** <one sentence>
 
@@ -179,7 +191,10 @@ Emit an inline markdown report with this structure:
 ## §8 CLAUDE.md & Memory Health <status>
 <file list with scope/load_mode/compact_resilient, MEMORY.md capacity, nested lazy-loaded totals>
 
-## §9 Plugin Components ℹ️
+## §9 Skill Security Scan <status>
+<findings list with confidence; safe/likely_safe collapsed; hook schema_issues as info notes>
+
+## §10 Plugin Components ℹ️
 <bin / monitors / lsp_servers / output_styles / channels per plugin>
 
 ## Recommendations
@@ -199,7 +214,7 @@ with these parameters:
 | `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/<scan_date>-context-health-visual.html` |
 | `{template-name}` | `context-health-visual.html` |
 | `{skill-prefix}` | `env-health` |
-| `{expected-sections}` | `9` |
+| `{expected-sections}` | `10` |
 | `{report-title}` | `"Environment Health — <scan_date>"` |
 | `{aesthetic-hint}` | `"Dashboard"` |
 | `{agent-prompt-data}` | The analyzed scan data, subagent collision results, computed tiers per area, top lever, and info notes. Pass the raw `scan.json` separately so the writer can reference exact numbers. |
@@ -324,14 +339,35 @@ If the user enabled the `InstructionsLoaded` hook, remind them to revert it now.
   and info-level notes only. They are counted separately from the graded tally. A
   report showing `0 critical` means zero critical among graded areas — observational
   areas may still have info-level observations worth surfacing.
+- **Skill security scan uses heuristic confidence, not binary safe/unsafe.** Every
+  finding is kept in the output — nothing is silently discarded. A `confidence` field
+  adjusts how prominently findings are shown: `safe` / `likely_safe` findings are
+  collapsed by default (temp-path cleanup, loopback-only calls, frontmatter metadata
+  lines, and scanner self-references do not warrant loud alerts). Grade is driven only
+  by `uncertain` / `suspicious` findings. When multiple heuristics apply to one finding,
+  the most cautious level (lowest confidence) is used.
+- **Self-exclusion by frontmatter `name:`, not by path.** The scanner skips the skill
+  whose `name:` frontmatter field equals `context-health-visual`. Path-based exclusion
+  would break across install locations (cache vs local). Scope is this skill only —
+  other vision-powers skills (plugin-visual, doc-visual, fact-check, etc.) remain
+  in-scope so any legitimate security findings surface.
+- **Hook schema validation applies only to tool-gated events.** `PreToolUse` and
+  `PostToolUse` entries are flagged when they lack a `matcher` field. Other events
+  (`SessionStart`, `UserPromptSubmit`, `Stop`, etc.) don't use matchers — flagging
+  them would be noise. This scope is hard-coded in `env-health-scan.js`; update the
+  `MATCHER_EVENTS` set if future docs add more tool-gated event types.
 
 ## Reference Files
 
 - `references/health-criteria.md` — Grading thresholds (cites every docs source) and
   recommendation templates
-- `references/section-structure.md` — JSON schema for the 9-section HTML report
+- `references/section-structure.md` — JSON schema for the 10-section HTML report
 - `agents/trigger-collision-inspector.md` — Subagent spec for trigger collision
   detection (Waza-adapted)
 - `scripts/env-health-scan.js` — Data collection script
 - `../../references/report-generation-workflow.md` — Shared HTML generation pipeline
   (render → assemble → validate → log → open)
+- `../../references/design-system/semantic-tokens.md` — Color and font semantic tokens
+- `../../references/design-system/diagram-type-selection.md` — 13-type selection guide
+- `../../references/design-system/diagram-density-rules.md` — Complexity budget per type
+- `../../references/design-system/taste-gate.md` — Pre-output quality checklist

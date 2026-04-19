@@ -26,10 +26,19 @@ prompt and double-check". All four failures were wrapper bugs.
 
 **What v4.1 does instead:**
 
-- Parses the input with LM intelligence first: drops the trailing comma, obeys the meta-instruction ("don't pre-analyze"), and runs a clean `review --base develop`.
+- Parses the input with LM intelligence first: drops the trailing comma, attempts to obey the meta-instruction ("don't pre-analyze"), and runs a clean `review --base develop`.
 - Launches long-running reviews in the background so Bash's 5-minute timeout never kills them.
 - Uses the official `status --wait` wait mechanism instead of improvised polling.
 - Classifies Codex's findings as Agreed, Disputed, Nuanced, False Positive (hallucinated file/function), or Uncited — without reading your code until Codex returns.
+
+## What you get
+
+- **Five-way finding classification** on every review — Agreed, Disputed, Nuanced, False Positive, Uncited. Catches hallucinated file:line citations before you act on them.
+- **Blind-payload independence** — for `codex-review` / `codex-adversarial`, Claude doesn't read the cited files until after Codex returns. For `codex-verify` / `codex-research`, the document is piped to Codex directly and never enters Claude's context.
+- **Background-resilient** — long jobs survive Bash's 5-minute timeout via background launch + `status --wait`. `/codex-result <job-id>` fetches the stored output even after the session that started it is gone.
+- **Self-bias guardrail** on `codex-verify` — if Claude authored the document under review, extra honesty constraints are applied.
+- **Every call persists** to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failures save to `<type>-<timestamp>-failed.md` with a categorized error.
+- **9 skills**, works with the Official Codex plugin hidden — `/codex-result`, `/codex-status`, `/codex-cancel` call the companion script directly.
 
 ## Quick Start
 

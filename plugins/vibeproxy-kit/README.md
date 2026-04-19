@@ -1,6 +1,8 @@
 # vibeproxy-kit
 
-State-aware VibeProxy alias manager for Claude Code.
+macOS alias manager for VibeProxy — picks which backends and models expose `cc-*` shell aliases without clobbering your manual edits.
+
+> **Platform:** macOS only. Requires `/Applications/VibeProxy.app` and zsh.
 
 ## Why this exists
 
@@ -11,7 +13,7 @@ VibeProxy lets you run Claude Code against Codex, GitHub Copilot, Antigravity, G
 - Remembering which aliases you added, which VibeProxy added, and which your coworkers added for you that one time
 - Rediscovering what went wrong when a silent backend hop routes `claude-opus-4.6` through the wrong provider
 
-`vibeproxy-kit` makes that configuration explicit, state-aware, and reversible.
+`vibeproxy-kit` makes that configuration explicit and state-aware: both files are backed up before every write and **rolled back together** if validation fails, pre-existing manual `cc-*` aliases are offered for migration into the managed block on first run, and probe catalogs are cached (≤ 7 days) so the second `/setup-aliases` call skips the expensive per-backend isolation probe.
 
 > [!WARNING]
 > This plugin automates local alias and config management for routing Claude Code through VibeProxy/CLIProxyAPIPlus-backed providers.
@@ -32,8 +34,16 @@ The skill detects what you have installed and authenticated, walks you through a
 
 | Command | What it does |
 |---------|--------------|
-| `/setup-aliases` | Discover VibeProxy state, choose backends/models, rewrite managed aliases in `~/.cli-proxy-api/config.yaml` and `~/.zshrc`, validate against `/v1/models`. Idempotent and reversible. |
-| `cc-list` | Show all configured aliases grouped by backend, with model info and shortcut names. Added to `~/.zshrc` by `/setup-aliases`. |
+| `/setup-aliases` | Discover VibeProxy state, choose backends / models / reasoning-effort levels, rewrite managed aliases in `~/.cli-proxy-api/config.yaml` and `~/.zshrc`, validate against `/v1/models`. Idempotent; re-run in **Reset** mode to uninstall the managed block. |
+| `cc-list` | Show all configured aliases grouped by backend, with model info and shortcut names. Regenerated on every `/setup-aliases` apply. |
+
+### Operating modes
+
+`/setup-aliases` prompts for one of three modes on every run:
+
+- **Keep** — leave the existing managed block intact; useful to re-validate against `/v1/models` without reconfiguring.
+- **Merge update** — modify the managed block in place (add/remove backends or models). Uses cached probe catalogs (≤ 7 days old) when available.
+- **Reset and reconfigure** — wipe the managed block and start from scratch. This is how you uninstall.
 
 ## How it works
 

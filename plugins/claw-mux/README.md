@@ -10,12 +10,15 @@ cmux exposes all of this through a CLI: `send` commands to any pane, `read-scree
 
 With claw-mux installed, Claude Code will:
 - Send commands to other panes and read their output (`send`, `read-screen`)
+- Synchronize completion with `cmux wait-for` signals or the bundled `poll-screen.sh` helper — no more fixed sleeps
 - Start servers, monitor logs, run builds across split panes
-- Use the embedded browser for web automation (faster, no external extension)
+- Automate the embedded WKWebView with a snapshot/ref workflow (no Chrome extension) using ready-to-use templates (`form-automation`, `authenticated-session`, `capture-workflow`)
 - Display plans and documentation in a live-reloading markdown panel
-- Report progress via sidebar status pills, progress bars, and notifications
+- Report progress via three sidebar primitives: status pills (`set-status`), progress bars (`set-progress`), and leveled logs (`log`)
 
 The human watches from cmux, seeing every pane Claude Code is orchestrating. Outside cmux, these features are unavailable — existing tools continue working as before.
+
+> **WKWebView limits.** cmux's embedded browser cannot set a custom viewport, run offline/throttled, capture traces, or mock the network. For those cases use Chrome MCP instead.
 
 ## Quick Start
 
@@ -27,11 +30,11 @@ Run Claude Code inside a cmux terminal — it automatically uses cmux-native fea
 
 ## Skills
 
-| Skill | Command | Description |
-|-------|---------|-------------|
-| `claw-mux` | (auto-trigger) | Core topology control, notifications, sidebar metadata |
-| `cmux-browser` | (auto-trigger) | Browser automation with snapshot/ref workflow |
-| `cmux-markdown` | `/cmux-markdown` | Markdown viewer with live reload |
+| Skill | Invocation | Description |
+|-------|------------|-------------|
+| `claw-mux` | auto-trigger | Topology control (`send`, `read-screen`, `new-split`, `wait-for`), completion-detection patterns, sidebar primitives (status pills / progress bars / leveled logs), notifications |
+| `cmux-browser` | auto-trigger | WKWebView browser automation with snapshot/ref workflow; ships `form-automation`, `authenticated-session`, and `capture-workflow` templates |
+| `cmux-markdown` | on request | Markdown viewer with live reload. Model-invocation disabled — ask Claude to open a file or invoke the skill by name |
 
 ## Coexistence
 

@@ -500,3 +500,164 @@ A->>B: web_search({ queries: [...] })
 %% RIGHT
 A->>B: Call web_search with queries
 ```
+
+---
+
+## 13-Type Syntax Reference
+
+Minimum complete example for each type. In production diagrams you **must** prepend the `%%{init}%%` block from Layer 0 semantic-tokens.md.
+
+### architecture
+```
+flowchart TD
+  subgraph Frontend
+    UI[React UI]
+  end
+  subgraph Backend
+    API[API Server]
+    DB[(Postgres)]
+  end
+  UI --> API
+  API --> DB
+```
+
+### sequence
+```
+sequenceDiagram
+  participant U as User
+  participant A as App
+  participant D as DB
+  U->>A: Login request
+  A->>D: Query user
+  D-->>A: User record
+  A-->>U: Session token
+```
+(do not use `{}[]<>&` in messages)
+
+### state
+```
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Running: start
+  Running --> Done: complete
+  Running --> Failed: error
+```
+(do not use `<br/>` in labels)
+
+### ER
+```
+erDiagram
+  USER ||--o{ ORDER : places
+  ORDER ||--|{ LINE_ITEM : contains
+  USER {
+    string name
+    string email
+  }
+```
+
+### timeline
+```
+timeline
+  title 2026 Roadmap
+  Q1 : Foundation : Auth
+  Q2 : API v2 : Migration
+  Q3 : Mobile
+```
+
+### swimlane
+```
+flowchart LR
+  subgraph Frontend
+    A[Submit form]
+  end
+  subgraph Backend
+    B[Validate]
+    C[Write DB]
+  end
+  subgraph Ops
+    D[Alert]
+  end
+  A --> B --> C --> D
+```
+
+### quadrant
+```
+quadrantChart
+  title Priorities
+  x-axis Low --> High Effort
+  y-axis Low --> High Impact
+  quadrant-1 Do Now
+  quadrant-2 Schedule
+  quadrant-3 Drop
+  quadrant-4 Delegate
+  Auth: [0.3, 0.8]
+  Dashboard: [0.7, 0.4]
+```
+
+### nested
+```
+flowchart TD
+  subgraph Organization
+    subgraph Team_A
+      A1[Member 1]
+      A2[Member 2]
+    end
+    subgraph Team_B
+      B1[Member 3]
+    end
+  end
+```
+
+### tree
+```
+flowchart TD
+  Root --> ChildA
+  Root --> ChildB
+  ChildA --> LeafA1
+  ChildA --> LeafA2
+  ChildB --> LeafB1
+```
+
+### layer stack
+```
+flowchart TD
+  subgraph L4 ["L4: Application"]
+    App
+  end
+  subgraph L3 ["L3: Framework"]
+    Framework
+  end
+  subgraph L2 ["L2: Runtime"]
+    Runtime
+  end
+  subgraph L1 ["L1: OS"]
+    OS
+  end
+```
+
+### venn (fallback — inline SVG)
+
+Not supported by Mermaid. assemble-report.js generates a 3-circle overlap SVG:
+
+```html
+<svg viewBox="0 0 300 200">
+  <circle cx="110" cy="100" r="70" fill="#b5523a" opacity="0.3"/>
+  <circle cx="190" cy="100" r="70" fill="#2563eb" opacity="0.3"/>
+  <circle cx="150" cy="130" r="70" fill="#57534e" opacity="0.3"/>
+</svg>
+```
+
+### pyramid / funnel (fallback — Chart.js)
+
+Not supported by Mermaid. Chart.js horizontal bar with descending values:
+
+```js
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Visitors', 'Signups', 'Active', 'Paying'],
+    datasets: [{ data: [10000, 1500, 600, 150], backgroundColor: '#b5523a' }]
+  },
+  options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+});
+```

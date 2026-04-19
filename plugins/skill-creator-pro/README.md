@@ -14,12 +14,20 @@ It adds a 9-category taxonomy, gotchas-driven design, and an autonomous optimiza
 ## Two skills, two speeds
 
 **`/skill-creator-pro`** — for when you're at the keyboard.
-Walks you through a 5-phase loop (Understand → Design → Test → Improve → Polish), shows eval diffs in a browser between iterations, and waits for your feedback before changing anything. Use this when the skill is new, the requirements are fuzzy, or you want to stay in the loop.
+Walks you through a 5-phase loop (Understand → Design → Test → Improve → Polish). Phase 5 also runs an independent **description-trigger optimizer** that runs should-trigger / should-not-trigger queries against candidate descriptions and returns the `best_description`. An HTML benchmark viewer shows parallel baseline-vs-with-skill eval diffs between iterations, and it waits for your feedback before changing anything. Use this when the skill is new, the requirements are fuzzy, or you want to stay in the loop.
 
 **`/auto-optimize`** — for when you're not.
-Takes a working-ish skill and hill-climbs it. Runs the skill dozens of times, scores every output against binary evals, reads the failures, and mutates the prompt — autonomously, without stopping to ask. Use this when the skill is already 70% good and you want it at 95%.
+Takes a working-ish skill and hill-climbs **output quality** (not trigger accuracy). Runs the skill dozens of times in parallel baseline-vs-with-skill subagent pairs, uses grader / analyzer / comparator sub-agents to score every output against binary evals, reads the failures, runs reflection-driven mutation with stuck detection and a structured changelog, and mutates the prompt — autonomously, without stopping to ask. Use this when the skill is already 70% good and you want to push it higher.
 
 The first one needs you. The second one needs evals.
+
+## What ships
+
+- **9-category taxonomy** and 6 reference docs — `skill-categories`, `design-patterns`, `platform-reference`, `schemas`, `troubleshooting-guide`, `eval-writing-guide`
+- **Sub-agents** — grader, analyzer, comparator (parallel baseline/with-skill evaluation)
+- **Scripts** — `run_loop.py` (description optimizer), `aggregate_benchmark.py` (HTML viewer), `package_skill.py`, and six more
+- **Quality gate** — YAML validation, built-in slash-command collision check, 500-line / 5000-word body budget, platform v2.1.x compat checks
+- **Artifacts** — HTML benchmark viewer, `benchmark.json`, `feedback.json`
 
 ## Install
 

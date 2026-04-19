@@ -4,7 +4,7 @@ Reusable CSS patterns for self-contained HTML reports. All reports use CSS custo
 
 ## Theme Setup
 
-Define both light and dark palettes via custom properties. Pick colors from the approved palette in `anti-slop-rules.md` — never use violet/indigo defaults. See `color-palette.md` for the semantic meaning of each color variable across report types.
+Define both light and dark palettes via custom properties. Pick colors from the approved palette in `taste-gate.md` — never use violet/indigo defaults. See `semantic-tokens.md` for the semantic meaning of each color variable across report types.
 
 ```css
 :root {
@@ -72,7 +72,7 @@ Define both light and dark palettes via custom properties. Pick colors from the 
 }
 ```
 
-These are **default values** — each report may override `--font-heading`, `--font-body`, `--font-mono`, `--accent`, and `--node-*` for its chosen font pairing and palette. See `font-system.md` for pairing options.
+These are **default values** — each report may override `--font-heading`, `--font-body`, `--font-mono`, `--accent`, and `--node-*` for its chosen font pairing and palette. See `semantic-tokens.md` for pairing options.
 
 ## Typography Base
 

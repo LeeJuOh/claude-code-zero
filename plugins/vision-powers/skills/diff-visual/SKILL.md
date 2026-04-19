@@ -2,10 +2,9 @@
 name: diff-visual
 description: >
   Visualize git diffs as interactive HTML reports with architecture diagrams,
-  KPI dashboards, code review cards, and side-by-side comparisons.
-  Use when asked to visualize, review, explain, or summarize a diff, branch,
-  commit, PR, or set of changes — including phrases like "what changed",
-  "show me the changes", "review this PR visually",
+  file maps, and change analysis. Use when asked to visualize, review, explain,
+  or summarize a diff, branch, commit, PR, or set of changes — including phrases
+  like "what changed", "show me the changes", "review this PR visually",
   or "make a visual diff report". Accepts branch names, commit hashes, HEAD,
   PR numbers, or commit ranges.
 argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>]"
@@ -14,7 +13,7 @@ allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git diff *), Bash(
 
 # Diff Visual
 
-Visualize git diffs as either self-contained interactive HTML reports (default) or inline markdown reports. HTML includes architecture diagrams, KPI dashboards, code review assessments, and side-by-side comparisons. Markdown is the lighter alternative for terminal review or chat sharing.
+Visualize git diffs as either self-contained interactive HTML reports (default) or inline markdown reports. HTML includes architecture diagrams, file maps, and change analysis. Markdown is the lighter alternative for terminal review or chat sharing.
 
 ## Instructions
 
@@ -66,7 +65,7 @@ If the user's message already conveys clear intent (specific focus, explicit aud
 If the request is ambiguous (e.g., just a branch name with no context), use AskUserQuestion to ask up to 2 questions:
 
 1. **Audience**: Who will read this? (yourself, your team, stakeholders)
-2. **Focus**: Any specific aspect to emphasize? (code quality, architecture impact, test coverage, migration completeness)
+2. **Focus**: Any specific aspect to emphasize? (architecture impact, migration completeness, general)
 
 Defaults (when not specified):
 - Audience: the user themselves
@@ -85,7 +84,6 @@ Collect comprehensive data about the diff. Run git commands in parallel where po
 git diff {scope} --stat
 git diff {scope} --name-status
 git log {scope-log-range} --oneline --format="%h %s"
-git log {scope-log-range} --format="%h|%an|%s|%ai" (for decision log)
 git log {scope-log-range} -- CHANGELOG.md (CHANGELOG update check)
 ```
 
@@ -99,28 +97,12 @@ Where `{scope-log-range}` is:
 - Total lines added/removed: parse `--stat` summary or use `git diff {scope} --numstat`
 - Files changed count, new files, deleted files (from `--name-status`)
 - New modules/directories introduced
-- Test file changes (files matching `*test*`, `*spec*`, `*.test.*`)
-- Housekeeping ratio: classify each changed file as feature/refactor/test/docs/config,
-  calculate percentage breakdown for KPI chart
 
 **Step 3 — Content analysis**:
 Read the full diff content and changed files to understand:
 - **Architecture changes**: New modules, changed imports/exports, dependency shifts
 - **Feature inventory**: What features were added/modified/removed
 - **API surface changes**: New/changed public functions, types, endpoints
-- **Test coverage**: New/modified tests, what they cover
-- **Decision rationale**: Reconstruct why decisions were made, not just what changed:
-  - Commit messages and PR descriptions (if PR scope)
-  - Plan files in the project (Glob for **/plan*, **/RFC*, **/ADR*)
-  - CLAUDE.md or project convention docs
-  - For each significant design choice, classify confidence:
-    - Confirmed: explicitly documented in commit/PR/plan
-    - Inferred: reasonable inference from code patterns
-    - Uncertain: rationale not recoverable — flag for documentation
-- **Housekeeping check**:
-  - CHANGELOG.md: Does it have an entry for these changes? (yes/no)
-  - README.md / docs/*.md: Do they need updates given new/changed features? (yes/no/not-applicable)
-  - Record results for KPI dashboard badges
 
 Use Glob + Grep to find related files (tests, configs, docs) that provide context.
 
@@ -154,10 +136,10 @@ Follow `../../references/report-generation-workflow.md` with these parameters:
 | `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`) |
 | `{template-name}` | `diff-visual.html` |
 | `{skill-prefix}` | `diff-visual` |
-| `{expected-sections}` | `10` |
+| `{expected-sections}` | `7` |
 | `{report-title}` | `"Diff Visual: {scope description}"` |
 | `{aesthetic-hint}` | `"Editorial"` (or `"Blueprint"` for infrastructure-heavy diffs) |
-| `{agent-prompt-data}` | All gathered data: stats, metrics, architecture, features, code review, decisions |
+| `{agent-prompt-data}` | All gathered data: stats, metrics, architecture, features |
 
 #### Markdown mode (`--format md`)
 
@@ -172,33 +154,25 @@ Assemble an inline markdown report and deliver it directly in the response. Do N
 - **Commits:** N
 - **Files changed:** N (M new · P deleted)
 - **Lines:** +A / −B
-- **Test delta:** +X files, +Y lines
-- **Housekeeping ratio:** feature N% · refactor N% · test N% · docs N% · config N%
-- **CHANGELOG updated:** yes/no · **Docs updated:** yes/no/not-applicable
+
+## File Map
+<tree/nested diagram of changed files grouped by directory>
 
 ## Architecture Impact
-<1-2 paragraphs summarizing module-level changes: new/removed modules, dependency shifts, API surface changes. Cite files as `path/to/file.ext`.>
+<1-2 paragraphs + architecture diagram>
 
-## Feature Changes
-| Change | Scope | Files | Notes |
-|--------|-------|-------|-------|
-| <feature or change> | added/modified/removed | <file list> | <1-liner> |
+## Change Classification
+| Category | % | Files |
+|---|---|---|
 
-## Code Review
-<Assessment organized by focus area: code quality, test coverage, architecture impact, migration completeness. Bullet-style with file:line references.>
+## Dependency Shift
+<before/after side-by-side subgraph Mermaid>
 
-## Decisions & Rationale
-| Decision | Source | Confidence |
-|----------|--------|------------|
-| <decision> | commit hash / plan file / inferred | Confirmed / Inferred / Uncertain |
+## New Components
+<architecture diagram focused on new modules>
 
-## Risks & Gaps
-- <risk or gap with file:line reference>
-
-## File-Level Changes (top 20)
-| File | +/− | Classification |
-|------|-----|----------------|
-| `path/to/file` | +42/-10 | feature / refactor / test / docs / config |
+## Hot Spots
+<quadrant: impact vs frequency>
 ```
 
 **Translation:** Translate section headers and prose to the detected language. Keep file paths, function names, commit hashes, and technical classifications (feature/refactor/test/docs/config) untranslated.

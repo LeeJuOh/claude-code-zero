@@ -790,12 +790,21 @@ function scanMemory() {
  *   - plugin hooks/hooks.json (file-based)
  *   - plugin.json inline `hooks` field (inline — plugins-reference.md allows
  *     string, array, OR object for this field; scan only object-form inline defs)
+ *
+ * Schema validation (per 1B):
+ *   - missing_matcher: PreToolUse/PostToolUse entries without a matcher field
+ *   - missing_command:  type=command entries with empty/missing command field
+ *   - unknown_type:     type is set but is not "command"
  */
 function scanHookInventoryDetailed(enabledPlugins, activeInstallPaths, pluginManifests) {
   const eventCounts = {};
   const hookTypes = { command: 0, http: 0, prompt: 0, agent: 0 };
   const eventCollisions = [];
   const allHookEntries = [];
+  const MATCHER_EVENTS = new Set(["PreToolUse", "PostToolUse"]);
+  const KNOWN_HOOK_TYPES = new Set(["command"]);
+  const schemaIssues = [];
+  const schemaIssueCounts = { missing_matcher: 0, missing_command: 0, unknown_type: 0 };
   let total = 0;
 
   function processHooks(hooks, source) {
@@ -804,16 +813,56 @@ function scanHookInventoryDetailed(enabledPlugins, activeInstallPaths, pluginMan
     for (const [event, matchers] of Object.entries(hookMap)) {
       if (event === "description") continue;
       const list = Array.isArray(matchers) ? matchers : [matchers];
-      for (const matcherGroup of list) {
+      for (let mIdx = 0; mIdx < list.length; mIdx++) {
+        const matcherGroup = list[mIdx];
+
+        // Schema check: missing_matcher (only for PreToolUse/PostToolUse)
+        if (MATCHER_EVENTS.has(event) && matcherGroup && typeof matcherGroup === "object") {
+          if (!matcherGroup.matcher) {
+            const issue = {
+              event,
+              hook_index: mIdx,
+              issue_type: "missing_matcher",
+              detail: `${source}: ${event}[${mIdx}] lacks a matcher field`,
+            };
+            schemaIssues.push(issue);
+            schemaIssueCounts.missing_matcher++;
+          }
+        }
+
         const matcher = (matcherGroup && matcherGroup.matcher) || "*";
         const handlers = (matcherGroup && matcherGroup.hooks) || [matcherGroup];
         const handlerList = Array.isArray(handlers) ? handlers : [handlers];
-        for (const h of handlerList) {
+        for (let hIdx = 0; hIdx < handlerList.length; hIdx++) {
+          const h = handlerList[hIdx];
           total++;
           const t = (h && typeof h === "object" && h.type) ? h.type : "command";
           hookTypes[t] = (hookTypes[t] || 0) + 1;
           eventCounts[event] = (eventCounts[event] || 0) + 1;
           allHookEntries.push({ event, matcher, source, type: t });
+
+          if (h && typeof h === "object") {
+            // Schema check: unknown_type
+            if (h.type && !KNOWN_HOOK_TYPES.has(h.type)) {
+              schemaIssues.push({
+                event,
+                hook_index: hIdx,
+                issue_type: "unknown_type",
+                detail: `${source}: ${event}[${mIdx}].hooks[${hIdx}] has unknown type "${h.type}"`,
+              });
+              schemaIssueCounts.unknown_type++;
+            }
+            // Schema check: missing_command (only when type is "command" or defaulted)
+            if (t === "command" && (!h.command || String(h.command).trim() === "")) {
+              schemaIssues.push({
+                event,
+                hook_index: hIdx,
+                issue_type: "missing_command",
+                detail: `${source}: ${event}[${mIdx}].hooks[${hIdx}] type=command but command is empty/missing`,
+              });
+              schemaIssueCounts.missing_command++;
+            }
+          }
         }
       }
     }
@@ -872,6 +921,8 @@ function scanHookInventoryDetailed(enabledPlugins, activeInstallPaths, pluginMan
     event_counts: eventCounts,
     event_collisions: eventCollisions,
     llm_hooks: hookTypes.prompt + hookTypes.agent,
+    schema_issues: schemaIssues,
+    schema_issue_counts: schemaIssueCounts,
   };
 }
 
@@ -1132,6 +1183,221 @@ function scanEnvAndSettings() {
   };
 }
 
+/**
+ * Scan SKILL.md files for security patterns absorbed from the retired toolbox/health skill.
+ *
+ * Checks for: prompt_injection, data_exfil, destructive, hardcoded_credential,
+ * obfuscation, safety_override patterns.
+ *
+ * Self-excludes: the context-health-visual skill itself (by frontmatter name: field).
+ */
+function scanSkillSecurity(enabledPlugins, activeInstallPaths) {
+  // Category → severity mapping
+  const SEVERITY = {
+    prompt_injection: "critical",
+    data_exfil: "critical",
+    destructive: "critical",
+    hardcoded_credential: "critical",
+    obfuscation: "warning",
+    safety_override: "warning",
+  };
+
+  // Patterns per category. Each entry: { category, pattern (RegExp) }
+  const PATTERNS = [
+    // prompt_injection
+    { category: "prompt_injection", pattern: /ignore (previous|above|all) (instructions|prompts|rules)/i },
+    { category: "prompt_injection", pattern: /(you are now|pretend you are|act as if|new persona)/i },
+    { category: "prompt_injection", pattern: /override system prompt/i },
+    // data_exfil
+    { category: "data_exfil", pattern: /(curl|wget).{0,80}(-X\s*POST|--data\b|-d\s+\S).{0,80}https?:\/\//i },
+    { category: "data_exfil", pattern: /base64.{0,40}encode.{0,40}(secret|key|token)/i },
+    // destructive
+    { category: "destructive", pattern: /rm\s+-rf\s+[/~]/ },
+    { category: "destructive", pattern: /git push --force\s+origin\s+main/ },
+    { category: "destructive", pattern: /chmod\s+777/ },
+    // hardcoded_credential
+    { category: "hardcoded_credential", pattern: /(api_key|secret_key|api_secret|access_token)\s*[:=]\s*["'][A-Za-z0-9+/]{16,}/ },
+    // obfuscation
+    { category: "obfuscation", pattern: /eval\s*\$\(/ },
+    { category: "obfuscation", pattern: /base64\s+-d/ },
+    { category: "obfuscation", pattern: /(\\\\x[0-9a-fA-F]{2}){3,}/ },
+    // safety_override
+    { category: "safety_override", pattern: /(override|bypass|disable)\s*(the\s+)?(safety|rules?|hooks?|guard|verification)/i },
+  ];
+
+  // Confidence levels (higher = safer)
+  const CONFIDENCE_LEVEL = { suspicious: 0, uncertain: 1, likely_safe: 2, safe: 3 };
+  const CONFIDENCE_NAME = ["suspicious", "uncertain", "likely_safe", "safe"];
+
+  function computeConfidence(line, filePath) {
+    // Start at suspicious (0), heuristics can only raise it
+    const proposals = [];
+
+    // Heuristic a: line targets a temp directory (e.g. `rm -rf /tmp/foo`,
+    // `Bash(rm -rf /var/folders/...)`). Scoped cleanup of OS-managed
+    // scratch space is the canonical "loud pattern, low risk" case.
+    if (/(\s|^|\()(\/tmp\/|\/var\/folders\/|\/var\/tmp\/)/.test(line)) {
+      proposals.push(CONFIDENCE_LEVEL.safe);
+    }
+    // Heuristic a': scanned file itself lives under a temp dir (sandbox runs)
+    if (/^(\/tmp\/|\/var\/folders\/|\/var\/tmp\/)/.test(filePath)) {
+      proposals.push(CONFIDENCE_LEVEL.safe);
+    }
+    // Heuristic b: loopback-host
+    if (/localhost|127\.0\.0\.1|0\.0\.0\.0/.test(line)) {
+      proposals.push(CONFIDENCE_LEVEL.safe);
+    }
+    // Heuristic c: frontmatter line
+    if (/allowed-tools:|matcher:|disable-model-invocation:/.test(line)) {
+      proposals.push(CONFIDENCE_LEVEL.safe);
+    }
+    // Heuristic d: scanner self-reference (the SKILL.md is documenting
+    // patterns it scans for, not invoking them). Catches both code-style
+    // hints (grep, ripgrep, re.compile) and meta-doc lines that quote
+    // multiple pattern names back-to-back.
+    if (/grep -|ripgrep|re\.compile/.test(line)) {
+      proposals.push(CONFIDENCE_LEVEL.likely_safe);
+    }
+    if (countQuotedPatternNames(line) >= 2) {
+      proposals.push(CONFIDENCE_LEVEL.likely_safe);
+    }
+
+    if (proposals.length === 0) return "suspicious";
+    // Take the minimum (most cautious) among proposals
+    return CONFIDENCE_NAME[Math.min(...proposals)];
+  }
+
+  // Count distinct quoted phrases on a line that resemble pattern catalogues
+  // (e.g. a docs line listing `"ignore previous instructions", "you are now"`).
+  function countQuotedPatternNames(line) {
+    const matches = line.match(/"[^"]{4,60}"/g);
+    return matches ? matches.length : 0;
+  }
+
+  function readSkillName(content) {
+    // Locate the frontmatter block (between leading `---` delimiters). Scan a
+    // generous window — real SKILL.md frontmatters can exceed 1KB (folded
+    // descriptions, allowed-tools lists), so the slice cap must beat them.
+    if (!content.startsWith("---")) return null;
+    const closeIdx = content.indexOf("\n---", 4);
+    if (closeIdx === -1 || closeIdx > 8192) return null;
+    const fm = content.slice(4, closeIdx);
+    const nameM = fm.match(/^name:\s*(.+)/m);
+    if (!nameM) return null;
+    return nameM[1].trim().replace(/^["']|["']$/g, "");
+  }
+
+  function scanFile(filePath, plugin, skill) {
+    let content;
+    try {
+      content = fs.readFileSync(filePath, "utf-8");
+    } catch {
+      return [];
+    }
+
+    // Self-exclusion: skip context-health-visual by frontmatter name
+    const skillName = readSkillName(content);
+    if (skillName === "context-health-visual") return [];
+
+    const lines = content.split("\n");
+    const findings = [];
+    // Track (lineNum, category) to emit only once per (line, category)
+    const emitted = new Set();
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lineNumber = i + 1;
+      for (const { category, pattern } of PATTERNS) {
+        const key = `${lineNumber}|${category}`;
+        if (emitted.has(key)) continue;
+        if (pattern.test(line)) {
+          emitted.add(key);
+          const confidence = computeConfidence(line, filePath);
+          const severity = SEVERITY[category];
+          findings.push({
+            plugin,
+            skill,
+            category,
+            severity,
+            confidence,
+            line_number: lineNumber,
+            excerpt: line.trim().slice(0, 120),
+          });
+        }
+      }
+    }
+
+    return findings;
+  }
+
+  const findings = [];
+  const scannedKeys = new Set(); // dedup by plugin/skill key
+
+  // Source 1: Plugin cache skills (same logic as scanInstalledSkills)
+  const cacheBase = expandHome("~/.claude/plugins/cache");
+  const allSkills = findFiles(cacheBase, (full, name) => name === "SKILL.md");
+  const cacheGroups = {};
+  for (const smd of allSkills) {
+    const pluginName = pluginNameFromCachePath(smd);
+    if (!pluginName) continue;
+    if (!enabledPlugins.has(pluginName)) continue;
+    if (activeInstallPaths && !isUnderActivePath(smd, activeInstallPaths)) continue;
+    const parts = smd.split("/");
+    const skillsIdx = parts.lastIndexOf("skills");
+    if (skillsIdx === -1 || skillsIdx + 1 >= parts.length) continue;
+    const skillName = parts[skillsIdx + 1];
+    const key = `${pluginName}/${skillName}`;
+    if (!cacheGroups[key] || mtime(smd) > mtime(cacheGroups[key])) {
+      cacheGroups[key] = smd;
+    }
+  }
+  for (const [key, smdPath] of Object.entries(cacheGroups)) {
+    if (scannedKeys.has(key)) continue;
+    scannedKeys.add(key);
+    const [plugin, skill] = key.split("/");
+    findings.push(...scanFile(smdPath, plugin, skill));
+  }
+
+  // Source 2: Local skills under ~/.claude/skills/ and .claude/skills/
+  const skillBases = [
+    path.resolve(".claude/skills"),
+    expandHome("~/.claude/skills"),
+  ];
+  for (const base of skillBases) {
+    let entries;
+    try {
+      entries = fs.readdirSync(base, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const smdPath = path.join(base, entry.name, "SKILL.md");
+      const key = `__local__/${entry.name}`;
+      if (scannedKeys.has(key)) continue;
+      scannedKeys.add(key);
+      findings.push(...scanFile(smdPath, "__local__", entry.name));
+    }
+  }
+
+  const scanned_count = scannedKeys.size;
+  const skillsWithFindings = new Set(findings.map(f => `${f.plugin}/${f.skill}`));
+  const counts_by_severity = {};
+  const counts_by_category = {};
+  for (const f of findings) {
+    counts_by_severity[f.severity] = (counts_by_severity[f.severity] || 0) + 1;
+    counts_by_category[f.category] = (counts_by_category[f.category] || 0) + 1;
+  }
+
+  return {
+    scanned_count,
+    findings,
+    skills_with_findings: skillsWithFindings.size,
+    counts_by_severity,
+    counts_by_category,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -1191,6 +1457,7 @@ function main() {
     local_skills: scanLocalSkills(),
     skill_bodies: scanSkillBodies(enabledPlugins, activeInstallPaths),
     hook_inventory: scanHookInventoryDetailed(enabledPlugins, activeInstallPaths, pluginManifests),
+    skill_security: scanSkillSecurity(enabledPlugins, activeInstallPaths),
     context_metrics: scanContextMetrics(enabledPlugins, activeInstallPaths, pluginManifests),
     plugin_components: scanPluginComponents(enabledPlugins, activeInstallPaths, pluginManifests),
     subagent_preloads: scanSubagentPreloads(enabledPlugins, activeInstallPaths),

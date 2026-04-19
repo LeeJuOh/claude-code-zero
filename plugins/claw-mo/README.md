@@ -4,7 +4,7 @@ Manage [mo](https://github.com/k1LoW/mo) markdown viewer sessions from Claude Co
 
 `cmux markdown open` is simple but can't render Mermaid diagrams, KaTeX math, or Shiki syntax highlighting. [mo](https://github.com/k1LoW/mo) handles all of those in the browser — but using it by hand means remembering port numbers, retyping watch patterns every time, herding groups, and checking whether the server is already running.
 
-This plugin saves per-project config and organizes files into groups so every daily action comes down to one command. In cmux, it opens in a browser panel right next to your terminal.
+This plugin saves per-project config and organizes files into groups so every daily action comes down to one command. Full-text search across watched docs (`/_/api/search?q=…`, group-scoped with context snippets), a cross-project dashboard of every running/stopped mo server, and zero-setup quick-open for one-off files (`/claw-mo-open path/to/file.md` auto-assigns a port and starts mo if no config exists). In cmux, it opens in a browser panel right next to your terminal and reuses an existing surface on the same port instead of stacking duplicate tabs.
 
 ## Prerequisites
 
@@ -24,15 +24,17 @@ This plugin saves per-project config and organizes files into groups so every da
 
 **Daily use** (`/claw-mo-up`): restarts the mo server by default whenever one is already running on this project's port. mo preserves the session across restarts but forces a fresh filesystem scan, which is the reliable fix for "docs exist on disk but don't show up in the sidebar" — `fsnotify` can silently miss file creation events under load or on new subdirectories. If the running session's patterns don't match saved config (someone edited runtime-only, or config changed), it instead clears and rebuilds from saved config. Pass `--reuse` if you explicitly want to skip the restart.
 
-**Ad-hoc viewing** (`/claw-mo-open path/to/file.md`): adds a file to the running server and opens the browser directly on that file (deep-link via `?file=<id>`), without touching your saved config. You can also pipe markdown in:
+**Ad-hoc viewing** (`/claw-mo-open path/to/file.md`): adds a file to the running server and opens the browser directly on that file (deep-link via `?file=<id>`), without touching your saved config. If no config exists yet, it auto-assigns a port, starts mo, and writes a minimal config — the project is usable in one command without running `/claw-mo-setup` first. You can also pipe markdown in:
 
 ```
 some-tool --format md | /claw-mo-open -
 ```
 
-Ad-hoc changes are intentionally temporary — the next `/claw-mo-up` will reconcile the runtime back to saved config unless you persist the change through `/claw-mo-manage` or `/claw-mo-setup`.
+Ad-hoc changes are intentionally temporary — the next `/claw-mo-up` will reconcile the runtime back to saved config unless you persist the change through `/claw-mo-manage` or `/claw-mo-setup`. If the runtime has drifted from saved config, `/claw-mo-open` detects it before mutating and asks whether to resync first.
 
-**Troubleshooting** (`/claw-mo-manage`): dashboard of all running mo servers across projects, highlights sync mismatches in groups or watch patterns, and lets you add/remove patterns, close individual files, refresh (rescan), stop servers, or reset sessions interactively. Pattern removal uses `mo --unwatch` and file closing uses `mo --close` — the officially supported CLI paths.
+**Cross-project management** (`/claw-mo-manage`): dashboard of every configured project plus any manually-started mo servers, with running/stopped state at a glance. Highlights sync mismatches in groups or watch patterns, and lets you add/remove patterns, close individual files, refresh (rescan), stop servers, or reset sessions interactively. Pattern removal uses `mo --unwatch` and file closing uses `mo --close` — the officially supported CLI paths.
+
+**Full-text search**: mo exposes `/_/api/search?q=<query>` (group-scoped, with `limit` and surrounding context). Combine it with tab-grouping to find "that one paragraph about X" across hundreds of watched docs without opening files.
 
 **Shutdown** (`/claw-mo-down`): stops the server for the current project. Checks `mo --status --json` first so you get an accurate "was actually running" message instead of a silent no-op.
 

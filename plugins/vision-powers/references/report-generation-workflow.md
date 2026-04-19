@@ -1,6 +1,6 @@
 # Report Generation Workflow
 
-Shared workflow for generating HTML reports. All report-generating skills (plugin-visual, diff-visual, plan-visual, project-recap-visual) follow this sequence after completing their analysis phase.
+Shared workflow for generating HTML reports. All report-generating skills (plugin-visual, diff-visual, doc-visual) follow this sequence after completing their analysis phase.
 
 Each skill provides these parameters before entering the workflow:
 
@@ -36,10 +36,10 @@ If no config file exists, proceed with defaults. Do not prompt the user to set u
 Resolve these relative paths (from the skill directory) to absolute paths:
 - Template: `../../templates/{template-name}`
 - Section structure: `references/section-structure.md`
-- Font system: `../../references/design-system/font-system.md`
-- Anti-slop rules: `../../references/design-system/anti-slop-rules.md`
-- Color palette: `../../references/design-system/color-palette.md`
-- Diagram argumentation: `../../references/design-system/diagram-argumentation.md`
+- Semantic tokens: `../../references/design-system/semantic-tokens.md`
+- Diagram type selection: `../../references/design-system/diagram-type-selection.md`
+- Diagram density rules: `../../references/design-system/diagram-density-rules.md`
+- Taste gate: `../../references/design-system/taste-gate.md`
 - Assembler script: `../../scripts/assemble-report.js`
 - Validator script: `../../scripts/validate-report.js`
 - Renderer script: `../../scripts/render-report.js`
@@ -48,10 +48,10 @@ Resolve these relative paths (from the skill directory) to absolute paths:
 
 **Read 5 reference files** in a single parallel Read call:
 1. Section structure (`references/section-structure.md`)
-2. Font system (`../../references/design-system/font-system.md`)
-3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
-4. Color palette (`../../references/design-system/color-palette.md`)
-5. Diagram argumentation (`../../references/design-system/diagram-argumentation.md`)
+2. Semantic tokens (`../../references/design-system/semantic-tokens.md`)
+3. Diagram type selection (`../../references/design-system/diagram-type-selection.md`)
+4. Diagram density rules (`../../references/design-system/diagram-density-rules.md`)
+5. Taste gate (`../../references/design-system/taste-gate.md`)
 
 Save their content for Step 3 — the visual-report-writer receives content directly so it can start writing immediately without a read turn.
 
@@ -78,10 +78,10 @@ Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
   {agent-prompt-data},
   sections output directory (absolute path from Step 2),
   section structure content (full text read in Step 1),
-  font system content (full text read in Step 1),
-  anti-slop rules content (full text read in Step 1),
-  color palette content (full text read in Step 1),
-  diagram argumentation content (full text read in Step 1),
+  semantic tokens content (full text read in Step 1),
+  diagram type selection content (full text read in Step 1),
+  diagram density rules content (full text read in Step 1),
+  taste gate content (full text read in Step 1),
   recent aesthetics to avoid (JSON from Step 1: {recent-aesthetics}),
   Output language: {detected language},
   Report title: {report-title},
@@ -192,3 +192,120 @@ After reporting the file URL, suggest optional next steps:
 - `--verify` — if not used this time, mention that coherence review is available for future runs
 
 This is informational — just a brief suggestion, not an automatic invocation.
+
+## doc-visual Mode (JSON input)
+
+doc-visual bypasses the visual-report-writer agent entirely. Instead of writing individual `section-N.html` files, the doc-visual pipeline produces a single `sections.json` file that `assemble-report.js` consumes directly.
+
+### Pipeline
+
+```
+parse-markdown → section-analyzer → diagram-generator → taste-gate → assemble-report
+```
+
+Each stage is a Node script under `scripts/`:
+
+| Stage | Script | Output |
+|-------|--------|--------|
+| 1. Parse | `parse-markdown.js` | Raw section objects with headings + body text |
+| 2. Analyze | `section-analyzer.js` | Sections enriched with `diagram_plan` fields |
+| 3. Generate | `diagram-generator.js` | Sections with `mermaid_code` added |
+| 4. Gate | `taste-gate.js` | Validated sections + `meta` block → `sections.json` |
+| 5. Assemble | `assemble-report.js` | Final `report.html` (or `.md`) |
+
+### Input format
+
+`--sections` receives a path to a `.json` file (not a directory):
+
+```json
+{
+  "sections": [
+    {
+      "id": "sec-1",
+      "heading": "Section Heading",
+      "level": 2,
+      "summary": "One-sentence summary shown in the report.",
+      "body": "Full body text (optional if summary is present).",
+      "diagram_plan": {
+        "skip_diagram": false,
+        "diagram_type": "flowchart",
+        "is_hero": true
+      },
+      "mermaid_code": "flowchart TD\n  A --> B",
+      "fallback_data": { "items": [] }
+    }
+  ],
+  "meta": {
+    "title": "Document Title",
+    "source_path": "/path/to/source.md",
+    "lang": "en",
+    "color_scheme": "light",
+    "tokens": {
+      "paper": "#faf7f2",
+      "paper-2": "#f2ede4",
+      "ink": "#1c1917",
+      "muted": "#57534e",
+      "accent": "#b5523a",
+      "accent-tint": "rgba(181,82,58,0.08)",
+      "link": "#2563eb",
+      "rule": "rgba(28,25,23,0.12)"
+    }
+  }
+}
+```
+
+### Assembler invocation
+
+HTML output (default):
+
+```bash
+node assemble-report.js \
+  --template ../../templates/doc-visual.html \
+  --sections /tmp/sections.json \
+  --shared ../../shared/ \
+  --output /path/to/report.html \
+  --skill-prefix doc-visual
+```
+
+Markdown output (`--format md`):
+
+```bash
+node assemble-report.js \
+  --template ../../templates/doc-visual.html \
+  --sections /tmp/sections.json \
+  --output /path/to/report.html \
+  --format md \
+  --skill-prefix doc-visual
+```
+
+When `--format md` is used, the output file extension is changed from `.html` to `.md` automatically.
+
+`--metadata` is optional in JSON mode. If provided, the external metadata file is merged on top of the JSON-embedded `meta` block (external file wins on key conflicts).
+
+### Fallback budget validation
+
+`assemble-report.js` runs `validateFallbackBudget` on every section before rendering. Limits:
+
+| Diagram type | Limit | Behaviour on exceed |
+|---|---|---|
+| `venn` | 3 circles | Diagram skipped with a warning |
+| `pyramid` | 6 layers | Diagram skipped with a warning |
+| `quadrant` | 12 items | Items truncated to 12, no warning |
+
+Budget validation runs at assemble time (not at taste-gate time) so that a sections.json produced by an earlier pipeline stage can still be fixed by editing before re-assembly.
+
+### Template placeholder system
+
+The doc-visual template uses `{UPPER_CASE}` curly-brace placeholders instead of the `<!-- KEY -->` HTML-comment style used by other templates. The assembler calls `replaceCurly(html, map)` to fill them. Key placeholders:
+
+| Placeholder | Source |
+|---|---|
+| `{TOKEN_PAPER}`, `{TOKEN_INK}`, etc. | `meta.tokens.*` (key `paper-2` → `TOKEN_PAPER_2`) |
+| `{SECTIONS_HTML}` | Rendered section HTML |
+| `{TOC_HTML}` | Auto-generated `<nav class="toc">` |
+| `{DOC_TITLE}` | `meta.title` |
+| `{SOURCE_PATH}` | `meta.source_path` |
+| `{TIMESTAMP}` | ISO timestamp at assemble time |
+| `{LANG}` | `meta.lang` |
+| `{COLOR_SCHEME}` | `meta.color_scheme` |
+| `{SHARED_JS}` | Contents of `shared/shared.js` (if `--shared` provided) |

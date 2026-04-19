@@ -30,6 +30,14 @@
       --shadow-lg: 0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
       --shadow-hero: 0 8px 32px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.06);
       <!-- CSS_VARIABLES -->
+      /* Layer 0 semantic token aliases */
+      --paper: var(--bg);
+      --paper-2: var(--surface);
+      --ink: var(--text);
+      --muted: var(--text-dim);
+      --rule: var(--border);
+      --accent-tint: var(--accent-dim);
+      --link: var(--accent);
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -47,6 +55,14 @@
         --shadow-lg: 0 4px 20px rgba(0,0,0,0.3);
         --shadow-hero: 0 8px 32px rgba(0,0,0,0.4);
         <!-- CSS_VARIABLES_DARK -->
+        /* Layer 0 semantic token aliases */
+        --paper: var(--bg);
+        --paper-2: var(--surface);
+        --ink: var(--text);
+        --muted: var(--text-dim);
+        --rule: var(--border);
+        --accent-tint: var(--accent-dim);
+        --link: var(--accent);
       }
     }
 
@@ -203,31 +219,6 @@
     .file-delta { font-size: 0.75rem; opacity: 0.7; margin-left: auto; }
     .dir-name { cursor: pointer; font-weight: 600; }
 
-    /* ===== REPORT: Section 7 — Test Coverage ===== */
-    .coverage-note { margin-top: 1rem; padding: 0.75rem 1rem; background: color-mix(in srgb, var(--surface) 50%, var(--bg) 50%); border-radius: 6px; font-size: 0.9rem; }
-
-    /* ===== REPORT: Section 8 — Code Review ===== */
-    .review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-    .review-category-title { font-size: 1rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid; }
-    .review-category-title--good { border-color: var(--success); color: var(--success); }
-    .review-category-title--bad { border-color: var(--danger); color: var(--danger); }
-    .review-category-title--ugly { border-color: var(--warning); color: var(--warning); }
-    .review-category-title--questions { border-color: var(--info); color: var(--info); }
-    .review-card { margin-bottom: 0.75rem; }
-    .review-card h4 { margin: 0 0 0.5rem 0; font-size: 0.95rem; }
-    .review-source { display: block; font-size: 0.75rem; opacity: 0.6; margin-top: 0.5rem; }
-
-    /* ===== REPORT: Section 9 — Decision Log ===== */
-    .decision-list { display: flex; flex-direction: column; gap: 1rem; }
-    .decision-card { padding: 1rem 1.25rem; border-radius: 8px; border-left: 4px solid; background: color-mix(in srgb, var(--surface) 50%, var(--bg) 50%); }
-    .decision-card--confirmed { border-color: var(--success); }
-    .decision-card--inferred { border-color: var(--info); }
-    .decision-card--uncertain { border-color: var(--warning); }
-    .decision-confidence { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
-    .decision-card--confirmed .decision-confidence { color: var(--success); }
-    .decision-card--inferred .decision-confidence { color: var(--info); }
-    .decision-card--uncertain .decision-confidence { color: var(--warning); }
-    .decision-source { display: block; font-size: 0.75rem; opacity: 0.6; margin-top: 0.5rem; }
 
     <!-- FEEDBACK_CSS -->
   </style>
@@ -239,16 +230,13 @@
     <!-- TOC_CONTENT -->
   </nav>
   <div class="main">
-    <!-- SECTION_1: Executive Summary — hero insight about the diff, scope badges -->
-    <!-- SECTION_2: KPI Dashboard — stat cards (lines +/-, files changed), housekeeping badges, change breakdown chart -->
-    <!-- SECTION_3: Module Architecture — Mermaid dependency graph with added/modified/deleted color coding -->
-    <!-- SECTION_4: Feature Comparisons — side-by-side before/after panels for each major change -->
-    <!-- SECTION_5: Flow Diagrams — sequence or flowchart for new/changed flows and pipelines -->
-    <!-- SECTION_6: File Map — color-coded collapsible file tree with line deltas -->
-    <!-- SECTION_7: Test Coverage — test changes table, coverage assessment note -->
-    <!-- SECTION_8: Code Review — Good/Bad/Ugly/Questions assessment cards -->
-    <!-- SECTION_9: Decision Log — confidence-rated decision cards (confirmed/inferred/uncertain) -->
-    <!-- SECTION_10: Re-entry Context — invariants, coupling points, gotchas (collapsible) -->
+    <!-- SECTION_1: Overview — stat cards (lines +/-, files changed, commits) + 2-3 sentence narrative -->
+    <!-- SECTION_2: File Map — Mermaid tree/nested diagram of changed files grouped by directory -->
+    <!-- SECTION_3: Architecture Impact — Mermaid architecture diagram showing module-level impact -->
+    <!-- SECTION_4: Change Classification — Chart.js horizontal bar showing % breakdown by category -->
+    <!-- SECTION_5: Dependency Shift — Mermaid side-by-side subgraph showing before/after dependencies -->
+    <!-- SECTION_6: New Components — Mermaid architecture diagram of newly added modules -->
+    <!-- SECTION_7: Hot Spots — Mermaid quadrantChart plotting files by impact vs change frequency -->
   </div>
 </div>
 <!-- Feedback bar -->

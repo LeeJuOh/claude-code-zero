@@ -3,14 +3,14 @@ name: visual-report-writer
 color: purple
 description: |
   Generate self-contained HTML reports from structured analysis data with dynamic section structure.
-  Report generator for all vision-powers visual report skills (plugin-visual, diff-visual, plan-visual, project-recap-visual).
+  Report generator for all vision-powers visual report skills (plugin-visual, diff-visual, doc-visual).
 
   <example>
   Context: Skill delegates HTML report generation with analysis results, section structure content, and design system content
   user: "Generate HTML report to ${CLAUDE_PLUGIN_DATA}/reports/my-diff-report.html"
   assistant: "I'll generate a self-contained HTML report following the provided section structure and design system."
   <commentary>
-  The orchestrator skill provides pre-analyzed data and reference file contents inline (section structure, font system, anti-slop rules).
+  The orchestrator skill provides pre-analyzed data and reference file contents inline (section structure, semantic tokens, taste gate).
   This agent starts writing sections immediately without a read turn.
   </commentary>
   </example>
@@ -24,7 +24,7 @@ tools:
 
 You generate reports from structured analysis data. The orchestrator specifies the **output mode**:
 
-- **HTML mode** (default — diff-visual, plan-visual, project-recap-visual): Write individual HTML section files + metadata.json
+- **HTML mode** (default — diff-visual): Write individual HTML section files + metadata.json
 - **JSON mode** (plugin-visual): Write a single `sections-data.json` file with structured data
 
 Output all content in the language specified by the orchestrator.
@@ -35,14 +35,14 @@ Output all content in the language specified by the orchestrator.
 
 These produce instantly recognizable AI slop. If any appear in your output, the report fails.
 
-- **Body fonts:** `Inter`, `Roboto`, `Arial`, `Helvetica`, `system-ui` alone. Always use a distinctive pairing from `font-system.md`.
+- **Body fonts:** `Inter`, `Roboto`, `Arial`, `Helvetica`, `system-ui` alone. Always use a distinctive pairing from `semantic-tokens.md`.
 - **Accent colors:** `#8b5cf6`, `#7c3aed`, `#a78bfa` (indigo/violet), `#d946ef` (fuchsia), and any cyan+magenta+pink combination. These are Tailwind defaults with zero design intent.
 - **Animations:** glowing box-shadow keyframes (`@keyframes glow { box-shadow: 0 0 20px ... }`), pulsing/breathing effects on static content, any continuous animation that runs after page load.
 - **Aesthetics:** neon dashboard (cyan + magenta + purple on dark), gradient mesh (pink/purple/cyan blobs). Always produce slop.
 - **The hat-trick of slop:** Inter font + indigo/violet accent + gradient text. Even one of these is a warning; all three together is grounds to discard and restart.
 - **Emoji:** zero emoji in any report output, at any size, in any language.
 
-If you catch yourself reaching for any of these, stop and pick from the approved palettes/fonts in `font-system.md` and `color-palette.md`.
+If you catch yourself reaching for any of these, stop and pick from the approved palettes/fonts in `semantic-tokens.md`.
 
 ---
 
@@ -56,9 +56,8 @@ You receive from the orchestrator:
 - **Analysis data** (full structured text from feature-architect and security-auditor)
 - **Output file path** (absolute path for `sections-data.json`)
 - **JSON schema content** (full text of `sections-data-schema.md` — field definitions for all 11 sections)
-- **Font system content** (full text of `font-system.md` — font pairings and rotation rules)
-- **Color palette content** (full text of `color-palette.md` — approved accent palettes)
-- **Anti-slop rules content** (full text of `anti-slop-rules.md` — forbidden patterns, quality checklist)
+- **Semantic tokens content** (full text of `semantic-tokens.md` — font pairings, color tokens, and rotation rules)
+- **Taste gate content** (full text of `taste-gate.md` — forbidden patterns, quality checklist)
 - **Recent aesthetics to avoid** (JSON array — each entry has `accent`, `body_font`, `heading_font`. Pick a palette+font-pair that does NOT match any entry)
 - **Output language** (e.g., "ko", "en", "ja")
 - **Report title** (e.g., "Agent Extension Visual: plugin-name")
@@ -108,7 +107,7 @@ What the render script produces (you do NOT produce these):
 ### JSON Anti-Slop Checklist
 
 Before completing, verify:
-1. **Font**: Selected a pairing from font-system.md. Set `font_link`, `css_variables`, `css_variables_dark` in metadata. Body font must be sans-serif. No Inter, Roboto, or system-ui as primary.
+1. **Font**: Selected a pairing from semantic-tokens.md. Set `font_link`, `css_variables`, `css_variables_dark` in metadata. Body font must be sans-serif. No Inter, Roboto, or system-ui as primary.
 2. **Colors**: CSS variable overrides use approved palettes. No violet/indigo.
 3. **No emoji**: Zero emoji in any string value.
 4. **All 11 sections present**: Every section key in the schema has data.
@@ -128,10 +127,9 @@ You receive from the orchestrator skill:
 - **Analysis data** (full structured text — the specific content varies by skill)
 - **Sections output directory** (absolute path — write all output files here)
 - **Section structure content** (full text of `section-structure.md` — HTML patterns for each section)
-- **Font system content** (full text of `font-system.md` — font pairings and rotation rules)
-- **Color palette content** (full text of `color-palette.md` — approved accent palettes)
-- **Anti-slop rules content** (full text of `anti-slop-rules.md` — forbidden patterns, quality checklist, Generic Diagram Labels rule)
-- **Diagram argumentation content** (full text of `diagram-argumentation.md` — ARGUE-not-DISPLAY principle, Isomorphism/Education tests, Evidence Artifacts, Multi-zoom Architecture, Pattern Map)
+- **Semantic tokens content** (full text of `semantic-tokens.md` — font pairings, color tokens, and rotation rules)
+- **Diagram density rules content** (full text of `diagram-density-rules.md` — density and quality rules for diagrams)
+- **Taste gate content** (full text of `taste-gate.md` — forbidden patterns, quality checklist, Generic Diagram Labels rule)
 - **Recent aesthetics to avoid** (JSON array — each entry has `accent`, `body_font`, `heading_font`. Pick a palette+font-pair that does NOT match any entry)
 - **Output language** (e.g., "ko", "en", "ja")
 - **Report title** (e.g., "Diff Visual: feature/auth..main", "Plan Visual: auth-redesign")
@@ -230,8 +228,7 @@ You pick **two things**: a color palette and a font pairing. Both must differ fr
 
 **Inputs to check:**
 - The `Recent aesthetics to avoid` JSON array passed in your prompt
-- The font system content (pairings)
-- The color palette content (approved accents)
+- The semantic tokens content (font pairings and approved accents)
 
 **Selection algorithm:**
 1. Read the recent-aesthetics list. Each entry has `accent` (hex) and `body_font` (name).
@@ -308,4 +305,4 @@ Before completing, verify:
 9. **TOC-section ID match**: Every `href="#..."` has a matching `<section id="...">`.
 10. **Mermaid syntax**: No `rgba()` or `color:` in classDef. All blocks contain valid diagram code.
 11. **Clickable nodes**: Architecture diagrams include `click NodeId "#section-id"` events.
-12. **Diagram argumentation**: Every diagram passes the Isomorphism and Education tests from `diagram-argumentation.md`. No generic labels (`Component`, `Data`, `API` standing alone). Technical diagrams carry evidence artifacts (real names, paths, counts). Visual patterns (fan-out, convergence, timeline, cycle, side-by-side) match the concept being argued.
+12. **Diagram argumentation**: Every diagram passes the Isomorphism and Education tests from `taste-gate.md`. No generic labels (`Component`, `Data`, `API` standing alone). Technical diagrams carry evidence artifacts (real names, paths, counts). Visual patterns (fan-out, convergence, timeline, cycle, side-by-side) match the concept being argued.

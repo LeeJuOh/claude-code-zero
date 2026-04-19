@@ -22,7 +22,16 @@ This plugin builds that questioning habit into your workflow. The duck asks you 
 
 `/duck` with no argument auto-detects the right mode from context.
 
-Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents, PR/MR creation, and git push. When triggered, the duck suggests `/branch` + `/duck <mode>` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session.
+Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents (Write on `plan*.md` / `spec*.md` / `design*.md` — deterministic, non-AI, non-conversational files like README / CHANGELOG / CLAUDE.md are filtered out), PR/MR creation, and `Bash(git *)` commands (push, commit, merge). When triggered, the duck suggests `/branch` + `/duck <mode>` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session, with 24h TTL cleanup, and skipped entirely in subagent contexts.
+
+## How the duck works
+
+- **Hint Ladder / fading scaffolding** — the duck starts abstract and narrows only if you're stuck. It never reveals the code.
+- **Uncertainty Check** — you're asked to verbalize your hunch *before* the duck responds, so you can't retrofit understanding from a hint.
+- **Temporal cost simulation** — at least one question per session asks where this decision will hurt in 6 months, to surface hidden maintenance costs.
+- **Intensity scaling** — Quick / Standard / Deep auto-calibrated to the artifact size, so a one-line fix doesn't get a 45-minute interrogation.
+- **Committable orientation artifact** — `/duck orient` produces `.claude/orientation.md` that's team-shareable so new contributors inherit your mental model.
+- **Korean-native duck persona** — the duck speaks and thinks in Korean. If you want English, ask for it; otherwise expect 한국어.
 
 ## Prerequisites
 

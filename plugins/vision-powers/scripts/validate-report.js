@@ -14,7 +14,7 @@
  *
  * Warnings (do not fail, but surface for agent attention):
  *   W1. Generic diagram labels — standalone "Component"/"Data"/"Service"/etc.
- *       in graph/flowchart node labels (see anti-slop-rules.md §Generic Diagram Labels)
+ *       in graph/flowchart node labels (see taste-gate.md §Generic Diagram Labels)
  *
  * Usage:
  *   node validate-report.js <report.html> [--expected-sections N]
@@ -191,7 +191,7 @@ function checkChartJs(html) {
 }
 
 // Generic diagram label warnings — standalone category words that teach nothing.
-// Sourced from anti-slop-rules.md §Generic Diagram Labels.
+// Sourced from taste-gate.md §Generic Diagram Labels.
 // Only applied to graph/flowchart blocks; stateDiagram/sequenceDiagram have different
 // label semantics (state names, participant aliases) where single-word labels are normal.
 function checkGenericLabels(html) {
@@ -220,7 +220,7 @@ function checkGenericLabels(html) {
       while ((lm = labelRe.exec(line)) !== null) {
         const label = lm[1].trim();
         if (forbidden.has(label)) {
-          warnings.push(`Mermaid #${blockIdx} L${i + 1}: generic label "${label}" standing alone — use a concrete identifier (see anti-slop-rules.md §Generic Diagram Labels)`);
+          warnings.push(`Mermaid #${blockIdx} L${i + 1}: generic label "${label}" standing alone — use a concrete identifier (see taste-gate.md §Generic Diagram Labels)`);
         }
       }
     }

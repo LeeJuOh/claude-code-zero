@@ -179,7 +179,7 @@ When using anime.js, set initial opacity to 0 in CSS:
 
 ## Google Fonts — Typography
 
-Always load with `display=swap`. See `font-system.md` for curated pairings.
+Always load with `display=swap`. See `semantic-tokens.md` for curated pairings.
 
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com">

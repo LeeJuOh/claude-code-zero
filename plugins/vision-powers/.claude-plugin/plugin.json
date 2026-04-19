@@ -1,11 +1,11 @@
 {
   "name": "vision-powers",
-  "description": "Visual report generation suite with full HTML + Markdown parity: wiki analysis, diff review, plan review, project recap, fact-checking, environment health diagnostics, and report management. Self-contained HTML reports with interactive diagrams, rotating palette/font pairings to prevent visual repetition, or inline markdown alternatives for chat and PR contexts.",
+  "description": "Analyze Claude Code plugins and visualize text artifacts (markdown docs, git diffs, plugins) as interactive HTML or diagram-enhanced markdown reports. Skills: doc-visual, diff-visual, plugin-visual, context-health-visual, fact-check, report-manager. context-health-visual now includes skill security scan (6 pattern categories) and hook schema validation.",
   "author": {
     "name": "LeeJuOh",
     "email": "xop4p@naver.com"
   },
   "repository": "https://github.com/LeeJuOh/claude-code-zero",
   "license": "MIT",
-  "keywords": ["analyzer", "wiki", "report", "html", "security", "audit", "plugin", "diff", "plan", "visualization", "review", "recap", "fact-check", "verification", "manager", "health", "environment", "diagnostics", "context", "optimization"]
+  "keywords": ["analyzer", "wiki", "report", "html", "security", "audit", "plugin", "diff", "plan", "visualization", "review", "recap", "fact-check", "verification", "manager", "health", "environment", "diagnostics", "context", "optimization", "security-scan", "hook-validation"]
 }
