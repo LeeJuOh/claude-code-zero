@@ -192,3 +192,120 @@ After reporting the file URL, suggest optional next steps:
 - `--verify` — if not used this time, mention that coherence review is available for future runs
 
 This is informational — just a brief suggestion, not an automatic invocation.
+
+## doc-visual Mode (JSON input)
+
+doc-visual bypasses the visual-report-writer agent entirely. Instead of writing individual `section-N.html` files, the doc-visual pipeline produces a single `sections.json` file that `assemble-report.js` consumes directly.
+
+### Pipeline
+
+```
+parse-markdown → section-analyzer → diagram-generator → taste-gate → assemble-report
+```
+
+Each stage is a Node script under `scripts/`:
+
+| Stage | Script | Output |
+|-------|--------|--------|
+| 1. Parse | `parse-markdown.js` | Raw section objects with headings + body text |
+| 2. Analyze | `section-analyzer.js` | Sections enriched with `diagram_plan` fields |
+| 3. Generate | `diagram-generator.js` | Sections with `mermaid_code` added |
+| 4. Gate | `taste-gate.js` | Validated sections + `meta` block → `sections.json` |
+| 5. Assemble | `assemble-report.js` | Final `report.html` (or `.md`) |
+
+### Input format
+
+`--sections` receives a path to a `.json` file (not a directory):
+
+```json
+{
+  "sections": [
+    {
+      "id": "sec-1",
+      "heading": "Section Heading",
+      "level": 2,
+      "summary": "One-sentence summary shown in the report.",
+      "body": "Full body text (optional if summary is present).",
+      "diagram_plan": {
+        "skip_diagram": false,
+        "diagram_type": "flowchart",
+        "is_hero": true
+      },
+      "mermaid_code": "flowchart TD\n  A --> B",
+      "fallback_data": { "items": [] }
+    }
+  ],
+  "meta": {
+    "title": "Document Title",
+    "source_path": "/path/to/source.md",
+    "lang": "en",
+    "color_scheme": "light",
+    "tokens": {
+      "paper": "#faf7f2",
+      "paper-2": "#f2ede4",
+      "ink": "#1c1917",
+      "muted": "#57534e",
+      "accent": "#b5523a",
+      "accent-tint": "rgba(181,82,58,0.08)",
+      "link": "#2563eb",
+      "rule": "rgba(28,25,23,0.12)"
+    }
+  }
+}
+```
+
+### Assembler invocation
+
+HTML output (default):
+
+```bash
+node assemble-report.js \
+  --template ../../templates/doc-visual.html \
+  --sections /tmp/sections.json \
+  --shared ../../shared/ \
+  --output /path/to/report.html \
+  --skill-prefix doc-visual
+```
+
+Markdown output (`--format md`):
+
+```bash
+node assemble-report.js \
+  --template ../../templates/doc-visual.html \
+  --sections /tmp/sections.json \
+  --output /path/to/report.html \
+  --format md \
+  --skill-prefix doc-visual
+```
+
+When `--format md` is used, the output file extension is changed from `.html` to `.md` automatically.
+
+`--metadata` is optional in JSON mode. If provided, the external metadata file is merged on top of the JSON-embedded `meta` block (external file wins on key conflicts).
+
+### Fallback budget validation
+
+`assemble-report.js` runs `validateFallbackBudget` on every section before rendering. Limits:
+
+| Diagram type | Limit | Behaviour on exceed |
+|---|---|---|
+| `venn` | 3 circles | Diagram skipped with a warning |
+| `pyramid` | 6 layers | Diagram skipped with a warning |
+| `quadrant` | 12 items | Items truncated to 12, no warning |
+
+Budget validation runs at assemble time (not at taste-gate time) so that a sections.json produced by an earlier pipeline stage can still be fixed by editing before re-assembly.
+
+### Template placeholder system
+
+The doc-visual template uses `{UPPER_CASE}` curly-brace placeholders instead of the `<!-- KEY -->` HTML-comment style used by other templates. The assembler calls `replaceCurly(html, map)` to fill them. Key placeholders:
+
+| Placeholder | Source |
+|---|---|
+| `{TOKEN_PAPER}`, `{TOKEN_INK}`, etc. | `meta.tokens.*` (key `paper-2` → `TOKEN_PAPER_2`) |
+| `{SECTIONS_HTML}` | Rendered section HTML |
+| `{TOC_HTML}` | Auto-generated `<nav class="toc">` |
+| `{DOC_TITLE}` | `meta.title` |
+| `{SOURCE_PATH}` | `meta.source_path` |
+| `{TIMESTAMP}` | ISO timestamp at assemble time |
+| `{LANG}` | `meta.lang` |
+| `{COLOR_SCHEME}` | `meta.color_scheme` |
+| `{SHARED_JS}` | Contents of `shared/shared.js` (if `--shared` provided) |
