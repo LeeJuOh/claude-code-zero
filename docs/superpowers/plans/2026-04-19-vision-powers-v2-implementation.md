@@ -2398,17 +2398,17 @@ Push는 사용자가 명시적으로 요청할 때만.
 
 ### B. During execution (Task 실행 중 반드시 확인)
 
-- [ ] `accent-tint → primaryColor fill tint` 매핑 표 줄 포함 (Task 1)
-- [ ] `font-system.md | color-palette.md | anti-slop-rules.md | diagram-argumentation.md` sweep grep이 0건 (Task 6 Step 4, Task 18 Step 3)
-- [ ] `taste-gate.test.js` 12건 전부 PASS (Task 8 Step 4) — reserved-word 회귀 2건 포함
-- [ ] `DENSITY_BUDGETS`가 스펙 §3.3의 차원별 제약(lanes/depth/levels/lifelines/entities)을 각각 별도 필드로 유지 (Task 8 Step 3)
-- [ ] `aesthetic-rotation.js recent --n 3` CLI 호출이 기존대로 동작 (Task 15 Step 6)
-- [ ] `assemble-report.js`의 디렉터리 모델 무회귀 (기존 diff-visual 스모크 통과, Task 12 Step 8)
-- [ ] `templates/diff-visual.html`에 SECTION_8 이상 주석 잔여 0건 (Task 17 Step 5)
-- [ ] doc-visual 스모크 3종 문서 (spec/plan/research) 모두 에러 없이 HTML 생성 (Task 22 Step 2)
-- [ ] basename에 공백/특수문자 포함된 입력으로도 출력 파일 경로가 sanitize되어 생성 (Task 12 Step 6)
-- [ ] doc-visual SKILL.md `argument-hint` / `description` / `allowed-tools`에 XML angle brackets(`<`, `>`) 없음 (Task 13). `[md-file-path]` 형식 사용. skill-creator-pro quality gate 룰 "no XML angle brackets in frontmatter"와 일치.
-- [ ] `claude plugin validate .` 통과 시 argument-hint에 YAML sequence syntax(`[a | b]`)로 해석되지 않도록 plain string으로 유지 (Task 22 Step 1)
+- [x] `accent-tint → primaryColor fill tint` 매핑 표 줄 포함 (Task 1)
+- [x] `font-system.md | color-palette.md | anti-slop-rules.md | diagram-argumentation.md` sweep grep이 0건 (Task 6 Step 4, Task 18 Step 3)
+- [x] `taste-gate.test.js` 12건 전부 PASS (Task 8 Step 4) — reserved-word 회귀 2건 포함
+- [x] `DENSITY_BUDGETS`가 스펙 §3.3의 차원별 제약(lanes/depth/levels/lifelines/entities)을 각각 별도 필드로 유지 (Task 8 Step 3)
+- [x] `aesthetic-rotation.js recent --n 3` CLI 호출이 기존대로 동작 (Task 15 Step 6)
+- [x] `assemble-report.js`의 디렉터리 모델 무회귀 (기존 diff-visual 스모크 통과, Task 12 Step 8)
+- [x] `templates/diff-visual.html`에 SECTION_8 이상 주석 잔여 0건 (Task 17 Step 5)
+- [ ] doc-visual 스모크 3종 문서 (spec/plan/research) 모두 에러 없이 HTML 생성 (Task 22 Step 2) — 사용자 인터랙티브 테스트 필요
+- [x] basename에 공백/특수문자 포함된 입력으로도 출력 파일 경로가 sanitize되어 생성 (Task 12 Step 6)
+- [x] doc-visual SKILL.md `argument-hint` / `description` / `allowed-tools`에 XML angle brackets(`<`, `>`) 없음 (Task 13). `[md-file-path]` 형식 사용. skill-creator-pro quality gate 룰 "no XML angle brackets in frontmatter"와 일치.
+- [x] `claude plugin validate .` 통과 시 argument-hint에 YAML sequence syntax(`[a | b]`)로 해석되지 않도록 plain string으로 유지 (Task 22 Step 1)
 
 ## Execution
 
