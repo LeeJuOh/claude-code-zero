@@ -36,10 +36,10 @@ If no config file exists, proceed with defaults. Do not prompt the user to set u
 Resolve these relative paths (from the skill directory) to absolute paths:
 - Template: `../../templates/{template-name}`
 - Section structure: `references/section-structure.md`
-- Font system: `../../references/design-system/font-system.md`
-- Anti-slop rules: `../../references/design-system/anti-slop-rules.md`
-- Color palette: `../../references/design-system/color-palette.md`
-- Diagram argumentation: `../../references/design-system/diagram-argumentation.md`
+- Semantic tokens: `../../references/design-system/semantic-tokens.md`
+- Diagram type selection: `../../references/design-system/diagram-type-selection.md`
+- Diagram density rules: `../../references/design-system/diagram-density-rules.md`
+- Taste gate: `../../references/design-system/taste-gate.md`
 - Assembler script: `../../scripts/assemble-report.js`
 - Validator script: `../../scripts/validate-report.js`
 - Renderer script: `../../scripts/render-report.js`
@@ -48,10 +48,10 @@ Resolve these relative paths (from the skill directory) to absolute paths:
 
 **Read 5 reference files** in a single parallel Read call:
 1. Section structure (`references/section-structure.md`)
-2. Font system (`../../references/design-system/font-system.md`)
-3. Anti-slop rules (`../../references/design-system/anti-slop-rules.md`)
-4. Color palette (`../../references/design-system/color-palette.md`)
-5. Diagram argumentation (`../../references/design-system/diagram-argumentation.md`)
+2. Semantic tokens (`../../references/design-system/semantic-tokens.md`)
+3. Diagram type selection (`../../references/design-system/diagram-type-selection.md`)
+4. Diagram density rules (`../../references/design-system/diagram-density-rules.md`)
+5. Taste gate (`../../references/design-system/taste-gate.md`)
 
 Save their content for Step 3 — the visual-report-writer receives content directly so it can start writing immediately without a read turn.
 
@@ -78,10 +78,10 @@ Agent(subagent_type: "vision-powers:visual-report-writer", prompt: {
   {agent-prompt-data},
   sections output directory (absolute path from Step 2),
   section structure content (full text read in Step 1),
-  font system content (full text read in Step 1),
-  anti-slop rules content (full text read in Step 1),
-  color palette content (full text read in Step 1),
-  diagram argumentation content (full text read in Step 1),
+  semantic tokens content (full text read in Step 1),
+  diagram type selection content (full text read in Step 1),
+  diagram density rules content (full text read in Step 1),
+  taste gate content (full text read in Step 1),
   recent aesthetics to avoid (JSON from Step 1: {recent-aesthetics}),
   Output language: {detected language},
   Report title: {report-title},
