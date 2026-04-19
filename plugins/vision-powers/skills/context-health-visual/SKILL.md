@@ -2,13 +2,17 @@
 name: context-health-visual
 description: >
   Diagnose Claude Code environment health — context budget, description obesity,
-  trigger collisions, hooks, MCP, plugin components, CLAUDE.md and memory.
-  5 graded scores plus 5 observational areas with actionable levers ranked by impact.
+  trigger collisions, hooks, MCP, plugin components, CLAUDE.md and memory, plus a
+  skill-security scan (prompt injection, data exfil, destructive, credentials,
+  obfuscation, safety override) and hook schema validation. 6 graded scores plus
+  5 observational areas with actionable levers ranked by impact.
   Use when asked to audit the environment, check context budget, review plugins,
-  investigate trigger collisions or skill obesity — including phrases like
-  "audit my environment", "why does Claude feel slow", "check my context budget",
+  investigate trigger collisions or skill obesity, or scan installed skills for
+  risky patterns — including phrases like "audit my environment",
+  "why does Claude feel slow", "check my context budget",
   "am I hitting description truncation", "review my plugins",
-  "show environment health", "run an environment health check".
+  "show environment health", "run an environment health check",
+  "scan my skills for suspicious patterns".
 argument-hint: "[--format html|md] [--lang <code>] [--paste-context] [--use-instructions-loaded-hook]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(node *), Bash(open *), Bash(rm -rf /tmp/env-health-*)
 ---

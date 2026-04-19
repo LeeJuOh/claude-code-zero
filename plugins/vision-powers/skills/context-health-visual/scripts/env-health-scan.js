@@ -1233,7 +1233,13 @@ function scanSkillSecurity(enabledPlugins, activeInstallPaths) {
     // Start at suspicious (0), heuristics can only raise it
     const proposals = [];
 
-    // Heuristic a: temp-path
+    // Heuristic a: line targets a temp directory (e.g. `rm -rf /tmp/foo`,
+    // `Bash(rm -rf /var/folders/...)`). Scoped cleanup of OS-managed
+    // scratch space is the canonical "loud pattern, low risk" case.
+    if (/(\s|^|\()(\/tmp\/|\/var\/folders\/|\/var\/tmp\/)/.test(line)) {
+      proposals.push(CONFIDENCE_LEVEL.safe);
+    }
+    // Heuristic a': scanned file itself lives under a temp dir (sandbox runs)
     if (/^(\/tmp\/|\/var\/folders\/|\/var\/tmp\/)/.test(filePath)) {
       proposals.push(CONFIDENCE_LEVEL.safe);
     }
@@ -1245,8 +1251,14 @@ function scanSkillSecurity(enabledPlugins, activeInstallPaths) {
     if (/allowed-tools:|matcher:|disable-model-invocation:/.test(line)) {
       proposals.push(CONFIDENCE_LEVEL.safe);
     }
-    // Heuristic d: scanner-self-reference
+    // Heuristic d: scanner self-reference (the SKILL.md is documenting
+    // patterns it scans for, not invoking them). Catches both code-style
+    // hints (grep, ripgrep, re.compile) and meta-doc lines that quote
+    // multiple pattern names back-to-back.
     if (/grep -|ripgrep|re\.compile/.test(line)) {
+      proposals.push(CONFIDENCE_LEVEL.likely_safe);
+    }
+    if (countQuotedPatternNames(line) >= 2) {
       proposals.push(CONFIDENCE_LEVEL.likely_safe);
     }
 
@@ -1255,12 +1267,22 @@ function scanSkillSecurity(enabledPlugins, activeInstallPaths) {
     return CONFIDENCE_NAME[Math.min(...proposals)];
   }
 
+  // Count distinct quoted phrases on a line that resemble pattern catalogues
+  // (e.g. a docs line listing `"ignore previous instructions", "you are now"`).
+  function countQuotedPatternNames(line) {
+    const matches = line.match(/"[^"]{4,60}"/g);
+    return matches ? matches.length : 0;
+  }
+
   function readSkillName(content) {
-    // Extract only the frontmatter block (between --- delimiters) then find name:
-    const head = content.slice(0, 500);
-    const fm = head.match(/^---\s*\n([\s\S]*?)\n---/);
-    if (!fm) return null;
-    const nameM = fm[1].match(/^name:\s*(.+)/m);
+    // Locate the frontmatter block (between leading `---` delimiters). Scan a
+    // generous window — real SKILL.md frontmatters can exceed 1KB (folded
+    // descriptions, allowed-tools lists), so the slice cap must beat them.
+    if (!content.startsWith("---")) return null;
+    const closeIdx = content.indexOf("\n---", 4);
+    if (closeIdx === -1 || closeIdx > 8192) return null;
+    const fm = content.slice(4, closeIdx);
+    const nameM = fm.match(/^name:\s*(.+)/m);
     if (!nameM) return null;
     return nameM[1].trim().replace(/^["']|["']$/g, "");
   }

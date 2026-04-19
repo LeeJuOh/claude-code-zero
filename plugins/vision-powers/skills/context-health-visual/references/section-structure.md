@@ -133,7 +133,7 @@ findings, not docs-cited thresholds — see health-criteria.md §9 for rationale
 | `skills_with_findings` | number | Number of skills that have at least one finding |
 | `counts_by_severity` | object | `{critical: N, warning: N}` — across all findings before confidence filter |
 | `counts_by_category` | object | `{prompt_injection: N, data_exfil: N, destructive: N, hardcoded_credential: N, obfuscation: N, safety_override: N}` |
-| `findings` | array | `[{plugin, skill, category, severity, confidence, line_number, excerpt}]` — full list; `confident` and `likely_safe` findings are collapsed by default in the UI |
+| `findings` | array | `[{plugin, skill, category, severity, confidence, line_number, excerpt}]` — full list; `safe` and `likely_safe` findings are collapsed by default in the UI |
 | `info_notes` | array | `[{text, severity: "info"\|"warning"}]` — e.g. "N low-risk findings collapsed (safe/likely_safe)" |
 
 ---

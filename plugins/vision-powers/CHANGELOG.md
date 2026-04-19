@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.1.1 — 2026-04-19
+
+### Fixed
+
+- **`scanSkillSecurity` self-exclusion was silently broken.** The frontmatter parser sliced the first 500 chars of each SKILL.md, but real frontmatters can exceed that (`context-health-visual`'s frontmatter is ~875 chars), so the regex never matched and `name:` was always read as `null`. Self-exclusion of `context-health-visual` therefore never fired and the skill flagged its own `rm -rf /tmp/env-health-<pid>` cleanup line. Parser now scans up to the closing `---` (cap 8 KB).
+- **`computeConfidence` ignored line content for temp-path heuristic.** The heuristic checked only the *scanned file's* path against `/tmp/`, so legitimate `Bash(rm -rf /tmp/plugin-visual-…)` documentation lines stayed `suspicious`. Added a line-content check covering `/tmp/`, `/var/folders/`, `/var/tmp/`.
+- **Pattern-catalogue meta-doc lines triggered prompt-injection alerts.** Any SKILL.md that documents the patterns this scanner looks for (e.g. listing `"ignore previous instructions", "you are now"` in a docs catalogue) hit `prompt_injection` at `suspicious`. Added a `likely_safe` heuristic for lines containing ≥2 quoted phrases, alongside the existing `grep`/`ripgrep`/`re.compile` self-reference check.
+
+### Docs
+
+- `SKILL.md` frontmatter description updated from "5 graded scores plus 5 observational areas" to "6 graded scores plus 5 observational areas" and now mentions skill security and hook schema validation in trigger phrases.
+- `references/section-structure.md` — typo `confident` → `safe` in the collapsed-confidence rendering rule.
+- `references/health-criteria.md` — confidence-level table now lists every heuristic the scanner applies (line-temp-path, file-temp-path, loopback-host, frontmatter-line, scanner self-reference, quoted-pattern catalogue).
+
 ## 4.1.0 — 2026-04-19
 
 ### Added

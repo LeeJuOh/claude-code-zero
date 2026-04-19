@@ -441,8 +441,8 @@ Static analysis of all enabled skill files (SKILL.md) for 6 security pattern cat
 |---|---|
 | `suspicious` | No mitigating heuristic — shown prominently |
 | `uncertain` | Currently unused; reserved for future partial-match heuristics |
-| `likely_safe` | Scanner self-reference heuristic applied (describing a pattern, not using it) |
-| `safe` | Temp-path, loopback-host, or frontmatter-line heuristic applied |
+| `likely_safe` | Scanner self-reference heuristic applied — either lexical hints (`grep -`, `ripgrep`, `re.compile`) or a meta-doc line that quotes ≥2 pattern names back-to-back (e.g. a docs catalogue listing `"ignore previous instructions", "you are now"`) |
+| `safe` | One of: line targets a temp directory (`/tmp/`, `/var/folders/`, `/var/tmp/`); the scanned SKILL.md itself lives under a temp dir; line references a loopback host (`localhost`, `127.0.0.1`); line is a frontmatter metadata line (`allowed-tools:`, `matcher:`, `disable-model-invocation:`) |
 
 **Qualifying findings for grading:** only `uncertain` or `suspicious` confidence level.
 `safe` and `likely_safe` findings are collapsed by default and do NOT drive the grade.
