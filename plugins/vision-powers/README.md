@@ -13,14 +13,13 @@ vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js
 | Skill | Description |
 |-------|-------------|
 | `plugin-visual` | Claude Code plugin deep analysis — 4 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
-| `diff-visual` | Visualize git diffs with architecture diagrams and code review cards |
-| `plan-visual` | Review implementation plans with blast radius analysis and risk assessment |
-| `project-recap-visual` | Rebuild mental model — recent activity, key decisions, cognitive debt hotspots |
+| `diff-visual` | Visualize git diffs as interactive HTML reports with architecture diagrams, file map, classification heatmap, dependency shift, and hot spot analysis |
+| `doc-visual` | Visualize any markdown document (research, spec, RFC, ADR, design doc) as a diagram-enhanced HTML or markdown report. Auto-selects from 13 Mermaid diagram types based on section intent |
 | `fact-check` | Verify document accuracy against the actual codebase and git history |
 | `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, plugin components, CLAUDE.md & memory health. 5 graded areas + 4 observational, each threshold cited to official docs |
 | `report-manager` | List, open, delete, and search generated reports |
 
-4 specialized agents: `visual-report-writer`, `feature-architect`, `security-auditor`, `coherence-reviewer`
+**Agents.** `visual-report-writer` (HTML report assembly), `feature-architect` (plugin component analysis), `security-auditor` (permission and risk audit), `coherence-reviewer` (narrative consistency check), `section-analyzer` (doc-visual section intent classification), `diagram-generator` (Mermaid diagram generation per section).
 
 ## Install
 
@@ -38,8 +37,8 @@ analyze ./plugins/my-plugin --mode security               # security-only pass
 analyze ./plugins/my-plugin --mode overview               # lightweight overview
 visualize diff HEAD                                       # diff report (HTML)
 visualize diff HEAD --format md                           # inline markdown for PR/chat
-review plan docs/my-plan.md                               # plan review (HTML)
-recap this project                                        # project recap (HTML)
+doc-visual ./docs/research/xxx.md                         # HTML report
+doc-visual ./docs/spec.md --format md                     # inline markdown
 diagnose environment --paste-context                      # health report with /context paste
 fact-check the last report                                # verify accuracy
 list reports                                              # manage reports
