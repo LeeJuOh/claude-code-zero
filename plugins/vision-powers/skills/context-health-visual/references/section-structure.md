@@ -20,9 +20,10 @@ HTML structure and CSS classes.
     "context_budget": { ... },
     "skill_health": { ... },
     "trigger_analysis": { ... },
-    "plugin_components": { ... },
     "hooks_and_mcp": { ... },
     "claude_md_memory": { ... },
+    "skill_security": { ... },
+    "plugin_components": { ... },
     "recommendations": { ... }
   }
 }
@@ -48,7 +49,7 @@ HTML structure and CSS classes.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status_tally` | object | `{healthy: N, attention: N, critical: N, graded_total: 5, observational: ["Plugin Inventory", "Startup Context Budget", "Trigger Collisions", "Hook Complexity", "Plugin Components"]}` — tally is for graded areas only (§3, §4a, §4b, §7, §8); observational areas listed separately |
+| `status_tally` | object | `{healthy: N, attention: N, critical: N, graded_total: 6, observational: ["Plugin Inventory", "Startup Context Budget", "Trigger Collisions", "Hook Complexity", "Plugin Components"]}` — tally is for graded areas only (§3, §4a, §4b, §7, §8, §9); observational areas listed separately |
 | `top_lever` | string | Single-sentence top action: "Adding `disable-model-invocation: true` to 3 skills frees 840 chars (10.5%) from desc budget" |
 | `scan_date` | string | ISO date of scan |
 | `estimate_caveat` | string | Fixed text: "Values are estimates. Run `/context` for ground truth." (hidden if `--paste-context` was used) |
@@ -119,15 +120,33 @@ Render each axis as its own card so the user can see which mechanism is firing.
 
 ---
 
+## sections.skill_security
+
+New §9 — Skill Security Scan. **Graded** (exception: grading is based on confidence-filtered
+findings, not docs-cited thresholds — see health-criteria.md §9 for rationale).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `area_type` | string | Fixed: `"graded"` — §9 grades on security finding confidence, not performance thresholds |
+| `status` | string | `"healthy"` \| `"attention"` \| `"critical"` — per health-criteria.md §9 |
+| `scanned_count` | number | Total SKILL.md files scanned (plugin cache + local) |
+| `skills_with_findings` | number | Number of skills that have at least one finding |
+| `counts_by_severity` | object | `{critical: N, warning: N}` — across all findings before confidence filter |
+| `counts_by_category` | object | `{prompt_injection: N, data_exfil: N, destructive: N, hardcoded_credential: N, obfuscation: N, safety_override: N}` |
+| `findings` | array | `[{plugin, skill, category, severity, confidence, line_number, excerpt}]` — full list; `confident` and `likely_safe` findings are collapsed by default in the UI |
+| `info_notes` | array | `[{text, severity: "info"\|"warning"}]` — e.g. "N low-risk findings collapsed (safe/likely_safe)" |
+
+---
+
 ## sections.plugin_components
 
-Section §9 — plugin-level components beyond skills/commands/agents/hooks/MCP. Per
+Section §10 — plugin-level components beyond skills/commands/agents/hooks/MCP. Per
 plugins-reference.md: `bin/` executables, `monitors/`, `.lsp.json`, `output-styles/`,
 and `channels`. Observational — count only, no severity.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `area_type` | string | Fixed: `"observational"` — §9 has no official thresholds |
+| `area_type` | string | Fixed: `"observational"` — §10 has no official thresholds |
 | `per_plugin` | object | `{<plugin_name>: {bin, monitors, lsp_servers, output_styles, channels}}` — zero counts omitted |
 | `totals` | object | `{bin, monitors, lsp_servers, output_styles, channels}` — aggregate across enabled plugins |
 | `info_notes` | array | `[{text, severity: "info"}]` — e.g. "LSP servers are persistent subprocesses", "monitors run for the whole session" |
@@ -140,7 +159,7 @@ and `channels`. Observational — count only, no severity.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `hooks` | object | `{area_type: "observational", total, type_counts: {command, http, prompt, agent}, event_counts: {}, event_collisions: [{event, matcher, entries: [{source}]}], llm_hooks, inline_sources: [{plugin, source: "inline"\|"file"}]}` — no `status` field; prompt/agent hook cost and collision ordering are surfaced as info notes rather than tiers |
+| `hooks` | object | `{area_type: "observational", total, type_counts: {command, http, prompt, agent}, event_counts: {}, event_collisions: [{event, matcher, entries: [{source}]}], llm_hooks, inline_sources: [{plugin, source: "inline"\|"file"}], schema_issues: [{event, hook_index, issue_type: "missing_matcher"\|"missing_command"\|"unknown_type", detail}], schema_issue_counts: {missing_matcher: N, missing_command: N, unknown_type: N}}` — no `status` field; prompt/agent hook cost, collision ordering, and schema issues are surfaced as info notes rather than tiers |
 | `mcp` | object | `{server_count, effective_mode: "deferred"\|"upfront"\|"auto"\|"unknown", threshold_pct, proxy_fallback_applied, servers: [{name, source_scope: "user"\|"project"\|"local"\|"plugin:<name>"\|"plugin:<name> (inline)"}], status}` — graded on effective_mode per §7; token cost not included, point users to `/context` |
 | `chart_data` | object | Chart.js data for hook type distribution |
 | `info_notes` | array | `[{text, severity: "info"}]` — e.g. "N prompt/agent hooks — each invocation incurs an LLM call (hooks.md)", "event collision: X hooks on <event>/<matcher>, ordering unpredictable" |

@@ -9,8 +9,8 @@ Claude Code docs — if a number has no official basis, the area is reported as
 
 | Area Type | Output | When Used |
 |-----------|--------|-----------|
-| **Graded** (5 areas — §3, §4a, §4b, §7, §8) | 🟢 healthy / 🟡 attention / 🔴 critical + raw numbers | Area has at least one official threshold from Claude Code docs |
-| **Observational** (5 areas — §1, §2, §5, §6, §9) | ℹ️ raw numbers + breakdown only (no tier) | Area has no official threshold — grading would be invented |
+| **Graded** (6 areas — §3, §4a, §4b, §7, §8, §9) | 🟢 healthy / 🟡 attention / 🔴 critical + raw numbers | Area has at least one official threshold from Claude Code docs |
+| **Observational** (5 areas — §1, §2, §5, §6, §10) | ℹ️ raw numbers + breakdown only (no tier) | Area has no official threshold — grading would be invented |
 
 **Tier definitions for graded areas:**
 
@@ -87,7 +87,7 @@ the report.
 - `claudeMdExcludes` (any settings layer) → exclude matching paths from CLAUDE.md total
 - `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` → zero out MEMORY.md cost
 - `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` → enables agent teams (info-level note
-  only, no grading — see §9)
+  only, no grading — see §10)
 
 **Output — Observational (no aggregate grading):**
 
@@ -330,6 +330,15 @@ counts. Per the threshold rules, this area does NOT assign 🟢/🟡/🔴.
   `hooks` field per plugins-reference.md) are counted alongside `hooks/hooks.json`
   files. A plugin can mix both, so totals reflect the union.
 
+**Hook schema validation (observational):**
+
+The scanner also checks hook entries for schema issues: missing `matcher` on
+`PreToolUse`/`PostToolUse` entries, missing `command` on command-type hooks, and unknown
+`type` values. These are reported as info/warning notes beside the hook counts — not
+promoted to a graded tier. Rationale: there is no docs-cited threshold for hook
+schema correctness (a project with zero hooks is perfectly valid), so grading would be
+invented. Surface `schema_issues` count as a note; show details in a collapsible list.
+
 ---
 
 ### 7. MCP Overview — Graded
@@ -417,7 +426,43 @@ below cwd are enumerated separately under `nested_lines` / `nested_bytes` /
 
 ---
 
-### 9. Plugin Components — Observational (no grading)
+### 9. Skill Security Scan — Graded
+
+Static analysis of all enabled skill files (SKILL.md) for 6 security pattern categories.
+
+> **Docs-source exception:** This area is graded even though thresholds are not cited from
+> the Claude Code docs. Security baselines (e.g. "no prompt injection") are universal
+> correctness requirements — the grading is justified without a docs citation. This is the
+> only exception to the docs-citation rule; document it in-line whenever citing the criteria.
+
+**Confidence levels (per finding):**
+
+| Confidence | Meaning |
+|---|---|
+| `suspicious` | No mitigating heuristic — shown prominently |
+| `uncertain` | Currently unused; reserved for future partial-match heuristics |
+| `likely_safe` | Scanner self-reference heuristic applied (describing a pattern, not using it) |
+| `safe` | Temp-path, loopback-host, or frontmatter-line heuristic applied |
+
+**Qualifying findings for grading:** only `uncertain` or `suspicious` confidence level.
+`safe` and `likely_safe` findings are collapsed by default and do NOT drive the grade.
+
+| Status | Condition |
+|---|---|
+| 🟢 healthy | Zero qualifying findings (uncertain or suspicious) |
+| 🟡 attention | Qualifying findings exist, but all are in `obfuscation` or `safety_override` categories only |
+| 🔴 critical | Any qualifying finding in `prompt_injection`, `data_exfil`, `destructive`, or `hardcoded_credential` |
+
+**Rendering contract:**
+- `safe` / `likely_safe` → collapsed by default, surfaced via "show N low-risk findings" toggle
+- `uncertain` → shown with neutral styling
+- `suspicious` → shown prominently with severity color
+
+Always report: `scanned_count`, `skills_with_findings`, `counts_by_severity`, `counts_by_category`. List all findings (collapsed and visible).
+
+---
+
+### 10. Plugin Components — Observational (no grading)
 
 Beyond skills/commands/agents/hooks/MCP, plugins can ship additional components per
 [plugins-reference.md](https://code.claude.com/docs/en/plugins-reference):
@@ -445,9 +490,9 @@ channels}}, totals: {...}}`. Observational — no tier assignment.
 
 **No single letter grade.** The report shows:
 
-1. **Status tally** across the **5 graded areas** (§3, §4a, §4b, §7, §8), with
+1. **Status tally** across the **6 graded areas** (§3, §4a, §4b, §7, §8, §9), with
    observational areas listed separately:
-   e.g. `Graded: 4 🟢 / 1 🟡 / 0 🔴 (5 areas) · Observational: Plugin Inventory,
+   e.g. `Graded: 4 🟢 / 1 🟡 / 0 🔴 (6 areas) · Observational: Plugin Inventory,
    Context Budget, Trigger Collisions, Hook Complexity, Plugin Components`.
    Observational areas never contribute to the tally — they emit raw data and
    info-level notes only.
@@ -482,3 +527,4 @@ assigned, no tally contribution.
 | CLAUDE.md Size | "CLAUDE.md is 342 lines — move specialized instructions to .claude/rules/ or skills" |
 | MCP Overhead | "7 MCP servers configured — disable unused servers via /mcp, prefer CLI alternatives" |
 | Trigger Collision | "Skills 'foo' and 'bar' have 78% description overlap — differentiate trigger phrases" |
+| Skill Security | "Suspicious prompt_injection pattern in plugin X / skill Y (line N) — review and remove" |
