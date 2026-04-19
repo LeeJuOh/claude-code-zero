@@ -77,3 +77,18 @@ function parseMarkdown(src) {
 }
 
 module.exports = { parseMarkdown };
+
+if (require.main === module) {
+  const fs = require('fs');
+  const file = process.argv[2];
+  if (!file) {
+    console.error('Usage: parse-markdown.js <input-md-path>');
+    process.exit(1);
+  }
+  if (!fs.existsSync(file)) {
+    console.error(`Error: file not found: ${file}`);
+    process.exit(1);
+  }
+  const src = fs.readFileSync(file, 'utf-8');
+  process.stdout.write(JSON.stringify(parseMarkdown(src), null, 2) + '\n');
+}

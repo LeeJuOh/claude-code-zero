@@ -42,9 +42,10 @@ allowed-tools: Read, Agent, Bash(node *), Bash(open *), Bash(rm -rf /tmp/doc-vis
 ### Step 1 — Parse markdown
 
 ```bash
-node ../../scripts/parse-markdown.js <input-md-path>
+node ${CLAUDE_PLUGIN_ROOT}/scripts/parse-markdown.js <input-md-path>
 ```
 
+stdout: `{ sections: [...] }` JSON. 파일 없음 시 exit 1.
 폴백: 빈 파일 → 중단. H1/H2 없음 → 섹션 1개로 처리.
 
 ### Step 2 — Section analyzer (subagent)
@@ -69,20 +70,27 @@ Agent 도구로 `section-analyzer` 호출. 프롬프트에 inline:
 ### Step 4 — Taste gate
 
 ```bash
-node ../../scripts/taste-gate.js --mermaid <code> --type <type>
+node ${CLAUDE_PLUGIN_ROOT}/scripts/taste-gate.js --type <diagram-type> --mermaid-file <path>
+# or, for short inline snippets:
+node ${CLAUDE_PLUGIN_ROOT}/scripts/taste-gate.js --type <diagram-type> --mermaid '<code>'
 ```
 
+stdout: `{ ok: bool, violations: [...] }`. Exit 0 = pass, 1 = violation, 2 = bad args.
 위반 시 해당 섹션만 Step 3 재호출 (violations 프롬프트에 추가). 최대 2회 재시도 후에도 위반 → 해당 섹션 다이어그램 제외, warn 로그.
 
 ### Step 5 — Assemble
 
 ```bash
-node ../../scripts/assemble-report.js \
-  --skill-prefix doc-visual \
+node ${CLAUDE_PLUGIN_ROOT}/scripts/assemble-report.js \
+  --template ${CLAUDE_PLUGIN_ROOT}/templates/doc-visual.html \
+  --shared ${CLAUDE_PLUGIN_ROOT}/shared \
+  --sections <sections-json-path> \
+  --output <output-path> \
   --format <html|md> \
-  --sections <json-file> \
-  --output <output-path>
+  --skill-prefix doc-visual
 ```
+
+`--sections`는 `.json`로 끝나야 JSON 모드가 활성화된다. JSON에는 `meta`(`lang`, `title`, `source_path`, 토큰 등) + `sections[]`이 포함.
 
 ### Output
 
@@ -115,10 +123,10 @@ node ../../scripts/assemble-report.js \
 
 ### Reference Files
 
-- `../../references/design-system/semantic-tokens.md`
-- `../../references/design-system/diagram-type-selection.md`
-- `../../references/design-system/diagram-density-rules.md`
-- `../../references/design-system/taste-gate.md`
-- `../../references/design-system/mermaid-patterns.md`
-- `../../references/report-generation-workflow.md`
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md`
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md`
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md`
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/taste-gate.md`
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md`
+- `${CLAUDE_PLUGIN_ROOT}/references/report-generation-workflow.md`
 - `references/section-structure.md`

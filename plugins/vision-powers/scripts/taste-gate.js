@@ -146,3 +146,22 @@ function runTasteGate({ mermaid, type }) {
 }
 
 module.exports = { runTasteGate, DENSITY_BUDGETS };
+
+if (require.main === module) {
+  const fs = require('fs');
+  const args = {};
+  for (let i = 2; i < process.argv.length; i += 2) {
+    const key = process.argv[i].replace(/^--/, '');
+    args[key] = process.argv[i + 1];
+  }
+  if (!args.type || (!args.mermaid && !args['mermaid-file'])) {
+    console.error('Usage: taste-gate.js --type <diagram-type> (--mermaid <code> | --mermaid-file <path>)');
+    process.exit(2);
+  }
+  const mermaid = args['mermaid-file']
+    ? fs.readFileSync(args['mermaid-file'], 'utf-8')
+    : args.mermaid;
+  const result = runTasteGate({ mermaid, type: args.type });
+  process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+  process.exit(result.ok ? 0 : 1);
+}
