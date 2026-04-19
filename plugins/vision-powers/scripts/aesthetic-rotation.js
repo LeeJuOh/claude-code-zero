@@ -28,6 +28,34 @@ const path = require("path");
 const MAX_ENTRIES = 20;
 const DEFAULT_RECENT = 3;
 
+const TOKEN_SETS = [
+  {
+    id: "warm-stone", scheme: "light",
+    tokens: { paper:"#faf7f2", "paper-2":"#f2ede4", ink:"#1c1917", muted:"#57534e", soft:"#78716c", rule:"rgba(28,25,23,0.12)", accent:"#b5523a", "accent-tint":"rgba(181,82,58,0.08)", link:"#2563eb" },
+    fonts: { title:"'Instrument Serif', serif", body:"'Geist', sans-serif", mono:"'Geist Mono', monospace" },
+  },
+  { id:"cool-slate", scheme:"light",
+    tokens: { paper:"#f1f5f9", "paper-2":"#e2e8f0", ink:"#0f172a", muted:"#475569", soft:"#64748b", rule:"rgba(15,23,42,0.12)", accent:"#0369a1", "accent-tint":"rgba(3,105,161,0.10)", link:"#2563eb" },
+    fonts: { title:"'Instrument Serif', serif", body:"'Geist', sans-serif", mono:"'Geist Mono', monospace" },
+  },
+  { id:"editorial-ink", scheme:"light",
+    tokens: { paper:"#fafaf9", "paper-2":"#f5f5f4", ink:"#18181b", muted:"#52525b", soft:"#71717a", rule:"rgba(24,24,27,0.12)", accent:"#7c2d12", "accent-tint":"rgba(124,45,18,0.10)", link:"#1d4ed8" },
+    fonts: { title:"'Instrument Serif', serif", body:"'Geist', sans-serif", mono:"'Geist Mono', monospace" },
+  },
+  { id:"blueprint", scheme:"light",
+    tokens: { paper:"#eff6ff", "paper-2":"#dbeafe", ink:"#1e3a8a", muted:"#3730a3", soft:"#4338ca", rule:"rgba(30,58,138,0.12)", accent:"#dc2626", "accent-tint":"rgba(220,38,38,0.10)", link:"#1d4ed8" },
+    fonts: { title:"'Instrument Serif', serif", body:"'Geist', sans-serif", mono:"'Geist Mono', monospace" },
+  },
+  { id:"warm-stone-dark", scheme:"dark",
+    tokens: { paper:"#1c1917", "paper-2":"#292524", ink:"#faf7f2", muted:"#a8a29e", soft:"#78716c", rule:"rgba(250,247,242,0.12)", accent:"#d6724a", "accent-tint":"rgba(214,114,74,0.10)", link:"#60a5fa" },
+    fonts: { title:"'Instrument Serif', serif", body:"'Geist', sans-serif", mono:"'Geist Mono', monospace" },
+  },
+  { id:"cool-slate-dark", scheme:"dark",
+    tokens: { paper:"#0f172a", "paper-2":"#1e293b", ink:"#f1f5f9", muted:"#94a3b8", soft:"#64748b", rule:"rgba(241,245,249,0.12)", accent:"#38bdf8", "accent-tint":"rgba(56,189,248,0.10)", link:"#60a5fa" },
+    fonts: { title:"'Instrument Serif', serif", body:"'Geist', sans-serif", mono:"'Geist Mono', monospace" },
+  },
+];
+
 function parseArgs(argv) {
   const args = { _: [] };
   for (let i = 2; i < argv.length; i++) {
@@ -192,6 +220,31 @@ function cmdExtract(args) {
   process.stdout.write(JSON.stringify({ recorded: true, total: trimmed.length, entry: trimmed[trimmed.length - 1] }));
 }
 
+function cmdPick(args) {
+  const file = resolveHistoryPath(args);
+  const entries = readHistory(file);
+  const preferScheme = args.scheme || null;
+  const recentIds = new Set(entries.slice(-3).map(e => e.set_id).filter(Boolean));
+  const pool = TOKEN_SETS.filter(s => !preferScheme || s.scheme === preferScheme);
+  const fresh = pool.filter(s => !recentIds.has(s.id));
+  const list = fresh.length ? fresh : pool;
+  const chosen = list[Math.floor(Math.random() * list.length)];
+  const entry = {
+    at: new Date().toISOString(),
+    skill: args.skill || null,
+    set_id: chosen.id,
+    accent: chosen.tokens.accent,
+    body_font: normalizeFont(chosen.fonts.body),
+    heading_font: normalizeFont(chosen.fonts.title),
+    mono_font: normalizeFont(chosen.fonts.mono),
+  };
+  if (args.record !== "false") {
+    entries.push(entry);
+    writeHistory(file, entries.slice(-MAX_ENTRIES));
+  }
+  process.stdout.write(JSON.stringify(chosen));
+}
+
 function main() {
   const args = parseArgs(process.argv);
   const sub = args._[0];
@@ -202,10 +255,14 @@ function main() {
       return cmdRecord(args);
     case "extract":
       return cmdExtract(args);
+    case "pick":
+      return cmdPick(args);
     default:
-      console.error("Usage: aesthetic-rotation.js <recent|record|extract> [flags]");
+      console.error("Usage: aesthetic-rotation.js <recent|record|extract|pick> [flags]");
       process.exit(1);
   }
 }
 
 main();
+
+module.exports = { TOKEN_SETS, resolveHistoryPath, readHistory, writeHistory, cmdRecent, cmdRecord, cmdExtract, cmdPick };
