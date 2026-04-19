@@ -500,3 +500,164 @@ A->>B: web_search({ queries: [...] })
 %% RIGHT
 A->>B: Call web_search with queries
 ```
+
+---
+
+## 13-Type Syntax Reference
+
+각 타입별 최소 완성 예제. 프로덕션 다이어그램에서는 Layer 0 semantic-tokens.md의 `%%{init}%%` 블록을 **반드시** 앞에 둔다.
+
+### architecture
+```
+flowchart TD
+  subgraph Frontend
+    UI[React UI]
+  end
+  subgraph Backend
+    API[API Server]
+    DB[(Postgres)]
+  end
+  UI --> API
+  API --> DB
+```
+
+### sequence
+```
+sequenceDiagram
+  participant U as User
+  participant A as App
+  participant D as DB
+  U->>A: Login request
+  A->>D: Query user
+  D-->>A: User record
+  A-->>U: Session token
+```
+(message에 `{}[]<>&` 사용 금지)
+
+### state
+```
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Running: start
+  Running --> Done: complete
+  Running --> Failed: error
+```
+(label에 `<br/>` 금지)
+
+### ER
+```
+erDiagram
+  USER ||--o{ ORDER : places
+  ORDER ||--|{ LINE_ITEM : contains
+  USER {
+    string name
+    string email
+  }
+```
+
+### timeline
+```
+timeline
+  title 2026 Roadmap
+  Q1 : Foundation : Auth
+  Q2 : API v2 : Migration
+  Q3 : Mobile
+```
+
+### swimlane
+```
+flowchart LR
+  subgraph Frontend
+    A[Submit form]
+  end
+  subgraph Backend
+    B[Validate]
+    C[Write DB]
+  end
+  subgraph Ops
+    D[Alert]
+  end
+  A --> B --> C --> D
+```
+
+### quadrant
+```
+quadrantChart
+  title Priorities
+  x-axis Low --> High Effort
+  y-axis Low --> High Impact
+  quadrant-1 Do Now
+  quadrant-2 Schedule
+  quadrant-3 Drop
+  quadrant-4 Delegate
+  Auth: [0.3, 0.8]
+  Dashboard: [0.7, 0.4]
+```
+
+### nested
+```
+flowchart TD
+  subgraph Organization
+    subgraph Team_A
+      A1[Member 1]
+      A2[Member 2]
+    end
+    subgraph Team_B
+      B1[Member 3]
+    end
+  end
+```
+
+### tree
+```
+flowchart TD
+  Root --> ChildA
+  Root --> ChildB
+  ChildA --> LeafA1
+  ChildA --> LeafA2
+  ChildB --> LeafB1
+```
+
+### layer stack
+```
+flowchart TD
+  subgraph L4 ["L4: Application"]
+    App
+  end
+  subgraph L3 ["L3: Framework"]
+    Framework
+  end
+  subgraph L2 ["L2: Runtime"]
+    Runtime
+  end
+  subgraph L1 ["L1: OS"]
+    OS
+  end
+```
+
+### venn (fallback — inline SVG)
+
+Mermaid 미지원. assemble-report.js가 3-circle overlap SVG 생성:
+
+```html
+<svg viewBox="0 0 300 200">
+  <circle cx="110" cy="100" r="70" fill="#b5523a" opacity="0.3"/>
+  <circle cx="190" cy="100" r="70" fill="#2563eb" opacity="0.3"/>
+  <circle cx="150" cy="130" r="70" fill="#57534e" opacity="0.3"/>
+</svg>
+```
+
+### pyramid / funnel (fallback — Chart.js)
+
+Mermaid 미지원. Chart.js horizontal bar with descending values:
+
+```js
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Visitors', 'Signups', 'Active', 'Paying'],
+    datasets: [{ data: [10000, 1500, 600, 150], backgroundColor: '#b5523a' }]
+  },
+  options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+});
+```
