@@ -1209,7 +1209,7 @@ function scanSkillSecurity(enabledPlugins, activeInstallPaths) {
     { category: "prompt_injection", pattern: /(you are now|pretend you are|act as if|new persona)/i },
     { category: "prompt_injection", pattern: /override system prompt/i },
     // data_exfil
-    { category: "data_exfil", pattern: /(curl|wget).{0,80}(-X\s*POST|--data|-d\s).{0,80}https?:\/\//i },
+    { category: "data_exfil", pattern: /(curl|wget).{0,80}(-X\s*POST|--data\b|-d\s+\S).{0,80}https?:\/\//i },
     { category: "data_exfil", pattern: /base64.{0,40}encode.{0,40}(secret|key|token)/i },
     // destructive
     { category: "destructive", pattern: /rm\s+-rf\s+[/~]/ },
@@ -1220,7 +1220,7 @@ function scanSkillSecurity(enabledPlugins, activeInstallPaths) {
     // obfuscation
     { category: "obfuscation", pattern: /eval\s*\$\(/ },
     { category: "obfuscation", pattern: /base64\s+-d/ },
-    { category: "obfuscation", pattern: /(\\x[0-9a-fA-F]{2}){3,}/ },
+    { category: "obfuscation", pattern: /(\\\\x[0-9a-fA-F]{2}){3,}/ },
     // safety_override
     { category: "safety_override", pattern: /(override|bypass|disable)\s*(the\s+)?(safety|rules?|hooks?|guard|verification)/i },
   ];
@@ -1256,11 +1256,13 @@ function scanSkillSecurity(enabledPlugins, activeInstallPaths) {
   }
 
   function readSkillName(content) {
-    // Read frontmatter name: field from first 500 chars
+    // Extract only the frontmatter block (between --- delimiters) then find name:
     const head = content.slice(0, 500);
-    const m = head.match(/^---\s*\n[\s\S]*?^name:\s*(.+)/m);
-    if (m) return m[1].trim().replace(/^["']|["']$/g, "");
-    return null;
+    const fm = head.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (!fm) return null;
+    const nameM = fm[1].match(/^name:\s*(.+)/m);
+    if (!nameM) return null;
+    return nameM[1].trim().replace(/^["']|["']$/g, "");
   }
 
   function scanFile(filePath, plugin, skill) {
