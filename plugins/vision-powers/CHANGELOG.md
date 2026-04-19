@@ -1,5 +1,20 @@
 # Changelog
 
+## 4.1.0 — 2026-04-19
+
+### Added
+
+- **Skill security scan** (`context-health-visual` §9): static analysis of all enabled SKILL.md files for 6 pattern categories — prompt_injection, data_exfil, destructive, hardcoded_credential, obfuscation, safety_override. Each finding carries a `confidence` field (`suspicious` / `uncertain` / `likely_safe` / `safe`); grading uses only `uncertain` / `suspicious` findings. Low-risk findings collapsed by default in the report. Self-excludes `context-health-visual` itself by frontmatter `name:`.
+- **Hook schema validation** (`context-health-visual` §6): `env-health-scan.js` now checks hook entries for missing `matcher` on `PreToolUse`/`PostToolUse`, missing `command` on command-type hooks, and unknown `type` values. Reported as observational info notes beside hook counts (§6 stays ungraded per threshold rules).
+
+### Removed
+
+- `toolbox/health` skill retired and partially absorbed here. The 6-layer qualitative audit, tier calibration, and conversation-based behavior audit are NOT included (see plan for rationale). Users who invoked `/health` should use `context-health-visual` going forward.
+
+### Tested against
+
+- Claude Code v2.1.112
+
 ## 4.0.0 — 2026-04-19
 
 ### Breaking changes

@@ -17,7 +17,7 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.13.0",
+      "version": "1.14.0",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -29,8 +29,8 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "4.0.0",
-      "description": "Analyze Claude Code plugins and visualize text artifacts (markdown docs, git diffs, plugins) as interactive HTML or diagram-enhanced markdown reports. Skills: doc-visual, diff-visual, plugin-visual, context-health-visual, fact-check, report-manager."
+      "version": "4.1.0",
+      "description": "Analyze Claude Code plugins and visualize text artifacts (markdown docs, git diffs, plugins) as interactive HTML or diagram-enhanced markdown reports. Skills: doc-visual, diff-visual, plugin-visual, context-health-visual, fact-check, report-manager. context-health-visual now includes skill security scan (6 pattern categories) and hook schema validation."
     },
     {
       "name": "worktree-plus",

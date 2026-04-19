@@ -16,7 +16,7 @@ vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js
 | `diff-visual` | Visualize git diffs as interactive HTML reports with architecture diagrams, file map, classification heatmap, dependency shift, and hot spot analysis |
 | `doc-visual` | Visualize any markdown document (research, spec, RFC, ADR, design doc) as a diagram-enhanced HTML or markdown report. Auto-selects from 13 Mermaid diagram types based on section intent |
 | `fact-check` | Verify document accuracy against the actual codebase and git history |
-| `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, plugin components, CLAUDE.md & memory health. 5 graded areas + 4 observational, each threshold cited to official docs |
+| `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, skill security scan (prompt injection, data exfil, destructive, credentials, obfuscation, safety override), hook schema validation, plugin components, CLAUDE.md & memory health. 6 graded areas + 5 observational, each threshold cited to official docs |
 | `report-manager` | List, open, delete, and search generated reports |
 
 **Agents.** `visual-report-writer` (HTML report assembly), `feature-architect` (plugin component analysis), `security-auditor` (permission and risk audit), `coherence-reviewer` (narrative consistency check), `section-analyzer` (doc-visual section intent classification), `diagram-generator` (Mermaid diagram generation per section).

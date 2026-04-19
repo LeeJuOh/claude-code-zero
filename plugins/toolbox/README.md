@@ -15,11 +15,10 @@ toolbox is a collection of small, focused skills — each solves one specific fr
 | `fetch-sitemap` | Auto-discover a site's sitemap via `/sitemap.xml`, root, and `robots.txt` — a bare domain works. Extract URLs with optional regex filter |
 | `gemini-fetch` | Fetch web content via Gemini CLI when WebFetch is blocked (403, Cloudflare, bot-detection). **Auto-triggers on WebFetch failures**, with a `google_web_search` fallback for JS challenges |
 | `handoff` | Write or update a resumption-ordered handoff document — Goal, First Action, Context, Current Progress, What Worked, What Didn't Work, Next Steps — so the next session can pick up cold |
-| `health` | Tiered six-layer audit (CLAUDE.md → rules → skills → hooks → subagents → verifiers) with tier calibration (simple / standard / complex) and a skill-security scan (prompt injection, data exfiltration, destructive commands, credentials, obfuscation) |
 | `secret-setup` | Extract hardcoded secrets into a gitignored env file, auto-merge CLAUDE.md / `.mcp.json` / `settings.local.json`, install a SessionStart auto-loading hook, and add deny rules |
 | `sync-references` | Pull latest changes for all git repos under a directory. Remembers the last path in `${CLAUDE_PLUGIN_DATA}/config.json` — later calls take no arguments |
 
-Only `gemini-fetch` and `sync-references` auto-trigger from natural language. The other four have `disable-model-invocation: true` and must be invoked by name (`/fetch-sitemap`, `/handoff`, `/health`, `/secret-setup`).
+Only `gemini-fetch` and `sync-references` auto-trigger from natural language. The other three have `disable-model-invocation: true` and must be invoked by name (`/fetch-sitemap`, `/handoff`, `/secret-setup`).
 
 ## Install
 
@@ -33,7 +32,6 @@ Only `gemini-fetch` and `sync-references` auto-trigger from natural language. Th
 /fetch-sitemap example.com 'docs|blog'       # bare domain works — auto-discovers
 /gemini-fetch https://reddit.com/r/ClaudeAI  # or just let WebFetch fail and this fires
 /handoff
-/health                                       # run with --tier simple|standard|complex
 /secret-setup
 /sync-references                              # remembers the last path
 ```
