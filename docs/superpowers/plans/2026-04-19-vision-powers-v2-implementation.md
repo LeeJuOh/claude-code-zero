@@ -1374,7 +1374,7 @@ git commit -m "Add templates/doc-visual.html — dynamic section layout, Layer 0
 
 doc-visual 템플릿(Task 11)은 **중괄호 플레이스홀더**(`{TOKEN_PAPER}`, `{SECTIONS_HTML}`, `{TOC_HTML}`)를 쓰고, 섹션은 **단일 JSON 파일**에서 읽는다. 두 모델을 동시에 수용해야 하므로 "분기 추가"가 아니라 **입력 모드 판별 + 새 placeholder parser + JSON 섹션 렌더러** 세 부분으로 나누어 작업.
 
-- [ ] **Step 1: 현재 인프라 이해**
+- [x] **Step 1: 현재 인프라 이해**
 
 ```bash
 wc -l plugins/vision-powers/scripts/assemble-report.js
@@ -1383,7 +1383,7 @@ cat plugins/vision-powers/scripts/assemble-report.js
 
 확인 포인트: `METADATA_KEYS`, `SHARED_PLACEHOLDERS`, `sectionFiles` 읽기 루프, `aesthetic-rotation.js spawnSync` 자동 호출 경로.
 
-- [ ] **Step 2: 새 입력 모드 판별 로직 추가**
+- [x] **Step 2: 새 입력 모드 판별 로직 추가**
 
 `--sections` 인자가 **디렉터리**면 기존 로직, **`.json` 파일**이면 doc-visual 모드 (`{ sections: [...] }` JSON 파싱).
 
@@ -1395,7 +1395,7 @@ const isJsonInput = sectionsStat.isFile() && sectionsArg.endsWith('.json');
 
 추가로 `--skill-prefix doc-visual`가 오면 `isJsonInput`을 true로 강제(방어적).
 
-- [ ] **Step 3: 중괄호 placeholder parser 추가 (기존 주석 placeholder와 공존)**
+- [x] **Step 3: 중괄호 placeholder parser 추가 (기존 주석 placeholder와 공존)**
 
 기존 주석 치환은 그대로. 중괄호 치환은 doc-visual 템플릿에서만 발생. Token 치환은 `{TOKEN_*}` (예: `{TOKEN_PAPER}`), 구조 치환은 `{TOC_HTML}`, `{SECTIONS_HTML}`, `{DOC_TITLE}`, `{SOURCE_PATH}`, `{TIMESTAMP}`, `{LANG}`, `{COLOR_SCHEME}`, `{SHARED_JS}`.
 
@@ -1407,7 +1407,7 @@ function replaceCurly(html, map) {
 
 치환 맵은 `metadata.css_variables`에서 추출하거나, doc-visual 메타데이터 JSON에서 직접 제공.
 
-- [ ] **Step 4: JSON 섹션 렌더러 (doc-visual 전용)**
+- [x] **Step 4: JSON 섹션 렌더러 (doc-visual 전용)**
 
 `skills/doc-visual/references/section-structure.md` 템플릿을 참고해 `section-structure` 헬퍼 함수로 렌더링.
 
@@ -1431,7 +1431,7 @@ function renderDocVisualSection(sec) {
 
 TOC도 같은 입력에서 생성.
 
-- [ ] **Step 4-b: Fallback 렌더러 budget 검증 (venn / pyramid / quadrant)**
+- [x] **Step 4-b: Fallback 렌더러 budget 검증 (venn / pyramid / quadrant)**
 
 `taste-gate.js`는 Mermaid 소스 검증만 수행하므로, Mermaid 미지원 타입(venn / pyramid) 및 quadrant item 개수 같은 차원은 `assemble-report.js`의 fallback 렌더러 입력 단계에서 **명시적으로** 검증한다. 위치: `renderDocVisualSection` 또는 별도 `renderFallbackDiagram(sec)` 헬퍼.
 
@@ -1466,7 +1466,7 @@ budget 위반 시: venn/pyramid는 warn 로그 + 다이어그램 skip, quadrant�
 
 SKILL.md 파이프라인 문서(Task 13)와 report-generation-workflow.md(Step 7)에도 "fallback budget 검증은 assemble-report.js의 `validateFallbackBudget`에서 수행"이라고 명시.
 
-- [ ] **Step 5: Markdown 모드 분기 (`--format md`)**
+- [x] **Step 5: Markdown 모드 분기 (`--format md`)**
 
 HTML 템플릿 생략, 섹션 배열을 직접 조립:
 
@@ -1482,7 +1482,7 @@ HTML 템플릿 생략, 섹션 배열을 직접 조립:
 
 `skip_diagram: true` 섹션은 mermaid 블록 생략. 마지막에 `\n---\n**원본**: {source_path}\n**생성**: vision-powers doc-visual · {timestamp}\n` 푸터.
 
-- [ ] **Step 6: Output basename sanitize**
+- [x] **Step 6: Output basename sanitize**
 
 doc-visual 출력 경로 `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.html`에서 basename에 공백/특수문자가 포함될 수 있음. 안전하게 치환:
 
@@ -1492,11 +1492,11 @@ function sanitizeBasename(name) {
 }
 ```
 
-- [ ] **Step 7: report-generation-workflow.md에 doc-visual 섹션 추가**
+- [x] **Step 7: report-generation-workflow.md에 doc-visual 섹션 추가**
 
 파이프라인 문서화: `parse-markdown → section-analyzer → diagram-generator → taste-gate → assemble-report`. 각 단계 입출력 JSON 스키마 명시. 기존 섹션(디렉터리 모델 설명)은 **유지**하고 doc-visual 모드는 별도 sub-section으로 분리.
 
-- [ ] **Step 8: 무회귀 스모크 (기존 경로 확인)**
+- [x] **Step 8: 무회귀 스모크 (기존 경로 확인)**
 
 기존 디렉터리 모델이 깨지지 않았는지 확인 — diff-visual / plugin-visual / context-health-visual 중 하나라도 실제로 실행해서 기존 스킬 산출물이 정상인지.
 
@@ -1507,11 +1507,11 @@ claude --plugin-dir ./plugins/vision-powers
 
 산출물 열어 섹션 주석 치환 + 메타데이터 치환 + aesthetic-rotation 기록 호출이 모두 정상인지.
 
-- [ ] **Step 9: doc-visual 스모크**
+- [x] **Step 9: doc-visual 스모크**
 
 간단한 `sections.json` 스텁으로 `--sections sections.json --skill-prefix doc-visual --format html --output /tmp/doc-visual-smoke.html` 실행. 열어서 중괄호 치환 + 섹션 주입 + skip_diagram 처리 확인.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add plugins/vision-powers/scripts/assemble-report.js plugins/vision-powers/references/report-generation-workflow.md
@@ -1764,7 +1764,7 @@ git commit -m "Add doc-visual section-structure.md — HTML and markdown section
 
 CLI를 **유지**하면서 내부에 `TOKEN_SETS` 상수를 추가하고 새 `pick` 서브커맨드로 토큰 세트 JSON을 노출한다. module export는 부가 채널. **기존 호출은 수정 없이 동작해야 한다**.
 
-- [ ] **Step 1: 현재 파일 읽기 + 호출자 목록 확보**
+- [x] **Step 1: 현재 파일 읽기 + 호출자 목록 확보**
 
 ```bash
 cat plugins/vision-powers/scripts/aesthetic-rotation.js
@@ -1773,7 +1773,7 @@ grep -rn "aesthetic-rotation" plugins/vision-powers/ | grep -v "\.git"
 
 현재 CLI 형상을 노트로 남긴다: `parseArgs`, `resolveHistoryPath`, `readHistory / writeHistory`, `normalizeFont / normalizeHex`, `cmdRecent / cmdRecord / cmdExtract`, `main`의 switch.
 
-- [ ] **Step 2: `TOKEN_SETS` 상수 추가 (파일 상단, 기존 `MAX_ENTRIES` 근처)**
+- [x] **Step 2: `TOKEN_SETS` 상수 추가 (파일 상단, 기존 `MAX_ENTRIES` 근처)**
 
 스펙 §3.1의 6개 세트. 기존 구현 스타일(require("fs"), CommonJS)과 일치시킨다.
 
@@ -1807,11 +1807,11 @@ const TOKEN_SETS = [
 ];
 ```
 
-- [ ] **Step 3: 폴백 경로는 기존 그대로 유지** (`~/.claude/plugins/data/vision-powers/aesthetic-history.json`)
+- [x] **Step 3: 폴백 경로는 기존 그대로 유지** (`~/.claude/plugins/data/vision-powers/aesthetic-history.json`)
 
 `resolveHistoryPath` 함수를 **수정하지 않는다**. 홈 디렉터리 직접 오염(예: `~/.vision-powers-data`)은 CLAUDE.md의 플러그인 데이터 경로 규칙과 어긋난다.
 
-- [ ] **Step 4: 새 `pick` 서브커맨드 추가 (기존 CLI 확장)**
+- [x] **Step 4: 새 `pick` 서브커맨드 추가 (기존 CLI 확장)**
 
 `cmdPick(args)` 함수를 추가하고 `main()`의 switch에 `"pick"` 케이스를 추가. `recent`의 기존 구조(`--n`, `--history`, `--skill`) 관례를 따른다.
 
@@ -1850,7 +1850,7 @@ case "pick": return cmdPick(args);
 
 usage 에러 메시지도 확장: `"Usage: aesthetic-rotation.js <recent|record|extract|pick> [flags]"`
 
-- [ ] **Step 5: module export 부가 추가 (파일 맨 아래)**
+- [x] **Step 5: module export 부가 추가 (파일 맨 아래)**
 
 `main()` 호출 **뒤에** 다음 줄 추가:
 
@@ -1860,7 +1860,7 @@ module.exports = { TOKEN_SETS, resolveHistoryPath, readHistory, writeHistory, cm
 
 (기존에는 module.exports 없이 CLI로만 실행됐으므로, 이 추가는 CLI 동작에 무해.)
 
-- [ ] **Step 6: 무회귀 스모크 (기존 CLI 호출)**
+- [x] **Step 6: 무회귀 스모크 (기존 CLI 호출)**
 
 ```bash
 node plugins/vision-powers/scripts/aesthetic-rotation.js recent --n 3
@@ -1872,7 +1872,7 @@ node plugins/vision-powers/scripts/aesthetic-rotation.js pick --scheme light
 
 `extract` 서브커맨드는 assemble-report.js가 자동 호출하므로 Task 22 스모크에서 확인.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add plugins/vision-powers/scripts/aesthetic-rotation.js
@@ -1908,7 +1908,7 @@ git commit -m "Add TOKEN_SETS + pick subcommand to aesthetic-rotation.js; preser
 
 이 매핑 표는 Task 16 (SKILL.md + section-structure.md 재작성)과 Task 17 (템플릿 + section-N.html 파일 재정렬)의 **단일 진실**.
 
-- [ ] **사전 확인 (필수, Task 16 전)** — 위 매핑 표를 사용자에게 제시하고 명시적 승인을 받는다. 매핑이 변경되면 Task 16/17의 모든 Step이 영향을 받으므로, 승인 없이는 Phase 5 진행 금지.
+- [x] **사전 확인 (필수, Task 16 전)** — 위 매핑 표를 사용자에게 제시하고 명시적 승인을 받는다. 매핑이 변경되면 Task 16/17의 모든 Step이 영향을 받으므로, 승인 없이는 Phase 5 진행 금지.
 
   확인해야 할 판단 지점:
   - 제거되는 4섹션(Code Review / Decisions / Risks / Test Coverage)이 정말 사용되지 않는지 (스펙 §1.1 미사용 주장의 재검증)
@@ -1926,7 +1926,7 @@ git commit -m "Add TOKEN_SETS + pick subcommand to aesthetic-rotation.js; preser
 - Modify: `plugins/vision-powers/skills/diff-visual/SKILL.md`
 - Modify: `plugins/vision-powers/skills/diff-visual/references/section-structure.md`
 
-- [ ] **Step 1: SKILL.md 다이어트**
+- [x] **Step 1: SKILL.md 다이어트**
 
 다음 섹션 **제거**:
 - Intent Check 중 Code Review / Decision Rationale 요청
@@ -1969,7 +1969,7 @@ Markdown 모드 템플릿 교체 — 7섹션 구조:
 <quadrant: impact vs frequency>
 ~~~
 
-- [ ] **Step 2: references/section-structure.md 재작성**
+- [x] **Step 2: references/section-structure.md 재작성**
 
 9섹션 → 7섹션. 각 섹션에 Mermaid 타입 명시:
 - Overview: stat cards + Chart.js donut
@@ -1982,7 +1982,7 @@ Markdown 모드 템플릿 교체 — 7섹션 구조:
 
 Layer 0 참조 강제: 모든 Mermaid 블록 앞에 `%%{init}%%` 필수.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add plugins/vision-powers/skills/diff-visual/SKILL.md plugins/vision-powers/skills/diff-visual/references/section-structure.md
@@ -1998,7 +1998,7 @@ git commit -m "Diet diff-visual: 10 sections to 7 (remove review/decisions/risks
 
 ⚠️ 이 Task는 "Phase 5 사전 작업"의 매핑 표를 전제로 한다. 매핑에 대한 사용자 확인을 먼저 받을 것.
 
-- [ ] **Step 1: 현재 주석 마커 + 구조 확인**
+- [x] **Step 1: 현재 주석 마커 + 구조 확인**
 
 ```bash
 grep -n "<!-- SECTION_\|^<section\|id=\"" plugins/vision-powers/templates/diff-visual.html
@@ -2006,7 +2006,7 @@ grep -n "<!-- SECTION_\|^<section\|id=\"" plugins/vision-powers/templates/diff-v
 
 Expected: `<!-- SECTION_1: Executive Summary -->` ~ `<!-- SECTION_10: Re-entry Context -->`만 존재(섹션 ID는 없음). 만약 `id="..."` 섹션이 실제로 존재한다면 매핑 표를 재조정 후 이 Task를 다시 계획.
 
-- [ ] **Step 2: 주석 마커 교체 (매핑 표의 신 7섹션 순서대로)**
+- [x] **Step 2: 주석 마커 교체 (매핑 표의 신 7섹션 순서대로)**
 
 기존 10개 주석 마커를 아래 7개로 교체:
 
@@ -2022,7 +2022,7 @@ Expected: `<!-- SECTION_1: Executive Summary -->` ~ `<!-- SECTION_10: Re-entry C
 
 제거되는 내용: SECTION_7~10에 해당하던 Test Coverage / Code Review / Decision Log / Re-entry Context. SECTION_4 Feature Comparisons와 SECTION_5 Flow Diagrams 자리는 New Components / Dependency Shift로 **교체**. SECTION_2 KPI Dashboard는 SECTION_1 Overview에 흡수(별도 섹션 아님).
 
-- [ ] **Step 3: Layer 0 토큰을 CSS custom properties로 주입**
+- [x] **Step 3: Layer 0 토큰을 CSS custom properties로 주입**
 
 `:root` 블록을 Task 11의 doc-visual.html 패턴과 동일하게 맞춘다:
 
@@ -2042,7 +2042,7 @@ Expected: `<!-- SECTION_1: Executive Summary -->` ~ `<!-- SECTION_10: Re-entry C
 
 `<script type="module">` Mermaid `initialize({ themeVariables })` 블록도 Layer 0 값(`{TOKEN_ACCENT}` 등)을 사용하도록 수정. assemble-report.js의 새 curly placeholder parser(Task 12 Step 3)가 런타임에 치환한다.
 
-- [ ] **Step 4: diff-visual SKILL.md 의 section 생성 로직 정합 확인**
+- [x] **Step 4: diff-visual SKILL.md 의 section 생성 로직 정합 확인**
 
 Task 16에서 이미 7섹션으로 교체했는지 재확인:
 
@@ -2052,7 +2052,7 @@ grep -n "Overview\|File Map\|Architecture Impact\|Change Classification\|Depende
 
 제거된 섹션명(Test Coverage 등)은 SKILL.md / section-structure.md에서도 0건이어야 한다.
 
-- [ ] **Step 5: 로컬 렌더 확인**
+- [x] **Step 5: 로컬 렌더 확인**
 
 ```bash
 claude --plugin-dir ./plugins/vision-powers
@@ -2065,7 +2065,7 @@ claude --plugin-dir ./plugins/vision-powers
 - 레거시 섹션(Test Coverage 등) 문구 미출현
 - CSS 변수가 Layer 0 토큰 세트 중 하나로 치환됨
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add plugins/vision-powers/templates/diff-visual.html
