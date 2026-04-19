@@ -505,7 +505,7 @@ A->>B: Call web_search with queries
 
 ## 13-Type Syntax Reference
 
-각 타입별 최소 완성 예제. 프로덕션 다이어그램에서는 Layer 0 semantic-tokens.md의 `%%{init}%%` 블록을 **반드시** 앞에 둔다.
+Minimum complete example for each type. In production diagrams you **must** prepend the `%%{init}%%` block from Layer 0 semantic-tokens.md.
 
 ### architecture
 ```
@@ -532,7 +532,7 @@ sequenceDiagram
   D-->>A: User record
   A-->>U: Session token
 ```
-(message에 `{}[]<>&` 사용 금지)
+(do not use `{}[]<>&` in messages)
 
 ### state
 ```
@@ -542,7 +542,7 @@ stateDiagram-v2
   Running --> Done: complete
   Running --> Failed: error
 ```
-(label에 `<br/>` 금지)
+(do not use `<br/>` in labels)
 
 ### ER
 ```
@@ -637,7 +637,7 @@ flowchart TD
 
 ### venn (fallback — inline SVG)
 
-Mermaid 미지원. assemble-report.js가 3-circle overlap SVG 생성:
+Not supported by Mermaid. assemble-report.js generates a 3-circle overlap SVG:
 
 ```html
 <svg viewBox="0 0 300 200">
@@ -649,7 +649,7 @@ Mermaid 미지원. assemble-report.js가 3-circle overlap SVG 생성:
 
 ### pyramid / funnel (fallback — Chart.js)
 
-Mermaid 미지원. Chart.js horizontal bar with descending values:
+Not supported by Mermaid. Chart.js horizontal bar with descending values:
 
 ```js
 new Chart(ctx, {

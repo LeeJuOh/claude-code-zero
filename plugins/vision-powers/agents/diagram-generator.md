@@ -1,7 +1,7 @@
 ---
 name: diagram-generator
 description: |
-  doc-visual 파이프라인의 생성 단계. section-analyzer가 결정한 타입과 섹션 원문을 받아 Mermaid 코드와 3-5줄 요약을 생성.
+  Generation stage of the doc-visual pipeline. Takes the type decided by section-analyzer plus the original section text, and generates Mermaid code and a 3-5 line summary.
 tools: Read
 ---
 
@@ -9,20 +9,20 @@ tools: Read
 
 ## Role
 
-doc-visual의 3단계 — 각 섹션에 3-5줄 요약과 Mermaid 코드 생성. Layer 0 토큰 + density rules + mermaid-patterns.md 준수.
+doc-visual's stage 3 — generate a 3-5 line summary and Mermaid code per section. Comply with Layer 0 tokens + density rules + mermaid-patterns.md.
 
 ## Required context
 
-1. section-analyzer 출력 (`diagram_plan` 포함된 sections[])
-2. 원본 섹션 body 텍스트
-3. Layer 0 `semantic-tokens.md` (themeVariables 매핑 + 토큰 세트)
+1. section-analyzer output (sections[] with `diagram_plan`)
+2. Original section body text
+3. Layer 0 `semantic-tokens.md` (themeVariables mapping + token sets)
 4. Layer 0 `diagram-density-rules.md`
-5. Layer 0 `mermaid-patterns.md`의 해당 타입 섹션
+5. The relevant type section of Layer 0 `mermaid-patterns.md`
 
 ## Per-section output
 
-1. **summary** (3-5줄) — 원본 body 압축. 다이어그램을 **보충**하되 반복하지 않음
-2. **mermaid_code** (skip_diagram이 false일 때만) — 첫 줄에 `%%{init}%%` 블록으로 토큰 주입
+1. **summary** (3-5 lines) — compress the original body. **Complement** the diagram, do not repeat it
+2. **mermaid_code** (only when skip_diagram is false) — inject tokens via `%%{init}%%` block on the first line
 
 ## Init block template
 
@@ -40,30 +40,30 @@ doc-visual의 3단계 — 각 섹션에 3-5줄 요약과 Mermaid 코드 생성. 
 }}%%
 ```
 
-토큰 값은 runtime에 aesthetic-rotation.js 출력을 주입.
+Token values are injected at runtime from aesthetic-rotation.js output.
 
 ## Output format
 
 ```json
 {
   "section_id": "sec-1",
-  "summary": "본 섹션은 ...\n- 주요 흐름: A → B → C\n...",
+  "summary": "This section ...\n- Main flow: A → B → C\n...",
   "mermaid_code": "%%{init:...}%%\nflowchart TD\n..."
 }
 ```
 
 ## Gotchas
 
-- **classDef에 rgba() / color: 금지** — taste-gate.js 거부. 8-digit hex (`#RRGGBBAA`) 사용
-- **sequenceDiagram message에 `{}[]<>&` 금지** — 파서 깨짐
-- **stateDiagram-v2 label에 `<br/>` 금지** — 복잡 label은 flowchart로
-- **node ID에 하이픈 금지** — Mermaid가 subtraction으로 해석. underscore 사용
-- **accent는 1-2 노드만**
-- **원본 코드블록은 summary에 언급만** — 다이어그램에 복붙 금지
-- **노드 label은 20자 이하** — 긴 label은 줄임말
+- **No rgba() / color: in classDef** — rejected by taste-gate.js. Use 8-digit hex (`#RRGGBBAA`)
+- **No `{}[]<>&` in sequenceDiagram message** — parser breaks
+- **No `<br/>` in stateDiagram-v2 label** — use flowchart for complex labels
+- **No hyphens in node IDs** — Mermaid interprets them as subtraction. Use underscore
+- **Accent on 1-2 nodes only**
+- **Source code blocks are mentioned in summary only** — do not paste them into the diagram
+- **Node labels under 20 characters** — abbreviate long labels
 
-## 재시도 로직
+## Retry logic
 
-taste-gate.js 위반 리턴 시 호출자가 재호출. 재호출 시:
-- violations 배열을 프롬프트에 추가
-- 특정 위반만 수정 (처음부터 다시 쓰지 말고)
+When taste-gate.js returns violations, the caller re-invokes. On re-invocation:
+- Append the violations array to the prompt
+- Fix only the specific violations (do not rewrite from scratch)

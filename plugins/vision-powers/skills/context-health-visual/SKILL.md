@@ -142,7 +142,7 @@ header + recommendations top card.
 
 **Principle:** HTML is the default because a dashboard renders the 9 diagnostic areas as KPI cards, bars, and collision heatmaps that markdown can't match. Only choose `md` when running in a non-browser context (cowork, headless CI), when the user asks for markdown explicitly, or when pasting into a chat thread is more useful than opening a file.
 
-Mermaid 생성은 Layer 0의 semantic-tokens.md(토큰) / diagram-type-selection.md(타입 매핑) / diagram-density-rules.md(예산) / taste-gate.md(체크리스트)를 강제 로드하고, `scripts/taste-gate.js`로 자동 검증한다.
+Mermaid generation force-loads Layer 0's semantic-tokens.md (tokens) / diagram-type-selection.md (type mapping) / diagram-density-rules.md (budget) / taste-gate.md (checklist), and is auto-validated by `scripts/taste-gate.js`.
 
 **Markdown mode (`--format md`):**
 

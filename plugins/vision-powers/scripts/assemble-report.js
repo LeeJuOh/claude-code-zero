@@ -225,8 +225,8 @@ function main() {
 
       const footer =
         `\n\n---\n\n` +
-        `**원본**: ${effectiveMeta.source_path || ""}\n` +
-        `**생성**: vision-powers doc-visual · ${timestamp}\n`;
+        `**Source**: ${effectiveMeta.source_path || ""}\n` +
+        `**Generated**: vision-powers doc-visual · ${timestamp}\n`;
 
       const mdContent = mdParts.join("\n\n") + footer;
 

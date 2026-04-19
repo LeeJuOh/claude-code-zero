@@ -1,41 +1,41 @@
 # Semantic Tokens
 
-vision-powers의 단일 색/폰트 소스. 모든 Layer 1 스킬은 이 파일의 **시맨틱 역할**로만 색과 폰트를 참조한다.
+The single color/font source for vision-powers. All Layer 1 skills must reference colors and fonts only through the **semantic roles** in this file.
 
-## 시맨틱 역할
+## Semantic roles
 
 | Role | Purpose | Default (light) | Default (dark) |
 |---|---|---|---|
-| `paper`, `paper-2` | 페이지/컨테이너 배경 | `#faf7f2` | `#1c1917` |
-| `ink` | 주 텍스트/주 선 | `#1c1917` | `#faf7f2` |
-| `muted`, `soft` | 보조 텍스트/기본 화살표 | `#57534e` | `#a8a29e` |
-| `rule` | 헤어라인 | rgba(28,25,23,.12) | rgba(250,247,242,.12) |
+| `paper`, `paper-2` | Page/container background | `#faf7f2` | `#1c1917` |
+| `ink` | Primary text/primary line | `#1c1917` | `#faf7f2` |
+| `muted`, `soft` | Secondary text/default arrows | `#57534e` | `#a8a29e` |
+| `rule` | Hairline | rgba(28,25,23,.12) | rgba(250,247,242,.12) |
 | `accent`, `accent-tint` | focal (1–2 / diagram) | `#b5523a` | `#d6724a` |
-| `link` | HTTP/API/외부 | `#2563eb` | `#60a5fa` |
+| `link` | HTTP/API/external | `#2563eb` | `#60a5fa` |
 
-## 폰트 3종
+## Three font roles
 
 | Role | Family | Usage |
 |---|---|---|
-| `title` | Instrument Serif | 페이지 H1, 리포트 제목 |
-| `body` | Geist (sans) | 본문, 노드 이름 |
-| `mono` | Geist Mono | 기술 콘텐츠 한정 (포트/URL/경로) |
+| `title` | Instrument Serif | Page H1, report title |
+| `body` | Geist (sans) | Body text, node names |
+| `mono` | Geist Mono | Technical content only (ports/URLs/paths) |
 
-**JetBrains Mono를 블랭킷 dev 폰트로 쓰지 않는다.** Mono는 기술 콘텐츠 전용.
+**Do not use JetBrains Mono as a blanket dev font.** Mono is for technical content only.
 
-## Mermaid themeVariables 매핑
+## Mermaid themeVariables mapping
 
 ```
 paper        → canvasColor, background
-paper-2      → secondaryColor, tertiaryColor (서브그래프/컨테이너 배경)
+paper-2      → secondaryColor, tertiaryColor (subgraph/container background)
 ink          → primaryTextColor, primaryBorderColor
 muted        → lineColor, secondaryTextColor
-accent       → primaryColor (focal 노드)
-accent-tint  → primaryColor fill tint (focal 노드 내부 채움)
-link         → 외부 edge color
+accent       → primaryColor (focal node)
+accent-tint  → primaryColor fill tint (focal node inner fill)
+link         → external edge color
 ```
 
-사용 예:
+Example:
 ```
 %%{init: {
   'theme': 'base',
@@ -48,19 +48,19 @@ link         → 외부 edge color
 }}%%
 ```
 
-## 토큰 세트 (aesthetic-rotation.js용)
+## Token sets (for aesthetic-rotation.js)
 
-aesthetic-rotation.js가 다음 세트 중 하나를 선택:
+aesthetic-rotation.js picks one of the following sets:
 
-1. **warm-stone** (default, light) — 위 표의 기본값
+1. **warm-stone** (default, light) — defaults from the table above
 2. **cool-slate** — paper `#f1f5f9`, ink `#0f172a`, accent `#0369a1`
 3. **editorial-ink** — paper `#fafaf9`, ink `#18181b`, accent `#7c2d12`
 4. **blueprint** — paper `#eff6ff`, ink `#1e3a8a`, accent `#dc2626`
-5. **warm-stone-dark** — 위 dark 컬럼
-6. **cool-slate-dark** — cool-slate의 역전
+5. **warm-stone-dark** — the dark column above
+6. **cool-slate-dark** — inverse of cool-slate
 
 ## FORBIDDEN
 
-- `rgba()` in Mermaid classDef (파서 붕괴 — 8-digit hex `#RRGGBBAA` 사용)
-- violet/fuchsia 계열 (`#8b5cf6`, `#7c3aed`, `#a78bfa`, `#d946ef`) 기본 팔레트
-- JetBrains Mono 블랭킷 사용
+- `rgba()` in Mermaid classDef (parser breakage — use 8-digit hex `#RRGGBBAA`)
+- violet/fuchsia family (`#8b5cf6`, `#7c3aed`, `#a78bfa`, `#d946ef`) as default palette
+- Blanket use of JetBrains Mono

@@ -1,6 +1,6 @@
 # Section Structure — doc-visual
 
-assemble-report.js가 HTML 출력 시 따르는 섹션 렌더링 패턴.
+The section rendering pattern that assemble-report.js follows when emitting HTML.
 
 ## HTML per section
 
@@ -21,12 +21,12 @@ assemble-report.js가 HTML 출력 시 따르는 섹션 렌더링 패턴.
 </section>
 ```
 
-`skip_diagram: true` → `.mermaid-wrap` 생략.
-`is_hero: true` → CSS `.doc-section[data-is-hero="true"]`로 시각 강조.
+`skip_diagram: true` → omit `.mermaid-wrap`.
+`is_hero: true` → visually emphasize via CSS `.doc-section[data-is-hero="true"]`.
 
 ## TOC
 
-문서 시작에 자동 생성:
+Generated automatically at the start of the document:
 
 ```html
 <nav class="toc">
@@ -40,10 +40,10 @@ assemble-report.js가 HTML 출력 시 따르는 섹션 렌더링 패턴.
 ## Hero styling
 
 `.doc-section[data-is-hero="true"]`:
-- 배경 `--paper-2`
-- 2px `--accent` 왼쪽 보더
-- 다이어그램 크기 1.2x
-- 섹션 간격 위 아래 2배
+- Background `--paper-2`
+- 2px `--accent` left border
+- Diagram size 1.2x
+- Section spacing 2x above and below
 
 ## Markdown per section
 
@@ -57,12 +57,12 @@ assemble-report.js가 HTML 출력 시 따르는 섹션 렌더링 패턴.
 ```
 ```
 
-`skip_diagram: true` → mermaid 블록 생략.
+`skip_diagram: true` → omit the mermaid block.
 
-마지막 섹션 뒤:
+After the last section:
 ```
 ---
 
-**원본**: [{source_path}]({source_path})
-**생성**: vision-powers doc-visual · {timestamp}
+**Source**: [{source_path}]({source_path})
+**Generated**: vision-powers doc-visual · {timestamp}
 ```

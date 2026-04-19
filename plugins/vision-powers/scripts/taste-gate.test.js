@@ -70,17 +70,17 @@ test('detects writing-mode vertical anywhere', () => {
 });
 
 test('reserved keyword (subgraph) is not counted as a node', () => {
-  // subgraph/Frontend/Backend는 구조 키워드. 실제 노드는 A, B 2개뿐.
-  // countNodes regex가 line-beginning 키워드까지 잡으면 maxNodes 오탐.
+  // subgraph/Frontend/Backend are structural keywords. The actual nodes are only A and B.
+  // If countNodes regex also captures line-beginning keywords, maxNodes would false-positive.
   const mermaid = 'flowchart TD\n  subgraph Frontend\n    A[React]\n  end\n  subgraph Backend\n    B[API]\n  end\n  A --> B';
   const result = runTasteGate({ mermaid, type: 'flowchart' });
   assert.ok(!result.violations.some(v => v.rule === 'max-nodes-exceeded'),
-    'subgraph/Frontend/Backend이 노드로 카운트되면 안 됨');
+    'subgraph/Frontend/Backend must not be counted as nodes');
 });
 
-test('sequence participant 라인은 lifeline만 카운트 (node counter 간섭 없음)', () => {
-  // participant 키워드 자체는 lifeline counter에서만 처리.
-  // maxNodes 필드가 없는 sequence 타입에서 countNodes가 호출되지 않아야 함.
+test('sequence participant lines count only as lifelines (no node-counter interference)', () => {
+  // The participant keyword is handled only by the lifeline counter.
+  // For sequence type (no maxNodes field), countNodes must not be invoked.
   const mermaid = 'sequenceDiagram\n  participant A\n  participant B\n  A->>B: hi';
   const result = runTasteGate({ mermaid, type: 'sequence' });
   assert.strictEqual(result.ok, true);

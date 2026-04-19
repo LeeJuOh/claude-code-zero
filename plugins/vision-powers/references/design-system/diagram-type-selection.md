@@ -1,10 +1,10 @@
 # Diagram Type Selection
 
-section-analyzer와 diagram-generator가 섹션 의도 → 다이어그램 타입 매핑 시 **강제 참조**하는 단일 소스.
+The single source that section-analyzer and diagram-generator are **required to reference** when mapping section intent → diagram type.
 
-## 13개 타입 selection guide
+## 13-type selection guide
 
-| 섹션에서 보여주려는 것 | 타입 | Mermaid syntax |
+| What the section shows | Type | Mermaid syntax |
 |---|---|---|
 | Components + connections (system overview) | architecture | `flowchart TD` + `subgraph` |
 | Decision logic with branches | flowchart | `flowchart` with diamond |
@@ -13,49 +13,49 @@ section-analyzer와 diagram-generator가 섹션 의도 → 다이어그램 타�
 | Entities + fields + relationships | ER | `erDiagram` |
 | Events positioned in time | timeline | `timeline` |
 | Cross-functional handoffs | swimlane | `flowchart` with per-lane subgraph |
-| Two-axis positioning (impact vs effort 등) | quadrant | `quadrantChart` |
+| Two-axis positioning (e.g. impact vs effort) | quadrant | `quadrantChart` |
 | Hierarchy by containment / scope | nested | `flowchart` with nested subgraph |
 | Parent → children relationships | tree | `flowchart TD` |
 | Stacked abstraction levels | layer stack | `flowchart` with stacked subgraph |
-| Overlap between sets | venn | **Mermaid 미지원** → SVG fallback |
-| Ranked hierarchy / funnel / conversion | pyramid | **Mermaid 미지원** → Chart.js bar fallback |
+| Overlap between sets | venn | **Mermaid unsupported** → SVG fallback |
+| Ranked hierarchy / funnel / conversion | pyramid | **Mermaid unsupported** → Chart.js bar fallback |
 
-## Fallback (Mermaid 미지원 타입)
+## Fallback (Mermaid-unsupported types)
 
 - **venn**: inline SVG 3-circle overlap (max 3 circles)
-- **pyramid**: Chart.js `type: 'bar'`, `indexAxis: 'y'`, 내림차순 정렬
+- **pyramid**: Chart.js `type: 'bar'`, `indexAxis: 'y'`, descending sort
 
 ## Rules of thumb
 
-1. 3-column 테이블이 같은 정보를 동등 이상으로 전달하면 **테이블 선택**, 다이어그램 삭제
-2. 두 타입을 합치고 싶으면 지배 축 하나만 남김. 하이브리드 금지
-3. Complexity budget(density-rules.md) 초과 시 overview + detail 2 다이어그램으로 분리
-4. 단순 리스트는 다이어그램화 금지 — bullet 유지
-5. 대화 message 흐름은 sequence만 사용. flowchart로 대체 금지
+1. If a 3-column table conveys the same information at least as well, **choose the table** and drop the diagram
+2. To merge two types, keep only the dominant axis. No hybrids
+3. When over the complexity budget (density-rules.md), split into 2 diagrams: overview + detail
+4. Do not turn simple lists into diagrams — keep them as bullets
+5. Use sequence only for conversational message flows. Do not substitute flowchart
 
-## 매핑 우선순위 (section-analyzer용)
+## Mapping priority (for section-analyzer)
 
-섹션 헤더와 본문 키워드에 따라:
+Match against section headers and body keywords. The section-analyzer should interpret these semantically and match equivalents in the source document's language.
 
-- "아키텍처", "구성요소", "architecture", "components" → architecture
-- "흐름", "단계", "flow", "steps" → flowchart
-- "순서", "통신", "프로토콜", "sequence", "handshake" → sequence
-- "상태", "전이", "state", "transition" → state
-- "엔티티", "스키마", "entities", "schema", "data model" → ER
-- "타임라인", "히스토리", "timeline", "history" → timeline
-- "부서", "역할", "lanes", "responsibilities" → swimlane
-- "우선순위", "매트릭스", "priority", "effort", "impact" → quadrant
-- "계층", "담기", "hierarchy", "nested" → nested
-- "트리", "부모-자식", "tree", "parent-child" → tree
-- "레이어", "스택", "layers", "stack" → layer stack
-- "집합", "overlap", "교집합" → venn
-- "깔때기", "퍼널", "funnel", "conversion" → pyramid
+- "architecture", "components" → architecture
+- "flow", "steps" → flowchart
+- "sequence", "handshake", "protocol" → sequence
+- "state", "transition" → state
+- "entities", "schema", "data model" → ER
+- "timeline", "history" → timeline
+- "lanes", "responsibilities", "roles" → swimlane
+- "priority", "effort", "impact", "matrix" → quadrant
+- "hierarchy", "nested" → nested
+- "tree", "parent-child" → tree
+- "layers", "stack" → layer stack
+- "overlap", "intersection" → venn
+- "funnel", "conversion" → pyramid
 
 ## Skill hints
 
 | Skill | Most likely patterns |
 |---|---|
-| `doc-visual` | 모든 타입 가능 — 원본 문서 주제에 따름 |
+| `doc-visual` | All types possible — depends on the source document's topic |
 | `diff-visual` | architecture, tree (file map), pyramid (change classification), quadrant (hot spots) |
 | `plugin-visual` | architecture (component map), sequence (invocation flow), tree |
 | `context-health-visual` | quadrant (skill density vs trigger collisions), timeline |

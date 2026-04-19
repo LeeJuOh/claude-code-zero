@@ -4,7 +4,7 @@
 
 ## Section Mapping
 
-**신 7섹션 순서**: SECTION_1 Overview · SECTION_2 File Map · SECTION_3 Architecture Impact · SECTION_4 Change Classification · SECTION_5 Dependency Shift · SECTION_6 New Components · SECTION_7 Hot Spots
+**New 7-section order**: SECTION_1 Overview · SECTION_2 File Map · SECTION_3 Architecture Impact · SECTION_4 Change Classification · SECTION_5 Dependency Shift · SECTION_6 New Components · SECTION_7 Hot Spots
 
 | Section | Diagram type | Depth |
 |---|---|---|
