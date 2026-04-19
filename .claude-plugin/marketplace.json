@@ -29,7 +29,7 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "2.0.0",
+      "version": "4.0.0",
       "description": "Analyze Claude Code plugins and visualize text artifacts (markdown docs, git diffs, plugins) as interactive HTML or diagram-enhanced markdown reports. Skills: doc-visual, diff-visual, plugin-visual, context-health-visual, fact-check, report-manager."
     },
     {
