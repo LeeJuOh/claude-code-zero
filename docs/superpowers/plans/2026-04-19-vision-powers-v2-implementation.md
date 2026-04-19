@@ -2084,7 +2084,7 @@ git commit -m "Reorder diff-visual.html section markers to 7 (Overview/FileMap/A
 
 ⚠️ Task 6에서 `font-system.md / color-palette.md / anti-slop-rules.md`를 **삭제**했다. 이 Task는 남은 스킬의 참조를 Layer 0으로 **교체**하고, Task 6 Step 4의 sweep이 0건이 되도록 보장한다.
 
-- [ ] **Step 1: plugin-visual/SKILL.md — "Resolve paths" 및 "Read 4 reference files" 블록 교체**
+- [x] **Step 1: plugin-visual/SKILL.md — "Resolve paths" 및 "Read 4 reference files" 블록 교체**
 
 현재 SKILL.md의 Resolve paths 블록(대략 L310-335)은 4개 참조 파일을 나열하고 그 중 3개가 삭제된 Layer 0 파일이다. 이를 **삭제된 3개를 신규 4개로 교체**해 총 5개 병렬 Read.
 
@@ -2106,7 +2106,7 @@ aesthetic-rotation CLI 호출 (`Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/aestheti
 본문 "Report Generation" 섹션에 Layer 0 강제 로드 문구 추가:
 > "Mermaid 생성은 Layer 0의 semantic-tokens.md(토큰) / diagram-type-selection.md(타입 매핑) / diagram-density-rules.md(예산) / taste-gate.md(체크리스트)를 강제 로드하고, `scripts/taste-gate.js`로 자동 검증한다."
 
-- [ ] **Step 2-pre: context-health-visual 현재 구조 확인 (필수 선행)**
+- [x] **Step 2-pre: context-health-visual 현재 구조 확인 (필수 선행)**
 
 작업 전에 SKILL.md를 반드시 read하여 현재 Reference Files / Resolve paths 블록 형태를 파악한다. plugin-visual과 동일한 "Read N reference files" 패턴인지, 아니면 다른 형태(예: References 섹션 + 개별 Read 호출, Additional Resources bullets)인지 확인.
 
@@ -2120,7 +2120,7 @@ grep -nE "font-system|color-palette|anti-slop|diagram-argumentation|design-syste
 - **B. 참조가 아예 없음** → Step 2 (추가 분기)
 - **C. Reference 블록 자체가 없는 구조** → Reference Files 섹션을 신설한 뒤 Step 2 (추가 분기) 적용
 
-- [ ] **Step 2: context-health-visual/SKILL.md — Step 2-pre 결과에 따라 분기**
+- [x] **Step 2: context-health-visual/SKILL.md — Step 2-pre 결과에 따라 분기**
 
 **분기 A (교체)**: plugin-visual Step 1과 동일하게 삭제된 3개 경로를 Layer 0 4개로 치환. "Read N reference files" 숫자도 증가. `${CLAUDE_PLUGIN_ROOT}/references/design-system/` prefix 유지.
 
@@ -2131,7 +2131,7 @@ grep -nE "font-system|color-palette|anti-slop|diagram-argumentation|design-syste
 공통으로 본문 "Report Generation" 또는 유사 섹션에 Layer 0 강제 로드 문구 추가:
 > "Mermaid 생성은 Layer 0의 semantic-tokens.md(토큰) / diagram-type-selection.md(타입 매핑) / diagram-density-rules.md(예산) / taste-gate.md(체크리스트)를 강제 로드하고, `scripts/taste-gate.js`로 자동 검증한다."
 
-- [ ] **Step 3: sweep 재확인**
+- [x] **Step 3: sweep 재확인**
 
 Task 6의 sweep grep이 **0건** 이어야 한다:
 
@@ -2141,7 +2141,7 @@ grep -rEn "font-system\.md|color-palette\.md|anti-slop-rules\.md|diagram-argumen
 
 Expected: 0건. 나오는 게 있으면 해당 파일에서 Layer 0 경로로 교체.
 
-- [ ] **Step 4: 로컬 테스트**
+- [x] **Step 4: 로컬 테스트**
 
 ```bash
 claude --plugin-dir ./plugins/vision-powers
@@ -2151,7 +2151,7 @@ claude --plugin-dir ./plugins/vision-powers
 
 생성된 HTML에서 Mermaid가 새 Layer 0 토큰으로 렌더되는지 확인. 또한 Read tool 호출이 "file not found"로 깨지지 않는지 확인.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add plugins/vision-powers/skills/plugin-visual/SKILL.md plugins/vision-powers/skills/context-health-visual/SKILL.md
@@ -2170,7 +2170,7 @@ git commit -m "Replace legacy Layer 0 refs (font-system/anti-slop/color-palette)
 - Delete: `plugins/vision-powers/templates/plan-visual.html`
 - Delete: `plugins/vision-powers/templates/project-recap.html`
 
-- [ ] **Step 1: 관련 참조 확인**
+- [x] **Step 1: 관련 참조 확인**
 
 ```bash
 grep -rn "plan-visual\|project-recap" plugins/vision-powers/ | grep -v "\.git" | grep -v "plan-visual/\|project-recap-visual/\|plan-visual.html\|project-recap.html"
@@ -2178,7 +2178,7 @@ grep -rn "plan-visual\|project-recap" plugins/vision-powers/ | grep -v "\.git" |
 
 돌아온 위치에서 참조 제거 (README.md / marketplace.json은 Task 20-21에서 처리).
 
-- [ ] **Step 2: 삭제 실행**
+- [x] **Step 2: 삭제 실행**
 
 ```bash
 rm -rf plugins/vision-powers/skills/plan-visual
@@ -2187,7 +2187,7 @@ rm plugins/vision-powers/templates/plan-visual.html
 rm plugins/vision-powers/templates/project-recap.html
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A plugins/vision-powers/
@@ -2202,7 +2202,7 @@ git commit -m "Remove plan-visual and project-recap-visual skills (users do not 
 - Modify: `plugins/vision-powers/.claude-plugin/plugin.json`
 - Modify: `.claude-plugin/marketplace.json`
 
-- [ ] **Step 1: plugin.json 수정** — description 필드:
+- [x] **Step 1: plugin.json 수정** — description 필드:
 
 ```json
 {
@@ -2213,13 +2213,13 @@ git commit -m "Remove plan-visual and project-recap-visual skills (users do not 
 
 (`version`은 plugin.json에 있으면 삭제 — marketplace.json이 source of truth. 없으면 유지.)
 
-- [ ] **Step 2: marketplace.json 수정**
+- [x] **Step 2: marketplace.json 수정**
 
 루트 `.claude-plugin/marketplace.json`의 vision-powers 항목:
-- `version`: `"2.0.0"`
+- `version`: `"4.0.0"` (plan에는 2.0.0이라고 적혔으나, 이전 버전이 3.0.0이었으므로 4.0.0으로 정정)
 - `description`: plugin.json과 동일
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add plugins/vision-powers/.claude-plugin/plugin.json .claude-plugin/marketplace.json
@@ -2234,7 +2234,7 @@ git commit -m "Bump vision-powers to 2.0.0 (major) — doc-visual added, plan-vi
 - Modify: `plugins/vision-powers/README.md`
 - Create: `plugins/vision-powers/CHANGELOG.md`
 
-- [ ] **Step 1: README.md 스킬 목록 테이블 갱신**
+- [x] **Step 1: README.md 스킬 목록 테이블 갱신**
 
 - `plan-visual` 행 제거
 - `project-recap-visual` 행 제거
@@ -2254,7 +2254,7 @@ doc-visual ./docs/research/xxx.md           # HTML 리포트
 doc-visual ./docs/spec.md --format md       # 인라인 마크다운
 ```
 
-- [ ] **Step 2: CHANGELOG.md 생성**
+- [x] **Step 2: CHANGELOG.md 생성**
 
 ```markdown
 # Changelog
@@ -2296,11 +2296,11 @@ doc-visual ./docs/spec.md --format md       # 인라인 마크다운
 - Claude Code v2.1.112
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add plugins/vision-powers/README.md plugins/vision-powers/CHANGELOG.md
-git commit -m "Update README for v2.0, add CHANGELOG documenting breaking changes and additions"
+git commit -m "Update README for v4.0, add CHANGELOG documenting breaking changes and additions"
 ```
 
 ---
@@ -2309,7 +2309,7 @@ git commit -m "Update README for v2.0, add CHANGELOG documenting breaking change
 
 **Files:** None (검증만)
 
-- [ ] **Step 1: plugin validate**
+- [x] **Step 1: plugin validate**
 
 ```bash
 cd plugins/vision-powers && unset CLAUDECODE && claude plugin validate .
@@ -2350,7 +2350,7 @@ claude --plugin-dir ./plugins/vision-powers
 - 시맨틱 토큰 적용? (색이 정의된 토큰 세트 중 하나)
 - 다이어그램 수가 density rules 이내?
 
-- [ ] **Step 4: git 상태 확인**
+- [x] **Step 4: git 상태 확인**
 
 ```bash
 git log develop --oneline -30
