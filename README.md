@@ -48,7 +48,7 @@ Run `/plugin` and check the **Installed** tab.
 
 | Plugin | Description |
 |--------|-------------|
-| [claw-mo](plugins/claw-mo/README.md) | Markdown live preview via [mo](https://github.com/k1LoW/mo) — Mermaid, KaTeX, and Shiki rendering that `cmux markdown open` can't do. One command per project: tabs grouped by directory, deep-link to any file, pipe generated markdown in (`some-tool \| /claw-mo-open -`), or open a file with zero setup. Full-text search across watched docs, a cross-project status dashboard, and restart-by-default so `fsnotify` drops never silently hide new files |
+| [claw-mo](plugins/claw-mo/README.md) | Markdown live preview via [mo](https://github.com/k1LoW/mo) — Mermaid, KaTeX, and Shiki rendering that `cmux markdown open` can't do. One command per project: tabs grouped by directory, deep-link to any file, pipe generated markdown in (`some-tool \| /claw-mo-open -`), or open a file with zero setup. Full-text search across watched docs, a cross-project status dashboard, and autosync-on-write so Claude-created docs appear in mo without a restart (fsnotify-miss recovery still one `/claw-mo-up` away) |
 | [claw-mux](plugins/claw-mux/README.md) | Full terminal topology control inside [cmux](https://cmux.dev) — send commands to other panes and read their output, run a dev server while tailing logs next door, or spawn a second Claude Code instance and feed it tasks with `wait-for` / content-poll completion detection. Snapshot/ref browser automation in cmux's embedded WKWebView (no Chrome extension), a live-reload markdown panel, and sidebar status pills, progress bars, and leveled logs |
 
 ## Plugin Management

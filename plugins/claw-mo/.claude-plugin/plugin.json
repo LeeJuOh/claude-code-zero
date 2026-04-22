@@ -1,6 +1,6 @@
 {
   "name": "claw-mo",
-  "description": "Manage mo markdown viewer sessions: group-based organization, restart-on-up for reliable rescans, file deep-linking, stdin pipe support, cmux browser integration, per-project watch patterns, port isolation",
+  "description": "Manage mo markdown viewer sessions: autosync new Claude-written .md via PostToolUse hook, group-based organization, restart-on-up for fsnotify-miss recovery, file deep-linking, stdin pipe support, cmux browser integration, per-project watch patterns, port isolation",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
   "keywords": ["mo", "markdown", "viewer", "documentation", "browser", "cmux"]

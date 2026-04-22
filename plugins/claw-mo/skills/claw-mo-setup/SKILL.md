@@ -58,10 +58,11 @@ For config schema, port logic, and groups: read `${CLAUDE_PLUGIN_ROOT}/reference
    Proceed with these? Let me know if you want to add, remove, or change anything.
    ```
 
-8. **Save config** to `${CLAUDE_PLUGIN_DATA}/config.json` (create file if needed, merge if exists). Use v2 `groups` format.
+8. **Save config** to `${CLAUDE_PLUGIN_DATA}/config.json` (create file if needed, merge if exists). Use v2 `groups` format. Include `"autosync": true` on new entries so PostToolUse adds newly-written .md files to the running mo server without `/claw-mo-up`.
 
 9. **Offer to start**: "Setup complete! Want me to start the server with `/claw-mo-up`?"
    - If a mo server is already running on `$PORT` (e.g., from a previous setup in this project), note that `/claw-mo-up` will apply the new config by clearing and rebuilding — since configured patterns changed, this is expected.
+   - Also mention: "Autosync is on by default — when I write .md files here they'll show up in mo automatically while the server is running. Turn off per project via `/claw-mo-manage` → Server control → Toggle autosync."
 
 ## Gotchas
 
@@ -69,3 +70,4 @@ For config schema, port logic, and groups: read `${CLAUDE_PLUGIN_ROOT}/reference
 - **Large top-level directories need one more pass**: If a directory contains a massive subtree, inspect its immediate children before suggesting patterns. Otherwise Claude tends to recommend broad watches like `raw/**/*.md` that swamp mo with irrelevant files.
 - **Group names become URL paths**: Keep them simple lowercase, no spaces or special chars.
 - **Changing config while a server is running**: `/claw-mo-up` reconciles by detecting drift and running `printf 'y\n' | mo --clear` then rebuilding. Tell the user this is the expected side effect of reconfiguring, not a bug.
+- **autosync defaults to true**: every new config entry ships with `"autosync": true`. The field is only read by the PostToolUse hook; no runtime effect when the server is stopped. Users can disable per project via `/claw-mo-manage`.

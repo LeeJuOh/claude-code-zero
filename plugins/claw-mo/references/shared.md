@@ -245,6 +245,45 @@ mo supports `cat file.md | mo` for piped content. The plugin's `/claw-mo-open -`
 cat | mo --no-open -p $PORT -t "$GROUP"  # attaches or starts
 ```
 
+## Autosync (PostToolUse hook)
+
+When claw-mo is enabled, a `PostToolUse` hook fires on `Write|Edit|MultiEdit`. If the written file is `.md` AND the current project has a claw-mo config AND mo is running on the configured port, the hook POSTs the file to `/_/api/groups/{group}/files`. mo's `State.AddFile` dedupes by absolute path, so the call is idempotent.
+
+**What this means for users:**
+- Claude writes a plan/spec/doc → it shows up in mo's sidebar without `/claw-mo-up`.
+- External editor writes → mo's fsnotify handles it (unchanged).
+- fsnotify silent miss recovery → `/claw-mo-up` (`mo --restart`) is still the fix.
+
+**Opt out per project** — add `"autosync": false` to the project entry in `${CLAUDE_PLUGIN_DATA}/config.json`:
+
+```json
+{
+  "/path/to/project": {
+    "port": 6342,
+    "autosync": false,
+    "groups": { "default": ["*.md"] }
+  }
+}
+```
+
+`/claw-mo-manage` → Server control → Toggle autosync flips this field without hand-editing the file.
+
+**Group matching:** the hook tries each group's patterns in config order (absolute `fnmatch` + `pathlib.match` for `**`). First match wins; no match → file is **skipped**. This keeps autosync's behavior consistent with `mo --restart`: files that don't match any watch pattern wouldn't appear after a full restart either, so adding them through autosync would create a phantom group placement that drifts from saved config.
+
+**Debugging:** the hook swallows tool errors by design but logs a few cases to `${CLAUDE_PLUGIN_DATA}/autosync.log`:
+
+- Missing dependency (`jq` / `python3` / `curl`)
+- POST returned a non-2xx HTTP status (with port, group, path, code)
+
+To trace a silent skip (file not appearing in mo with no log entry), run the hook by hand:
+
+```bash
+echo '{"tool_input":{"file_path":"/abs/path/to/file.md"}}' \
+  | bash -x ${CLAUDE_PLUGIN_ROOT}/hooks/autosync.sh
+```
+
+Watch the `+` trace for which early-exit branch fired (.md filter, project guard, missing config entry, autosync opt-out, no running server, no group match).
+
 ## Gotchas
 
 ### Config & Port
@@ -260,6 +299,7 @@ cat | mo --no-open -p $PORT -t "$GROUP"  # attaches or starts
 - **`--watch` and file arguments are mutually exclusive**: `mo --watch '*.md' README.md` fails. Use either watch patterns or explicit file arguments, not both. Directory arguments are the exception (converted to `dir/*.md`).
 - **mo auto-restores previous sessions**: mo restores its backup and merges with CLI-specified files. A matching port alone doesn't guarantee a correct session — compare live groups to config before reusing.
 - **fsnotify can silently miss new files**: Especially when new subdirectories appear under a non-recursive watch, or when the OS drops events under load. Treat `mo --restart` as the safe fix — that's why `/claw-mo-up` restarts by default.
+- **Autosync covers Claude-written files only**: the PostToolUse hook fires on `Write|Edit|MultiEdit` tool calls — files created by an external editor still rely on mo's fsnotify. If an external write doesn't appear, run `/claw-mo-up` (restart forces a fresh scan).
 
 ### HTTP API
 - **Absolute paths only**: When adding files via API, always `realpath` the path first.
