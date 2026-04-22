@@ -88,6 +88,7 @@ Options:
 1. Refresh (re-scan filesystem, keep session) — runs `mo --restart`
 2. Reset current session (clear saved state + restart empty, then rebuild from config)
 3. Stop a server
+4. Toggle autosync for this project (PostToolUse hook)
 ```
 
 If the session is out of sync and the user chose "Modify patterns/groups", recommend Reset first so later changes apply on top of a known-good runtime.
@@ -143,6 +144,13 @@ Delegate to `/claw-mo-open` logic (HTTP API POST to `/_/api/groups/$GROUP/files`
 3. `mo --shutdown -p $PORT`
 4. Confirm — note that config is preserved so `/claw-mo-up` can restart it later
 
+**Toggle autosync**:
+1. Read current `autosync` field (default `true` if absent)
+2. Show current state: `Autosync is ON — .md writes by Claude are added to mo automatically.`
+3. AskUserQuestion: flip it?
+4. Update config file only — no runtime call needed; the hook reads the config on each fire
+5. Confirm new state
+
 ### 5. Loop or Exit
 
 After each action, show the updated dashboard and ask if they want another action. Exit when done.
@@ -159,3 +167,4 @@ After each action, show the updated dashboard and ask if they want another actio
 - **"Close a file" only removes it from the view** — the file on disk is untouched and will be re-added if it matches a watch pattern and `mo --restart` runs.
 - **"Stop a server" only stops the process** — config and backup are preserved so `/claw-mo-up` can restart it later.
 - **`mo --unwatch` accepts both relative globs and absolute paths** (the form `--status` shows). Either works.
+- **Autosync is read per fire, not cached**: flipping it takes effect on the next `Write|Edit|MultiEdit` — no need to restart mo or reload Claude. The hook re-reads config.json every invocation, so the toggle is effectively live.

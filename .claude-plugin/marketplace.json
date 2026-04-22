@@ -66,8 +66,8 @@
     {
       "name": "claw-mo",
       "source": "./plugins/claw-mo",
-      "version": "2.7.0",
-      "description": "Manage mo markdown viewer sessions: group-based organization, restart-on-up for reliable rescans, file deep-linking, stdin pipe support, cmux browser integration, per-project watch patterns, port isolation",
+      "version": "2.8.0",
+      "description": "Manage mo markdown viewer sessions: autosync new Claude-written .md via PostToolUse hook, group-based organization, restart-on-up for fsnotify-miss recovery, file deep-linking, stdin pipe support, cmux browser integration, per-project watch patterns, port isolation",
       "category": "lab"
     },
     {
