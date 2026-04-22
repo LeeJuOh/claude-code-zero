@@ -268,16 +268,21 @@ When claw-mo is enabled, a `PostToolUse` hook fires on `Write|Edit|MultiEdit`. I
 
 `/claw-mo-manage` → Server control → Toggle autosync flips this field without hand-editing the file.
 
-**Group matching:** the hook tries each group's patterns in config order (absolute `fnmatch` + `pathlib.match` for `**`). First match wins; no match falls back to `default`. That's intentionally forgiving — an imperfect group assignment is better than dropping the file entirely.
+**Group matching:** the hook tries each group's patterns in config order (absolute `fnmatch` + `pathlib.match` for `**`). First match wins; no match → file is **skipped**. This keeps autosync's behavior consistent with `mo --restart`: files that don't match any watch pattern wouldn't appear after a full restart either, so adding them through autosync would create a phantom group placement that drifts from saved config.
 
-**Debugging:** the hook swallows all errors by design. To trace a missing add:
+**Debugging:** the hook swallows tool errors by design but logs a few cases to `${CLAUDE_PLUGIN_DATA}/autosync.log`:
+
+- Missing dependency (`jq` / `python3` / `curl`)
+- POST returned a non-2xx HTTP status (with port, group, path, code)
+
+To trace a silent skip (file not appearing in mo with no log entry), run the hook by hand:
 
 ```bash
 echo '{"tool_input":{"file_path":"/abs/path/to/file.md"}}' \
   | bash -x ${CLAUDE_PLUGIN_ROOT}/hooks/autosync.sh
 ```
 
-Watch the `+` trace for which early-exit branch fired.
+Watch the `+` trace for which early-exit branch fired (.md filter, project guard, missing config entry, autosync opt-out, no running server, no group match).
 
 ## Gotchas
 
