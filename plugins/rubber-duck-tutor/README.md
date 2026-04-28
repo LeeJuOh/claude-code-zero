@@ -36,6 +36,7 @@ Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec
 ## Prerequisites
 
 - **jq** (recommended, `brew install jq`) — hooks fall back to regex without it
+- **`/branch` and `/resume` commands** (optional) — the duck suggests `/branch` to fork the conversation before a review session and `/resume` to return afterward. These come from a separate plugin (e.g. `lab-harness-zero`). If your environment doesn't have them, the duck falls back to running `/duck <mode>` inline — you just lose the no-interruption guarantee.
 
 ## Install
 

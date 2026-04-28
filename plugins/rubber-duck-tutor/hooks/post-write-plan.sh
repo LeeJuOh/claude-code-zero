@@ -3,10 +3,11 @@ set -uo pipefail
 
 # rubber-duck-tutor-auto: PostToolUse hook (matches Write)
 #
-# Fires after Write tool use. Checks if the written file is a markdown
-# document that could be a plan or spec. Uses deterministic filtering
-# only (extension check, known-skip list). No prompt-based judgment.
-# Rate-limited. Silently exits in subagent contexts.
+# Fires after Write tool use. Checks if the written file's basename matches
+# a plan/spec/design pattern (plan*, spec*, design*, rfc*, adr*). Uses
+# deterministic filtering only — positive filename match plus a skip list
+# for common doc files that could share keywords (e.g. claude.md). No
+# prompt-based judgment. Rate-limited. Silently exits in subagent contexts.
 
 source "$(dirname "$0")/lib.sh"
 
@@ -18,11 +19,23 @@ if [[ -z "$FILE_PATH" ]] || [[ "$FILE_PATH" != *.md ]]; then
   exit 0
 fi
 
-# Skip known non-plan markdown files (deterministic filter)
 BASENAME=$(basename "$FILE_PATH" | tr '[:upper:]' '[:lower:]')
+
+# Skip known non-plan markdown files (deterministic filter)
 case "$BASENAME" in
   readme.md|changelog.md|contributing.md|license.md|code_of_conduct.md|\
   security.md|agents.md|claude.md|gemini.md|memory.md|skill.md)
+    exit 0
+    ;;
+esac
+
+# Positive match: only trigger on plan/spec/design/rfc/adr basenames.
+# Pattern allows separators (hyphen, underscore, dot, digit) after the prefix
+# so files like plan.md, spec-2024.md, design_v2.md, rfc-001.md all match.
+case "$BASENAME" in
+  plan*.md|spec*.md|design*.md|rfc*.md|adr*.md)
+    ;;
+  *)
     exit 0
     ;;
 esac

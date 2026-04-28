@@ -1,8 +1,8 @@
 ---
 name: duck
 description: Rubber duck tutor that prevents rubber-stamping in AI-assisted workflows. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", wants to sketch their own design before asking AI to implement (duck design), verify their own comprehension of AI-generated code or plans, or mentions rubber-stamping, skill degradation, or learning while coding. Do NOT trigger for general code explanations, debugging help, code reviews without learning intent, or teaching — this tests the DEVELOPER's comprehension, not the CODE's correctness.
-argument-hint: "[design|plan|verify|review|orient]"
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *)
+argument-hint: "[design|plan|verify|review|orient [refresh]]"
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/recent-gaps.sh *)
 ---
 
 # Rubber Duck Tutor
@@ -88,6 +88,8 @@ Duck sessions should not interrupt the user's main work. When suggesting a duck 
 3. When done, the user returns to their original session via `/resume`
 
 This way learning and productivity never compete. The user reviews when ready, not when interrupted.
+
+**Fallback when `/branch` and `/resume` are unavailable** (these commands come from an external plugin like `lab-harness-zero`): if the user replies that the commands don't exist, drop the branch step and run `/duck <mode>` directly. Acknowledge once: "이 환경엔 `/branch`가 없네. 그냥 여기서 바로 돌릴게." Don't keep suggesting it.
 
 Do not offer when:
 - User declined this session
@@ -195,12 +197,7 @@ Prioritize: prediction, pre-testing, generation-before-instruction. See [exercis
 
 4. Continue until all decisions are covered.
 
-5. **Confidence check**:
-
-> **Your turn:** This plan — ready to execute? Rate your confidence 1–10.
-
-   Below 7: "What feels shaky? Let's look at that part."
-   7 or above: "What's the weakest part of this plan?"
+5. **Confidence check** — run the Plan Review row from the [Confidence Check (shared)](#confidence-check-shared) table.
 
 6. Summarize: what was confirmed, changed, and removed.
 
@@ -249,12 +246,7 @@ Prioritize: elaborative interrogation, prediction, interleaving. See [exercise-p
    If they miss it → point to the specific location and explain why it's a problem.
    → Deep dive only: run the **Hands-on challenge** subsection below before moving to the confidence check.
 
-6. **Confidence check** (after 2+ questions):
-
-> **Your turn:** Could you maintain this code solo if I wasn't here? Confidence 1–10.
-
-   Below 7: "What part would trip you up? Let's look at that."
-   7 or above: "Nice. What's the one thing you'd want to double-check before shipping?"
+6. **Confidence check** (after 2+ questions) — run the Code Verification row from the [Confidence Check (shared)](#confidence-check-shared) table.
 
 ### Hands-on challenge (opt-in, Deep dive only)
 
@@ -308,12 +300,7 @@ Prioritize: debug this, trace the path, error analysis, pair finding. See [exerc
 
    After their answer, compare with the actual implementation. Discuss trade-offs.
 
-5. **Confidence check**:
-
-> **Your turn:** Ready to approve this? Rate your confidence 1–10.
-
-   Below 7: "What feels uncertain? Let's look at that part."
-   7 or above: "What are you most and least confident about?"
+5. **Confidence check** — run the PR/Change Review row from the [Confidence Check (shared)](#confidence-check-shared) table.
 
 ### Temporal cost simulation
 
@@ -357,7 +344,9 @@ Prioritize: teach-back, generation then comparison, concrete to abstract. See [e
 
 3. **If found** (and not refreshing):
    - Read `.claude/orientation.md`
-   - Summarize what it covers in one sentence, ask if they want to proceed
+   - Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/recent-gaps.sh 3` — surfaces gaps logged in past sessions for this repo
+   - If output is non-empty: pick the most recent gap and open with a **retrieval check-in** instead of the standard summary: "🦆 꽥 — 지난번에 [gap]에 대한 이해가 약했어. 그 부분 지금 다시 설명할 수 있어?" Wait for answer, then proceed to the exercise sequence.
+   - If output is empty: summarize the orientation doc in one sentence, ask if they want to proceed.
    - Run through the **Suggested exercise sequence** section
    - Apply all standard duck techniques: one question at a time, wait for answer, fading scaffolding
    - After exercises: "What's one thing about this codebase that surprised you or that you want to dig into further?"
@@ -366,6 +355,22 @@ Prioritize: teach-back, generation then comparison, concrete to abstract. See [e
 ### Techniques
 
 Prioritize: prediction, teach-back, fading scaffolding. See [exercise-patterns.md](references/exercise-patterns.md) for execution details.
+
+---
+
+## Confidence Check (shared)
+
+Used at the end of Plan, Verify, and Review modes (Design and Orient have their own closings). Pattern: ask for a 1–10 rating, then probe based on the number.
+
+> **Your turn:** [mode framing]. Rate your confidence 1–10.
+
+| Mode | Framing | Below 7 follow-up | 7 or above follow-up |
+|------|---------|-------------------|----------------------|
+| Plan Review | This plan — ready to execute? | What feels shaky? Let's look at that part. | What's the weakest part of this plan? |
+| Code Verification | Could you maintain this code solo if I wasn't here? | What part would trip you up? Let's look at that. | Nice. What's the one thing you'd want to double-check before shipping? |
+| PR/Change Review | Ready to approve this? | What feels uncertain? Let's look at that part. | What are you most and least confident about? |
+
+Wait for the rating before delivering the follow-up. The rating is metacognitive data (calibration) — do not skip it.
 
 ---
 
@@ -419,6 +424,16 @@ Rules:
 - One sentence max. No teaching, no fix suggestions — just name the gap.
 - If they nailed everything, skip this entirely. Don't manufacture gaps.
 - This is a bookmark for their future self, not a lesson.
+
+### Persisting the gap (spacing effect)
+
+Right after printing the gap line, persist it so future `/duck orient` sessions can re-surface it for spaced retrieval:
+
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh "<the same gap text>"
+```
+
+Use the exact gap sentence as the argument. Skip the call when no gap was spotted. The script is silent on success — no need to mention it to the user.
 
 ---
 
