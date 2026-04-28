@@ -24,7 +24,7 @@ The frustrating part is that everything the user wrote was reasonable —
 they said "review against develop, don't pre-analyze, just send the
 prompt and double-check". All four failures were wrapper bugs.
 
-**What v4.1 does instead:**
+**What v4.3 does instead:**
 
 - Parses the input with LM intelligence first: drops the trailing comma, attempts to obey the meta-instruction ("don't pre-analyze"), and runs a clean `review --base develop`.
 - Launches long-running reviews in the background so Bash's 5-minute timeout never kills them.
@@ -56,7 +56,7 @@ prompt and double-check". All four failures were wrapper bugs.
 /plugin disable codex@openai-codex
 
 # 4. Configure defaults (optional — every skill can also override on the fly)
-/codex-setup --model gpt-5.4-mini --effort high
+/codex-setup --model gpt-5.5 --effort high
 
 # 5. Use
 /codex-review                          # review + double-check
@@ -85,21 +85,24 @@ prompt and double-check". All four failures were wrapper bugs.
 
 ## Model & effort
 
-**Every skill accepts `--model <slug>` and `--effort <level>`.** They route through `scripts/apply-codex-config.py` and update `~/.codex/config.toml` before the Codex CLI runs — necessary because the Official `/codex:review` handler silently ignores its own `--model` flag, so config.toml is the only lever that actually takes effect.
+**Every skill accepts `--model <slug>` and `--effort <level>`.** They route through `scripts/apply-codex-config.py` and update `~/.codex/config.toml` before the Codex CLI runs. Two reasons:
+
+1. **`--effort` is not a registered review/adversarial flag.** The companion's `handleReviewCommand` accepts `--base`, `--scope`, `--model`, `--cwd` only (`codex-companion.mjs:684`). Passing `--effort` directly would become silent prompt corruption. Only the `model_reasoning_effort` key in `config.toml` reaches the review code path.
+2. **Consistency + persistence.** `--model` IS honored as a flag in companion 1.0.4+ (`lib/codex.mjs:56-66`), but routing it through `config.toml` keeps every codex-advisor skill identical and lets the value carry into the next session without re-typing.
 
 Examples:
 
 ```shell
-/codex-review --base main --model gpt-5.4-mini
+/codex-review --base main --model gpt-5.5
 /codex-adversarial --effort xhigh focus on SQL injection
 /codex-rescue --model spark implement the rate limiter
-/codex-setup --model gpt-5.4 --effort high    # or set defaults once
+/codex-setup --model gpt-5.5 --effort high    # or set defaults once
 ```
 
 Common slugs (your actual availability depends on subscription tier):
-`gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`, `spark` → expands to `gpt-5.3-codex-spark`.
+`gpt-5.5` (default `xhigh`), `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`, `spark` → expands to `gpt-5.3-codex-spark`.
 
-Efforts: `none` / `minimal` / `low` / `medium` / `high` / `xhigh`. Support varies by model; the script saves unknown values but surfaces a warning. Codex CLI rejects at runtime if the combination is unsupported.
+Efforts: `minimal` / `low` / `medium` / `high` / `xhigh` (the Codex `model_reasoning_effort` set; `none` is `plan_mode_reasoning_effort`-only). Per-model support varies — as of Codex CLI 0.125, every published `gpt-5.x` slug supports `[low, medium, high, xhigh]`. The script saves unknown values but surfaces both an effort-set warning and a model-specific support warning. Codex CLI rejects at runtime if the combination is unsupported.
 
 **The change is global and persistent.** config.toml is read by every Codex invocation — Official plugin, direct CLI, every codex-advisor skill — until you change it again. The skill tells you before/after whenever it mutates.
 
@@ -117,8 +120,8 @@ The key discipline: **Claude never reads your source code before Codex runs.** T
 
 ## Prerequisites
 
-- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) — **install required**. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu.
-- [OpenAI Codex CLI](https://github.com/openai/codex) — installed and authenticated (`/codex-setup` verifies both).
+- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) **v1.0.0+** — **install required**. Earlier versions had a different review handler; codex-advisor's flag-routing assumes the v1.0.4 companion contract. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu.
+- [OpenAI Codex CLI](https://github.com/openai/codex) — installed and authenticated (`/codex-setup` verifies both). Tested against Codex CLI 0.125.
 
 ## License
 

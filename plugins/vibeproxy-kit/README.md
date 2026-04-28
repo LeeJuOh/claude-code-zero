@@ -55,6 +55,12 @@ VibeProxy merges all active backends into a single `/v1/models` listing. When Co
 
 Models like `gpt-5.4` and `claude-opus-4.6` support effort suffixes: `gpt-5.4(high)`, `claude-opus-4.6(low)`. These are **not separate models** — VibeProxy parses the parenthesized suffix at request time and passes the effort level to the upstream provider. The setup skill detects which models support this via probe metadata and presents effort level selection automatically.
 
+### Server-side effort (payload override)
+
+For Codex and Copilot effort aliases, the skill writes a matching `payload.override` block in `~/.cli-proxy-api/config.yaml` alongside each shell alias. This means callers that bypass the shell — IDEs (Cursor, VS Code), direct API requests, scripts not setting `ANTHROPIC_MODEL` — also get the configured effort level. Without this block, those callers fall back to the proxy's default `effort=medium` regardless of the alias name suggesting otherwise (`cc-codex-gpt54-high` would silently behave like `cc-codex-gpt54-med`).
+
+The shell suffix (`cc-codex-gpt54-high(high)`) and the server override resolve to the same effort value, so they coexist without conflict. Out-of-scope backends (Antigravity, Gemini, Qwen, Z.AI) keep shell-suffix-only behavior — server override for them is reserved for future per-backend verification.
+
 ### Shortcut aliases
 
 Every canonical alias gets an auto-generated shortcut following a fixed convention: `cc-{2char-backend}-{model}-{effort}`. Backend tokens: `cx` (Codex), `cp` (Copilot), `ag` (Antigravity), `gm` (Gemini), `qw` (Qwen), `za` (Z.AI). Model tokens are version-free (e.g., `opus`, `gpt`, `gemini-pro`).

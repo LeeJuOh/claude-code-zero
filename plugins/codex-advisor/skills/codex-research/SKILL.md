@@ -33,7 +33,7 @@ verify — independence. If you read it upfront, your synthesis just
 echoes Codex instead of adding independent perspective.
 
 Unknown flags silently become task prompt content (`readTaskPrompt
-:585-592`). Phase 1 is the only safety net.
+:613-619`). Phase 1 is the only safety net.
 
 ---
 
@@ -151,7 +151,7 @@ For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (
 
 ```bash
 # NEVER pass a positional arg — readTaskPrompt short-circuits on
-# positionalPrompt (:591), silently dropping the entire blind payload.
+# positionalPrompt (:619), silently dropping the entire blind payload.
 cat "<literal PROMPT_FILE path>" | node "$CODEX_COMPANION" task --background --json \
   > "<literal JOB_JSON_FILE path>" 2> "<literal JOB_JSON_FILE path>.stderr" \
   || { echo "task launch failed:" >&2; cat "<literal JOB_JSON_FILE path>.stderr" >&2; exit 1; }
@@ -281,7 +281,7 @@ rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_
 - **`cat "$USER_DOC" >> "$PROMPT_FILE"`** — file redirect keeps stdout
   empty. Reading the doc to stdout defeats the entire point.
 - **Never pass a positional argument with Pattern B's stdin pipe.**
-  `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:591`); a positional silently drops the entire blind payload.
+  `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:619`); a positional silently drops the entire blind payload.
 - **Value is in synthesis.** If Claude reaches the same conclusion
   alone, Codex added nothing — say so in the report instead of padding.
 - **Temp file paths must come from Phase 1 stdout.** Re-inject literal

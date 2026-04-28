@@ -89,14 +89,15 @@ Relay that line verbatim to the user — it shows before/after so they can confi
 
 **Model handling**
 
-- Accepts any slug your Codex account supports. Common slugs: `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`.
+- Accepts any slug your Codex account supports. Common slugs: `gpt-5.5` (default `xhigh`), `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`.
 - Alias: `spark` → `gpt-5.3-codex-spark` (subscription-gated; saved as-is).
 - Slugs missing from `~/.codex/models_cache.json` trigger an advisory warning to stderr but are saved. The cache reflects *your* account — gated or new models may be absent even when valid.
+- When the slug IS in the cache and effort is left unset, the script prints a note showing that model's `default_reasoning_level` so the user can see what they'll get implicitly.
 
 **Effort handling**
 
-- Standard set: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` (per the Official companion's validator).
-- Model support varies (e.g. `minimal` is only supported by `gpt-5`). Out-of-set values warn but still save; Codex CLI will reject at runtime if the combination is unsupported.
+- Standard set for `model_reasoning_effort`: `minimal`, `low`, `medium`, `high`, `xhigh`. (`none` is only valid for `plan_mode_reasoning_effort` — passing it here triggers a warning.)
+- Per-model support varies and is checked against the cache's `supported_reasoning_levels`. As of Codex CLI 0.125, every published model (`gpt-5.5`/`5.4`/`5.4-mini`/`5.3-codex`/`5.2`) supports `[low, medium, high, xhigh]` — `minimal` is currently unsupported on all of them. Out-of-set values warn but still save; Codex CLI will reject at runtime if the combination is unsupported.
 
 The underlying script preserves other keys in `config.toml` (e.g. `model_context_window`) and writes atomically via a temp file.
 
@@ -120,11 +121,11 @@ The underlying script preserves other keys in `config.toml` (e.g. `model_context
 | web_search | <current or "default (not set)"> |
 
 These defaults apply to ALL Codex commands — both Official plugin and direct CLI.
-To change: `/codex-setup --model gpt-5.4-mini --effort high`
+To change: `/codex-setup --model gpt-5.5 --effort high`
 ```
 
 ## Gotchas
 
 - **config.toml applies globally.** Changes affect all Codex commands system-wide — Official plugin, direct CLI, and every codex-advisor skill. Warn the user when you mutate it.
-- **Official `/codex:review` silently ignores its own `--model` flag** (see `codex-companion.mjs:handleReviewCommand`). That's why codex-advisor reroutes model/effort changes through `config.toml` instead of CLI flags. Every skill (`review`, `adversarial`, `research`, `verify`, `rescue`) now accepts `--model`/`--effort` and writes via `scripts/apply-codex-config.py` — so the user doesn't have to call `codex-setup` separately.
+- **`--effort` is not a registered review/adversarial flag.** `handleReviewCommand` `valueOptions = [base, scope, model, cwd]` (`codex-companion.mjs:684`). The only path that reaches the review code is the config.toml `model_reasoning_effort` key. `--model` IS honored as a flag in companion 1.0.4+ (`startThread({ model })`, `lib/codex.mjs:56-66`), but codex-advisor still routes it through `config.toml` for **consistency across skills** and so the value persists for the next session — same call shape on review/adversarial/rescue/verify/research. Every skill (`review`, `adversarial`, `research`, `verify`, `rescue`) accepts `--model`/`--effort` and writes via `scripts/apply-codex-config.py` — so the user doesn't have to call `codex-setup` separately.
 - **Don't create config.toml if the user only asked for status.** `apply-codex-config.py "" ""` is safe (no-op, prints current values) but avoid it when just reporting — `grep`/`cat` is enough.
