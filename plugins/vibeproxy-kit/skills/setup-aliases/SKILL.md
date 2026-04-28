@@ -12,7 +12,6 @@ allowed-tools:
   - Bash(rm *)
   - Bash(test *)
   - Bash(ls *)
-  - Bash(source *)
   - Read
   - Write
 ---
@@ -259,12 +258,12 @@ For backends outside scope B (gravity, gemini, qwen, zai), do NOT emit `payload.
 
 **`fork` field:** Omit the `fork` field (defaults to `false`). With `fork: false`, VibeProxy replaces the original model name in its registry with the alias name — the alias name itself becomes the routable model name. Only set `fork: true` if the user explicitly needs both the original model name and the alias to coexist as separate routes.
 
-**`request_model` field:** Always set `request_model` to the alias name — never the original upstream model name. With `fork: false` (default), the original name no longer exists in VibeProxy's registry, so sending it will fail with "unknown provider". For effort-suffix models, the shell alias appends the effort suffix to the alias name:
+**`request_model` field:** Always set `request_model` to the alias name — never the original upstream model name. With `fork: false` (default), the original name no longer exists in VibeProxy's registry, so sending it will fail with "unknown provider". For effort-suffix models, append the `(level)` suffix to the alias name inside `request_model` itself — `write_zshrc.sh` plugs the value verbatim into `ANTHROPIC_MODEL=`, so the suffix must already be there.
 
 - Base model: `request_model = cc-gravity-opus46` → shell sends `ANTHROPIC_MODEL=cc-gravity-opus46`
-- Effort model: `request_model = cc-codex-gpt54-med` → shell sends `ANTHROPIC_MODEL=cc-codex-gpt54-med(medium)`
+- Effort model: `request_model = cc-codex-gpt54-med(medium)` → shell sends `ANTHROPIC_MODEL=cc-codex-gpt54-med(medium)`
 
-The `model` field preserves the upstream name for documentation only. `request_model` is what the shell actually sends and what validation tests.
+The `model` field preserves the upstream name for documentation only. `request_model` is what the shell actually sends and what validation tests. For codex/copilot effort aliases the matching `payload.override` block also injects `reasoning.effort` server-side; the shell suffix is redundant safety, not a substitute. For gravity/gemini/qwen/zai there is no override — the suffix is the only effort signal.
 
 ### Step 4: Shortcut aliases (auto-generated)
 
@@ -433,7 +432,7 @@ Transactional rollback is the default because shell aliases and model aliases fo
 - **Show ALL model families per backend.** Do not filter Copilot to only Claude models, or Codex to only GPT models. The same model (e.g., `gpt-5.4`) can appear in multiple backends with different effort levels or routing. Show everything the probe returns; let the user choose.
 - **Gemini OAuth fails silently through the GUI.** The VibeProxy Settings UI triggers `-login` but cannot handle the interactive "Code Assist vs Google One" mode selection prompt, so the auth process completes in the browser but VibeProxy never registers the account. Always direct users to the CLI workaround: `/Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml`. This is a known upstream bug ([#286](https://github.com/automazeio/vibeproxy/issues/286), [#242](https://github.com/automazeio/vibeproxy/issues/242)).
 - **Token expiration has no automatic re-authentication.** When an OAuth token expires and refresh fails after max retries, the proxy silently returns 502 for all requests through that credential. There is no auto-recovery — the user must re-authenticate manually in the VibeProxy menu bar (or via CLI). If a previously working alias suddenly returns 502 and the provider is not down, suggest the user check their auth status in VibeProxy Settings.
-- **config.yaml changes hot-reload automatically.** After `write_user_config.py` updates `config.yaml`, CLIProxyAPIPlus detects the file change and reloads the config (including `oauth-model-alias` changes) without a full restart. The restart gate in Phase 7 is still required because `merged-config.yaml` regeneration may not always reflect alias changes until the next full server cycle.
+- **config.yaml changes hot-reload automatically.** After `write_user_config.py` updates `config.yaml`, CLIProxyAPIPlus detects the file change and reloads the config (including `oauth-model-alias` changes) without a full restart. The restart gate in Phase 9 is still required because `merged-config.yaml` regeneration may not always reflect alias changes until the next full server cycle.
 - **OAuth callback uses port 3000.** When connecting the Claude Code channel (or Codex) in VibeProxy, the OAuth flow starts a temporary callback server on port 3000. If a dev server (Next.js, Vite, etc.) is occupying that port, the login will fail silently. Users should stop conflicting servers before authenticating.
 
 ## Scripts
