@@ -23,7 +23,7 @@
     {
       "name": "vibeproxy-kit",
       "source": "./plugins/vibeproxy-kit",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "description": "State-aware VibeProxy alias manager for Claude Code. Discover VibeProxy state, choose backend-specific cc-* aliases, and rewrite only managed config and shell blocks without clobbering manual edits."
     },
     {
@@ -47,13 +47,13 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "4.3.0",
+      "version": "4.3.1",
       "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel. Every skill accepts --model/--effort via config.toml. Tested against codex@openai-codex 1.0.4 and Codex CLI 0.125 (gpt-5.5)."
     },
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Dedicated commands per phase (/duck-design, /duck-plan, /duck-verify, /duck-review, /duck-orient) plus /duck for auto-detect. Auto-hooks at plan creation, spec documents, PR/MR, and git push."
     },
     {
