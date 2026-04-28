@@ -280,7 +280,7 @@ Never retry silently. Never swallow errors. Never blame the user.
 | Pattern in stderr (verbatim where quoted) | Category | Source | Action |
 |-------------------|----------|--------|--------|
 | `Official Codex plugin not found` | setup | `resolve-companion.sh` | Redirect to `/codex-setup` |
-| `not authenticated` / `OPENAI_API_KEY` | auth | `:253-254` | Suggest `codex login` |
+| `not authenticated` / `OPENAI_API_KEY` | auth | `lib/codex.mjs:690` (status detail), surfaced via `codex-companion.mjs:184-193` | Suggest `codex login` |
 | `not a git repository` | environment | `lib/git.mjs` `ensureGitRepository` | Tell user, stop |
 | `unknown revision` / `bad revision` | bad-input | `git rev-parse` | Show `git branch --list`, AskUserQuestion |
 | `does not support custom focus text` | wrong-skill | `:271` | Should NOT fire from codex-advisor: Phase 1 strips focus text and offers the adversarial redirect. If it fires, Phase 1 was skipped → SKILL.md regression. |
