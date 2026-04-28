@@ -22,7 +22,7 @@ This plugin builds that questioning habit into your workflow. The duck asks you 
 
 `/duck` with no argument auto-detects the right mode from context.
 
-Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents (Write on `plan*.md` / `spec*.md` / `design*.md` — deterministic, non-AI, non-conversational files like README / CHANGELOG / CLAUDE.md are filtered out), PR/MR creation, and `Bash(git *)` commands (push, commit, merge). When triggered, the duck suggests `/branch` + `/duck <mode>` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session, with 24h TTL cleanup, and skipped entirely in subagent contexts.
+Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents (Write on `plan*.md` / `spec*.md` / `design*.md` — deterministic, non-AI, non-conversational files like README / CHANGELOG / CLAUDE.md are filtered out), `gh pr create` / `glab mr create`, and `git push`. Hook matchers are scoped to those exact subcommands so unrelated git/gh/glab calls (`git status`, `gh issue list`) skip the hook entirely. When triggered, the duck suggests `/branch` + `/duck <mode>` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session, with 24h TTL cleanup, and skipped entirely in subagent contexts.
 
 ## How the duck works
 

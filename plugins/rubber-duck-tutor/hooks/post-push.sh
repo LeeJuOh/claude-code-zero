@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# rubber-duck-tutor-auto: PostToolUse hook (matches Bash with git filter)
+# rubber-duck-tutor-auto: PostToolUse hook (matches Bash with git push filter)
 #
-# Fires after Bash tool use filtered by `if: Bash(git *)`.
-# Detects git push commands and suggests a duck review in a branched session.
+# Fires after Bash tool use filtered by `if: Bash(git push)` / `if: Bash(git push *)`.
+# Inline regex defends against compound commands (e.g. `npm test && git push`).
 # Rate-limited. Silently exits in subagent contexts.
 
 source "$(dirname "$0")/lib.sh"

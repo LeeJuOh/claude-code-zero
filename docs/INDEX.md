@@ -31,8 +31,16 @@ Plans are first-class artifacts — active and completed alike are committed her
 |---|---|
 | `superpowers/plans/` | Plugin implementation plans (date-prefixed, e.g. `2026-04-14-worktree-plus-safe-removal.md`) |
 | `superpowers/specs/` | Design specs and analysis documents |
+| `enhancement/` | Audits, issue writeups, and improvement notes that do not fit product specs |
 
-Empty placeholders (reserved, currently unused): `enhancement/`, `plan/`.
+Empty placeholder (reserved, currently unused): `plan/`.
+
+## Enhancement & Audits
+
+| Document | Description |
+|---|---|
+| `enhancement/2026-04-18-vision-powers-audit.md` | Commit audit for recent `vision-powers` changes, with severity-ranked findings |
+| `enhancement/2026-04-23-rubber-duck-git-hook-latency.md` | Resolved issue note: `rubber-duck-tutor` PostToolUse hook narrowed from `Bash(git *)` to `Bash(git push)` |
 
 ## Research
 

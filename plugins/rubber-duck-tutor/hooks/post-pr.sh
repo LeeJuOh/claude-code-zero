@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# rubber-duck-tutor-auto: PostToolUse hook (matches Bash with gh/glab filter)
+# rubber-duck-tutor-auto: PostToolUse hook (matches Bash with gh pr / glab mr create filter)
 #
-# Fires after Bash tool use filtered by `if: Bash(gh *)` / `if: Bash(glab *)`.
-# Detects PR/MR creation commands and suggests a duck review in a branched session.
+# Fires after Bash tool use filtered by `if: Bash(gh pr create*)` / `if: Bash(glab mr create*)`.
+# Inline regex defends against compound commands.
 # Rate-limited. Silently exits in subagent contexts.
 
 source "$(dirname "$0")/lib.sh"

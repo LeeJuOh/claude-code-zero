@@ -7,19 +7,37 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-pr.sh",
-            "if": "Bash(gh *)",
+            "if": "Bash(gh pr create)",
             "statusMessage": "duck: checking for PR creation..."
           },
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-pr.sh",
-            "if": "Bash(glab *)",
+            "if": "Bash(gh pr create *)",
+            "statusMessage": "duck: checking for PR creation..."
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-pr.sh",
+            "if": "Bash(glab mr create)",
+            "statusMessage": "duck: checking for MR creation..."
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-pr.sh",
+            "if": "Bash(glab mr create *)",
             "statusMessage": "duck: checking for MR creation..."
           },
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-push.sh",
-            "if": "Bash(git *)",
+            "if": "Bash(git push)",
+            "statusMessage": "duck: checking for git push..."
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-push.sh",
+            "if": "Bash(git push *)",
             "statusMessage": "duck: checking for git push..."
           }
         ]
