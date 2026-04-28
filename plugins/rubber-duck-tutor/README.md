@@ -14,15 +14,15 @@ This plugin builds that questioning habit into your workflow. The duck asks you 
 
 | Mode | When | What it checks |
 |------|------|----------------|
-| `/duck design` | *Before* asking AI to implement | Can you sketch the shape yourself first, so you'll spot where the AI answer differs? |
-| `/duck plan` | After a plan is created | Do you understand the decisions and trade-offs? |
-| `/duck verify` | After implementation | Can you explain the code, find edge cases, and fix a bug with your own hands? |
-| `/duck review` | Before commit/merge | Can you justify every change — and predict where it'll hurt in 6 months? |
-| `/duck orient` | New to a codebase | Can you navigate and explain the repo structure? |
+| `/duck-design` | *Before* asking AI to implement | Can you sketch the shape yourself first, so you'll spot where the AI answer differs? |
+| `/duck-plan` | After a plan is created | Do you understand the decisions and trade-offs? |
+| `/duck-verify` | After implementation | Can you explain the code, find edge cases, and fix a bug with your own hands? |
+| `/duck-review` | Before commit/merge | Can you justify every change — and predict where it'll hurt in 6 months? |
+| `/duck-orient` | New to a codebase | Can you navigate and explain the repo structure? |
 
-`/duck` with no argument auto-detects the right mode from context.
+`/duck` with no argument auto-detects the right mode from context and routes you to the matching `/duck-<mode>` skill.
 
-Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents (Write on `plan*.md` / `spec*.md` / `design*.md` — deterministic, non-AI, non-conversational files like README / CHANGELOG / CLAUDE.md are filtered out), `gh pr create` / `glab mr create`, and `git push`. Hook matchers are scoped to those exact subcommands so unrelated git/gh/glab calls (`git status`, `gh issue list`) skip the hook entirely. When triggered, the duck suggests `/branch` + `/duck <mode>` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session, with 24h TTL cleanup, and skipped entirely in subagent contexts.
+Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents (Write on `plan*.md` / `spec*.md` / `design*.md` / `rfc*.md` / `adr*.md` — deterministic, non-AI, non-conversational files like README / CHANGELOG / CLAUDE.md and unrelated markdown like `notes.md` skip the hook), `gh pr create` / `glab mr create`, and `git push`. Hook matchers are scoped to those exact subcommands so unrelated git/gh/glab calls (`git status`, `gh issue list`) skip the hook entirely. When triggered, the duck suggests `/branch` + `/duck-<mode>` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session, with 24h TTL cleanup, and skipped entirely in subagent contexts.
 
 ## How the duck works
 
@@ -47,12 +47,12 @@ Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec
 ## Usage
 
 ```
-/duck              # auto-detect mode
-/duck design       # sketch before asking AI to implement
-/duck plan         # review a plan
-/duck verify       # verify implementation
-/duck review       # review changes before commit
-/duck orient       # codebase orientation
+/duck              # auto-detect mode → routes to a /duck-<mode> skill
+/duck-design       # sketch before asking AI to implement
+/duck-plan         # review a plan
+/duck-verify       # verify implementation
+/duck-review       # review changes before commit
+/duck-orient       # codebase orientation (pass `refresh` to regenerate)
 ```
 
 ## License

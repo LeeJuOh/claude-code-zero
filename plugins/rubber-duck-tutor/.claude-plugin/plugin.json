@@ -1,6 +1,6 @@
 {
   "name": "rubber-duck-tutor",
-  "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. 5 modes: design, plan, verify, review, orient, with auto-hooks at plan, spec, PR/MR, and git push.",
+  "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Dedicated commands per phase (/duck-design, /duck-plan, /duck-verify, /duck-review, /duck-orient) plus /duck for auto-detect, with auto-hooks at plan, spec, PR/MR, and git push.",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
   "keywords": ["rubber-duck", "tutor", "learning", "code-review", "rubber-stamping", "skill-development"]

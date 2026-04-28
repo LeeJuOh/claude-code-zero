@@ -53,8 +53,8 @@
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "2.2.0",
-      "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. 5 modes: design, plan, verify, review, orient. Auto-hooks at plan creation, spec documents, PR/MR, and git push."
+      "version": "2.3.0",
+      "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Dedicated commands per phase (/duck-design, /duck-plan, /duck-verify, /duck-review, /duck-orient) plus /duck for auto-detect. Auto-hooks at plan creation, spec documents, PR/MR, and git push."
     },
     {
       "name": "e2e-test-runner",
