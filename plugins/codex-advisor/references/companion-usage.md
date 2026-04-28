@@ -10,7 +10,7 @@ All line numbers below cite
 Official Codex plugin had a different review handler that silently
 discarded `--model`; v1.0.4+ propagates it through `executeReviewRun` →
 `runAppServerReview` → `startThread({ model })` (`lib/codex.mjs:56-66,
-911-915`). codex-advisor requires the 1.0.0+ companion.
+916-921`). codex-advisor requires the 1.0.0+ companion.
 
 ---
 
@@ -40,7 +40,7 @@ accepted by `parseArgs` but not printed in usage.
 |------|------|--------|----------|
 | `--base <ref>` | value | documented | yes |
 | `--scope <auto\|working-tree\|branch>` | value | documented | yes |
-| `--model <m>` | value | parser-only | **yes** — `executeReviewRun :367-373` → `runAppServerReview :911-915` → `startThread({ model })` (`lib/codex.mjs:56-66`). codex-advisor still routes `--model` through `apply-codex-config.py` for **consistency across skills** and so the value persists for the next session — not because the flag is ignored. |
+| `--model <m>` | value | parser-only | **yes** — `executeReviewRun :367-371` → `runAppServerReview :908-921` → `startThread({ model })` (`lib/codex.mjs:56-66, 916-921`). codex-advisor still routes `--model` through `apply-codex-config.py` for **consistency across skills** and so the value persists for the next session — not because the flag is ignored. |
 | `--cwd <path>` | value | parser-only | yes |
 | `--json` | bool | parser-only | yes |
 | `--effort <level>` | — | **NOT REGISTERED** | `valueOptions` at `:684` is `["base", "scope", "model", "cwd"]`. `--effort` becomes silent prompt corruption (§3). codex-advisor sets it via `~/.codex/config.toml` (`model_reasoning_effort`). |
@@ -48,7 +48,7 @@ accepted by `parseArgs` but not printed in usage.
 | `--wait` | bool | documented in `:78` | **NO — silent no-op** (see §3) |
 | (positional focus text) | — | — | **rejected** by `validateNativeReviewRequest` (`:268-282`) |
 
-### `adversarial-review` (`handleReviewCommand` via `:725, :992-1003`)
+### `adversarial-review` (`handleReviewCommand` via `:995-999`)
 
 Identical valueOptions / booleanOptions as `review` (same handler). The
 only difference: adversarial does NOT pass `validateNativeReviewRequest`,
@@ -70,7 +70,7 @@ review a specific commit, use `--base <sha>~1 --scope branch`.
 | `--model <m>` | value | documented | accepts `spark` alias (`:70`) |
 | `--effort <level>` | value | documented | one of `{none, minimal, low, medium, high, xhigh}` (`:69`, `:111-122`) |
 | `--cwd <path>` | value | parser-only | |
-| `--prompt-file <path>` | value | **parser-only** (not in `:80` usage) | reads file at `:617-618` |
+| `--prompt-file <path>` | value | **parser-only** (not in `:80` usage) | reads file at `:614-615` |
 | `--wait` | — | **NOT REGISTERED** | silently pushed to positionals → **prompt corruption**, see §3 |
 
 ### `status` (`handleStatus` at `:840-865`)
@@ -82,7 +82,7 @@ review a specific commit, use `--base <sha>~1 --scope branch`.
 | `--poll-interval-ms <ms>` | value | parser-only | default `2000` (`:68`) |
 | `--all` | bool | documented | list all jobs |
 | `--json` | bool | documented | |
-| (positional jobId) | — | — | required when using `--wait` (`:860-862`) |
+| (positional jobId) | — | — | required when using `--wait` (`:859-861`) |
 
 ### `result` (`handleResult` at `:867-883`)
 
