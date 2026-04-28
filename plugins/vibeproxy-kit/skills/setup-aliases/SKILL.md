@@ -42,9 +42,9 @@ Then read `/tmp/vibeproxy_discover.json`. Key fields:
 - `user_overlay_exists`, `state_file_present` — determines whether we are first-run or rerun
 - `authenticated_backends` — array of `{token, config_key, display_name, auth_files}`; see **Onboarding gates** below if empty or missing backends the user wants
 - `claude_code_channel` — `{connected, account_count}`; see **Claude Code channel note** below
-- `managed_shell_aliases`, `managed_model_aliases`, `shortcut_shell_aliases` — what the skill currently owns
+- `managed_shell_aliases`, `managed_model_aliases`, `managed_payload_overrides`, `shortcut_shell_aliases` — what the skill currently owns
 - `backend_catalogs`, `partial_probe` — cached probe results and any aborted probe cycle
-- `conflicts` — pre-existing `cc-*` entries that are not tracked in state (potential clashes)
+- `conflicts` — pre-existing `cc-*` entries that are not tracked in state (potential clashes); includes `manual-shell-alias`, `manual-config-alias:<channel>`, and `manual-payload-override:<protocol>` sources
 
 Present a compact summary back to the user (do not dump raw JSON):
 
@@ -235,6 +235,28 @@ Map each selected model+effort combination to a canonical alias name:
 
 **Effort tokens:** `low`, `med`, `high`, `max` (maps from `xhigh` → `max`).
 
+**Effort value mapping (alias token → params value for `payload.override`):**
+
+| Alias token | `reasoning.effort` value |
+| --- | --- |
+| `low` | `low` |
+| `med` | `medium` |
+| `high` | `high` |
+| `max` | `xhigh` |
+
+For each effort-suffix alias, attach an `effort_value` field so Phase 8 can build the matching `payload.override` block. Base-model aliases (no effort token) get no `effort_value` and no override. The translator's default is `effort=medium` — without a server-side override, callers that bypass the shell alias (IDE direct, scripts not setting `ANTHROPIC_MODEL`) silently drop to medium regardless of the alias name.
+
+**Protocol mapping (backend + model family → `payload.override` protocol):**
+
+| Backend | Model family | Protocol | Status |
+| --- | --- | --- | --- |
+| `codex` | gpt-5.x | `codex` | byte-level verified (research §9.2) |
+| `copilot` | gpt-5.x | `codex` | shares codex executor — first-use validation |
+| `copilot` | claude-opus / claude-sonnet | `claude` | claude executor — first-use validation |
+| `gravity`, `gemini`, `qwen`, `zai` | any | (no override) | shell-suffix only; server override out of scope |
+
+For backends outside scope B (gravity, gemini, qwen, zai), do NOT emit `payload.override` blocks even if the model has discrete effort levels — that path is unverified.
+
 **`fork` field:** Omit the `fork` field (defaults to `false`). With `fork: false`, VibeProxy replaces the original model name in its registry with the alias name — the alias name itself becomes the routable model name. Only set `fork: true` if the user explicitly needs both the original model name and the alias to coexist as separate routes.
 
 **`request_model` field:** Always set `request_model` to the alias name — never the original upstream model name. With `fork: false` (default), the original name no longer exists in VibeProxy's registry, so sending it will fail with "unknown provider". For effort-suffix models, the shell alias appends the effort suffix to the alias name:
@@ -312,13 +334,23 @@ Wait for explicit "yes, apply" via `AskUserQuestion`. Any other answer is a no-o
 
 Order matters. Write the state file **first** so a crash between steps leaves `${CLAUDE_PLUGIN_DATA}/config.json` consistent with what the user approved.
 
-1. Write `${CLAUDE_PLUGIN_DATA}/config.json` with the new `managed_shell_aliases`, `managed_model_aliases`, `shortcut_shell_aliases`, the full `backend_catalogs` (including cached probes we did not refresh this run), and `partial_probe: null`.
-2. Run `write_user_config.py` via bash heredoc. Capture `backup_path` from its JSON output. If `ok: false`, stop and report — no further writes.
+1. Write `${CLAUDE_PLUGIN_DATA}/config.json` with the new `managed_shell_aliases`, `managed_model_aliases`, `managed_payload_overrides`, `shortcut_shell_aliases`, the full `backend_catalogs` (including cached probes we did not refresh this run), and `partial_probe: null`. The `managed_payload_overrides` array tracks every `payload.override` block the skill writes so it can be cleaned up on the next reset/merge — orphans are not recoverable without it.
+2. Run `write_user_config.py` via bash heredoc. Capture `backup_path` from its JSON output. If `ok: false`, stop and report — no further writes. The script writes both `oauth-model-alias` entries and `payload.override` blocks atomically into the same backup-protected save.
 3. Run `write_zshrc.sh`. Capture `backup_path` from its JSON output. If it fails, rollback `config.yaml` from its backup path before reporting.
 
 ```bash
 cat <<JSON | python3 ${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/scripts/write_user_config.py
-{"mode":"merge","config_path":"~/.cli-proxy-api/config.yaml","backup_dir":"${CLAUDE_PLUGIN_DATA}/backups","prior_managed_aliases":[...],"managed_aliases":[...]}
+{
+  "mode": "merge",
+  "config_path": "~/.cli-proxy-api/config.yaml",
+  "backup_dir": "${CLAUDE_PLUGIN_DATA}/backups",
+  "prior_managed_aliases": [...],
+  "managed_aliases": [...],
+  "prior_managed_payload_overrides": [...],
+  "managed_payload_overrides": [
+    {"alias": "cc-codex-gpt54-high", "protocol": "codex", "params": {"reasoning.effort": "high"}}
+  ]
+}
 JSON
 ```
 
@@ -396,6 +428,8 @@ Transactional rollback is the default because shell aliases and model aliases fo
 - **`request_model` is always alias-based.** Set `request_model` to the alias name for all models. For effort-suffix models, append the effort suffix to the alias name: `cc-codex-gpt54-med(medium)`, not `gpt-5.4(medium)`. The `model` field preserves the upstream name for documentation; `request_model` is what the shell actually sends.
 - **Never add effort variants to budget-based models.** Antigravity's reasoning models (`claude-opus-4-6-thinking`, `claude-sonnet-4-6`) already have built-in thinking via numeric budget suffixes. Adding discrete effort levels (low/medium/high) on top creates invalid, unroutable aliases. Check the effort levels map for "budget-based" before offering effort selection.
 - **Effort variants are suffix-parsed, not registered.** `cc-codex-gpt54-med(medium)` is not a separate model in VibeProxy's registry — it's `cc-codex-gpt54-med` with a `(medium)` suffix parsed at request time by the thinking layer. This means effort-variant aliases will never appear in `/v1/models` listings, and validating them requires sending the full suffixed name (e.g., `cc-codex-gpt54-med(medium)`) as the model in a chat-completions request.
+- **`payload.override` and shell suffix coexist by design.** The skill writes both for every effort-suffix alias in the codex/copilot scope: shell alias appends `(level)` (legacy path for shell callers), and `payload.override` injects `reasoning.effort` server-side (canonical path for IDE/direct-API callers that never set `ANTHROPIC_MODEL`). They resolve to the same level — redundant but harmless. The override is what makes IDE/Cursor/direct-API differentiation actually work; the shell suffix alone leaves those callers on the proxy default `effort=medium` regardless of which `cc-*-high` alias they sent. Out-of-scope backends (gravity, gemini, qwen, zai) get shell-suffix only — do not emit `payload.override` for them.
+- **Override match key is `(alias, protocol)`.** `write_user_config.py` only manages `payload.override` blocks whose `models` array has exactly one entry with both `name` and `protocol`. Multi-model blocks and blocks missing `protocol` are preserved untouched. State must record both fields per override or cleanup will leave orphans.
 - **Show ALL model families per backend.** Do not filter Copilot to only Claude models, or Codex to only GPT models. The same model (e.g., `gpt-5.4`) can appear in multiple backends with different effort levels or routing. Show everything the probe returns; let the user choose.
 - **Gemini OAuth fails silently through the GUI.** The VibeProxy Settings UI triggers `-login` but cannot handle the interactive "Code Assist vs Google One" mode selection prompt, so the auth process completes in the browser but VibeProxy never registers the account. Always direct users to the CLI workaround: `/Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml`. This is a known upstream bug ([#286](https://github.com/automazeio/vibeproxy/issues/286), [#242](https://github.com/automazeio/vibeproxy/issues/242)).
 - **Token expiration has no automatic re-authentication.** When an OAuth token expires and refresh fails after max retries, the proxy silently returns 502 for all requests through that credential. There is no auto-recovery — the user must re-authenticate manually in the VibeProxy menu bar (or via CLI). If a previously working alias suddenly returns 502 and the provider is not down, suggest the user check their auth status in VibeProxy Settings.

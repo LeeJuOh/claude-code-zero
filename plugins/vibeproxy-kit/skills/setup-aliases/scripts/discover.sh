@@ -127,6 +127,7 @@ state_managed_model = []
 state_shortcut_shell = []
 state_backend_catalogs = {}
 state_partial_probe = None
+state_managed_payload_overrides = []
 if state_present:
     raw_shell = state.get("managed_shell_aliases")
     if isinstance(raw_shell, list):
@@ -141,6 +142,9 @@ if state_present:
     if isinstance(raw_catalogs, dict):
         state_backend_catalogs = raw_catalogs
     state_partial_probe = state.get("partial_probe")
+    raw_overrides = state.get("managed_payload_overrides")
+    if isinstance(raw_overrides, list):
+        state_managed_payload_overrides = [e for e in raw_overrides if isinstance(e, dict)]
 
 overlay_root = {}
 overlay_load_error = None
@@ -179,6 +183,31 @@ if isinstance(oma, dict):
                     "name": name,
                     "alias": alias,
                 })
+
+overlay_payload_overrides = []
+payload_block = overlay_root.get("payload") if isinstance(overlay_root, dict) else None
+if isinstance(payload_block, dict):
+    overrides_seq = payload_block.get("override")
+    if isinstance(overrides_seq, list):
+        for block in overrides_seq:
+            if not isinstance(block, dict):
+                continue
+            models = block.get("models")
+            params = block.get("params")
+            if not isinstance(models, list) or len(models) != 1 or not isinstance(params, dict):
+                continue
+            sole = models[0]
+            if not isinstance(sole, dict):
+                continue
+            sole_name = sole.get("name")
+            sole_protocol = sole.get("protocol")
+            if not (isinstance(sole_name, str) and isinstance(sole_protocol, str)):
+                continue
+            overlay_payload_overrides.append({
+                "alias": sole_name,
+                "protocol": sole_protocol,
+                "params": dict(params),
+            })
 
 zsh_block_alias_names = []
 if has_managed_zsh_block and os.path.isfile(zshrc_path):
@@ -262,6 +291,27 @@ for entry in overlay_model_aliases:
             "source": f"manual-config-alias:{entry['channel']}",
         })
 
+managed_payload_overrides = []
+state_override_keys = {
+    (e.get("alias"), e.get("protocol"))
+    for e in state_managed_payload_overrides
+    if isinstance(e.get("alias"), str) and isinstance(e.get("protocol"), str)
+}
+for entry in overlay_payload_overrides:
+    key = (entry["alias"], entry["protocol"])
+    if state_present and state_managed_payload_overrides:
+        if key in state_override_keys:
+            managed_payload_overrides.append(entry)
+            continue
+    elif entry["alias"].startswith("cc-"):
+        managed_payload_overrides.append(entry)
+        continue
+    if entry["alias"].startswith("cc-"):
+        conflicts.append({
+            "alias": entry["alias"],
+            "source": f"manual-payload-override:{entry['protocol']}",
+        })
+
 out = {
     "vibeproxy_installed": vibeproxy_installed,
     "vibeproxy_reachable": vibeproxy_reachable,
@@ -276,6 +326,7 @@ out = {
     "claude_code_channel": claude_code_channel,
     "managed_shell_aliases": managed_shell_aliases,
     "managed_model_aliases": managed_model_aliases,
+    "managed_payload_overrides": managed_payload_overrides,
     "shortcut_shell_aliases": state_shortcut_shell,
     "backend_catalogs": state_backend_catalogs,
     "partial_probe": state_partial_probe,

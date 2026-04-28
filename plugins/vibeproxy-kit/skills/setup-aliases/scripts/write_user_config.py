@@ -46,6 +46,10 @@ def alias_key(channel: str, alias: str) -> tuple[str, str]:
     return (channel, alias)
 
 
+def override_key(alias: str, protocol: str) -> tuple[str, str]:
+    return (alias, protocol)
+
+
 def main() -> int:
     payload = load_payload()
 
@@ -60,11 +64,17 @@ def main() -> int:
     ))
     managed_aliases = payload.get("managed_aliases") or []
     prior_managed_aliases = payload.get("prior_managed_aliases") or []
+    managed_payload_overrides = payload.get("managed_payload_overrides") or []
+    prior_managed_payload_overrides = payload.get("prior_managed_payload_overrides") or []
 
     if not isinstance(managed_aliases, list):
         raise SystemExit("write_user_config.py: managed_aliases must be an array")
     if not isinstance(prior_managed_aliases, list):
         raise SystemExit("write_user_config.py: prior_managed_aliases must be an array")
+    if not isinstance(managed_payload_overrides, list):
+        raise SystemExit("write_user_config.py: managed_payload_overrides must be an array")
+    if not isinstance(prior_managed_payload_overrides, list):
+        raise SystemExit("write_user_config.py: prior_managed_payload_overrides must be an array")
 
     try:
         from ruamel.yaml import YAML
@@ -219,6 +229,113 @@ def main() -> int:
         if "oauth-model-alias" in root:
             del root["oauth-model-alias"]
 
+    prior_override_keys: set[tuple[str, str]] = set()
+    for entry in prior_managed_payload_overrides:
+        if not isinstance(entry, dict):
+            continue
+        alias = entry.get("alias")
+        protocol = entry.get("protocol")
+        if isinstance(alias, str) and isinstance(protocol, str):
+            prior_override_keys.add(override_key(alias, protocol))
+
+    desired_overrides: dict[tuple[str, str], dict[str, Any]] = {}
+    for entry in managed_payload_overrides:
+        if not isinstance(entry, dict):
+            continue
+        alias = entry.get("alias")
+        protocol = entry.get("protocol")
+        params = entry.get("params")
+        if not (isinstance(alias, str) and isinstance(protocol, str) and isinstance(params, dict)):
+            continue
+        desired_overrides[override_key(alias, protocol)] = {
+            "alias": alias,
+            "protocol": protocol,
+            "params": dict(params),
+        }
+    new_override_keys = set(desired_overrides.keys())
+
+    overrides_added: list[dict[str, Any]] = []
+    overrides_removed: list[dict[str, Any]] = []
+    overrides_unchanged: list[dict[str, Any]] = []
+
+    payload_block = root.get("payload")
+    payload_was_present = isinstance(payload_block, CommentedMap)
+    if not payload_was_present:
+        payload_block = CommentedMap() if (desired_overrides or prior_override_keys) else None
+
+    override_list = None
+    if isinstance(payload_block, CommentedMap):
+        override_list = payload_block.get("override")
+
+    kept_blocks: list[Any] = []
+    if isinstance(override_list, list):
+        for block in override_list:
+            if not isinstance(block, CommentedMap) and not isinstance(block, dict):
+                kept_blocks.append(block)
+                continue
+            models = block.get("models") if isinstance(block, (CommentedMap, dict)) else None
+            params = block.get("params") if isinstance(block, (CommentedMap, dict)) else None
+            if not isinstance(models, list) or len(models) != 1 or not isinstance(params, (CommentedMap, dict)):
+                kept_blocks.append(block)
+                continue
+            sole = models[0]
+            if not isinstance(sole, (CommentedMap, dict)):
+                kept_blocks.append(block)
+                continue
+            sole_name = sole.get("name")
+            sole_protocol = sole.get("protocol")
+            if not (isinstance(sole_name, str) and isinstance(sole_protocol, str)):
+                kept_blocks.append(block)
+                continue
+            key = override_key(sole_name, sole_protocol)
+            if key not in prior_override_keys:
+                kept_blocks.append(block)
+                continue
+            if mode == "reset":
+                overrides_removed.append({"alias": sole_name, "protocol": sole_protocol, "params": dict(params)})
+                continue
+            if key in new_override_keys:
+                desired = desired_overrides[key]
+                if dict(params) == desired["params"]:
+                    overrides_unchanged.append({"alias": sole_name, "protocol": sole_protocol, "params": dict(params)})
+                    kept_blocks.append(block)
+                    new_override_keys.discard(key)
+                else:
+                    overrides_removed.append({"alias": sole_name, "protocol": sole_protocol, "params": dict(params)})
+                continue
+            overrides_removed.append({"alias": sole_name, "protocol": sole_protocol, "params": dict(params)})
+
+    for key in list(new_override_keys):
+        desired = desired_overrides[key]
+        block = CommentedMap()
+        models_seq = CommentedSeq()
+        model_entry = CommentedMap()
+        model_entry["name"] = desired["alias"]
+        model_entry["protocol"] = desired["protocol"]
+        models_seq.append(model_entry)
+        block["models"] = models_seq
+        params_map = CommentedMap()
+        for k, v in desired["params"].items():
+            params_map[k] = v
+        block["params"] = params_map
+        kept_blocks.append(block)
+        overrides_added.append({"alias": desired["alias"], "protocol": desired["protocol"], "params": desired["params"]})
+
+    if isinstance(payload_block, CommentedMap):
+        if kept_blocks:
+            new_override_seq = CommentedSeq()
+            for b in kept_blocks:
+                new_override_seq.append(b)
+            payload_block["override"] = new_override_seq
+        elif "override" in payload_block:
+            del payload_block["override"]
+
+        if len(payload_block) == 0:
+            if "payload" in root:
+                del root["payload"]
+        elif not payload_was_present:
+            root["payload"] = payload_block
+
     ensure_dir(os.path.dirname(config_path))
     tmp_path = config_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as fh:
@@ -233,6 +350,9 @@ def main() -> int:
         "added": added,
         "removed": removed,
         "unchanged": unchanged,
+        "overrides_added": overrides_added,
+        "overrides_removed": overrides_removed,
+        "overrides_unchanged": overrides_unchanged,
     }
     json.dump(result, sys.stdout, indent=2)
     print()
