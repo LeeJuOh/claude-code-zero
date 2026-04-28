@@ -26,7 +26,7 @@ even more than usual.
 
 The companion collects the diff itself. Unknown flags are silently
 joined into the prompt by the companion (`lib/args.mjs:47-49` +
-`:585-592`). Phase 1 whitelist is the only safety net.
+`:613-619`). Phase 1 whitelist is the only safety net.
 
 ---
 
@@ -36,7 +36,9 @@ You are a translator. Use LM intelligence, not regex tables.
 
 **Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`, `--model <slug>`, `--effort <level>`, and **positional focus text** (natural-language attack hints, e.g., "check for SQL injection in login handler").
 
-`--model` and `--effort` never reach the companion (adversarial shares `handleReviewCommand` with review — it also ignores them). They route through `scripts/apply-codex-config.py` to update `~/.codex/config.toml` before the companion launches.
+`--model` and `--effort` route through `scripts/apply-codex-config.py` to update `~/.codex/config.toml` before the companion launches. Two reasons:
+1. **`--effort` is not a registered review flag** (`handleReviewCommand` `valueOptions = ["base", "scope", "model", "cwd"]` at `:684`). Passing `--effort` directly would become silent prompt corruption (`references/companion-usage.md §3`). Only the config.toml `model_reasoning_effort` key reaches the review path.
+2. **Consistency + persistence.** `--model` IS honored as a flag in v1.0.4 (`startThread({ model })`, `lib/codex.mjs:56-66`), but routing it through config.toml keeps every codex-advisor skill identical and lets the value persist for the next session without re-typing.
 
 Rules:
 
@@ -88,7 +90,7 @@ For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 
 ## Phase 2: Invoke (Pattern A — Bash run_in_background)
 
-Adversarial shares `handleReviewCommand` with `review` (`:975-979`), so
+Adversarial shares `handleReviewCommand` with `review` (`:725, :992-1003`), so
 `--background` / `--wait` are silent no-ops. Use Bash
 `run_in_background=true`.
 

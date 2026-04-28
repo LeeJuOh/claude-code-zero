@@ -33,7 +33,7 @@ The blind-payload pattern (`cat "$DOC" >> "$PROMPT_FILE"`) redirects to
 a file, not stdout, so your context stays clean.
 
 Unknown flags silently become task prompt content
-(`readTaskPrompt :585-592`). Phase 1 is the only safety net.
+(`readTaskPrompt :613-619`). Phase 1 is the only safety net.
 
 ---
 
@@ -149,7 +149,7 @@ For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (
 
 ```bash
 # NEVER pass a positional arg — readTaskPrompt short-circuits on
-# positionalPrompt (:591), silently dropping the entire blind payload.
+# positionalPrompt (:619), silently dropping the entire blind payload.
 cat "<literal PROMPT_FILE path>" | node "$CODEX_COMPANION" task --background --json \
   > "<literal JOB_JSON_FILE path>" 2> "<literal JOB_JSON_FILE path>.stderr" \
   || { echo "task launch failed:" >&2; cat "<literal JOB_JSON_FILE path>.stderr" >&2; exit 1; }
@@ -268,7 +268,7 @@ rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_
   empty. `cat "$USER_DOC"` alone would dump content into Claude's
   context. The `>> "$PROMPT_FILE"` is load-bearing.
 - **Never pass a positional argument with Pattern B's stdin pipe.**
-  `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:591`); a positional silently drops the entire blind payload.
+  `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:619`); a positional silently drops the entire blind payload.
 - **`set -o pipefail` is mandatory.** Without it, a cat-side failure
   sends 0 bytes and the companion's `prompt-empty` error masks the root
   cause.

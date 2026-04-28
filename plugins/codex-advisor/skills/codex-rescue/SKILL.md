@@ -29,7 +29,7 @@ your double-check and wastes turns.
 | 5 REPORT + SAVE | Write report file | n/a |
 
 Unknown flags are silently joined into the **task prompt** by the
-companion (`readTaskPrompt :585-592`). Phase 1 whitelist is the only
+companion (`readTaskPrompt :613-619`). Phase 1 whitelist is the only
 safety net.
 
 ---
@@ -40,8 +40,8 @@ You are a translator. Use LM intelligence, not regex tables.
 
 **Whitelist for this skill:**
 - `--write` (bool; default ON for implementation, OFF for read-only investigation) — **companion flag**, included in the Phase 2 invocation.
-- `--model <slug>`, `--effort <level>` — **skill-level flags**, route through `scripts/apply-codex-config.py` (see Apply block below) and **never reach the companion**. The alias `spark` auto-expands to `gpt-5.3-codex-spark`. The script validates effort against `{none, minimal, low, medium, high, xhigh}` as an advisory — out-of-set values still save but surface a warning so the user sees it. If the user gives an obviously wrong value (typo), prefer `AskUserQuestion` in Phase 1 over letting it propagate.
-- `--resume-last` / `--resume` / `--fresh` — mutually exclusive companion flags. Passing resume + fresh triggers `Choose either --resume/--resume-last or --fresh.` (`:721-723`). If ANALYZE produces a conflict, `AskUserQuestion`; never forward both.
+- `--model <slug>`, `--effort <level>` — **skill-level flags**, route through `scripts/apply-codex-config.py` (see Apply block below) and **never reach the companion**. The alias `spark` auto-expands to `gpt-5.3-codex-spark`. The script validates effort against `{minimal, low, medium, high, xhigh}` (`none` is only valid for `plan_mode_reasoning_effort`) and additionally cross-checks against the requested model's `supported_reasoning_levels` from `~/.codex/models_cache.json` — out-of-set values still save but surface a warning so the user sees it. If the user gives an obviously wrong value (typo), prefer `AskUserQuestion` in Phase 1 over letting it propagate.
+- `--resume-last` / `--resume` / `--fresh` — mutually exclusive companion flags. Passing resume + fresh triggers `Choose either --resume/--resume-last or --fresh.` (`:750`). If ANALYZE produces a conflict, `AskUserQuestion`; never forward both.
 
 **Everything else in `$ARGUMENTS` is the task description**, which
 becomes the prompt body. Translate it cleanly:
@@ -80,7 +80,7 @@ For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 
 ## Phase 2: Invoke (Pattern B — companion `--background` + stdin pipe)
 
-`task --background` is honored by the companion (`:730-746` →
+`task --background` is honored by the companion (`:758-790` →
 `enqueueBackgroundTask`). It returns a job payload immediately.
 
 ```bash
@@ -117,7 +117,7 @@ EOF
 #   picks them up from there.
 # --resume-last/--resume/--fresh: mutually exclusive; omit if none.
 # NEVER pass a positional arg — readTaskPrompt short-circuits on
-# positionalPrompt (:591), silently dropping stdin.
+# positionalPrompt (:619), silently dropping stdin.
 cat "$PROMPT_FILE" | node "$CODEX_COMPANION" task --background --json \
   --write \
   --resume-last \
@@ -242,9 +242,9 @@ rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_
 
 ## Gotchas
 
-- **`--model` / `--effort` go through `apply-codex-config.py`, not the companion.** config.toml becomes the single source of truth; companion flags were silent no-ops on review/adversarial and needlessly inconsistent between skills. `apply-codex-config.py` warns on out-of-set effort but still writes — surface the warning to the user rather than swallowing it.
-- **Never combine `--resume` / `--resume-last` with `--fresh`.** The companion rejects the combination (`:721-723`).
-- **Never pass a positional argument with Pattern B's stdin pipe.** `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:591`); a positional silently drops the entire task description.
+- **`--model` / `--effort` go through `apply-codex-config.py`, not the companion.** config.toml becomes the single source of truth; routing keeps every codex-advisor skill identical, lets the value persist for the next session without re-typing, and is the only way to set `effort` for review/adversarial (whose `valueOptions = [base, scope, model, cwd]` does not include effort). `apply-codex-config.py` warns on out-of-set effort and on per-model unsupported levels but still writes — surface the warning to the user rather than swallowing it.
+- **Never combine `--resume` / `--resume-last` with `--fresh`.** The companion rejects the combination (`:750`).
+- **Never pass a positional argument with Pattern B's stdin pipe.** `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:619`); a positional silently drops the entire task description.
 - **`--wait` on task is silent prompt corruption.** It becomes part of the task prompt body. ANALYZE must reject it.
 - **Do NOT explore the repo in Phase 1.** The point of delegation is that Codex builds the context. Exploring biases the double-check.
 

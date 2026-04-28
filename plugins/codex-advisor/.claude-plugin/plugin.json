@@ -1,7 +1,7 @@
 {
   "name": "codex-advisor",
-  "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel. Every skill accepts --model/--effort via config.toml.",
+  "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel. Every skill accepts --model/--effort via config.toml. Tested against codex@openai-codex 1.0.4 and Codex CLI 0.125 (gpt-5.5).",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
-  "keywords": ["codex", "double-check", "cross-model", "evaluation", "review", "verification", "research", "status", "cancel"]
+  "keywords": ["codex", "double-check", "cross-model", "evaluation", "review", "verification", "research", "status", "cancel", "gpt-5.5"]
 }
