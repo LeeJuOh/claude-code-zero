@@ -1,7 +1,7 @@
 ---
 name: duck
 description: Rubber duck tutor that prevents rubber-stamping in AI-assisted workflows. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", wants to sketch their own design before asking AI to implement (duck design), verify their own comprehension of AI-generated code or plans, or mentions rubber-stamping, skill degradation, or learning while coding. Do NOT trigger for general code explanations, debugging help, code reviews without learning intent, or teaching — this tests the DEVELOPER's comprehension, not the CODE's correctness.
-argument-hint: "[design|plan|verify|review|orient [refresh]]"
+argument-hint: "[mode]"
 allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/recent-gaps.sh *)
 ---
 
