@@ -135,6 +135,15 @@ if state_present:
     raw_model = state.get("managed_model_aliases")
     if isinstance(raw_model, list):
         state_managed_model = [e for e in raw_model if isinstance(e, dict)]
+        # Legacy schema migration: pre-v0.10 stored {name=alias, model=upstream}.
+        # Current schema matches script input: {channel, name=upstream, alias}.
+        # Detect legacy entries (name starts with "cc-" and no "alias" field) and
+        # rewrite in-memory so downstream filtering and Phase 8 rewrite use the
+        # current schema. Disk is rewritten on next state save.
+        for entry in state_managed_model:
+            if "alias" not in entry and isinstance(entry.get("name"), str) and entry["name"].startswith("cc-"):
+                entry["alias"] = entry["name"]
+                entry["name"] = entry.pop("model", "") or ""
     raw_shortcut = state.get("shortcut_shell_aliases")
     if isinstance(raw_shortcut, list):
         state_shortcut_shell = [e for e in raw_shortcut if isinstance(e, dict)]
@@ -146,23 +155,36 @@ if state_present:
     if isinstance(raw_overrides, list):
         state_managed_payload_overrides = [e for e in raw_overrides if isinstance(e, dict)]
 
+def _ensure_ruamel_yaml():
+    try:
+        from ruamel.yaml import YAML  # type: ignore
+        return YAML
+    except ImportError:
+        pass
+    import subprocess
+    base = [sys.executable, "-m", "pip", "install", "--user", "ruamel.yaml"]
+    try:
+        subprocess.check_call(base, stdout=sys.stderr, stderr=sys.stderr)
+    except subprocess.CalledProcessError:
+        # PEP 668 (Homebrew Python 3.12+): retry with --break-system-packages.
+        # Limited to user site-packages; system Python install untouched.
+        subprocess.check_call(
+            base + ["--break-system-packages"], stdout=sys.stderr, stderr=sys.stderr,
+        )
+    from ruamel.yaml import YAML  # type: ignore
+    return YAML
+
+
 overlay_root = {}
 overlay_load_error = None
 if user_overlay_exists:
     try:
-        try:
-            from ruamel.yaml import YAML  # type: ignore
-            yaml_rt = YAML(typ="rt")
-            with open(user_config_path, "r", encoding="utf-8") as fh:
-                loaded = yaml_rt.load(fh)
-            if loaded is not None:
-                overlay_root = dict(loaded)
-        except ImportError:
-            import yaml as pyyaml  # type: ignore
-            with open(user_config_path, "r", encoding="utf-8") as fh:
-                loaded = pyyaml.safe_load(fh)
-            if isinstance(loaded, dict):
-                overlay_root = loaded
+        YAML = _ensure_ruamel_yaml()
+        yaml_rt = YAML(typ="rt")
+        with open(user_config_path, "r", encoding="utf-8") as fh:
+            loaded = yaml_rt.load(fh)
+        if loaded is not None:
+            overlay_root = dict(loaded)
     except Exception as exc:  # noqa: BLE001
         overlay_load_error = f"{type(exc).__name__}: {exc}"
 

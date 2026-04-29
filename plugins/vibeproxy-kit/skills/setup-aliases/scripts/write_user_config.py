@@ -81,10 +81,14 @@ def main() -> int:
         from ruamel.yaml.comments import CommentedMap, CommentedSeq
     except ImportError:
         import subprocess
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "--user", "ruamel.yaml"],
-            stdout=sys.stderr, stderr=sys.stderr,
-        )
+        base = [sys.executable, "-m", "pip", "install", "--user", "ruamel.yaml"]
+        try:
+            subprocess.check_call(base, stdout=sys.stderr, stderr=sys.stderr)
+        except subprocess.CalledProcessError:
+            # PEP 668 (Homebrew Python 3.12+): retry with --break-system-packages.
+            subprocess.check_call(
+                base + ["--break-system-packages"], stdout=sys.stderr, stderr=sys.stderr,
+            )
         from ruamel.yaml import YAML
         from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
