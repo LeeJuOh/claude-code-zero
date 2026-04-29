@@ -45,21 +45,31 @@ for token, sig in BACKEND_SIGNATURES.items():
         OWNED_BY_TO_TOKENS.setdefault(ob, set()).add(token)
 
 
-def load_yaml(path: str) -> dict[str, Any]:
+def _ensure_ruamel_yaml():
     try:
         from ruamel.yaml import YAML  # type: ignore
-
-        yaml_rt = YAML(typ="rt")
-        with open(path, "r", encoding="utf-8") as fh:
-            loaded = yaml_rt.load(fh)
-        return dict(loaded) if loaded is not None else {}
+        return YAML
     except ImportError:
         pass
-    import yaml as pyyaml  # type: ignore
+    import subprocess
+    base = [sys.executable, "-m", "pip", "install", "--user", "ruamel.yaml"]
+    try:
+        subprocess.check_call(base, stdout=sys.stderr, stderr=sys.stderr)
+    except subprocess.CalledProcessError:
+        # PEP 668 (Homebrew Python 3.12+): retry with --break-system-packages.
+        subprocess.check_call(
+            base + ["--break-system-packages"], stdout=sys.stderr, stderr=sys.stderr,
+        )
+    from ruamel.yaml import YAML  # type: ignore
+    return YAML
 
+
+def load_yaml(path: str) -> dict[str, Any]:
+    YAML = _ensure_ruamel_yaml()
+    yaml_rt = YAML(typ="rt")
     with open(path, "r", encoding="utf-8") as fh:
-        loaded = pyyaml.safe_load(fh)
-    return loaded if isinstance(loaded, dict) else {}
+        loaded = yaml_rt.load(fh)
+    return dict(loaded) if loaded is not None else {}
 
 
 def layer1(

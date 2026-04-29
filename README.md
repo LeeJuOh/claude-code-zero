@@ -11,6 +11,12 @@
 
 </div>
 
+## Why
+
+Claude Code sessions evaporate when you close them. Plans live in your head. Reviews need 47 files of context. Plugin audits, diff visualizations, NotebookLM queries, worktrees, skill iteration — manual every time, forgotten by the next session.
+
+claude-code-zero packages the workflows that survive across sessions. Each plugin solves one friction. Each installs in one command.
+
 ## Quick Start
 
 ### 1. Add the marketplace
@@ -31,25 +37,18 @@ Run `/plugin` and check the **Installed** tab.
 
 ## Plugins
 
-### Release-ready
-
-| Plugin | Description |
-|--------|-------------|
-| [vision-powers](plugins/vision-powers/README.md) | Turn Claude Code sessions into interactive HTML dashboards — plugin audits (local paths, installed plugins, or GitHub subpath URLs), diff and plan reviews, project recaps, environment-health diagnostics, and fact-checking against git history. Every report ships `--format md` for PR & chat contexts, multi-language output via `--lang`, headless-Chrome visual self-audit, aesthetic rotation, and in-browser per-section feedback that feeds a `refine` loop |
-| [worktree-plus](plugins/worktree-plus/README.md) | Drop-in upgrade for Claude Code worktrees — branches from HEAD, auto-tracks matching remote branches, path/prefix configurable via `git config`. Copies or symlinks gitignored files (`.env`, `node_modules/`) via `.worktreeinclude` / `.worktreelink`, blocks cleanup when work is uncommitted or unpushed, reuses existing worktrees on re-entry, and ships a `/worktree-config` skill for conversational setup. Covers `claude -w`, `EnterWorktree`, and subagent `isolation: worktree` |
-| [toolbox](plugins/toolbox/README.md) | Five small skills that patch Claude Code's friction points — Gemini-powered fetch that auto-fires when WebFetch is blocked, XML sitemap auto-discovery with regex filter, resumption-ready handoff docs, one-shot secret extraction into gitignored env + SessionStart hook, and pull-all-repos reference sync |
-| [notebooklm-connector](plugins/notebooklm-connector/README.md) | Query your Google NotebookLM notebooks from Claude Code via Chrome automation. Answers stay source-grounded with citations; the skill auto-detects partial answers and re-queries (configurable, default 3 rounds) to fill gaps. Add, list, search, enable/disable, archive notebooks by name. Requires Claude in Chrome extension |
-| [skill-creator-pro](plugins/skill-creator-pro/README.md) | The official skill-creator shows *how* to build skills — this one helps you build **good** ones. Ships a 9-category design guide, gotchas-first templates, a parallel baseline/with-skill benchmark viewer, a description-trigger optimizer, and an autonomous output-quality loop so a 70%-working skill can be measured, diagnosed, and pushed higher |
-| [codex-advisor](plugins/codex-advisor/README.md) | Wrap every Codex call with Claude's independent double-check. Reviews, rescue, plan verification, and research run in the background and return findings classified as Agreed / Disputed / Nuanced / False Positive / Uncited — so hallucinated file:line citations get caught before you act. Documents stay out of Claude's context until after Codex returns. 9 skills; works even with the Official Codex plugin hidden |
-| [rubber-duck-tutor](plugins/rubber-duck-tutor/README.md) | Stay sharp while coding with AI. The duck quizzes you on plans, diffs, and PRs — one question, then silence. Five modes (design, plan, verify, review, orient) plus rate-limited auto-prompts at plan creation, spec writes, PR/MR, and git commands. If you can't explain it to a duck, you don't understand it |
-| [vibeproxy-kit](plugins/vibeproxy-kit/README.md) | macOS alias manager for [VibeProxy](https://github.com/automazeio/vibeproxy) — discovers which backends you've authenticated (Codex, Copilot, Antigravity, Gemini, Qwen, Z.AI GLM), lets you pick models and reasoning-effort levels, writes `cc-*` aliases to `~/.zshrc` and `config.yaml` without touching your manual edits, and rolls both files back together if validation fails. ⚠️ Third-party routing may violate provider ToS |
-
-### Lab (experimental)
-
-| Plugin | Description |
-|--------|-------------|
-| [claw-mo](plugins/claw-mo/README.md) | Markdown live preview via [mo](https://github.com/k1LoW/mo) — Mermaid, KaTeX, and Shiki rendering that `cmux markdown open` can't do. One command per project: tabs grouped by directory, deep-link to any file, pipe generated markdown in (`some-tool \| /claw-mo-open -`), or open a file with zero setup. Full-text search across watched docs, a cross-project status dashboard, and autosync-on-write so Claude-created docs appear in mo without a restart (fsnotify-miss recovery still one `/claw-mo-up` away) |
-| [claw-mux](plugins/claw-mux/README.md) | Full terminal topology control inside [cmux](https://cmux.dev) — send commands to other panes and read their output, run a dev server while tailing logs next door, or spawn a second Claude Code instance and feed it tasks with `wait-for` / content-poll completion detection. Snapshot/ref browser automation in cmux's embedded WKWebView (no Chrome extension), a live-reload markdown panel, and sidebar status pills, progress bars, and leveled logs |
+| Plugin | What it does |
+|--------|--------------|
+| [vision-powers](plugins/vision-powers/README.md) | Interactive HTML reports for plugin audits, diff/plan reviews, project recaps, environment health. Markdown export, multi-language, in-browser refine loop, fact-check against git. |
+| [worktree-plus](plugins/worktree-plus/README.md) | Drop-in worktree upgrade — HEAD-based branches, remote tracking, gitignored-file copy/symlink, safe cleanup. Configurable via `git config`. Covers `claude -w`, `EnterWorktree`, subagent isolation. |
+| [toolbox](plugins/toolbox/README.md) | Friction-fixer skills: Gemini fallback fetch when WebFetch blocks, sitemap discovery, handoff docs, secret extraction with SessionStart hook, reference repo sync. |
+| [notebooklm-connector](plugins/notebooklm-connector/README.md) | Query Google NotebookLM notebooks from Claude Code via Chrome automation. Source-grounded with citations, auto-retry on partial answers. Requires Claude in Chrome. |
+| [skill-creator-pro](plugins/skill-creator-pro/README.md) | Build *good* skills, not just any skills. 9-category design guide, gotchas-first templates, benchmark viewer, description-trigger optimizer, autonomous output-quality loop. |
+| [codex-advisor](plugins/codex-advisor/README.md) | Wrap every Codex call with Claude's independent double-check. Findings classified Agreed / Disputed / Nuanced / False Positive / Uncited — catches hallucinated file:line citations. Reviews, rescue, plan verify, research. |
+| [rubber-duck-tutor](plugins/rubber-duck-tutor/README.md) | Stay sharp while coding with AI. Duck quizzes you on plans, diffs, PRs — one question, then silence. 5 modes + rate-limited auto-prompts at plan creation, spec writes, PR/MR, git commands. |
+| [vibeproxy-kit](plugins/vibeproxy-kit/README.md) | macOS alias manager for [VibeProxy](https://github.com/automazeio/vibeproxy). Discovers authenticated backends (Codex, Copilot, Antigravity, Gemini, Qwen, Z.AI GLM), writes `cc-*` aliases without clobbering manual edits. ⚠️ May violate provider ToS. |
+| [claw-mo](plugins/claw-mo/README.md) | Markdown live preview via [mo](https://github.com/k1LoW/mo) — Mermaid, KaTeX, Shiki rendering. Per-project tabs, deep-link, stdin pipe, full-text search, autosync-on-write for Claude-created docs. |
+| [claw-mux](plugins/claw-mux/README.md) | Terminal topology control inside [cmux](https://cmux.dev) — pane-to-pane I/O, dev-server + log tailing, spawn child Claude Code with `wait-for` completion. WKWebView browser automation, markdown panel, sidebar status. |
 
 ## Plugin Management
 

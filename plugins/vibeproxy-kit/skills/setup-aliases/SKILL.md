@@ -173,6 +173,7 @@ For each probed backend's catalog, present the model list grouped by family. **S
 - Embedding models (`text-embedding-*`)
 - Internal router models (`accounts/*/routers/*`)
 - Legacy models the user is unlikely to want (gpt-3.5, gpt-4, gpt-4o variants unless nothing newer exists)
+- **Skill-managed `cc-*` aliases from prior runs.** With `fork: false` (default), VibeProxy replaces the upstream model name in its registry with the alias name, so the probe response surfaces entries like `cc-codex-gpt54-med` instead of (or alongside) the real `gpt-5.4`. Drop any model whose `id` is present in `discover.managed_model_aliases[].alias` — these are not real models and selecting them creates self-referential aliases. The real upstream models are still authoritative; reuse them by name.
 
 Group into families:
 - **Claude models** — `claude-opus-*`, `claude-sonnet-*`, `claude-haiku-*`
@@ -333,8 +334,51 @@ Wait for explicit "yes, apply" via `AskUserQuestion`. Any other answer is a no-o
 
 Order matters. Write the state file **first** so a crash between steps leaves `${CLAUDE_PLUGIN_DATA}/config.json` consistent with what the user approved.
 
-1. Write `${CLAUDE_PLUGIN_DATA}/config.json` with the new `managed_shell_aliases`, `managed_model_aliases`, `managed_payload_overrides`, `shortcut_shell_aliases`, the full `backend_catalogs` (including cached probes we did not refresh this run), and `partial_probe: null`. The `managed_payload_overrides` array tracks every `payload.override` block the skill writes so it can be cleaned up on the next reset/merge — orphans are not recoverable without it.
-2. Run `write_user_config.py` via bash heredoc. Capture `backup_path` from its JSON output. If `ok: false`, stop and report — no further writes. The script writes both `oauth-model-alias` entries and `payload.override` blocks atomically into the same backup-protected save.
+### State file schema (mandatory)
+
+`${CLAUDE_PLUGIN_DATA}/config.json` uses the **same field names as `write_user_config.py` stdin** so it can be passed through verbatim — never transform between state and script input. Schema:
+
+```json
+{
+  "managed_shell_aliases": ["cc-codex-gpt54-high", "cc-codex-gpt55-max"],
+  "managed_model_aliases": [
+    {
+      "channel": "codex",
+      "name": "gpt-5.4",
+      "alias": "cc-codex-gpt54-high",
+      "request_model": "cc-codex-gpt54-high(high)",
+      "effort_value": "high",
+      "label": "Codex · GPT-5.4 · high"
+    }
+  ],
+  "managed_payload_overrides": [
+    {"alias": "cc-codex-gpt54-high", "protocol": "codex", "params": {"reasoning.effort": "high"}}
+  ],
+  "shortcut_shell_aliases": [
+    {"name": "cc-cx-gpt-high", "target": "cc-codex-gpt55-high"}
+  ],
+  "backend_catalogs": {"codex": {"probed_at": "...", "model_count": 9}},
+  "partial_probe": null
+}
+```
+
+Field meanings:
+
+| Field | Meaning | Used by |
+|---|---|---|
+| `managed_model_aliases[].channel` | VibeProxy config key (e.g., `codex`, `github-copilot`, `antigravity`, `gemini-cli`) | `write_user_config.py` `prior_managed_aliases` |
+| `managed_model_aliases[].name` | **Upstream model name** (e.g., `gpt-5.4`, `claude-opus-4.6`). Not the alias. | `write_user_config.py` |
+| `managed_model_aliases[].alias` | **Alias name** the user types (e.g., `cc-codex-gpt54-high`) | `write_user_config.py`, alias filter in Phase 5 |
+| `managed_model_aliases[].request_model` | Value sent in `ANTHROPIC_MODEL` (alias plus `(level)` suffix for effort variants) | `write_zshrc.sh`, Phase 10 validation |
+| `managed_model_aliases[].effort_value` | Optional. Server-side `reasoning.effort` for codex/copilot effort variants. `null` for base models. | Phase 5 `payload.override` build |
+| `managed_model_aliases[].label` | Display string for `cc-list` grouping (e.g., `Codex · GPT-5.4 · high`) | `write_zshrc.sh` |
+
+`name` and `alias` are **inverses**: `name` is the upstream provider's model ID; `alias` is the routable name that VibeProxy serves. Confusing them silently corrupts the merge — `write_user_config.py` filters entries that lack the `alias` field, so a state entry with `name="cc-codex-..."` and no `alias` field is treated as malformed and ignored. The result is a no-op write while everything looks fine.
+
+### Write order
+
+1. Write `${CLAUDE_PLUGIN_DATA}/config.json` matching the schema above. Include the full `backend_catalogs` (including cached probes we did not refresh this run) and `partial_probe: null`. The `managed_payload_overrides` array tracks every `payload.override` block the skill writes so it can be cleaned up on the next reset/merge — orphans are not recoverable without it.
+2. Build the `write_user_config.py` stdin payload by **passing `discover.managed_model_aliases` directly as `prior_managed_aliases`** — both use the same shape. Do not re-derive from raw state file content. Capture `backup_path` from its JSON output. If `ok: false`, stop and report — no further writes. The script writes both `oauth-model-alias` entries and `payload.override` blocks atomically into the same backup-protected save.
 3. Run `write_zshrc.sh`. Capture `backup_path` from its JSON output. If it fails, rollback `config.yaml` from its backup path before reporting.
 
 ```bash
@@ -432,7 +476,8 @@ Transactional rollback is the default because shell aliases and model aliases fo
 - **Show ALL model families per backend.** Do not filter Copilot to only Claude models, or Codex to only GPT models. The same model (e.g., `gpt-5.4`) can appear in multiple backends with different effort levels or routing. Show everything the probe returns; let the user choose.
 - **Gemini OAuth fails silently through the GUI.** The VibeProxy Settings UI triggers `-login` but cannot handle the interactive "Code Assist vs Google One" mode selection prompt, so the auth process completes in the browser but VibeProxy never registers the account. Always direct users to the CLI workaround: `/Applications/VibeProxy.app/Contents/Resources/cli-proxy-api-plus -login --config /Applications/VibeProxy.app/Contents/Resources/config.yaml`. This is a known upstream bug ([#286](https://github.com/automazeio/vibeproxy/issues/286), [#242](https://github.com/automazeio/vibeproxy/issues/242)).
 - **Token expiration has no automatic re-authentication.** When an OAuth token expires and refresh fails after max retries, the proxy silently returns 502 for all requests through that credential. There is no auto-recovery — the user must re-authenticate manually in the VibeProxy menu bar (or via CLI). If a previously working alias suddenly returns 502 and the provider is not down, suggest the user check their auth status in VibeProxy Settings.
-- **config.yaml changes hot-reload automatically.** After `write_user_config.py` updates `config.yaml`, CLIProxyAPIPlus detects the file change and reloads the config (including `oauth-model-alias` changes) without a full restart. The restart gate in Phase 9 is still required because `merged-config.yaml` regeneration may not always reflect alias changes until the next full server cycle.
+- **config.yaml hot-reloads, but `merged-config.yaml` only regenerates on restart.** CLIProxyAPIPlus picks up `config.yaml` writes (including `oauth-model-alias` and `payload.override`) without a restart, so the on-disk source of truth is current immediately. **`merged-config.yaml`** — the file Phase 4 verification reads to cross-check menu-bar state — is regenerated only when VibeProxy launches or toggles. Always run the Phase 9 restart before Phase 10 validation; skipping it can produce false negatives against a stale routing table.
+- **State file schema must match `write_user_config.py` stdin shape.** `${CLAUDE_PLUGIN_DATA}/config.json` `managed_model_aliases` entries use `{channel, name=<upstream>, alias=<cc-*>, request_model, effort_value?, label?}`. `name` is the upstream provider model; `alias` is the routable cc-* name. Reversing them (`name=<cc-*>`, no `alias`) makes `write_user_config.py` skip every entry as malformed — the merge becomes a silent no-op that returns `{"added": [], "removed": [], "unchanged": []}` and the existing aliases stay in `config.yaml` untouched. `discover.sh` migrates legacy entries on read; new writes always use the current schema.
 - **OAuth callback uses port 3000.** When connecting the Claude Code channel (or Codex) in VibeProxy, the OAuth flow starts a temporary callback server on port 3000. If a dev server (Next.js, Vite, etc.) is occupying that port, the login will fail silently. Users should stop conflicting servers before authenticating.
 
 ## Scripts
