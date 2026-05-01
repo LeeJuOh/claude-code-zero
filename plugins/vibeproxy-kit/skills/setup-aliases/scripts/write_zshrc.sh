@@ -35,6 +35,10 @@ import shutil
 import sys
 from datetime import datetime, timezone
 
+if sys.version_info < (3, 9):
+    sys.stderr.write(f"write_zshrc.sh: requires Python 3.9+, found {sys.version}\n")
+    sys.exit(1)
+
 MARK_BEGIN = "# >>> vibeproxy-kit managed block >>>"
 MARK_END = "# <<< vibeproxy-kit managed block <<<"
 
@@ -103,7 +107,7 @@ def build_block() -> str:
         lines.append("")
         lines.append("# shortcut aliases")
     for entry in shortcut_aliases:
-        alias = entry.get("alias")
+        alias = entry.get("name") or entry.get("alias")
         target = entry.get("target")
         if not isinstance(alias, str) or not isinstance(target, str):
             continue
@@ -128,7 +132,7 @@ def build_block() -> str:
     # Build reverse map: canonical alias → list of shortcut names
     target_to_shortcuts: dict[str, list[str]] = {}
     for entry in shortcut_aliases:
-        alias = entry.get("alias")
+        alias = entry.get("name") or entry.get("alias")
         target = entry.get("target")
         if isinstance(alias, str) and isinstance(target, str):
             target_to_shortcuts.setdefault(target, []).append(alias)
@@ -168,10 +172,11 @@ def build_block() -> str:
         lines.append(f"  printf '\\033[1m%s\\033[0m\\n' {shell_quote(hdr)}")
 
         # Separator line with box-drawing
+        dash = '\u2500'
         if has_shortcuts:
-            rule = f"  {'\u2500' * col_a}\u253c{'\u2500' * (col_m + 1)}\u253c{'\u2500' * (col_s + 1)}"
+            rule = f"  {dash * col_a}\u253c{dash * (col_m + 1)}\u253c{dash * (col_s + 1)}"
         else:
-            rule = f"  {'\u2500' * col_a}\u253c{'\u2500' * (col_m + 1)}"
+            rule = f"  {dash * col_a}\u253c{dash * (col_m + 1)}"
         lines.append(f"  printf '%s\\n' {shell_quote(rule)}")
 
         # Data rows
@@ -258,7 +263,7 @@ result = {
         e.get("alias") for e in canonical_aliases if isinstance(e.get("alias"), str)
     ],
     "shortcuts_written": [
-        e.get("alias") for e in shortcut_aliases if isinstance(e.get("alias"), str)
+        (e.get("name") or e.get("alias")) for e in shortcut_aliases if isinstance(e.get("name") or e.get("alias"), str)
     ],
 }
 json.dump(result, sys.stdout, indent=2)
