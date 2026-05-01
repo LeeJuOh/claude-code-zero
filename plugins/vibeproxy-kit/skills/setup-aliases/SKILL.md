@@ -140,10 +140,16 @@ Before asking for the mode, note that the probe cycle will temporarily toggle ba
 Then ask via `AskUserQuestion`:
 
 - **Keep** — inspect and report, no changes
-- **Merge update** — preserve current setup, apply incremental changes (may reuse cached catalogs ≤ 7 days old)
+- **Merge update** — preserve current setup, apply incremental changes (may reuse cached catalogs ≤ 30 days old)
+- **Add model** — add a single model to an already-probed backend without re-probing (requires cached catalog)
+- **Remove model** — remove a single managed alias without re-probing
 - **Reset and reconfigure** — remove only skill-managed aliases and shell block, rebuild from scratch (always re-probes)
 
 If the user chooses Keep, print the summary in more detail (including the currently managed canonical aliases and their models) and stop. No writes.
+
+If the user chooses **Add model**, skip to Phase 5 using the cached catalog for the selected backend. No probe cycle needed — the user picks from cached models. If no catalog exists for the requested backend, fall back to a full probe for that backend only.
+
+If the user chooses **Remove model**, show the current managed aliases and let the user pick which to remove. Skip Phases 3-5 entirely — go straight to Phase 7 (confirm) → Phase 8 (write) with the alias removed from state, config.yaml, and zshrc. No probe, no restart gate, no validation needed.
 
 ## Phase 3 — Backend selection
 
@@ -153,7 +159,7 @@ From `authenticated_backends`, ask the user via `AskUserQuestion` which backends
 
 This is the most interaction-heavy phase. For each selected backend, in sequence:
 
-1. **Reuse cache?** In Merge mode, if `backend_catalogs[<token>].probed_at` is within 7 days, offer the user the option to reuse instead of re-probing. Reset mode always re-probes. The user may override with "force refresh".
+1. **Reuse cache?** In Merge mode, if `backend_catalogs[<token>].probed_at` is within 30 days, offer the user the option to reuse instead of re-probing. Reset mode always re-probes. The user may override with "force refresh". When reusing a cached catalog, highlight models that were not in the previous catalog (new since last probe) by comparing against the prior state's `backend_catalogs`.
 2. **Toggle prompt.** Use `AskUserQuestion` to tell the user: *"In the VibeProxy menu bar, disable all backends except `<display_name>`. Click done when only `<display_name>` is active."* Wait for explicit confirmation. **Do not** require a full quit-and-relaunch upfront — a menu bar toggle is sufficient in most cases. If the verify step (step 5) returns `reject` due to stale state, escalate to a full restart (see step 5).
 3. **Probe.** Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/scripts/probe_backend.sh <token> > /tmp/vibeproxy_probe_<token>.json`
 4. **Verify.** Run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/setup-aliases/scripts/verify_probe.py --claimed <token> --claimed-channel-key <config_key> --all-channel-keys <comma-sep-list-of-all-authenticated-channel-keys> --probe-output /tmp/vibeproxy_probe_<token>.json > /tmp/vibeproxy_verify_<token>.json`
