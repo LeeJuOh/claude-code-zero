@@ -113,7 +113,7 @@ Bash(node {validator-path} {output-path} --expected-sections {expected-sections}
 
 Checks: unreplaced placeholders, section content density, Mermaid diagram keywords and parser-breakers (rgba/color in classDef, unquoted special chars, stateDiagram `<br/>` and parenthesized labels, sequenceDiagram message specials), Chart.js data arrays, expected section count. Exits 0 on PASS, 1 on FAIL with a list of issues.
 
-If FAIL: fix the reported issues via Edit on the output file, then re-run the script until PASS.
+If FAIL: fix the source artifact, not the assembled output file, then re-run assembly and validation. For JSON-mode reports, edit `sections-data.json` and re-render sections. For HTML-section mode, edit the relevant `section-*.html` or `metadata.json` file and re-assemble.
 
 #### 5b. Visual self-audit (best-effort)
 
@@ -133,7 +133,7 @@ The script prints the absolute PNG path to stdout on success, or writes a stderr
 - Completeness: does the screenshot show all sections the report is supposed to have? (The default viewport captures 8000px tall; long reports may be truncated — re-render with `--height` larger if needed.)
 - Diagram clarity: are node labels readable? Are connections routing cleanly?
 
-If any visual issue is found, fix via Edit on the HTML and re-run `render-report.js` until the visual audit passes or shows only acceptable artifacts.
+If any visual issue is found, fix the source artifact (`sections-data.json`, `section-*.html`, or `metadata.json` depending on the report mode), re-assemble, and re-run `render-report.js` until the visual audit passes or shows only acceptable artifacts.
 
 **If the last stdout line is `EXIT=1`** (Chrome not found or crash, stderr has the cause): log a one-line note that visual audit was skipped, continue to Step 6. Do not block the workflow — static validation alone is acceptable.
 
@@ -155,7 +155,7 @@ Agent(subagent_type: "vision-powers:coherence-reviewer", prompt: {
 The coherence-reviewer reads ONLY the assembled report — no analysis data, no source code, no git history. This simulates a first-time reader's perspective.
 
 **If issues found**:
-- **HIGH severity**: Fix via Edit on the output file, then re-run validation (Step 5)
+- **HIGH severity**: Fix the source artifact, re-assemble the report, then re-run validation (Step 5)
 - **MEDIUM/LOW severity**: Note in the user notification (Step 7) as optional improvements
 
 **If COHERENT**: Proceed to Step 7.
