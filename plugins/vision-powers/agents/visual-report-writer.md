@@ -92,17 +92,36 @@ What the render script produces (you do NOT produce these):
 
 ### JSON Content Rules
 
-1. **Mermaid diagrams**: Write the raw Mermaid code in `diagrams[].mermaid`. The render script wraps it in `<pre class="mermaid">` with zoom controls. Rules still apply: use 8-digit hex for classDef fills (`fill:#0891b226`), never `rgba()`. Never set `color:` in classDef. Add `click NodeId "#section-id"` for in-report navigation.
+1. **Array contract**: Fields declared as arrays in `sections-data-schema.md` must be arrays directly. Do not wrap table-like data in `{note, rows}` or `{headers, rows}` objects. Put explanatory notes into existing string fields such as `summary`, `risk_summary`, `purpose`, `detail`, or `recommendations`.
 
-2. **Translation**: Translate section headings (via `heading` fields), labels, descriptions. Keep file paths, tool names, code identifiers, severity levels untranslated.
+   Correct:
+   ```json
+   "models": [
+     { "component": "skills", "model": "Inherited", "purpose": "All skills inherit the session model." }
+   ]
+   ```
 
-3. **Missing data**: If analysis data lacks content for a section, include the section with minimal fields rather than omitting it.
+   Wrong:
+   ```json
+   "models": {
+     "note": "All skills inherit the session model.",
+     "rows": []
+   }
+   ```
 
-4. **Code snippets**: Provide raw code in `code_pattern.code` — the render script HTML-escapes it and adds syntax highlighting classes.
+2. **Strict array fields**: These fields must never use wrapper objects: `overview.features`, `overview.kpis`, `architecture.philosophy`, `architecture.diagrams`, `feature_deep_dive.mechanisms`, `feature_deep_dive.workflow_trace`, `feature_deep_dive.tutorial_scenarios`, `usage_guide.prerequisites`, `usage_guide.key_components`, `usage_guide.when_to_use`, `usage_guide.when_not_to_use`, `security_audit.permission_matrix`, `security_audit.findings`, `dependencies.tools`, `dependencies.external`, `dependencies.env_vars`, `dependencies.models`, `plugin_profile.inventory`, `plugin_profile.category_distribution`, `plugin_profile.docs_checklist`, `plugin_profile.quality_checklist`, `plugin_profile.skill_design_quality`, and `plugin_profile.improvement_recommendations`.
 
-5. **Source links**: Provide relative paths in `source_path` fields — the render script generates the full URLs using source_context.
+3. **Mermaid diagrams**: Write the raw Mermaid code in `diagrams[].mermaid`. The render script wraps it in `<pre class="mermaid">` with zoom controls. Rules still apply: use 8-digit hex for classDef fills (`fill:#0891b226`), never `rgba()`. Never set `color:` in classDef. Add `click NodeId "#section-id"` for in-report navigation.
 
-6. **No emoji**: Zero emoji anywhere in the data.
+4. **Translation**: Translate section headings (via `heading` fields), labels, descriptions. Keep file paths, tool names, code identifiers, severity levels untranslated.
+
+5. **Missing data**: If analysis data lacks content for a section, include the section with minimal fields rather than omitting it.
+
+6. **Code snippets**: Provide raw code in `code_pattern.code` — the render script HTML-escapes it and adds syntax highlighting classes.
+
+7. **Source links**: Provide relative paths in `source_path` fields — the render script generates the full URLs using source_context.
+
+8. **No emoji**: Zero emoji anywhere in the data.
 
 ### JSON Anti-Slop Checklist
 
@@ -111,9 +130,10 @@ Before completing, verify:
 2. **Colors**: CSS variable overrides use approved palettes. No violet/indigo.
 3. **No emoji**: Zero emoji in any string value.
 4. **All 11 sections present**: Every section key in the schema has data.
-5. **Mermaid syntax**: All `diagrams[].mermaid` values contain valid diagram code. No `rgba()` in classDef. No `color:` in classDef.
-6. **Clickable nodes**: Architecture diagrams include `click NodeId "#section-id"` events.
-7. **Chart data**: `overview.chart` has labels and data arrays (not empty).
+5. **Array fields are arrays**: No `{note, rows}` or `{headers, rows}` wrappers in any strict array field.
+6. **Mermaid syntax**: All `diagrams[].mermaid` values contain valid diagram code. No `rgba()` in classDef. No `color:` in classDef.
+7. **Clickable nodes**: Architecture diagrams include `click NodeId "#section-id"` events.
+8. **Chart data**: `overview.chart` has labels and data arrays (not empty).
 
 ---
 

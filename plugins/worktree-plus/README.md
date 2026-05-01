@@ -1,16 +1,21 @@
 # worktree-plus
 
-> Native git worktree behavior for Claude Code — with gitignored file support.
+> Drop-in replacement for Claude Code's built-in worktree — with gitignored file support.
 
 ## Why
 
-Claude Code's built-in worktree differs from native `git worktree` in ways that matter: it branches from the remote default instead of HEAD, doesn't track remote branches, uses a fixed prefix, and ignores gitignored files like `.env` or `node_modules/`.
+You create a worktree, `cd` in, run `npm start` — it fails because `.env` and `node_modules/` didn't come with you. You fix that, finish the work, delete the worktree — and your uncommitted tweaks are gone with it.
 
-worktree-plus replaces Claude Code's `WorktreeCreate` and `WorktreeRemove` hooks to restore native git behavior. This applies everywhere Claude Code creates worktrees — `claude -w` at startup, `EnterWorktree` mid-session, and subagent `isolation: "worktree"`. It also adds `.worktreeinclude` / `.worktreelink` for selectively bringing gitignored files into worktrees, reuses existing worktrees when the directory or branch is already checked out (no more "already exists" errors on re-entry), protects uncommitted work on cleanup, and records every create/remove event to a per-worktree `.worktree.log` audit trail. A bundled `/worktree-config` skill configures and resets settings conversationally.
+That's Claude Code's built-in worktree. The full list of what bites:
 
-## How it works
+- **Skips gitignored files** — `.env`, `node_modules/`, `.venv/` don't follow you in, so the project won't run until you rebuild them.
+- **No cleanup guard** — `remove` wipes uncommitted changes, untracked files, and unpushed commits without warning.
+- **Branches from the remote default**, not `HEAD` — you can't fork a feature branch off the work you're sitting on.
+- **No remote tracking** — new branches don't track matching `origin/*`, so `git pull` / `push` need `-u` every time.
+- **Fixed prefix and path** — always `worktree-<name>` under `.claude/worktrees/`, no per-repo customization.
+- **Fails on re-entry** — trying to reuse an existing directory or branch errors out instead of reopening.
 
-Claude Code fires `WorktreeCreate` and `WorktreeRemove` hook events whenever a worktree is created or removed. However, `claude -w` creates the worktree before plugins load, so plugin `hooks.json` cannot intercept it in time. To work around this, the plugin auto-injects its hooks into your `settings.json` on first session start — settings.json hooks load early enough to catch all worktree operations, including `claude -w`.
+worktree-plus fixes all of these, and applies everywhere Claude Code creates worktrees: `claude -w` at startup, `EnterWorktree` mid-session, and subagents with `isolation: "worktree"`.
 
 ## Features
 
@@ -97,18 +102,9 @@ git config --get-regexp '^worktreeplus\.|^worktree\.guessRemote'
 - `dirBase` does not expand `~`; use an absolute path if you want `$HOME`.
 - Changing `dirBase` does not move existing worktrees. Finish or remove pending worktrees first.
 
-### Migrating from v2.x env vars
+## How it works
 
-v2.x used `WORKTREE_BASE_BRANCH` and `WORKTREE_BRANCH_PREFIX` environment variables. v3 reads only git config.
-
-On first session start after upgrade, SessionStart auto-migrates any set env var to `--global` git config (one-time, flagged in `${CLAUDE_PLUGIN_DATA}/migrated-envvars`). Remove the `export` lines from your shell profile afterward — env vars are no longer read.
-
-Prefer to migrate manually? Do it before upgrading:
-```
-git config --global worktreeplus.baseBranch "$WORKTREE_BASE_BRANCH"
-git config --global worktreeplus.branchPrefix "${WORKTREE_BRANCH_PREFIX}-"   # note the trailing '-'
-```
-Then unset the env vars and delete `${CLAUDE_PLUGIN_DATA}/migrated-envvars` (so the migration still fires as a no-op and records the flag).
+Claude Code fires `WorktreeCreate` and `WorktreeRemove` hook events whenever a worktree is created or removed. However, `claude -w` creates the worktree before plugins load, so plugin `hooks.json` cannot intercept it in time. To work around this, the plugin auto-injects its hooks into your `settings.json` on first session start — settings.json hooks load early enough to catch all worktree operations, including `claude -w`.
 
 ## License
 

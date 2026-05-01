@@ -1,6 +1,6 @@
 {
   "name": "worktree-plus",
-  "description": "Enhanced git worktree: git-config-driven settings, remote tracking, copy/symlink for gitignored files, safe removal",
+  "description": "Replaces Claude Code's built-in worktree — aligns with native git worktree where CC diverges (HEAD base, origin/* auto-tracking) and adds layers native lacks: .worktreeinclude/.worktreelink for gitignored files, upstream-aware removal guard, idempotent re-entry.",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
   "keywords": ["worktree", "git", "hooks"]

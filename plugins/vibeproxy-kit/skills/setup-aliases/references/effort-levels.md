@@ -11,6 +11,7 @@ Effort variants are NOT separate models in `/v1/models` — they are constructed
 | `gpt-5.2` | `none`, `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
 | `gpt-5.4` | `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
 | `gpt-5.4-mini` | `low`, `medium`, `high`, `xhigh` | `none`, `low`, `medium`, `high`, `xhigh` |
+| `gpt-5.5` | `low`, `medium`, `high`, `xhigh` | `low`, `medium`, `high`, `xhigh` |
 | `claude-opus-4.6` | — | `low`, `medium`, `high` |
 | `claude-sonnet-4.6` | — | `low`, `medium`, `high` |
 | `claude-sonnet-4.5` | — | `low`, `medium`, `high` |

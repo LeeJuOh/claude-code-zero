@@ -24,7 +24,11 @@ for dir in "$REFS_DIR"/*/; do
   fi
 
   branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
-  if result=$(git -C "$dir" pull --ff-only 2>&1); then
+  if ! git -C "$dir" fetch origin 2>/dev/null; then
+    FAILED+=("  ✗ $name [$branch] — fetch failed")
+    continue
+  fi
+  if result=$(git -C "$dir" merge --ff-only "origin/$branch" 2>&1); then
     if echo "$result" | grep -q "Already up to date"; then
       OK+=("  ✓ $name [$branch] — already up to date")
     else
