@@ -44,11 +44,12 @@ def validate_skill(skill_path):
                 frontmatter[key] = True
 
     allowed = {
-        "name", "description", "license", "allowed-tools",
+        "name", "description", "when_to_use", "arguments",
+        "license", "allowed-tools",
         "metadata", "compatibility", "argument-hint",
         "disable-model-invocation", "user-invocable",
         "model", "context", "agent", "hooks",
-        "effort", "paths", "skills", "shell",
+        "effort", "paths", "shell",
     }
     unexpected = set(frontmatter.keys()) - allowed
     if unexpected:
@@ -72,8 +73,8 @@ def validate_skill(skill_path):
         description = description.strip()
         if "<" in description or ">" in description:
             return False, "Description cannot contain angle brackets (< or >)"
-        if len(description) > 1024:
-            return False, f"Description too long ({len(description)} chars, max 1024)"
+        if len(description) > 1536:
+            return False, f"Description too long ({len(description)} chars, max 1536; combined with when_to_use)"
 
     return True, "Skill is valid!"
 
