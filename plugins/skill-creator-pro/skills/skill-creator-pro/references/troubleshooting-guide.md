@@ -106,6 +106,17 @@ Claude sometimes shortcuts multi-step processes.
 
 **Tip:** Adding this to user prompts is more effective than putting it in SKILL.md, because user prompt content receives higher attention weight.
 
+### 3e. Skill loses effect after auto-compaction
+
+**Symptom:** Skill works initially but loses effect after a long session with many tool calls.
+
+**Cause:** Auto-compaction re-attaches skills with a 5,000-token cap per skill and 25,000-token combined budget. Older invocations get dropped entirely if many skills were invoked. (skills.md)
+
+**Fix:**
+- **Re-invoke the skill** after compaction to restore full content
+- For long sessions with many skills, prefer **hooks** (deterministic) for invariants instead of skill instructions
+- Strengthen the description so the model keeps preferring the skill rather than choosing other tools
+
 ---
 
 ## 4. Large Context Issues
@@ -126,7 +137,7 @@ Claude sometimes shortcuts multi-step processes.
 
 2. **Reduce enabled skills:**
    - More than 20-50 skills enabled simultaneously can degrade performance
-   - Description budget scales at 2% of context window (fallback: 16,000 chars)
+   - Description budget scales at **1%** of context window (fallback: **8,000 chars**). Set `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var to raise the limit. (skills.md)
    - Consider selective enablement or skill "packs" for related capabilities
    - Run `/context` to check for warnings about excluded skills
 

@@ -239,6 +239,12 @@ The gotchas section is the highest-signal content in any skill. It should be bui
 | 2. SKILL.md body | Instructions + navigation | When skill triggers | <500 lines |
 | 3. Bundled files | Detailed docs, scripts, templates | When referenced | Unlimited |
 
+### Skill content lifecycle
+
+Invoked skill content enters the conversation as a single message and stays for the rest of the session. Auto-compaction carries skills forward within a token budget — Claude Code re-attaches the most recent invocation of each skill after the summary, keeping the **first 5,000 tokens** of each. Re-attached skills share a combined budget of **25,000 tokens**. Older skills can be dropped entirely after compaction if many were invoked. (skills.md)
+
+If a skill seems to stop influencing behavior after the first response, the content is usually still present and the model is choosing other tools. Strengthen the description and instructions so the model keeps preferring it, or use hooks to enforce behavior deterministically. If the skill is large or you invoked several others after it, **re-invoke it after compaction** to restore the full content.
+
 ### SKILL.md as Navigation Hub
 
 Keep SKILL.md focused on the workflow. Move detailed content to referenced files:
@@ -300,11 +306,12 @@ hooks:
 
 ### Hook Types
 
-Four types are available:
+Five types are available:
 - **`command`** — Run a shell script. Most common for linting, logging, validation.
 - **`prompt`** — Inject a model prompt. Good for safety checks that need reasoning.
 - **`http`** — POST JSON to a URL. Useful for external integrations without shell access (e.g., webhooks, logging services).
 - **`agent`** — Spawn a subagent for complex evaluation.
+- **`mcp_tool`** — Invoke an MCP tool directly (added in v2.1.118). Skip the shell round-trip when the action is already exposed by an MCP server (e.g., post a Linear comment, log to a webhook MCP, write to a Notion page). Specify `tool_name` and `arguments` in the hook entry.
 
 ### Conditional Filtering with `if`
 
@@ -322,7 +329,7 @@ hooks:
 
 ### Available Hook Events
 
-`PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop`, `StopFailure`, `SessionEnd`, `SubagentStart`, `UserPromptSubmit`, `PreCompact`, `PostCompact`, `Notification`, `PermissionRequest`, `PermissionDenied`, `Setup`, `ConfigChange`, `CwdChanged`, `FileChanged`, `TaskCreated`, `TeammateIdle`, `TaskCompleted`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify against official docs — events evolve across releases.
+`PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop`, `StopFailure`, `SessionEnd`, `SubagentStart`, `UserPromptSubmit`, `UserPromptExpansion`, `PostToolBatch`, `PostToolUseFailure`, `PreCompact`, `PostCompact`, `Notification`, `PermissionRequest`, `PermissionDenied`, `Setup`, `ConfigChange`, `CwdChanged`, `FileChanged`, `TaskCreated`, `TeammateIdle`, `TaskCompleted`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`, `WorktreeRemove`. Verify against official docs — events evolve across releases.
 
 ### Examples
 
@@ -439,6 +446,24 @@ Strong signal: During testing, all subagents independently write a similar helpe
 
 If your skill includes an MCP server (`.mcp.json`), keep tool descriptions and server instructions under **2KB each** — the platform truncates anything longer. Write concise descriptions and put detailed docs in `references/` files instead.
 
+### `alwaysLoad` Option (v2.1.121)
+
+By default, MCP tools are deferred and surface through `ToolSearch`. Set `"alwaysLoad": true` on a server entry when its tools must be reachable on every turn without a search step — typical for safety checks, mandatory pre-flight queries, or low-tool-count servers tightly bound to the skill's workflow.
+
+```json
+{
+  "mcpServers": {
+    "guardrail-mcp": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/guardrail.js"],
+      "alwaysLoad": true
+    }
+  }
+}
+```
+
+Use sparingly. Every always-loaded tool consumes startup context budget (~description-length per tool). For servers with many tools, prefer the default deferred behavior.
+
 ---
 
 ## Composing Skills
@@ -456,20 +481,41 @@ Mention another skill by name in your instructions. Claude will invoke it if the
 3. Use the `format-report` skill to generate the output
 ```
 
-### Subagent Composition via `skills` Frontmatter
+### Skill ↔ Subagent Composition
 
-Use the `skills` frontmatter field to auto-load skills into subagents spawned by your skill:
+Two complementary mechanisms link skills and subagents — pick by which side owns the configuration.
+
+**Mechanism 1: Skill drives the subagent (`context: fork`)**
+
+Add `context: fork` + `agent: <type>` to your SKILL.md. The skill body becomes the prompt for a forked subagent context. Use when a skill needs an isolated context but the workflow lives inside the skill.
 
 ```yaml
 ---
-name: weekly-recap
-skills:
-  - jira-query
-  - slack-post
+name: deep-research
+description: Research a topic thoroughly
+context: fork
+agent: Explore
 ---
 ```
 
-When your skill spawns subagents (via `context: fork` or Task tool), the listed skills are available to those subagents without the user needing to invoke them manually.
+**Mechanism 2: Subagent preloads skills (`skills` field on the SUBAGENT)**
+
+The `skills` frontmatter belongs on a **subagent definition** (`.claude/agents/<name>.md`), NOT on a skill. The full content of each listed skill is injected into the subagent's context at startup. Subagents don't inherit skills from the parent conversation; you must list them explicitly.
+
+```yaml
+---
+name: api-developer
+description: Implements API endpoints
+skills:
+  - api-conventions
+  - error-handling
+---
+Implement API endpoints. Follow the conventions and patterns from the preloaded skills.
+```
+
+You cannot preload skills that set `disable-model-invocation: true`.
+
+Pick mechanism 1 when the skill is the entry point and orchestrates a subagent. Pick mechanism 2 when a custom subagent should always have certain skills loaded. See [sub-agents.md "Preload skills into subagents"](https://code.claude.com/docs/en/sub-agents#preload-skills-into-subagents) for the spec.
 
 ### Graceful Degradation
 
@@ -511,9 +557,16 @@ Use a PreToolUse hook to log when skills are invoked. This enables data-driven i
 - **Time and token consumption** — Skills that significantly increase token usage without proportional quality gain may need to be leaned down
 - **Regression after model updates** — Rerun evals after model changes to catch skills that break or become redundant (see Phase 3: Model Update Check)
 
+**2. OpenTelemetry `claude_code.skill_activated` event (v2.1.126)** — fires on every skill activation and carries `invocation_trigger` (`"user-slash"`, `"claude-proactive"`, or `"nested-skill"`). Aggregate by trigger to spot under-triggering: a skill mostly fired by `user-slash` is probably failing to auto-trigger and needs a description rewrite.
+
 ### Detecting Under-triggering
 
-Review usage logs periodically. If a skill is manually invoked (via `/skill-name`) far more often than auto-triggered, the description probably lacks the right trigger phrases. Run the description optimization loop from Phase 5.
+With OTel enabled, query `claude_code.skill_activated` events and group by `invocation_trigger`:
+- `user-slash` ratio > ~70% → description fails to auto-trigger; rewrite with more contextual phrasings
+- `claude-proactive` healthy mix → auto-triggering works; iterate on output quality instead
+- `nested-skill` only → skill is purely a composition target; description optimization is lower priority
+
+Without OTel: review usage logs from the PreToolUse hook above. If a skill is manually invoked (via `/skill-name`) far more often than auto-triggered, run the description optimization loop from Phase 5.
 
 ---
 
@@ -531,9 +584,9 @@ When a session starts, Claude builds a listing of every skill with its descripti
 
 ### Description Length and Body Budget
 
-Keep the description **under ~1024 characters**. The model reads the full string when deciding to invoke, but attention is strongest at the start — front-load trigger phrases (user phrasings, contexts). Long descriptions dilute the trigger signal and gain nothing.
+The combined `description` and `when_to_use` text caps at **1,536 characters** in the skill listing (skills.md). Front-load trigger phrases — attention is strongest at the start. Adding `when_to_use` does not raise the cap; it shares the same 1,536 budget. Long descriptions dilute the trigger signal and gain nothing.
 
-The skill body budget scales to ~2% of the context window. With 1M context, that's ~20K characters; with 200K, ~4K. Keep SKILL.md lean and push detail to reference files.
+The skill body budget scales to **1% of the context window**, with a fallback of **8,000 characters** (skills.md). Set `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var to raise the limit. Keep SKILL.md lean and push detail to reference files.
 
 ### Make It "Pushy"
 
