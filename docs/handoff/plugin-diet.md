@@ -6,7 +6,7 @@ Reduce plugin token footprint (Skills + Agents description) in Claude Code conte
 
 - **Axis 1** ✅: Remove `<example>` blocks from agent frontmatter descriptions
 - **Axis 2** ✅: Compress verbose skill descriptions (keep trigger accuracy)
-- **Axis 3** 🔲: Add `disable-model-invocation: true` to manual-only skills (per-plugin analysis)
+- **Axis 3** ✅: Add `disable-model-invocation: true` to manual-only skills (13 skills across 6 plugins)
 
 ## First Action
 
@@ -45,19 +45,33 @@ Compressed descriptions for 24 skills across 7 plugins:
 - **claw-mo**: claw-mo-manage
 - **toolbox**: gemini-fetch
 
-### Axis 3 — disable-model-invocation (PENDING)
-Candidates identified but requires user confirmation per-skill:
+### Axis 3 — disable-model-invocation (DONE)
+Applied `disable-model-invocation: true` to 13 skills across 6 plugins:
 
-| Skill | Plugin | Tokens | Rationale |
-|-------|--------|--------|-----------|
-| setup-aliases | vibeproxy-kit | 107 | Initial setup only |
-| codex-setup | codex-advisor | 65 | Initial setup/troubleshooting |
-| worktree-config | worktree-plus | 58 | Config change only |
-| claw-mo-setup | claw-mo | 54 | Initial mo setup |
-| claw-mo-down | claw-mo | 44 | Explicit stop command |
-| sync-references | toolbox | 38 | Explicit pull command |
+| Skill | Plugin | Rationale |
+|-------|--------|-----------|
+| setup-aliases | vibeproxy-kit | Initial setup only |
+| worktree-config | worktree-plus | Config change only |
+| claw-mo-setup | claw-mo | Initial mo setup |
+| claw-mo-down | claw-mo | Explicit stop command |
+| sync-references | toolbox | Explicit pull command |
+| context-health-visual | vision-powers | Heavy report — intentional invocation |
+| diff-visual | vision-powers | Heavy report — intentional invocation |
+| doc-visual | vision-powers | Heavy report — intentional invocation |
+| fact-check | vision-powers | Heavy report — intentional invocation |
+| plugin-visual | vision-powers | Heavy report — intentional invocation |
+| duck-verify | rubber-duck-tutor | Specific mode — routed via /duck |
+| duck-orient | rubber-duck-tutor | Specific mode — routed via /duck |
+| duck-plan | rubber-duck-tutor | Specific mode — routed via /duck |
+| duck-review | rubber-duck-tutor | Specific mode — routed via /duck |
 
-User instruction: "플러그인 하나씩 분석하면서 진행하자" — analyze per-plugin, ask user for each.
+Skipped (auto-trigger needed):
+- `codex-setup` — "모델 바꿔" natural language trigger
+- `report-manager` — "리포트 열어" natural language trigger
+- `duck` — entry point for all duck modes
+- `duck-design` — auto-detects pre-implementation intent
+- All codex-advisor skills (except setup) — independent natural language triggers
+- All claw-mux, skill-creator-pro, notebooklm-connector skills
 
 ## What Worked
 
@@ -73,9 +87,9 @@ User instruction: "플러그인 하나씩 분석하면서 진행하자" — anal
 
 ## Next Steps
 
-1. Axis 3: Walk through each plugin's skills with user, apply `disable-model-invocation: true` where confirmed
-2. Validate all edits: `unset CLAUDECODE && claude plugin validate .` for each modified plugin
-3. Test triggering: verify compressed descriptions still trigger correctly on real queries
-4. Measure: compare before/after token counts in `/context` output (need fresh session in harness-zero)
-5. Version bump for modified plugins in `marketplace.json`
+1. ~~Axis 3: Walk through each plugin's skills with user~~ ✅
+2. ~~Validate all edits~~ ✅ (all 6 plugins pass)
+3. Test triggering: verify slash commands still work for disabled skills
+4. Measure: compare before/after token counts in `/context` output (fresh session)
+5. ~~Version bump~~ ✅
 6. Commit all changes to develop branch

@@ -1,5 +1,6 @@
 ---
 name: duck-review
+disable-model-invocation: true
 description: "PR/change-review session with the rubber duck — user justifies every change and predicts consequences. Use before commit/push/PR, or when they say \"duck review\", \"리뷰 전에 점검\". Not for code-level explanation (/duck-verify) or plan review (/duck-plan)."
 allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
 ---

@@ -1,5 +1,6 @@
 ---
 name: context-health-visual
+disable-model-invocation: true
 description: >
   Diagnose Claude Code environment health — context budget, description obesity,
   trigger collisions, hooks, MCP, plugins, CLAUDE.md, memory, and skill-security scan.

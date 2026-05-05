@@ -1,5 +1,6 @@
 ---
 name: doc-visual
+disable-model-invocation: true
 description: |
   Convert any markdown document into a diagram-enriched visual report.
   Use when asked to visualize or summarize a document with diagrams. Single md file input.

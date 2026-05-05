@@ -1,5 +1,6 @@
 ---
 name: setup-aliases
+disable-model-invocation: true
 description: "Discover, choose, and rewrite backend-specific VibeProxy cc-* aliases for Claude Code. Use when setting up, resetting, or auditing VibeProxy aliases for Codex, Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM."
 allowed-tools:
   - Bash(bash *)

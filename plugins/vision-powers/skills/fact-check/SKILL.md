@@ -1,5 +1,6 @@
 ---
 name: fact-check
+disable-model-invocation: true
 description: >
   Verify factual accuracy of a document against the codebase and git history.
   Use when asked to verify, fact-check, or audit claims in a report or document.

@@ -1,5 +1,6 @@
 ---
 name: duck-verify
+disable-model-invocation: true
 description: "Code-verification session with the rubber duck — user explains code just written, finds edge cases, fixes planted bugs. Use after implementing a feature, or when they say \"duck verify\", \"재확인해줘\". Not for plan review (/duck-plan) or PR review (/duck-review)."
 allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
 ---

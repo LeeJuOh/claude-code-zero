@@ -1,5 +1,6 @@
 ---
 name: claw-mo-down
+disable-model-invocation: true
 description: "Stop the mo markdown viewer server for the current project. Use when the user says claw-mo-down, wants to stop mo, shut down doc viewer, or kill mo server."
 allowed-tools: Bash, Read
 ---

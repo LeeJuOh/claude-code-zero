@@ -1,5 +1,6 @@
 ---
 name: claw-mo-setup
+disable-model-invocation: true
 description: "Configure mo markdown viewer for the current project. Use when the user wants to set up doc watching, configure mo patterns, initialize claw-mo for a project, or set up markdown viewer groups."
 allowed-tools: Bash, AskUserQuestion, Read, Write
 ---

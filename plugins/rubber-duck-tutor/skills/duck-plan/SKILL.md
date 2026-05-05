@@ -1,5 +1,6 @@
 ---
 name: duck-plan
+disable-model-invocation: true
 description: "Plan-review session with the rubber duck — verify the user understands decisions and trade-offs before execution. Use after a plan/spec/RFC was produced, or when they say \"duck plan\", \"이 플랜 검수해\". Not for plan authoring or code review."
 allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
 ---

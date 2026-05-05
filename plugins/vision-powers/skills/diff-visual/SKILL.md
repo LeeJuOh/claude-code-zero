@@ -1,5 +1,6 @@
 ---
 name: diff-visual
+disable-model-invocation: true
 description: >
   Visualize git diffs as interactive HTML reports with architecture diagrams and change analysis.
   Use when asked to visualize, review, or summarize a diff, branch, commit, or PR.

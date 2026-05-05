@@ -1,5 +1,6 @@
 ---
 name: plugin-visual
+disable-model-invocation: true
 description: >
   Analyze agent extensions and generate self-contained HTML wiki reports with security audit
   and architecture diagrams. Use when asked to analyze, audit, or document a plugin.

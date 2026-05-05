@@ -1,5 +1,6 @@
 ---
 name: duck-orient
+disable-model-invocation: true
 description: "Codebase-orientation session with the rubber duck — generate or refresh .claude/orientation.md with interactive exercises. Use when new to a codebase, returning after a break, or says \"duck orient\", \"이 레포 처음이야\"."
 argument-hint: "[refresh]"
 allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(find *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/recent-gaps.sh *)
