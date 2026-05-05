@@ -1,6 +1,6 @@
 ---
 name: claw-mux
-description: "Control cmux terminal topology and terminal I/O — send commands to other panes, read their output, split layouts, run servers, monitor logs, report progress, and orchestrate multi-pane workflows. Use when automation needs to execute commands in other panes, read terminal output, organize parallel work, or report progress via sidebar. Requires cmux environment."
+description: "Control cmux terminal topology and I/O — send commands to panes, read output, split layouts, monitor logs, orchestrate multi-pane workflows. Requires cmux environment."
 allowed-tools: Bash, Read
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: codex-adversarial
-description: "Run Codex adversarial review with Claude's double-check. Actively tries to break confidence in the change. Use when the user asks \"adversarial review\", \"적대적 리뷰\", \"코드 공격\", wants thorough security/correctness challenge."
+description: "Run Codex adversarial review — actively tries to break confidence in the change. Use when asked \"adversarial review\", \"적대적 리뷰\", or wants thorough security/correctness challenge."
 argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL] [focus text]"
 allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---

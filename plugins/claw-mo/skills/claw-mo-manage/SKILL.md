@@ -1,6 +1,6 @@
 ---
 name: claw-mo-manage
-description: "Manage mo markdown viewer — check status, add/remove patterns and groups, close files, refresh (rescan), stop servers, reset sessions. Use when the user says claw-mo-manage, wants to check mo status, modify watch patterns, remove files from mo, or troubleshoot a running mo session."
+description: "Manage mo markdown viewer — check status, add/remove patterns and groups, refresh, stop servers, reset. Use when checking mo status, modifying watch patterns, or troubleshooting."
 allowed-tools: Bash, AskUserQuestion, Read, Write
 ---
 

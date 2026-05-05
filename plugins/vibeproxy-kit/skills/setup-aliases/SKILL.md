@@ -1,6 +1,7 @@
 ---
 name: setup-aliases
-description: "Discover, choose, and rewrite backend-specific VibeProxy cc-* aliases for Claude Code. Use when the user wants to set up, reset, reconfigure, inspect, or audit VibeProxy aliases for Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM — including first-time setup, per-backend model selection, shortcut aliases, and rebuilding only the skill-managed pieces without clobbering manual edits."
+disable-model-invocation: true
+description: "Discover, choose, and rewrite backend-specific VibeProxy cc-* aliases for Claude Code. Use when setting up, resetting, or auditing VibeProxy aliases for Codex, Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM."
 allowed-tools:
   - Bash(bash *)
   - Bash(python3 *)

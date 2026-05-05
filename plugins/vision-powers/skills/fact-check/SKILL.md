@@ -1,14 +1,10 @@
 ---
 name: fact-check
+disable-model-invocation: true
 description: >
-  Verify factual accuracy of a document against the actual codebase and git
-  history. Extracts verifiable claims, checks each against source, corrects
-  inaccuracies in place, and adds a verification summary.
-  Use when asked to verify, fact-check, validate, or audit claims in a
-  report, plan, or document — including phrases like "is this
-  accurate", "double-check this report", "verify the numbers", or "are these
-  claims correct". Accepts a file path or auto-detects the most recent HTML
-  report.
+  Verify factual accuracy of a document against the codebase and git history.
+  Use when asked to verify, fact-check, or audit claims in a report or document.
+  Accepts a file path or auto-detects the most recent HTML report.
 argument-hint: "[file-path] [--format html|md] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(git shortlog *), Bash(wc -l *), Bash(ls -t *)
 ---

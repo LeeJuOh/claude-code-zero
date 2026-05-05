@@ -1,5 +1,6 @@
 ---
 name: worktree-config
+disable-model-invocation: true
 description: Configure worktree-plus via git config — set baseBranch, branchPrefix, dirBase, or reset. Use when the user asks to configure worktree-plus, view or change worktree settings, or reset the plugin config.
 allowed-tools: Bash(git config *), Bash(git worktree list *), Bash(git rev-parse *), Bash(ls *), Read
 ---

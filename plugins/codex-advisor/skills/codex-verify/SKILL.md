@@ -1,6 +1,6 @@
 ---
 name: codex-verify
-description: "Verify a plan or document using Codex as independent reviewer with Claude's double-check for PASS/FAIL verdict. Use when the user asks \"codex 검수\", \"검수해줘\", \"verify this plan\", \"codex double-check\", \"플랜 검수\"."
+description: "Verify a plan or document using Codex as independent reviewer with PASS/FAIL verdict. Use when asked \"codex 검수\", \"verify this plan\", \"플랜 검수\"."
 argument-hint: "path/to/document.md [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---

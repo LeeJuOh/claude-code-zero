@@ -1,6 +1,6 @@
 ---
 name: codex-status
-description: "List active and recent Codex jobs plus stored review files. Use when the user asks \"codex status\", \"어떤 작업 돌고있어\", \"진행중인 코덱스\", \"codex job 상태\", or wants to see what Codex is currently doing. If the user also disabled the Official Codex plugin, this is the way to reach the companion's status command."
+description: "List active and recent Codex jobs plus stored review files. Use when asked \"codex status\", \"진행중인 코덱스\", or wants to see Codex job state."
 argument-hint: "[job-id] [--wait] [--timeout-ms MS] [--all]"
 allowed-tools: ["Bash", "Read", "Glob"]
 ---

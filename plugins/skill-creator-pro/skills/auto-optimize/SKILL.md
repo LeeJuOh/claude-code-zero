@@ -1,6 +1,6 @@
 ---
 name: auto-optimize
-description: "Autonomously optimize any Claude Code skill by running it repeatedly, scoring outputs against binary evals, mutating the prompt, and keeping improvements. Based on Karpathy's autoresearch methodology with reflection-driven mutation, confidence scoring, and structured session archives. Use when: optimize this skill, improve this skill, run autoresearch on, make this skill better, self-improve skill, benchmark skill, eval my skill, run evals on, autoresearch, auto-optimize. Do NOT use for: creating skills from scratch (use skill-creator-pro), description/trigger optimization (use skill-creator-pro Phase 5), or one-off manual improvements."
+description: "Autonomously optimize any Claude Code skill by running it repeatedly, scoring against binary evals, mutating the prompt, and keeping improvements. Use when: optimize/improve/benchmark/eval a skill, autoresearch, auto-optimize. Not for creating skills from scratch (use skill-creator-pro)."
 ---
 
 # Autoresearch for Skills

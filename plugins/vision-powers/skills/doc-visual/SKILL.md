@@ -1,10 +1,9 @@
 ---
 name: doc-visual
+disable-model-invocation: true
 description: |
-  Convert any markdown document (research/spec/RFC/ADR/design) into a diagram-enriched report.
-  Use when asked to visualize, explain, or make a document easier to understand —
-  "visualize this research", "make this design doc easier to read",
-  "summarize this spec with diagrams", "turn this document into diagrams". Single md file input.
+  Convert any markdown document into a diagram-enriched visual report.
+  Use when asked to visualize or summarize a document with diagrams. Single md file input.
 argument-hint: "[md-file-path] [--format html|md] [--lang code]"
 allowed-tools: Read, Agent, Bash(node *), Bash(open *), Bash(rm -rf /tmp/doc-visual-*)
 ---

@@ -1,5 +1,6 @@
 ---
 name: sync-references
+disable-model-invocation: true
 description: Pull latest changes from origin for all git repos under a directory. Use when asked to update, sync, or pull reference projects.
 allowed-tools: Bash, AskUserQuestion
 argument-hint: "[path]"

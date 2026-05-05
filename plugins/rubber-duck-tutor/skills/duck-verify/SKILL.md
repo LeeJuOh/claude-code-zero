@@ -1,6 +1,7 @@
 ---
 name: duck-verify
-description: Code-verification session with the rubber duck — confirm the user can explain code that was just written, find edge cases, and (optionally) fix a planted bug by hand. Use after the user (or AI on the user's behalf) finished implementing a feature in this session, before testing or merging, or when they say "duck verify", "do I understand what I just wrote", "재확인해줘", "내가 짠 거 설명해봐". The duck does teach-back, presents bug scenarios, and never reveals fixes. Do NOT use for plan review (use /duck-plan) or PR-level diff review (use /duck-review).
+disable-model-invocation: true
+description: "Code-verification session with the rubber duck — user explains code just written, finds edge cases, fixes planted bugs. Use after implementing a feature, or when they say \"duck verify\", \"재확인해줘\". Not for plan review (/duck-plan) or PR review (/duck-review)."
 allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
 ---
 

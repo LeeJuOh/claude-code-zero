@@ -1,6 +1,7 @@
 ---
 name: duck-plan
-description: Plan-review session with the rubber duck — verify the user understands the plan's decisions, trade-offs, and assumptions before execution. Use after a plan, design doc, RFC, ADR, or spec was just produced (in chat or written to a file like plan.md / spec.md / design.md), or when the user says "duck plan", "review this plan", "이 플랜 검수해", "이 플랜 이해한게 맞나". The duck walks through each decision and asks why — does NOT implement anything. Do NOT use for actual plan authoring or for code-level review.
+disable-model-invocation: true
+description: "Plan-review session with the rubber duck — verify the user understands decisions and trade-offs before execution. Use after a plan/spec/RFC was produced, or when they say \"duck plan\", \"이 플랜 검수해\". Not for plan authoring or code review."
 allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
 ---
 

@@ -1,12 +1,8 @@
 ---
 name: report-manager
 description: >
-  Manage and refine vision-powers reports: list, open, delete, search, and
-  refine sections of generated HTML reports. Use when asked to list reports,
-  open a previous report, delete old reports, find a specific report, or
-  fix/update a section of an existing report — including phrases like
-  "show my reports", "open the last report", "clean up old
-  reports", "find a report about X", "fix section 3", or "update report".
+  Manage and refine vision-powers reports: list, open, delete, search, and refine sections.
+  Use when asked to list, open, delete, search, or update generated HTML reports.
 argument-hint: "<list|open|delete|search|refine> [filter] [--all]"
 allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(ls *), Bash(rm *), Bash(open *), Bash(node *)
 ---

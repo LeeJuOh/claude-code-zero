@@ -1,12 +1,10 @@
 ---
 name: diff-visual
+disable-model-invocation: true
 description: >
-  Visualize git diffs as interactive HTML reports with architecture diagrams,
-  file maps, and change analysis. Use when asked to visualize, review, explain,
-  or summarize a diff, branch, commit, PR, or set of changes — including phrases
-  like "what changed", "show me the changes", "review this PR visually",
-  or "make a visual diff report". Accepts branch names, commit hashes, HEAD,
-  PR numbers, or commit ranges.
+  Visualize git diffs as interactive HTML reports with architecture diagrams and change analysis.
+  Use when asked to visualize, review, or summarize a diff, branch, commit, or PR.
+  Accepts branch names, commit hashes, HEAD, PR numbers, or commit ranges.
 argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---

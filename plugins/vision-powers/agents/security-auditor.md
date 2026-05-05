@@ -4,15 +4,6 @@ color: red
 description: |
   Analyze security posture, permission models, and risk levels
   of agent plugin components (Claude Code). Delegated by the plugin-visual skill.
-
-  <example>
-  Context: Skill delegates security analysis with metadata and file paths
-  user: "Analyze security for plugin at ./plugins/my-plugin with components: [SKILL] my-skill, [AGENT] my-agent"
-  assistant: "I'll audit the permission model, tool scope, hook scripts, and MCP trust boundaries."
-  <commentary>
-  The plugin-visual skill provides metadata and file paths. This agent reads the actual files and performs security analysis.
-  </commentary>
-  </example>
 effort: high
 maxTurns: 20
 tools:

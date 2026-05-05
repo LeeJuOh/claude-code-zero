@@ -1,6 +1,6 @@
 ---
 name: codex-result
-description: "Show the final stored result of a completed Codex job, and link to the matching codex-advisor review file. Use when the user asks \"codex result\", \"코덱스 결과\", \"작업 결과 보여줘\", \"job <id> 결과\", or wants to retrieve output from a finished Codex job after they closed the session. Works with the Official plugin disabled."
+description: "Show the final stored result of a completed Codex job. Use when asked \"codex result\", \"코덱스 결과\", \"작업 결과 보여줘\", or wants output from a finished job."
 argument-hint: "[job-id]"
 allowed-tools: ["Bash", "Read", "Glob"]
 ---

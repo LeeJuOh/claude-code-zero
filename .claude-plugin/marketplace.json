@@ -17,25 +17,25 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.14.1",
+      "version": "1.14.2",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
       "name": "vibeproxy-kit",
       "source": "./plugins/vibeproxy-kit",
-      "version": "0.9.2",
+      "version": "0.9.3",
       "description": "State-aware VibeProxy alias manager for Claude Code. Discover VibeProxy state, choose backend-specific cc-* aliases, and rewrite only managed config and shell blocks without clobbering manual edits."
     },
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "4.1.2",
+      "version": "4.1.3",
       "description": "Analyze Claude Code plugins and visualize development artifacts as interactive HTML or diagram-enhanced markdown reports. Six skills: plugin-visual (local/installed/GitHub plugin audits with security + architecture), diff-visual (git diffs), doc-visual (markdown docs into 13-type Mermaid reports), fact-check (claim verification against code + git history), context-health-visual (environment health with skill-security scan and hook schema validation), report-manager (list/open/delete/search/refine). Every report supports --format md, --lang, aesthetic rotation, headless-Chrome visual self-audit, and in-browser per-section feedback."
     },
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "description": "Replaces Claude Code's built-in worktree — aligns with native git worktree where CC diverges (HEAD base, origin/* auto-tracking) and adds layers native lacks: .worktreeinclude/.worktreelink for gitignored files, upstream-aware removal guard, idempotent re-entry."
     },
     {
@@ -53,7 +53,7 @@
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "2.4.0",
+      "version": "2.4.1",
       "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Dedicated commands per phase (/duck-design, /duck-plan, /duck-verify, /duck-review, /duck-orient) plus /duck for auto-detect. Auto-hooks at plan creation, spec documents, PR/MR, and git push."
     },
     {
@@ -66,7 +66,7 @@
     {
       "name": "claw-mo",
       "source": "./plugins/claw-mo",
-      "version": "2.8.1",
+      "version": "2.8.2",
       "description": "Manage mo markdown viewer sessions: autosync new Claude-written .md via PostToolUse hook, group-based organization, restart-on-up for fsnotify-miss recovery, file deep-linking, stdin pipe support, cmux browser integration, per-project watch patterns, port isolation"
     },
     {

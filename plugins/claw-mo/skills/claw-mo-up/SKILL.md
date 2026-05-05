@@ -75,3 +75,9 @@ For config schema, decision tree, `--restart` vs `--clear` semantics, and browse
 - **Prefer cmux over `open`** whenever cmux is reachable. `$CMUX_SURFACE_ID` may be unset even inside a cmux pane (nested shells). Check `command -v cmux` too.
 - **Reuse cmux surface** before `browser open` — `open` stacks duplicate tabs. Pass the exact identifier (e.g., `surface:4`, not `4`).
 - **Autosync vs. `/claw-mo-up`**: the PostToolUse hook handles routine new-file visibility for files Claude writes. `/claw-mo-up` remains the fix when (a) mo isn't running yet, (b) fsnotify missed something an external editor wrote, or (c) config drifted. Don't run `/claw-mo-up` as a reflex on every new file — it's cheap but not free.
+
+## Related Commands
+
+- `/claw-mo-setup` — initial project configuration (patterns, groups)
+- `/claw-mo-down` — stop the mo server
+- `/claw-mo-manage` — modify patterns, check status, refresh

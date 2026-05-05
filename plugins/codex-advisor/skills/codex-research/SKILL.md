@@ -1,6 +1,6 @@
 ---
 name: codex-research
-description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when the user asks \"codex research\", \"codex 리서치\", \"codex 분석\", \"코덱스로 조사\", \"딥다이브\", \"이슈 분석해줘\". NOT for code review or plan verification."
+description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when asked \"codex research\", \"codex 리서치\", \"딥다이브\". Not for code review or plan verification."
 argument-hint: "topic [path/to/document.md] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
