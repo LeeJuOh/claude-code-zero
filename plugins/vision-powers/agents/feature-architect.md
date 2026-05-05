@@ -4,15 +4,6 @@ color: blue
 description: |
   Analyze functionality, architecture, dependencies, and quality
   of agent plugin components (Claude Code). Delegated by the plugin-visual skill.
-
-  <example>
-  Context: Skill delegates feature analysis with metadata and file paths
-  user: "Analyze features for plugin at ./plugins/my-plugin with components: [SKILL] my-skill, [AGENT] my-agent"
-  assistant: "I'll analyze functionality, architecture, dependencies, and quality of each component."
-  <commentary>
-  The plugin-visual skill provides metadata and file paths. This agent reads the actual files and performs feature/architecture analysis.
-  </commentary>
-  </example>
 effort: high
 maxTurns: 20
 tools:

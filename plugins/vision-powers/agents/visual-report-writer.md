@@ -4,16 +4,6 @@ color: purple
 description: |
   Generate self-contained HTML reports from structured analysis data with dynamic section structure.
   Report generator for all vision-powers visual report skills (plugin-visual, diff-visual, doc-visual).
-
-  <example>
-  Context: Skill delegates HTML report generation with analysis results, section structure content, and design system content
-  user: "Generate HTML report to ${CLAUDE_PLUGIN_DATA}/reports/my-diff-report.html"
-  assistant: "I'll generate a self-contained HTML report following the provided section structure and design system."
-  <commentary>
-  The orchestrator skill provides pre-analyzed data and reference file contents inline (section structure, semantic tokens, taste gate).
-  This agent starts writing sections immediately without a read turn.
-  </commentary>
-  </example>
 effort: high
 maxTurns: 15
 tools:

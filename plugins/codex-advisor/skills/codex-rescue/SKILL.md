@@ -1,6 +1,6 @@
 ---
 name: codex-rescue
-description: "Delegate an implementation task to Codex via Official plugin, then Claude reviews the result. Use when the user asks \"codex rescue\", \"codex 위임\", \"코덱스한테 시켜\", \"codex fix\", wants Codex to implement, investigate, or fix something."
+description: "Delegate an implementation task to Codex, then Claude reviews the result. Use when asked \"codex rescue\", \"codex 위임\", \"코덱스한테 시켜\", or wants Codex to implement or fix something."
 argument-hint: "task description [--write] [--model MODEL] [--effort LEVEL] [--resume-last|--resume|--fresh]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---

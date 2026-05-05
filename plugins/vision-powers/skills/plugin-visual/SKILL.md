@@ -1,14 +1,9 @@
 ---
 name: plugin-visual
 description: >
-  Analyze agent extensions and generate self-contained HTML wiki reports
-  with security audit, architecture diagrams, and plugin profiles.
-  Currently supports Claude Code plugins.
-  Use when asked to analyze, audit, inspect, review, document, or wiki a plugin
-  or extension — including phrases like "what does this plugin do",
-  "tell me about this extension", "break down this plugin", or "generate a report
-  for this plugin". Also triggers on GitHub plugin URLs or local plugin paths.
-  Default output is an interactive HTML report; use --format md for inline markdown.
+  Analyze agent extensions and generate self-contained HTML wiki reports with security audit
+  and architecture diagrams. Use when asked to analyze, audit, or document a plugin.
+  Triggers on GitHub plugin URLs or local plugin paths.
 argument-hint: "path-or-url [--format html|md] [--lang code]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/plugin-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
 ---

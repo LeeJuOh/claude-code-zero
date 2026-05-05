@@ -1,6 +1,6 @@
 ---
 name: codex-review
-description: "Run Codex code review with Claude's independent double-check. Use when the user asks \"codex review\", \"codex 리뷰\", \"코드 리뷰\", wants Codex to review code changes, diff, branch, or commit. For adversarial review use /codex-adversarial."
+description: "Run Codex code review with Claude's independent double-check. Use when asked \"codex review\", \"codex 리뷰\", or wants Codex to review code changes. For adversarial review use /codex-adversarial."
 argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---

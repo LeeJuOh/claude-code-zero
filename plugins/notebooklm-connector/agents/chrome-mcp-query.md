@@ -3,27 +3,8 @@ name: chrome-mcp-query
 color: cyan
 description: |
   Queries NotebookLM notebooks in Chrome to extract responses.
-
   Use when the orchestrating skill provides a NotebookLM URL and question.
   The notebooklm-manager skill resolves notebook names to URLs before invoking this agent.
-
-  <example>
-  Context: User wants to query a registered notebook by name
-  user: "Ask my gemini-docs notebook about function calling"
-  assistant: "I'll query the gemini-docs notebook for information about function calling."
-  <commentary>
-  The skill has resolved the notebook name to URL and invokes this agent with the full URL.
-  </commentary>
-  </example>
-
-  <example>
-  Context: User provides a direct NotebookLM URL
-  user: "Query https://notebooklm.google.com/notebook/abc123 about main topics"
-  assistant: "I'll navigate to the notebook and extract information about the main topics."
-  <commentary>
-  Direct URL provided - agent navigates to the URL and queries NotebookLM directly.
-  </commentary>
-  </example>
 model: sonnet
 tools:
   - mcp__claude-in-chrome__tabs_context_mcp

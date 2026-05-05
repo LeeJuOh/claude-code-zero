@@ -1,6 +1,6 @@
 ---
 name: duck-design
-description: Pre-coding design sketch with the rubber duck — runs BEFORE the user asks AI to implement. Use when the user states implementation intent ("구현해줘", "build me X", "let's add Y") and no plan, diff, or code exists yet, or when they explicitly say "duck design" / "sketch first" / "design check". The duck forces a 30-second self-sketch so the user has their own mental model before the AI generates code, then probes the weakest spot. Do NOT use after code is already written — use /duck-verify or /duck-review instead.
+description: "Pre-coding design sketch with the rubber duck — runs BEFORE implementation. Use when user states implementation intent (\"구현해줘\", \"build me X\") and no code exists yet, or says \"duck design\" / \"sketch first\". Not for code already written — use /duck-verify or /duck-review."
 allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
 ---
 

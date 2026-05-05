@@ -1,6 +1,6 @@
 ---
 name: duck
-description: Rubber duck tutor entry point that auto-detects which review mode to run from conversation context. Use when the user says "duck", "tutor", "quiz me", "do I understand this", "check my understanding", or mentions rubber-stamping, skill degradation, or learning while coding. For a specific phase invoke /duck-design, /duck-plan, /duck-verify, /duck-review, or /duck-orient instead. Do NOT trigger for general code explanations, debugging help, code reviews without learning intent, or teaching — this tests the DEVELOPER's comprehension, not the CODE's correctness.
+description: "Rubber duck tutor — auto-detects which review mode to run. Use when the user says \"duck\", \"tutor\", \"quiz me\", \"do I understand this\", or mentions rubber-stamping or learning while coding. For a specific phase use /duck-design, /duck-plan, /duck-verify, /duck-review, or /duck-orient."
 allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *)
 ---
 

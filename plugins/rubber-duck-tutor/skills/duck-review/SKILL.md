@@ -1,6 +1,6 @@
 ---
 name: duck-review
-description: PR / change-review session with the rubber duck — verify the user can justify every change in their diff and predict where it'll hurt in 6 months. Use before commit, push, PR creation, MR creation, or merge approval, or when the user says "duck review", "리뷰 전에 점검", "이 PR 내가 진짜 이해했나", "내 diff 검수해". The duck reads the actual `git diff`, asks why each chunk changed, and runs a temporal-cost simulation. Do NOT use for code-level explanation (/duck-verify) or plan-level review (/duck-plan).
+description: "PR/change-review session with the rubber duck — user justifies every change and predicts consequences. Use before commit/push/PR, or when they say \"duck review\", \"리뷰 전에 점검\". Not for code-level explanation (/duck-verify) or plan review (/duck-plan)."
 allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
 ---
 

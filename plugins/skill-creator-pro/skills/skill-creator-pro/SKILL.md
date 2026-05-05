@@ -1,14 +1,10 @@
 ---
 name: skill-creator-pro
 description: >
-  Create new skills, modify and improve existing skills, and measure skill performance
-  with category-aware design, gotchas-driven development, and progressive disclosure coaching.
-  Use when users want to create a skill from scratch, update or optimize an existing skill,
-  run evals to test a skill, benchmark skill performance with variance analysis, optimize
-  a skill's description for better triggering accuracy, or get guidance on skill architecture
-  and design patterns. Also trigger when someone mentions "make a skill", "create a command",
-  "skill for X", "improve my skill", "turn this into a skill", or wants to capture a workflow
-  as a reusable skill.
+  Create, modify, test, and optimize Claude Code skills with category-aware design
+  and progressive disclosure coaching. Use when creating, improving, benchmarking,
+  or evaluating skills — "make a skill", "skill for X", "improve my skill",
+  "turn this into a skill".
 ---
 
 # Skill Creator Pro

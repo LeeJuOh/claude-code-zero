@@ -5,16 +5,6 @@ description: |
   Review a generated report for narrative coherence, internal contradictions,
   and unsupported assumptions — with no access to source data or analysis context.
   Delegated by the report generation workflow as an optional quality gate.
-
-  <example>
-  Context: Workflow delegates coherence review after report assembly and validation
-  user: "Review the report at /path/to/report.html for coherence issues"
-  assistant: "I'll read the report with fresh eyes and check for narrative coherence, contradictions, and missing context."
-  <commentary>
-  The coherence-reviewer receives ONLY the report file path. It has no access to analysis data,
-  source code, or git history — simulating a first-time reader's experience.
-  </commentary>
-  </example>
 model: haiku
 maxTurns: 5
 tools:

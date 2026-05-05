@@ -1,6 +1,6 @@
 ---
 name: gemini-fetch
-description: Fetch web content from URLs using Gemini CLI when WebFetch fails or is blocked (403, rate-limited, bot-blocked sites like Reddit, LinkedIn, etc). Use when you encounter "unable to fetch" errors, when a site blocks direct access, or when the user explicitly asks to fetch via Gemini.
+description: Fetch web content from URLs using Gemini CLI when WebFetch fails or is blocked (403, rate-limited, bot-blocked sites). Use on "unable to fetch" errors or when user asks to fetch via Gemini.
 allowed-tools: Bash(gemini *)
 argument-hint: <url> [instruction]
 ---

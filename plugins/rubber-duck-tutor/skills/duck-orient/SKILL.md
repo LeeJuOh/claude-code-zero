@@ -1,6 +1,6 @@
 ---
 name: duck-orient
-description: Codebase-orientation session with the rubber duck — generate (or refresh) `.claude/orientation.md` and run interactive exercises so the user builds a real mental model of the repo. Use when the user is new to a codebase, returning after a long break, onboarding a teammate, or says "duck orient", "어디부터 봐야돼", "이 레포 처음이야", "리포지토리 입문". Pass `refresh` to regenerate the orientation doc. The duck also surfaces past-session gaps from this repo for spaced retrieval. Do NOT use for code-level review or plan review.
+description: "Codebase-orientation session with the rubber duck — generate or refresh .claude/orientation.md with interactive exercises. Use when new to a codebase, returning after a break, or says \"duck orient\", \"이 레포 처음이야\"."
 argument-hint: "[refresh]"
 allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(find *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/recent-gaps.sh *)
 ---
