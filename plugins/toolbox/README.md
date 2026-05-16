@@ -14,7 +14,7 @@ toolbox is a collection of small, focused skills — each solves one specific fr
 |-------|-------------|
 | `fetch-sitemap` | Auto-discover a site's sitemap via `/sitemap.xml`, root, and `robots.txt` — a bare domain works. Extract URLs with optional regex filter |
 | `gemini-fetch` | Fetch web content via Gemini CLI when WebFetch is blocked (403, Cloudflare, bot-detection). **Auto-triggers on WebFetch failures**, with a `google_web_search` fallback for JS challenges |
-| `handoff` | Write or update a resumption-ordered handoff document — Goal, First Action, Context, Current Progress, What Worked, What Didn't Work, Next Steps — so the next session can pick up cold |
+| `handoff` | Distill a session into a topic-based handoff document (`YYYY-MM-DD-<topic>.md`) with per-project config, same-topic replacement, and YAML frontmatter — so the next session can resume cold |
 | `secret-setup` | Extract hardcoded secrets into a gitignored env file, auto-merge CLAUDE.md / `.mcp.json` / `settings.local.json`, install a SessionStart auto-loading hook, and add deny rules |
 | `sync-references` | Pull latest changes for all git repos under a directory. Remembers the last path in `${CLAUDE_PLUGIN_DATA}/config.json` — later calls take no arguments |
 
@@ -31,7 +31,7 @@ Only `gemini-fetch` and `sync-references` auto-trigger from natural language. Th
 ```
 /fetch-sitemap example.com 'docs|blog'       # bare domain works — auto-discovers
 /gemini-fetch https://reddit.com/r/ClaudeAI  # or just let WebFetch fail and this fires
-/handoff
+/handoff auth-refactor              # topic-based, per-project path config
 /secret-setup
 /sync-references                              # remembers the last path
 ```

@@ -1,0 +1,161 @@
+# claude-code-zero
+
+[English](README.md) | [한국어](README.ko.md)
+
+> Claude Code는 강력하지만 — 시각적 리포트, 크로스 모델 검증, 안전한 worktree 관리, 실시간 마크다운 프리뷰가 없습니다. 이 플러그인들이 그 빈 곳을 채웁니다.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Claude Code Plugin Marketplace](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-orange)](https://github.com/LeeJuOh/claude-code-zero)
+
+<div align="center">
+
+<video src="https://github.com/user-attachments/assets/abb70886-6f82-474c-a956-3c89b77c4ae5" width="600" controls></video>
+
+</div>
+
+## 빠른 시작
+
+### 1. 마켓플레이스 추가
+
+```shell
+/plugin marketplace add LeeJuOh/claude-code-zero
+```
+
+### 2. 플러그인 설치
+
+```shell
+/plugin install <plugin-name>@claude-code-zero
+```
+
+### 3. 확인
+
+`/plugin` 실행 후 **Installed** 탭에서 확인하세요.
+
+## 플러그인
+
+### codex-advisor
+
+**문제:** Codex 출력은 자신감 넘치지만 인용을 환각하고 엣지 케이스를 놓칩니다. 읽기만 해서는 걸러낼 수 없습니다.
+
+**해결:** Claude가 Codex 응답을 독립적으로 재검증합니다 — Codex가 반환할 때까지 소스코드를 보지 않습니다. 5단계 분류(동의 / 이의 / 미묘 / 거짓양성 / 무인용)로 무엇을 신뢰할지 정확히 알 수 있습니다.
+
+`codex-review` · `codex-adversarial` · `codex-rescue` · `codex-verify` · `codex-research` · `codex-status` · `codex-result` · `codex-cancel` · `codex-setup`
+
+---
+
+### vision-powers
+
+**문제:** 복잡한 분석이 터미널 텍스트에 묻힙니다 — 아키텍처, 보안 이슈, git diff 모두 구조를 잃습니다. 팀원과 공유도 불가능합니다.
+
+**해결:** Mermaid 다이어그램과 Chart.js 대시보드가 포함된 인터랙티브 HTML 리포트를 생성합니다. 플러그인(로컬/설치됨/GitHub), git diff, 마크다운 문서를 분석합니다. 시각적 셀프 감사가 리포트를 PNG로 렌더링해 검증합니다.
+
+`plugin-visual` · `diff-visual` · `doc-visual` · `fact-check` · `context-health-visual` · `report-manager`
+
+---
+
+### skill-creator-pro
+
+**문제:** 프로덕션급 스킬 제작은 시행착오의 연속입니다. 트리거 정확도를 측정할 방법도, 반복 개선 루프도, 품질 게이트도 없습니다.
+
+**해결:** 자율 hill-climbing이 포함된 5단계 가이드 생성 — baseline 대비 병렬 평가를 실행하고, 프롬프트를 변이시키며, 개선분만 유지합니다. HTML 벤치마크 뷰어로 스킬이 어디서 이기고 지는지 정확히 확인할 수 있습니다.
+
+`skill-creator-pro` · `auto-optimize`
+
+---
+
+### worktree-plus
+
+**문제:** Claude Code 내장 worktree는 gitignore 파일(`.env`, `node_modules/`)에서 깨지고, 상태 추적이 없으며, 제거 시 커밋 안 된 작업을 삭제할 수 있습니다.
+
+**해결:** `.worktreeinclude` / `.worktreelink`로 선택적 파일 복사와 심링크. 커밋 안 된 변경이나 푸시 안 된 커밋이 있으면 제거를 차단하는 안전 가드. `.worktree.log`에 감사 추적.
+
+`worktree-config` · WorktreeCreate/Remove 자동 훅
+
+---
+
+### notebooklm-connector
+
+**문제:** 리서치 자료가 NotebookLM에 있지만 조회하려면 컨텍스트 전환, 복사-붙여넣기, 근거 없는 답변에 토큰 낭비가 필요합니다.
+
+**해결:** Chrome 자동화로 Claude Code에서 직접 NotebookLM을 조회합니다. 출처 기반 답변과 자동 후속 질문(기본 3라운드)으로 커버리지 갭을 채웁니다. 프로젝트별 노트북 레지스트리.
+
+`notebooklm-manager` (query · add · list · search · enable/disable · remove)
+
+---
+
+### claw-mo
+
+**문제:** mo 마크다운 뷰어는 강력하지만 설정이 번거롭습니다 — 포트 번호, 감시 패턴, fsnotify가 파일을 조용히 놓칩니다.
+
+**해결:** 자동 동기화 훅이 포함된 프로젝트별 설정. Claude가 마크다운 파일을 쓰거나 편집할 때마다 mo에 자동 반영됩니다. 그룹 기반 구성, 전문 검색, Mermaid + KaTeX + Shiki 렌더링.
+
+`claw-mo-up` · `claw-mo-open` · `claw-mo-manage`
+
+---
+
+### claw-mux
+
+**문제:** Claude Code는 단일 터미널 패널에 갇혀 있습니다. 다른 패널에 명령을 보내거나, 출력을 읽거나, 병렬 워크플로를 조율할 수 없습니다.
+
+**해결:** 완전한 cmux 통합 — 레이아웃 분할, 어떤 패널이든 명령 전송, 화면 출력 읽기, WKWebView 브라우저 자동화, 사이드바 프리미티브(상태 / 진행 바 / 레벨별 로그)로 진행 보고.
+
+`claw-mux` · `cmux-browser`
+
+---
+
+### toolbox
+
+**문제:** WebFetch가 봇 감지에 차단됩니다. 세션 컨텍스트가 대화 간에 사라집니다. 시크릿이 하드코딩됩니다. 참조가 동기화에서 밀립니다.
+
+**해결:** 5가지 집중 유틸리티 — Gemini 폴백(WebFetch 실패 시 자동 트리거), 재개 순서 핸드오프 문서, 시크릿 추출 + 자동 로드 훅, 사이트맵 탐색, 참조 동기화.
+
+`gemini-fetch` · `handoff` · `secret-setup` · `fetch-sitemap` · `sync-references`
+
+---
+
+### rubber-duck-tutor
+
+**문제:** AI 생성 코드를 수동적으로 수락하면 이해도가 17% 떨어집니다. 제대로 이해하지 못한 코드를 머지하게 됩니다.
+
+**해결:** 5가지 개발 단계에 걸친 러버덕 질문법 — 코드를 배포하기 전에 무엇을 하는지 설명하도록 물어봅니다. 힌트 사다리가 답을 드러내지 않고 안내합니다. 플랜 생성, PR, git push 시 자동으로 리뷰를 제안합니다.
+
+`duck` · `duck-design` · `duck-plan` · `duck-verify` · `duck-review` · `duck-orient`
+
+---
+
+### vibeproxy-kit
+
+**문제:** VibeProxy를 수동으로 연결(OAuth, 별칭, config.yaml, 셸 편집)하면 오류가 발생하기 쉽습니다. 어떤 백엔드가 실제로 응답하는지 상태가 불명확합니다.
+
+**해결:** 백업/롤백이 포함된 명시적 상태 관리. 백엔드별 격리 프로브로 각 별칭을 정확히 어떤 모델이 처리하는지 알 수 있습니다. 기존 별칭 마이그레이션 Keep / Merge / Reset 모드.
+
+`setup-aliases` · `cc-list`
+
+---
+
+## Lab 플러그인
+
+실험적 — 특정 환경이 필요하거나 안정성이 제한될 수 있습니다.
+
+### e2e-test-runner
+
+**문제:** E2E 테스트는 취약한 셀렉터와 페이지 오브젝트를 필요로 합니다. UI가 바뀔 때마다 깨지고 작성에 시간이 오래 걸립니다.
+
+**해결:** 자연어 JSON으로 테스트를 작성합니다. Claude가 페이지를 읽고, 무엇을 클릭할지 결정하고, 결과를 검증합니다. 테스트별 비디오 녹화, 픽셀 diff 시각적 회귀, 개발 서버 자동 감지(Next / Vite / Remix / Astro 등).
+
+`e2e-test`
+
+---
+
+## 플러그인 관리
+
+```shell
+/plugin disable <plugin-name>@claude-code-zero    # 비활성화
+/plugin enable <plugin-name>@claude-code-zero     # 재활성화
+/plugin update <plugin-name>@claude-code-zero     # 업데이트
+/plugin uninstall <plugin-name>@claude-code-zero  # 삭제
+```
+
+## 라이선스
+
+[MIT License](LICENSE)
