@@ -19,7 +19,11 @@ vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js
 | `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, skill security scan (prompt injection, data exfil, destructive, credentials, obfuscation, safety override), hook schema validation, plugin components, CLAUDE.md & memory health. 6 graded areas + 5 observational, each threshold cited to official docs |
 | `report-manager` | List, open, delete, and search generated reports |
 
-**Agents.** `visual-report-writer` (HTML report assembly), `feature-architect` (plugin component analysis), `security-auditor` (permission and risk audit), `coherence-reviewer` (narrative consistency check), `section-analyzer` (doc-visual section intent classification), `diagram-generator` (Mermaid diagram generation per section).
+**Agents.** `visual-report-writer` (HTML report assembly), `feature-architect` (plugin component analysis), `security-auditor` (permission and risk audit), `coherence-reviewer` (narrative consistency check), `section-analyzer` (doc-visual section intent classification), `diagram-generator` (Mermaid diagram generation per section), `trigger-collision-inspector` (skill trigger overlap detection for context-health-visual).
+
+## Prerequisites
+
+- **Google Chrome or Chromium** (for visual self-audit) — set `CHROME_BIN` if not on a standard install path. Visual self-audit is skipped gracefully when Chrome is unavailable.
 
 ## Install
 

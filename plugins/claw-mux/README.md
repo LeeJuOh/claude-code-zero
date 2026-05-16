@@ -22,8 +22,8 @@ The human watches from cmux, seeing every pane Claude Code is orchestrating. Out
 
 ## Quick Start
 
-```bash
-claude plugin add claw-mux@claude-code-zero
+```shell
+/plugin install claw-mux@claude-code-zero
 ```
 
 Run Claude Code inside a cmux terminal — it automatically uses cmux-native features.
@@ -45,7 +45,7 @@ Run Claude Code inside a cmux terminal — it automatically uses cmux-native fea
 | Pane management | cmux CLI | N/A |
 | Notifications | cmux notify | N/A |
 
-## Requirements
+## Prerequisites
 
 - cmux (macOS terminal) — [download](https://github.com/manaflow-ai/cmux/releases/latest)
 - cmux CLI in PATH (`/usr/local/bin/cmux`)

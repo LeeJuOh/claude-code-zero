@@ -13,7 +13,7 @@ VibeProxy lets you run Claude Code against Codex, GitHub Copilot, Antigravity, G
 - Remembering which aliases you added, which VibeProxy added, and which your coworkers added for you that one time
 - Rediscovering what went wrong when a silent backend hop routes `claude-opus-4.6` through the wrong provider
 
-`vibeproxy-kit` makes that configuration explicit and state-aware: both files are backed up before every write and **rolled back together** if validation fails, pre-existing manual `cc-*` aliases are offered for migration into the managed block on first run, and probe catalogs are cached (≤ 7 days) so the second `/setup-aliases` call skips the expensive per-backend isolation probe.
+`vibeproxy-kit` makes that configuration explicit and state-aware: both files are backed up before every write and **rolled back together** if validation fails, pre-existing manual `cc-*` aliases are offered for migration into the managed block on first run, and probe catalogs are cached (≤ 30 days) so the second `/setup-aliases` call skips the expensive per-backend isolation probe.
 
 > [!WARNING]
 > This plugin automates local alias and config management for routing Claude Code through VibeProxy/CLIProxyAPIPlus-backed providers.
@@ -21,6 +21,12 @@ VibeProxy lets you run Claude Code against Codex, GitHub Copilot, Antigravity, G
 > You are solely responsible for how you use this setup. Review the upstream provider and proxy documentation before enabling it.
 > This plugin does not make unofficial provider routing safe, compliant, or supported.
 > For upstream warnings and public reports involving Antigravity/Gemini routing, see [VibeProxy's warning](https://github.com/automazeio/vibeproxy/blob/main/FACTORY_SETUP.md), [Antigravity Account Banned](https://github.com/1rgs/claude-code-proxy/issues/95), and [Accounts getting banned due to TOS violation](https://github.com/badrisnarayanan/antigravity-claude-proxy/issues/277).
+
+## Install
+
+```shell
+/plugin install vibeproxy-kit@claude-code-zero
+```
 
 ## Quick Start
 
@@ -42,7 +48,7 @@ The skill detects what you have installed and authenticated, walks you through a
 `/setup-aliases` prompts for one of three modes on every run:
 
 - **Keep** — leave the existing managed block intact; useful to re-validate against `/v1/models` without reconfiguring.
-- **Merge update** — modify the managed block in place (add/remove backends or models). Uses cached probe catalogs (≤ 7 days old) when available.
+- **Merge update** — modify the managed block in place (add/remove backends or models). Uses cached probe catalogs (≤ 30 days old) when available.
 - **Reset and reconfigure** — wipe the managed block and start from scratch. This is how you uninstall.
 
 ## How it works
@@ -95,7 +101,7 @@ The kit writes to two places:
 
 Both files are backed up before each write and rolled back together if validation fails.
 
-## Requirements
+## Prerequisites
 
 - macOS with [VibeProxy.app](https://github.com/automazeio/vibeproxy) installed in `/Applications`
 - A paid subscription to one or more supported providers (Codex, GitHub Copilot, Antigravity, Gemini, Qwen, or Z.AI GLM) — authenticate all of them before running `/setup-aliases`
