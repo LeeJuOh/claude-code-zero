@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: "Write a distilled handoff document for the next session — captures goal, first action, context, progress, decisions, and blockers as a resumption-ready brief"
+description: "Distill session into a resumption-ready handoff document"
 argument-hint: "[topic]"
 disable-model-invocation: true
 ---
@@ -58,7 +58,7 @@ date: YYYY-MM-DD
 **Always present (this order):**
 
 1. **Goal** — What we're trying to accomplish
-2. **First Action** — Single most immediate action when resuming. Must be actionable without reading any other section. Include skill recommendation if applicable (e.g., "run `/handoff auth-refactor` to continue")
+2. **First Action** — Single most immediate action when resuming. Must be actionable without reading any other section. Include skill recommendation if applicable (e.g., "run `/tdd` to add the missing test" or "run `/diagnose` to investigate the timeout")
 3. **Context** — Mental state when pausing: what you were thinking, the plan, where your attention was
 4. **Current Progress** — What's done. Include uncommitted changes (`git status`/`git diff --stat`) if any
 
