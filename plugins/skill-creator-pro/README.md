@@ -29,6 +29,10 @@ The first one needs you. The second one needs evals.
 - **Quality gate** — YAML validation, built-in slash-command collision check, 500-line / 5000-word body budget, platform v2.1.x compat checks
 - **Artifacts** — HTML benchmark viewer, `benchmark.json`, `feedback.json`
 
+## Prerequisites
+
+- **Python 3** (for description optimizer and benchmark scripts)
+
 ## Install
 
 ```shell

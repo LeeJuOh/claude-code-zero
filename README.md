@@ -13,27 +13,41 @@
 
 </div>
 
-## Quick Start
+## Install
 
-### 1. Add the marketplace
+### Option A — Plugin Marketplace (recommended)
+
+Full install: skills, hooks, agents, MCP servers, scripts — everything the plugin ships.
 
 ```shell
+# 1. Add the marketplace (once)
 /plugin marketplace add LeeJuOh/claude-code-zero
-```
 
-### 2. Install a plugin
-
-```shell
+# 2. Install a plugin
 /plugin install <plugin-name>@claude-code-zero
 ```
 
-### 3. Verify
+Or from the terminal:
+
+```shell
+claude plugin add <plugin-name>@claude-code-zero
+```
+
+### Option B — npx skills (skills only)
+
+Installs SKILL.md files via the [skills CLI](https://github.com/vercel-labs/skills). Quick, no marketplace registration needed — but **hooks, agents, MCP servers, and scripts are not included**. Plugins that depend on hooks (worktree-plus, rubber-duck-tutor, claw-mo) or agents (vision-powers, codex-advisor) will have reduced functionality.
+
+```shell
+npx skills add LeeJuOh/claude-code-zero
+```
+
+### Verify
 
 Run `/plugin` and check the **Installed** tab.
 
 ## Plugins
 
-### codex-advisor
+### [codex-advisor](plugins/codex-advisor/README.md)
 
 **Problem:** Codex outputs look confident but hallucinate citations and miss edge cases. You won't catch it by reading alone.
 
@@ -43,7 +57,7 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
-### vision-powers
+### [vision-powers](plugins/vision-powers/README.md)
 
 **Problem:** Complex analysis buried in terminal text — architecture, security issues, git diffs all lose structure. Impossible to share with teammates.
 
@@ -53,7 +67,7 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
-### skill-creator-pro
+### [skill-creator-pro](plugins/skill-creator-pro/README.md)
 
 **Problem:** Building production-ready skills is trial and error. No way to measure trigger accuracy, no iterative improvement loop, no quality gates.
 
@@ -63,7 +77,7 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
-### worktree-plus
+### [worktree-plus](plugins/worktree-plus/README.md)
 
 **Problem:** Claude Code's built-in worktree breaks on gitignored files (`.env`, `node_modules/`), doesn't track state, and can delete uncommitted work on removal.
 
@@ -73,7 +87,7 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
-### notebooklm-connector
+### [notebooklm-connector](plugins/notebooklm-connector/README.md)
 
 **Problem:** Your research lives in NotebookLM but querying it means context-switching, copy-pasting, and burning tokens on ungrounded answers.
 
@@ -83,27 +97,27 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
-### claw-mo
+### [claw-mo](plugins/claw-mo/README.md)
 
 **Problem:** mo markdown viewer is powerful but tedious to configure — port numbers, watch patterns, fsnotify drops files silently.
 
 **Solution:** Per-project config with auto-sync hook. Every time Claude writes or edits a markdown file, it appears in mo automatically. Group-based organization, full-text search, Mermaid + KaTeX + Shiki rendering.
 
-`claw-mo-up` · `claw-mo-open` · `claw-mo-manage`
+`claw-mo-setup` · `claw-mo-up` · `claw-mo-down` · `claw-mo-open` · `claw-mo-manage`
 
 ---
 
-### claw-mux
+### [claw-mux](plugins/claw-mux/README.md)
 
 **Problem:** Claude Code is trapped in a single terminal pane. Can't send commands to other panes, read their output, or orchestrate parallel workflows.
 
 **Solution:** Full cmux integration — split layouts, send commands to any pane, read screen output, automate WKWebView browsers, and report progress via sidebar primitives (status / progress bar / leveled logs).
 
-`claw-mux` · `cmux-browser`
+`claw-mux` · `cmux-browser` · `cmux-markdown`
 
 ---
 
-### toolbox
+### [toolbox](plugins/toolbox/README.md)
 
 **Problem:** WebFetch gets blocked by bot detection. Session context vanishes between conversations. Secrets end up hardcoded. References drift out of sync.
 
@@ -113,7 +127,7 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
-### rubber-duck-tutor
+### [rubber-duck-tutor](plugins/rubber-duck-tutor/README.md)
 
 **Problem:** Passively accepting AI-generated code leads to 17% worse comprehension. You merge code you don't truly understand.
 
@@ -123,7 +137,7 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
-### vibeproxy-kit
+### [vibeproxy-kit](plugins/vibeproxy-kit/README.md)
 
 **Problem:** Wiring VibeProxy manually (OAuth, aliases, config.yaml, shell edits) is error-prone. State is unclear — which backend is actually responding?
 
@@ -137,7 +151,7 @@ Run `/plugin` and check the **Installed** tab.
 
 Experimental. May require specific environments or have limited stability.
 
-### e2e-test-runner
+### [e2e-test-runner](plugins/e2e-test-runner/README.md)
 
 **Problem:** E2E tests require brittle selectors and page objects. They break on every UI change and take forever to write.
 

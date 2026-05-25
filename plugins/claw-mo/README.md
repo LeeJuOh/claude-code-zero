@@ -11,6 +11,12 @@ This plugin saves per-project config and organizes files into groups so every da
 - [mo](https://github.com/k1LoW/mo): `brew install k1LoW/tap/mo`
 - (Optional) [cmux](https://cmux.dev): opens mo in a browser panel next to your terminal
 
+## Install
+
+```shell
+/plugin install claw-mo@claude-code-zero
+```
+
 ## Quick Start
 
 ```

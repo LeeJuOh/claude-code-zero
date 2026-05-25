@@ -18,7 +18,12 @@ toolbox is a collection of small, focused skills — each solves one specific fr
 | `secret-setup` | Extract hardcoded secrets into a gitignored env file, auto-merge CLAUDE.md / `.mcp.json` / `settings.local.json`, install a SessionStart auto-loading hook, and add deny rules |
 | `sync-references` | Pull latest changes for all git repos under a directory. Remembers the last path in `${CLAUDE_PLUGIN_DATA}/config.json` — later calls take no arguments |
 
-Only `gemini-fetch` and `sync-references` auto-trigger from natural language. The other three have `disable-model-invocation: true` and must be invoked by name (`/fetch-sitemap`, `/handoff`, `/secret-setup`).
+Only `gemini-fetch` auto-triggers from natural language. The other four have `disable-model-invocation: true` and must be invoked by name (`/fetch-sitemap`, `/handoff`, `/secret-setup`, `/sync-references`).
+
+## Prerequisites
+
+- **Gemini CLI** (for `gemini-fetch`) — [install guide](https://github.com/google-gemini/gemini-cli)
+- **jq** (recommended) — `brew install jq`
 
 ## Install
 

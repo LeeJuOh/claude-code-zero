@@ -13,27 +13,41 @@
 
 </div>
 
-## 빠른 시작
+## 설치
 
-### 1. 마켓플레이스 추가
+### 방법 A — 플러그인 마켓플레이스 (권장)
+
+스킬, 훅, 에이전트, MCP 서버, 스크립트 등 플러그인의 모든 구성 요소가 설치됩니다.
 
 ```shell
+# 1. 마켓플레이스 추가 (최초 1회)
 /plugin marketplace add LeeJuOh/claude-code-zero
-```
 
-### 2. 플러그인 설치
-
-```shell
+# 2. 플러그인 설치
 /plugin install <plugin-name>@claude-code-zero
 ```
 
-### 3. 확인
+터미널에서 직접:
+
+```shell
+claude plugin add <plugin-name>@claude-code-zero
+```
+
+### 방법 B — npx skills (스킬만)
+
+[skills CLI](https://github.com/vercel-labs/skills)로 SKILL.md 파일만 설치합니다. 마켓플레이스 등록 없이 빠르게 설치 가능하지만, **훅, 에이전트, MCP 서버, 스크립트는 포함되지 않습니다**. 훅 의존 플러그인(worktree-plus, rubber-duck-tutor, claw-mo)이나 에이전트 의존 플러그인(vision-powers, codex-advisor)은 기능이 제한됩니다.
+
+```shell
+npx skills add LeeJuOh/claude-code-zero
+```
+
+### 확인
 
 `/plugin` 실행 후 **Installed** 탭에서 확인하세요.
 
 ## 플러그인
 
-### codex-advisor
+### [codex-advisor](plugins/codex-advisor/README.md)
 
 **문제:** Codex 출력은 자신감 넘치지만 인용을 환각하고 엣지 케이스를 놓칩니다. 읽기만 해서는 걸러낼 수 없습니다.
 
@@ -43,7 +57,7 @@
 
 ---
 
-### vision-powers
+### [vision-powers](plugins/vision-powers/README.md)
 
 **문제:** 복잡한 분석이 터미널 텍스트에 묻힙니다 — 아키텍처, 보안 이슈, git diff 모두 구조를 잃습니다. 팀원과 공유도 불가능합니다.
 
@@ -53,7 +67,7 @@
 
 ---
 
-### skill-creator-pro
+### [skill-creator-pro](plugins/skill-creator-pro/README.md)
 
 **문제:** 프로덕션급 스킬 제작은 시행착오의 연속입니다. 트리거 정확도를 측정할 방법도, 반복 개선 루프도, 품질 게이트도 없습니다.
 
@@ -63,7 +77,7 @@
 
 ---
 
-### worktree-plus
+### [worktree-plus](plugins/worktree-plus/README.md)
 
 **문제:** Claude Code 내장 worktree는 gitignore 파일(`.env`, `node_modules/`)에서 깨지고, 상태 추적이 없으며, 제거 시 커밋 안 된 작업을 삭제할 수 있습니다.
 
@@ -73,7 +87,7 @@
 
 ---
 
-### notebooklm-connector
+### [notebooklm-connector](plugins/notebooklm-connector/README.md)
 
 **문제:** 리서치 자료가 NotebookLM에 있지만 조회하려면 컨텍스트 전환, 복사-붙여넣기, 근거 없는 답변에 토큰 낭비가 필요합니다.
 
@@ -83,27 +97,27 @@
 
 ---
 
-### claw-mo
+### [claw-mo](plugins/claw-mo/README.md)
 
 **문제:** mo 마크다운 뷰어는 강력하지만 설정이 번거롭습니다 — 포트 번호, 감시 패턴, fsnotify가 파일을 조용히 놓칩니다.
 
 **해결:** 자동 동기화 훅이 포함된 프로젝트별 설정. Claude가 마크다운 파일을 쓰거나 편집할 때마다 mo에 자동 반영됩니다. 그룹 기반 구성, 전문 검색, Mermaid + KaTeX + Shiki 렌더링.
 
-`claw-mo-up` · `claw-mo-open` · `claw-mo-manage`
+`claw-mo-setup` · `claw-mo-up` · `claw-mo-down` · `claw-mo-open` · `claw-mo-manage`
 
 ---
 
-### claw-mux
+### [claw-mux](plugins/claw-mux/README.md)
 
 **문제:** Claude Code는 단일 터미널 패널에 갇혀 있습니다. 다른 패널에 명령을 보내거나, 출력을 읽거나, 병렬 워크플로를 조율할 수 없습니다.
 
 **해결:** 완전한 cmux 통합 — 레이아웃 분할, 어떤 패널이든 명령 전송, 화면 출력 읽기, WKWebView 브라우저 자동화, 사이드바 프리미티브(상태 / 진행 바 / 레벨별 로그)로 진행 보고.
 
-`claw-mux` · `cmux-browser`
+`claw-mux` · `cmux-browser` · `cmux-markdown`
 
 ---
 
-### toolbox
+### [toolbox](plugins/toolbox/README.md)
 
 **문제:** WebFetch가 봇 감지에 차단됩니다. 세션 컨텍스트가 대화 간에 사라집니다. 시크릿이 하드코딩됩니다. 참조가 동기화에서 밀립니다.
 
@@ -113,7 +127,7 @@
 
 ---
 
-### rubber-duck-tutor
+### [rubber-duck-tutor](plugins/rubber-duck-tutor/README.md)
 
 **문제:** AI 생성 코드를 수동적으로 수락하면 이해도가 17% 떨어집니다. 제대로 이해하지 못한 코드를 머지하게 됩니다.
 
@@ -123,7 +137,7 @@
 
 ---
 
-### vibeproxy-kit
+### [vibeproxy-kit](plugins/vibeproxy-kit/README.md)
 
 **문제:** VibeProxy를 수동으로 연결(OAuth, 별칭, config.yaml, 셸 편집)하면 오류가 발생하기 쉽습니다. 어떤 백엔드가 실제로 응답하는지 상태가 불명확합니다.
 
@@ -137,7 +151,7 @@
 
 실험적 — 특정 환경이 필요하거나 안정성이 제한될 수 있습니다.
 
-### e2e-test-runner
+### [e2e-test-runner](plugins/e2e-test-runner/README.md)
 
 **문제:** E2E 테스트는 취약한 셀렉터와 페이지 오브젝트를 필요로 합니다. UI가 바뀔 때마다 깨지고 작성에 시간이 오래 걸립니다.
 

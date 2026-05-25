@@ -40,6 +40,12 @@ prompt and double-check". All four failures were wrapper bugs.
 - **Every call persists** to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failures save to `<type>-<timestamp>-failed.md` with a categorized error.
 - **9 skills**, works with the Official Codex plugin hidden — `/codex-result`, `/codex-status`, `/codex-cancel` call the companion script directly.
 
+## Install
+
+```shell
+/plugin install codex-advisor@claude-code-zero
+```
+
 ## Quick Start
 
 ```shell
@@ -120,7 +126,7 @@ The key discipline: **Claude never reads your source code before Codex runs.** T
 
 ## Prerequisites
 
-- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) **v1.0.0+** — **install required**. Earlier versions had a different review handler; codex-advisor's flag-routing assumes the v1.0.4 companion contract. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu.
+- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) **v1.0.4+** — **install required**. Earlier versions had a different review handler; codex-advisor's flag-routing assumes the v1.0.4 companion contract. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu.
 - [OpenAI Codex CLI](https://github.com/openai/codex) — installed and authenticated (`/codex-setup` verifies both). Tested against Codex CLI 0.125.
 
 ## License
