@@ -2,7 +2,7 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-> Claude Code is powerful out of the box — but has no visual reports, no cross-model verification, no safe worktree handling, no live markdown preview. These plugins fill the gaps.
+> A plugin marketplace I built from what I needed while using Claude Code.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code Plugin Marketplace](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-orange)](https://github.com/LeeJuOh/claude-code-zero)

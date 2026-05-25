@@ -2,7 +2,7 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-> Claude Code는 강력하지만 — 시각적 리포트, 크로스 모델 검증, 안전한 worktree 관리, 실시간 마크다운 프리뷰가 없습니다. 이 플러그인들이 그 빈 곳을 채웁니다.
+> Claude Code를 쓰면서 필요해서 만든 플러그인 마켓플레이스입니다.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code Plugin Marketplace](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-orange)](https://github.com/LeeJuOh/claude-code-zero)
