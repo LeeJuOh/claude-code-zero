@@ -41,7 +41,7 @@
     {
       "name": "skill-creator-pro",
       "source": "./plugins/skill-creator-pro",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "description": "Create, test, and iteratively improve Claude Code skills with the official lean coaching loop, an eval harness for benchmarking with variance analysis, and automated description-trigger optimization"
     },
     {
