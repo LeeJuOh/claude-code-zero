@@ -69,9 +69,9 @@ npx skills add LeeJuOh/claude-code-zero
 
 ### [skill-creator-pro](plugins/skill-creator-pro/README.md)
 
-**문제:** 프로덕션급 스킬 제작은 시행착오의 연속입니다. 트리거 정확도를 측정할 방법도, 반복 개선 루프도, 품질 게이트도 없습니다.
+**문제:** 제때 트리거되고 실제로 도움이 되는 스킬을 만드는 건 시행착오의 연속입니다. 트리거 정확도를 측정할 방법도, 체계적인 개선 루프도, 변경이 나아졌는지 알려줄 벤치마크도 없습니다.
 
-**해결:** 자율 hill-climbing이 포함된 5단계 가이드 생성 — baseline 대비 병렬 평가를 실행하고, 프롬프트를 변이시키며, 개선분만 유지합니다. HTML 벤치마크 뷰어로 스킬이 어디서 이기고 지는지 정확히 확인할 수 있습니다.
+**해결:** Anthropic 공식 skill-creator 코칭 루프 — 초안 작성, 실제 프롬프트로 테스트, baseline 대비 with-skill 결과를 나란히 리뷰, 개선 — 에 description 트리거 옵티마이저와 HTML 벤치마크 뷰어를 더했습니다. `auto-optimize`는 이미 어느 정도 동작하는 스킬을 손 안 대고 hill-climbing으로 끌어올립니다.
 
 `skill-creator-pro` · `auto-optimize`
 

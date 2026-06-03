@@ -62,3 +62,6 @@ plugins/*/.evals/
 /video/
 
 docs/origin
+
+# 작업용 스크래치 (이슈 초안 등 — 영속 산출물은 docs/로 커밋)
+.scratch/

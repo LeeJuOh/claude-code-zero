@@ -1,6 +1,6 @@
 {
   "name": "skill-creator-pro",
-  "description": "Create, test, measure, and iteratively improve Claude Code skills with category-aware design, gotchas-driven development, progressive disclosure coaching, and automated description optimization.",
+  "description": "Create, test, and iteratively improve Claude Code skills with the official lean coaching loop, an eval harness for benchmarking with variance analysis, and automated description-trigger optimization.",
   "author": {
     "name": "LeeJuOh",
     "email": "xop4p@naver.com"
