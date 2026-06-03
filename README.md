@@ -69,9 +69,9 @@ Run `/plugin` and check the **Installed** tab.
 
 ### [skill-creator-pro](plugins/skill-creator-pro/README.md)
 
-**Problem:** Building production-ready skills is trial and error. No way to measure trigger accuracy, no iterative improvement loop, no quality gates.
+**Problem:** Building a skill that triggers when it should and actually helps is trial and error — no way to measure trigger accuracy, no structured improvement loop, no benchmark to tell you if a change helped.
 
-**Solution:** Five-phase guided creation with autonomous hill-climbing — runs parallel baseline-vs-with-skill evals, mutates prompts, and keeps only improvements. HTML benchmark viewer shows exactly where your skill wins or loses.
+**Solution:** Anthropic's official skill-creator coaching loop — draft, test against real prompts, review side-by-side baseline-vs-with-skill diffs, improve — plus a description-trigger optimizer and an HTML benchmark viewer. `auto-optimize` adds a hands-off hill-climbing pass for skills that already mostly work.
 
 `skill-creator-pro` · `auto-optimize`
 
