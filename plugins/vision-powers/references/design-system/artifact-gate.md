@@ -1,9 +1,9 @@
-# Taste Gate — Pre-output Checklist
+# Artifact Gate — Pre-output Checklist
 
-The checklist that diagram-generator output must pass **before** entering the final report. `scripts/taste-gate.js` runs this file's rules converted into JSON.
+The checklist that model-authored HTML must pass **before** saving. `scripts/artifact-gate.js` runs the programmatically verifiable items.
 
 ## Type fit
-- [ ] Does the type match the section's intent? (re-check diagram-type-selection.md)
+- [ ] Does the diagram type match the section's intent? (re-check diagram-type-selection.md)
 - [ ] Could a 3-column table convey the same information? → if so, **drop the diagram**
 
 ## Remove test
@@ -32,16 +32,15 @@ The checklist that diagram-generator output must pass **before** entering the fi
 
 ## Automation
 
-`scripts/taste-gate.js` automates the **programmatically verifiable items** from the checklist above:
+`scripts/artifact-gate.js` checks three things programmatically:
 
-- Mermaid syntax validation (rgba / color / special-character detection)
-- accent count
-- node/arrow count
-- Complexity budget violation detection
+1. **Missing images** — `<img src="...">` pointing to nonexistent local files
+2. **Raw markdown remnants** — `##`, `**`, ` ``` ` leaked into HTML body (outside `<pre>`/`<code>`/`<script>`/`<style>`)
+3. **Mermaid density** — diagrams exceeding per-type complexity budgets (nodes, arrows, lifelines, etc.)
 
-Items requiring manual judgment (Remove test, Type fit) are indirectly enforced by inclusion in the system prompts of section-analyzer and diagram-generator.
+Items requiring manual judgment (Remove test, Type fit) should be considered during authoring.
 
 ## On violation
 
-1. Automated validation fails → re-invoke diagram-generator (that section only, max 2 retries)
-2. Still failing after 2 retries → **exclude** that section's diagram, log a warning + continue report generation
+1. Automated validation fails → fix inline (edit the HTML directly)
+2. Still failing after 2 retries → **exclude** that diagram, log a warning + continue

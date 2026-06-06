@@ -4,9 +4,11 @@
 
 ## Why
 
-Claude Code works in text. Plans, diffs, project analysis — all text. When complexity grows, text becomes hard to navigate. You lose the big picture in walls of terminal output.
+Claude Code is strong at analysis but flat at expression. Whether terminal text or markdown, relationships, hierarchies, and proportions are described in words — never shown. You read that A depends on B depends on C, but past a handful of nodes, no amount of prose makes the shape visible.
 
-vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js dashboards, and a curated design system. Every report is a single self-contained file you can open in any browser, share with teammates, or archive.
+vision-powers gives Claude visual expression. Diagrams show relationships, structured sections make output navigable, and both HTML and markdown outputs improve on Claude's bare output. HTML goes further — interactive, spatial, shareable as a single file. Markdown fits where browsers can't: PR descriptions, chat threads, headless CI.
+
+The thesis behind this plugin echoes what Thariq Shihipar (Anthropic, Claude Code team) articulated in [The unreasonable effectiveness of HTML](https://thariqs.github.io/html-effectiveness/) — HTML preserves the spatial, structural, and interactive information that plain text flattens.
 
 ## Features
 
@@ -14,16 +16,10 @@ vision-powers generates interactive HTML reports with Mermaid diagrams, Chart.js
 |-------|-------------|
 | `plugin-visual` | Claude Code plugin deep analysis — 4 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
 | `diff-visual` | Visualize git diffs as interactive HTML reports with architecture diagrams, file map, classification heatmap, dependency shift, and hot spot analysis |
-| `doc-visual` | Visualize any markdown document (research, spec, RFC, ADR, design doc) as a diagram-enhanced HTML or markdown report. Auto-selects from 13 Mermaid diagram types based on section intent |
+| `doc-visual` | Visualize any markdown document (research, spec, RFC, ADR, design doc) as a diagram-enhanced HTML or markdown report with Mermaid diagrams matched to section intent |
 | `fact-check` | Verify document accuracy against the actual codebase and git history |
 | `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, skill security scan (prompt injection, data exfil, destructive, credentials, obfuscation, safety override), hook schema validation, plugin components, CLAUDE.md & memory health. 6 graded areas + 5 observational, each threshold cited to official docs |
 | `report-manager` | List, open, delete, and search generated reports |
-
-**Agents.** `visual-report-writer` (HTML report assembly), `feature-architect` (plugin component analysis), `security-auditor` (permission and risk audit), `coherence-reviewer` (narrative consistency check), `section-analyzer` (doc-visual section intent classification), `diagram-generator` (Mermaid diagram generation per section), `trigger-collision-inspector` (skill trigger overlap detection for context-health-visual).
-
-## Prerequisites
-
-- **Google Chrome or Chromium** (for visual self-audit) — set `CHROME_BIN` if not on a standard install path. Visual self-audit is skipped gracefully when Chrome is unavailable.
 
 ## Install
 
@@ -59,10 +55,6 @@ analyze ./plugins/my-plugin --lang ko                     # output in Korean (IS
 **Analysis modes.** `plugin-visual` supports `--mode analyze` (default, full), `--mode security` (security-only), and `--mode overview` (lightweight). Each mode runs a short Intent Check to confirm audience and focus before generating.
 
 **Refinement loop.** After reading a report, leave section-level notes via the in-page ✎ button, then run `/report-manager refine` to re-generate only the sections you flagged — feedback is harvested via MCP when `claude-in-chrome` is connected, otherwise by paste.
-
-**Aesthetic rotation.** Consecutive reports automatically pick different palette and font pairings so the same skill called repeatedly doesn't produce identical-looking output. Rotation state lives at `${CLAUDE_PLUGIN_DATA}/aesthetic-history.json`.
-
-**Visual self-audit.** After generating a report, the workflow runs a best-effort visual check: it renders the HTML to a PNG via headless Chrome and inspects the rendered image — catching broken Mermaid diagrams, blank Chart.js canvases, and layout breaks that pass static validation. Static validation is always mandatory; the visual pass is skipped (non-blocking) when Chrome or Chromium isn't on a standard install path and `CHROME_BIN` isn't set.
 
 **In-browser feedback.** Every report embeds a per-section feedback UI (✎ button). When the user invokes `/report-manager refine` after leaving notes, the skill harvests those notes — via MCP if `claude-in-chrome` is connected, otherwise by asking the user to click Copy in the feedback bar and paste.
 

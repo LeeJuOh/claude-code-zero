@@ -1,6 +1,6 @@
 # Diagram Density Rules
 
-Keep each diagram **light**; when the budget is exceeded, split it into multiple diagrams. diagram-generator and taste-gate.js **enforce** the limits in this file.
+Keep each diagram **light**; when the budget is exceeded, split it into multiple diagrams. `artifact-gate.js` **enforces** the limits in this file.
 
 ## Complexity budget per type
 

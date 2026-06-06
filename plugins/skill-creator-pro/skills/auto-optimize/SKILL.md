@@ -55,7 +55,7 @@ Before changing anything, read and understand the target skill completely.
 3. Identify the skill's core job, process steps, and output format
 4. Note any existing quality checks or anti-patterns already in the skill
 5. Read skill design principles to inform your mutations:
-   - `${CLAUDE_SKILL_DIR}/../skill-creator-pro/references/design-patterns.md` -- gotchas patterns, progressive disclosure, description-as-trigger
+   - `${CLAUDE_SKILL_DIR}/../skill-creator-pro/SKILL.md` -- the "Skill Writing Guide", "Progressive Disclosure", and "Description Optimization" sections cover gotchas, progressive disclosure, and description-as-trigger
    - If available in the project: `docs/reference/skill-lessons-from-anthropic.md` -- Anthropic's practical lessons from building hundreds of skills
    - If the skill uses platform features (hooks, allowed-tools, frontmatter) and something seems wrong, fetch `https://code.claude.com/docs/llms.txt` and the relevant page to verify against the latest spec
 
@@ -97,7 +97,7 @@ Fail condition: [What triggers a "no"]
 
 Present the proposed evals and explain which observed failures each one targets. The user confirms, adjusts, or adds their own.
 
-**Rules for good evals** (see [eval writing guide](${CLAUDE_SKILL_DIR}/../skill-creator-pro/references/eval-writing-guide.md) for details):
+**Rules for good evals** (the assertion schema lives in `${CLAUDE_SKILL_DIR}/../skill-creator-pro/references/schemas.md`):
 - Binary only. Yes or no. No scales.
 - Specific enough that two different agents would agree on the verdict.
 - Not so narrow the skill can game the eval without actually improving.
@@ -205,7 +205,7 @@ For detailed reflection techniques and examples, read `${CLAUDE_SKILL_DIR}/refer
 
 Based on the reflection, make ONE targeted change to SKILL.md.
 
-For mutation strategies (mechanical, principle-based, structural), consult `${CLAUDE_SKILL_DIR}/../skill-creator-pro/references/design-patterns.md`. Key principle: **one change at a time** so you know what helped.
+For mutation strategies, consult the "Skill Writing Guide", "Writing Patterns", and "Writing Style" sections of `${CLAUDE_SKILL_DIR}/../skill-creator-pro/SKILL.md`. Key principle: **one change at a time** so you know what helped.
 
 Bad mutations:
 - Rewriting the entire skill from scratch
@@ -246,7 +246,7 @@ Track consecutive discards. When the count hits thresholds, escalate:
 
 **5 consecutive discards -- hard reset:**
 1. Everything from above, plus:
-2. Re-read design-patterns.md -- there may be a structural pattern you haven't tried
+2. Re-read the sibling `skill-creator-pro/SKILL.md` design sections -- there may be a structural pattern you haven't tried
 3. Try the OPPOSITE of your recent approach (if you've been adding instructions, try removing them)
 4. Try a radical structural change (move content to references, add hooks, bundle scripts)
 5. If the skill uses platform features, fetch official docs to check for spec misalignment

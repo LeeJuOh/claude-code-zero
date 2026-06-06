@@ -1,131 +1,168 @@
 ---
 name: doc-visual
-disable-model-invocation: true
 description: |
-  Convert any markdown document into a diagram-enriched visual report.
-  Use when asked to visualize or summarize a document with diagrams. Single md file input.
+  Convert any markdown document into a diagram-enriched visual HTML report.
+  Use when asked to visualize, illustrate, or create a visual report from a document with diagrams. Single md file input.
+  Also trigger when: "make this document visual", "add diagrams to this doc", "turn this markdown into a report",
+  "visualize this README/ADR/spec", or any request to render a document with embedded diagrams.
 argument-hint: "[md-file-path] [--format html|md] [--lang code]"
-allowed-tools: Read, Agent, Bash(node *), Bash(open *), Bash(rm -rf /tmp/doc-visual-*)
+allowed-tools: Read, Bash(node *), Bash(open *), Bash(rm -rf /tmp/doc-visual-*)
 ---
 
 # doc-visual
 
-Reads a markdown document and generates an HTML or markdown report that automatically embeds a diagram (chosen from 13 types) matching the meaning of each section.
+Read a markdown document and write a visual report with diagrams that match each section's meaning. Output is HTML (default) or markdown. You write the output directly — no templates, no intermediate JSON, no agent chains.
 
-## Instructions
+## Why this matters
 
-### Format Detection
+The previous version of this skill passed text through a pipeline of agents — each one only saw the output of the stage before it. By the time the report was assembled, the original content had been compressed into summaries of summaries. That's the failure mode you're replacing. You see the original document in full. That's the core advantage. If you find yourself writing "this section discusses X" instead of explaining X — that's compression, and it's the exact failure this redesign exists to fix.
+
+## Input
+
+Argument = single markdown file path. Directories, URLs, stdin not supported.
+
+1. Validate file exists + markdown extension (`.md`, `.markdown`, `.txt`)
+2. Missing/no permission → abort immediately
+3. Read the full file content
+
+### Format detection
 
 | Flag | Values | Default |
 |---|---|---|
 | `--format` | `html` / `md` | `html` |
 | `--lang` | ISO code | auto-detected from document |
 
-### Input Parsing
+The report language must match the source document's language.
 
-Argument = single markdown file path. Directories/URLs/stdin are not supported.
+## Writing the report
 
-- Validate file existence + markdown extension (`.md`, `.markdown`, `.txt`)
-- File missing/no permission → abort immediately
+You write the output yourself. No template files, no assembly scripts, no intermediate formats.
 
-### Pipeline
+### HTML format (default)
 
-```
-[1] parse-markdown.js       → sections[] JSON
-[2] section-analyzer (agent)→ adds diagram_plan to sections[]
-[3] diagram-generator (agent)→ summary + mermaid_code
-[4] taste-gate.js           → detect Layer 0 violations, re-invoke [3] on violation (max 2 times)
-[5] assemble-report.js      → assemble HTML or MD
-```
+A self-contained single file — `<!DOCTYPE html>` to `</html>`:
+- Inline `<style>` block with all CSS
+- Inline `<script>` for Mermaid CDN import and initialization
+- Semantic HTML structure: sections that follow the source document's structure
+- Diagrams embedded as `<pre class="mermaid">` blocks
 
-### Step 1 — Parse markdown
+### Markdown format (`--format md`)
+
+Insert directly into the response body (no file save):
+- Mermaid diagrams as fenced ` ```mermaid ` blocks
+- Footer links to the source path
+- No CSS, no `<script>` — pure markdown
+
+### Modes
+
+Decide which mode fits the source document:
+
+| Mode | When | Diagrams | Text depth |
+|---|---|---|---|
+| **explainer** | Tutorials, guides, narrative docs | Illustrate concepts | Full prose — preserve all substance |
+| **structural** | ADRs, specs, API docs, config references | Map relationships | Structured — tables, definition lists, code blocks |
+
+If the document mixes both (e.g., a spec with a narrative intro), use structural as the base and apply explainer treatment to narrative sections.
+
+### Section-to-diagram mapping
+
+For each section in the source document, decide whether a diagram adds value. Not every section needs one — if a table or list says it better, use that.
+
+Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` to choose the right type from the 13-type menu. The mapping priority section tells you which keywords suggest which types.
+
+When no diagram fits, skip it. A section with good prose and no diagram beats a section with a forced diagram.
+
+### Component menu
+
+These are the building blocks. Mix them as the content demands:
+
+| Component | When to use |
+|---|---|
+| **Mermaid diagram** | Relationships, flows, hierarchies — when connections are the point |
+| **Table** | Comparisons, specs, 2-3 column data |
+| **Code block** | Configs, commands, API examples |
+| **Prose paragraph** | Narrative explanation, context, reasoning |
+| **Definition list** | Term → meaning pairs |
+| **Callout box** | Warnings, tips, important notes |
+
+### Diagram rules
+
+Read these reference files for implementation details — don't memorize them, read them each time:
+
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Complete Mermaid syntax reference, theming, dark mode, zoom controls. This is the implementation bible — 13 type examples, classDef rules, CDN setup
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` — Color/font roles and Mermaid themeVariables mapping
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` — Complexity budgets per type
+
+Key rules (always apply, no need to look up):
+
+1. **Density**: Max 9 nodes, 12 arrows per diagram. Over budget → split into overview + detail
+2. **Accent**: 1-2 focal elements only. 4+ accents = redesign needed
+3. **No rgba() in Mermaid classDef** — parser breaks. Use 8-digit hex `#RRGGBBAA`
+4. **No `color:` in classDef** — breaks parser. Style text via themeVariables only
+5. **Theme**: Always `theme: 'base'` with themeVariables from semantic-tokens
+6. **Table vs diagram**: If a 3-column table conveys it equally well, use the table
+
+### CSS essentials
+
+You write your own CSS inline. These constraints matter:
+
+- **Korean font stack**: Include a CJK font in your font-family (the document might be Korean). Model picks the specific font
+- **Dark mode**: Support `prefers-color-scheme: dark` via CSS custom properties. Map semantic roles (paper, ink, muted, accent) to both schemes
+- **Mermaid scaling**: Use `transform: scale()` for zoom — preserves vector quality. Never `zoom` property
+- **Overflow protection**: `min-width: 0` on flex/grid children
+- **Code blocks**: `white-space: pre; overflow-x: auto`
+- **Status indicators**: Colored dots via CSS, no emoji
+- **Animations**: Respect `prefers-reduced-motion: reduce`
+
+### Content integrity — the cardinal rule
+
+The source document's substance must survive intact in the report. This means:
+
+- **Specific numbers, names, dates** from the source → appear in the report
+- **Technical details** (configs, commands, parameters) → preserved verbatim
+- **Reasoning and nuance** → kept, not flattened to bullet points
+- **Code examples** → reproduced in full
+
+If you're writing "this section covers X" or "the document describes Y" — stop. That's a summary of the content, not the content. Include the actual content.
+
+Short documents (<500 chars) get 1 section + 1 hero diagram. Long documents get proper sectioning but still preserve all substance.
+
+## Validation (HTML only)
+
+After writing the HTML file, run artifact-gate:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/parse-markdown.js <input-md-path>
+node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-html-path>
 ```
 
-stdout: `{ sections: [...] }` JSON. exit 1 if file missing.
-Fallback: empty file → abort. No H1/H2 → treat as a single section.
+It checks 3 things:
+1. **Missing images** — any `<img src="...">` pointing to nonexistent local files
+2. **Raw markdown remnants** — `##`, `**`, ` ``` ` leaked into HTML body
+3. **Mermaid density** — diagrams exceeding complexity budgets
 
-### Step 2 — Section analyzer (subagent)
+If violations found: fix them inline (re-edit the HTML). Max 2 retry cycles. If still failing after 2 fixes, remove the offending diagram and log a warning.
 
-Invoke `section-analyzer` via the Agent tool. Inline in the prompt:
-- `sections[]` JSON
-- Contents of `references/design-system/diagram-type-selection.md`
-- Summary of `references/design-system/diagram-density-rules.md`
+## Output
 
-Output: `diagram_plan` added.
+- **HTML**: Save to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.html`. Run `open <output-path>` after completion.
+- **MD**: Insert directly into the response body. Footer links to the source path.
 
-### Step 3 — Diagram generator (subagent)
-
-Can be invoked in parallel per section. Invoke `diagram-generator` via the Agent tool. In the prompt:
-- The relevant section
-- `references/design-system/semantic-tokens.md` (current aesthetic set values)
-- The relevant type section of `references/design-system/mermaid-patterns.md`
-- `references/design-system/diagram-density-rules.md`
-
-Output: `summary` + `mermaid_code`.
-
-### Step 4 — Taste gate
-
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/taste-gate.js --type <diagram-type> --mermaid-file <path>
-# or, for short inline snippets:
-node ${CLAUDE_PLUGIN_ROOT}/scripts/taste-gate.js --type <diagram-type> --mermaid '<code>'
-```
-
-stdout: `{ ok: bool, violations: [...] }`. Exit 0 = pass, 1 = violation, 2 = bad args.
-On violation, re-invoke Step 3 for that section only (append violations to the prompt). After 2 retries still failing → exclude that section's diagram, log a warning.
-
-### Step 5 — Assemble
-
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/assemble-report.js \
-  --template ${CLAUDE_PLUGIN_ROOT}/templates/doc-visual.html \
-  --shared ${CLAUDE_PLUGIN_ROOT}/shared \
-  --sections <sections-json-path> \
-  --output <output-path> \
-  --format <html|md> \
-  --skill-prefix doc-visual
-```
-
-`--sections` must end with `.json` to enable JSON mode. The JSON includes `meta` (`lang`, `title`, `source_path`, tokens, etc.) + `sections[]`.
-
-### Output
-
-- HTML: `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.html`. Run `open` after completion.
-- MD: insert directly into the response body. Footer links to the source path.
-
-### Error Handling
+## Error handling
 
 | Failure | Action |
 |---|---|
-| No input/no permission | Abort immediately |
-| parse-markdown: broken md | Fall back to a single H1, warn |
-| section-analyzer failure | All sections skip_diagram: true, summary only |
-| diagram-generator failure | Skip that section's diagram, summary only |
-| taste-gate violation after 2 retries | Exclude that section's diagram |
-| assemble failure | Surface the error, preserve partial artifacts |
+| File missing/no permission | Abort with message |
+| Empty file | Abort — nothing to visualize |
+| No headings (H1/H2/H3) | Treat as single section |
+| Mermaid syntax error after 2 fixes | Remove that diagram, keep section prose |
 
-### Gotchas
+## Reference files
 
-- **Long documents (>10000 chars)** → force section summaries
-- **Short documents (<500 chars)** → 1 section + 1 hero only
-- **Existing Mermaid blocks** → upgrade with Layer 0 tokens and preserve
-- **refine follow-up** → `report-manager refine` regenerates only specific sections (Step 3-4 only)
-- **venn/pyramid requests** → assemble-report.js renders via fallback SVG/Chart.js
-- **H4+ headers** → `parse-markdown.js` only recognizes H1/H2/H3 as section boundaries.
-  H4 and below are included verbatim in the parent H2/H3 section's `body` and become part of the summary.
-  They are not split into independent sections. If the summary becomes too long, section-analyzer
-  recognizes the internal structure and compresses it as sub-topics in the summary — but to get
-  individual diagrams, promote H4 to H3 in the source md.
+Read these during report generation (not upfront — read the relevant one when you need it):
 
-### Reference Files
-
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md`
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md`
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md`
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/taste-gate.md`
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md`
-- `${CLAUDE_PLUGIN_ROOT}/references/report-generation-workflow.md`
-- `references/section-structure.md`
+| File | When to read |
+|---|---|
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex |
