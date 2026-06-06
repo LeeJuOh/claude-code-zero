@@ -83,11 +83,10 @@ artifact-gate.js ← 3항목 기계적 검사
 - `skills/plugin-visual/SKILL.md` — 분석 페이즈 유지 + Phase 5R 제거 → 모델 직접작성
 - `skills/context-health-visual/SKILL.md` — HTML 출력이 `report-generation-workflow.md` → `visual-report-writer` 파이프라인 전체 의존. 모델 직접작성으로 전환
 - `scripts/taste-gate.js` → `scripts/artifact-gate.js` — 출력파일 무결성 검사
-- `scripts/taste-gate.test.js` → `scripts/artifact-gate.test.js` — 테스트 리네임
+- `scripts/taste-gate.test.js` → `scripts/artifact-gate.test.js` — 3항목 기준 재작성
 
 ### 수정
 - `skills/report-manager/SKILL.md` — `/refine` 명령이 `validate-report.js` 호출 중. 삭제 후 대체 검증 수단 필요 (artifact-gate.js 또는 제거)
-- `hooks/hooks.json` — `check-report-write.js`가 파이프라인 스크립트 호출하는지 확인 후 정리
 - `references/design-system/taste-gate.md` — artifact-gate 리네임 반영
 
 ### 삭제 (생성 파이프라인 인프라)
@@ -98,17 +97,17 @@ artifact-gate.js ← 3항목 기계적 검사
 - `templates/doc-visual.html`, `diff-visual.html`, `plugin-visual.html`, `environment-health.html`
 - `references/design-system/css-patterns.md`, `references/report-generation-workflow.md`
 - `references/design-system/libraries.md`, `navigation.md` (고아 파일 — 삭제 대상인 visual-report-writer만 참조. 모델이 CDN/레이아웃 패턴 자체 지식 보유)
-- `skills/*/references/section-structure.md` (3개) — 파이프라인 중간 포맷(assemble-report.js용 HTML 구조). 범용 아님
+- `scripts/check-report-write.js`, `hooks/hooks.json` — PostToolUse 훅이 placeholder·빈 섹션 검사하는데, 모델 직접작성에서는 고정 구조 없음. artifact-gate.js가 Write 전 검증하므로 이중 검증 불필요
+- `skills/*/references/section-structure.md` (4개, plugin-visual 포함) — 파이프라인 중간 포맷(assemble-report.js용 HTML 구조). 범용 아님
 - `skills/plugin-visual/references/sections-data-schema.md` — `validate-sections-data.js` 전용 JSON 스키마. 분석 에이전트 미참조 확인됨
 
 ### 유지
 - `agents/feature-architect.md`, `security-auditor.md` (입력 분석용)
 - `agents/coherence-reviewer.md`
 - `references/design-system/semantic-tokens.md`, `diagram-type-selection.md`, `diagram-density-rules.md`, `mermaid-patterns.md`
-- `skills/plugin-visual/references/` (분석 기준·보안 규칙 — 삭제 대상 제외)
+- `skills/plugin-visual/references/platforms/` (분석 기준·보안 규칙 — 파이프라인 무관)
 - `scripts/config.js` (사용자 설정 영속화 — 파이프라인 무관)
 - `scripts/render-report.js` (Chrome headless 스크린샷 — 파이프라인 무관)
-- `scripts/check-report-write.js` (PostToolUse 훅 — 수정 섹션 참고)
 - `scripts/env-fit-scan.js` (plugin-visual 환경 데이터 수집 — 입력 페이즈)
 - `scripts/list-reports.js`, `log-report.js` (report-manager 유틸 — 파이프라인 무관)
 
@@ -166,14 +165,14 @@ After `artifact-gate.js` 3항목:
 
 ## Acceptance criteria
 
-- [ ] `artifact-gate.js` 작성 — 3항목 검사, 위반 시 JSON 출력
-- [ ] `doc-visual/SKILL.md` 재작성 — 모델 직접작성, 파이프라인 참조 제거
-- [ ] `diff-visual/SKILL.md` 재작성 — 데이터 수집 유지, 리포트 생성 모델 직접작성
-- [ ] `plugin-visual/SKILL.md` 재작성 — 분석 페이즈 유지, Phase 5R 제거
-- [ ] `context-health-visual/SKILL.md` 재작성 — 파이프라인 의존 제거, 모델 직접작성
-- [ ] `report-manager/SKILL.md` 수정 — `validate-report.js` 의존 제거
-- [ ] 수정 항목 처리 (hooks.json, taste-gate.md)
-- [ ] 파이프라인 인프라 전부 삭제 (section-structure.md 3개, sections-data-schema.md 포함)
+- [x] `artifact-gate.js` 작성 — 3항목 검사, 위반 시 JSON 출력
+- [x] `doc-visual/SKILL.md` 재작성 — 모델 직접작성, 파이프라인 참조 제거
+- [x] `diff-visual/SKILL.md` 재작성 — 데이터 수집 유지, 리포트 생성 모델 직접작성
+- [x] `plugin-visual/SKILL.md` 재작성 — 분석 페이즈 유지, Phase 5R 제거
+- [x] `context-health-visual/SKILL.md` 재작성 — 파이프라인 의존 제거, 모델 직접작성
+- [x] `report-manager/SKILL.md` 수정 — `validate-report.js` → `artifact-gate.js`로 교체
+- [x] 수정 항목 처리 (taste-gate.md → artifact-gate.md 리네임+재작성, taste-gate 참조 정리)
+- [x] 파이프라인 인프라 전부 삭제 — 30파일 + 빈 디렉토리 4개 정리
 - [ ] eval: 4개 스킬 각각 테스트 (아래 eval 방법론 참고)
 - [ ] `plugin validate .` 통과
 
@@ -198,6 +197,6 @@ After `artifact-gate.js` 3항목:
 
 skill-creator-pro eval 프레임워크로 blind A/B 비교 가능.
 
-## Blocked by
+## Follow-up
 
-- [ ] ADR 0002 업데이트 — 현재 3형제만 다룸. context-health-visual 포함으로 범위 확장 반영 필요
+- [ ] ADR 0002 업데이트 — 현재 3형제만 다룸. context-health-visual 포함으로 범위 확장 반영 (구현 완료 후)

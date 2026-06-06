@@ -1,6 +1,5 @@
 ---
 name: context-health-visual
-disable-model-invocation: true
 description: >
   Diagnose Claude Code environment health — context budget, description obesity,
   trigger collisions, hooks, MCP, plugins, CLAUDE.md, memory, and skill-security scan.
@@ -145,7 +144,7 @@ header + recommendations top card.
 
 **Principle:** HTML is the default because a dashboard renders the 10 diagnostic areas as KPI cards, bars, and collision heatmaps that markdown can't match. Only choose `md` when running in a non-browser context (cowork, headless CI), when the user asks for markdown explicitly, or when pasting into a chat thread is more useful than opening a file.
 
-Mermaid generation force-loads Layer 0's semantic-tokens.md (tokens) / diagram-type-selection.md (type mapping) / diagram-density-rules.md (budget) / taste-gate.md (checklist), and is auto-validated by `scripts/taste-gate.js`.
+Mermaid diagrams follow the design system references: semantic-tokens.md (tokens) / diagram-type-selection.md (type mapping) / diagram-density-rules.md (budget) / artifact-gate.md (checklist). Validated by `scripts/artifact-gate.js`.
 
 **Markdown mode (`--format md`):**
 
@@ -198,23 +197,54 @@ Cite sources inline where a threshold fires. Keep it under 200 lines.
 
 **HTML mode (default, `--format html`):**
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/context-health-visual/references/section-structure.md`
-for the JSON schema. Then follow `${CLAUDE_PLUGIN_ROOT}/references/report-generation-workflow.md`
-with these parameters:
+Write the entire HTML file yourself — `<!DOCTYPE html>` to `</html>`. A self-contained single file with inline CSS and scripts. No templates, no intermediate JSON, no agent chains.
 
-| Parameter | Value |
-|-----------|-------|
-| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/<scan_date>-context-health-visual.html` |
-| `{template-name}` | `context-health-visual.html` |
-| `{skill-prefix}` | `env-health` |
-| `{expected-sections}` | `10` |
-| `{report-title}` | `"Environment Health — <scan_date>"` |
-| `{aesthetic-hint}` | `"Dashboard"` |
-| `{agent-prompt-data}` | The analyzed scan data, subagent collision results, computed tiers per area, top lever, and info notes. Pass the raw `scan.json` separately so the writer can reference exact numbers. |
+Output path: `${CLAUDE_PLUGIN_DATA}/reports/<scan_date>-context-health-visual.html`
 
-The sections-data.json must set `metadata.report_type = "context-health-visual"` so
-`render-sections.js` dispatches to the context-health-visual renderers (not the
-plugin-visual ones).
+**Dashboard structure** — the 10 diagnostic areas as sections:
+
+| Section | Type | Content |
+|---|---|---|
+| §1 Plugin & Skill Inventory | ℹ️ observational | Tables, orphan notes, plugin-option keys |
+| §2 Startup Context Budget | ℹ️ observational | Component breakdown with delegation references |
+| §3 Skill Description Obesity | graded | Numbers, truncated entries, disable-model-invocation candidates |
+| §4 Skill Body Size | graded | §4a at-rest + §4b post-compact, reported separately |
+| §5 Trigger Collisions | ℹ️ observational | Subagent-returned DUPLICATE/OVERLAP pairs |
+| §6 Hook Complexity | ℹ️ observational | Type breakdown, event collisions, inline-vs-file sources |
+| §7 MCP Overview | graded | Server count, ENABLE_TOOL_SEARCH mode, proxy fallback |
+| §8 CLAUDE.md & Memory Health | graded | File list with scope/load_mode, MEMORY.md capacity |
+| §9 Skill Security Scan | graded | Findings with confidence, safe/likely_safe collapsed |
+| §10 Plugin Components | ℹ️ observational | bin/monitors/lsp_servers/output_styles/channels per plugin |
+
+Include a header with: graded tally (N 🟢 / N 🟡 / N 🔴), top lever (one sentence), estimated startup load.
+
+**Diagrams**: Read these reference files for implementation:
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Mermaid syntax, theming, dark mode
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` — Color/font roles, Mermaid themeVariables
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` — 13-type selection guide
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` — Complexity budgets
+
+Key diagram rules:
+1. Max 9 nodes, 12 arrows per diagram. Over budget → split
+2. 1-2 focal accents only
+3. No `rgba()` or `color:` in Mermaid classDef
+4. Always `theme: 'base'` with themeVariables from semantic-tokens
+
+**CSS essentials**: Write inline CSS. Must support:
+- `prefers-color-scheme: dark` via CSS custom properties
+- Korean font stack (CJK font in font-family)
+- KPI cards for graded areas (colored borders: green/yellow/red)
+- `transform: scale()` for Mermaid zoom
+- `prefers-reduced-motion: reduce`
+- Status indicators: colored dots via CSS, no emoji
+
+**Validation**: After writing the HTML, run artifact-gate:
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
+```
+If violations found: fix inline, max 2 retries.
+
+Then run `open <output-path>`.
 
 **Privacy guard (both modes):** strip any raw file content before rendering. The
 report emits counts, sizes, line numbers, and file paths — never CLAUDE.md body text,
@@ -352,15 +382,14 @@ If the user enabled the `InstructionsLoaded` hook, remind them to revert it now.
 
 ## Reference Files
 
-- `references/health-criteria.md` — Grading thresholds (cites every docs source) and
-  recommendation templates
-- `references/section-structure.md` — JSON schema for the 10-section HTML report
-- `agents/trigger-collision-inspector.md` — Subagent spec for trigger collision
-  detection (Waza-adapted)
-- `scripts/env-health-scan.js` — Data collection script
-- `../../references/report-generation-workflow.md` — Shared HTML generation pipeline
-  (render → assemble → validate → log → open)
-- `../../references/design-system/semantic-tokens.md` — Color and font semantic tokens
-- `../../references/design-system/diagram-type-selection.md` — 13-type selection guide
-- `../../references/design-system/diagram-density-rules.md` — Complexity budget per type
-- `../../references/design-system/taste-gate.md` — Pre-output quality checklist
+Read these as needed (not upfront):
+
+| File | When to read |
+|---|---|
+| `references/health-criteria.md` | Phase 2 — grading thresholds and recommendation templates |
+| `agents/trigger-collision-inspector.md` | Phase 2 — trigger collision detection subagent spec |
+| `scripts/env-health-scan.js` | Phase 1 — data collection (execute, don't read) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS/Mermaid theme |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex |

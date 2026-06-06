@@ -97,9 +97,9 @@ Surgically edit a section of an existing report without full regeneration.
 5. **Apply edit**: Read the target section, use Edit to modify it. Preserve HTML structure, CSS classes, `style="--i: N"` values, and Mermaid/Chart.js formatting. Do not touch other sections
 6. **Validate**:
    ```
-   node ${CLAUDE_SKILL_DIR}/../../scripts/validate-report.js <report-path>
+   node ${CLAUDE_SKILL_DIR}/../../scripts/artifact-gate.js <report-path>
    ```
-   If FAIL, fix issues and re-validate.
+   If violations found, fix inline and re-validate (max 2 retries).
 7. **Report**: Print `file://` URL, summarize what changed
 
 ### Feedback harvesting

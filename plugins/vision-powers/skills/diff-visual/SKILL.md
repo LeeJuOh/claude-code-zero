@@ -1,17 +1,16 @@
 ---
 name: diff-visual
-disable-model-invocation: true
 description: >
   Visualize git diffs as interactive HTML reports with architecture diagrams and change analysis.
   Use when asked to visualize, review, or summarize a diff, branch, commit, or PR.
   Accepts branch names, commit hashes, HEAD, PR numbers, or commit ranges.
 argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
 
 # Diff Visual
 
-Visualize git diffs as either self-contained interactive HTML reports (default) or inline markdown reports. HTML includes architecture diagrams, file maps, and change analysis. Markdown is the lighter alternative for terminal review or chat sharing.
+Visualize git diffs as either self-contained interactive HTML reports (default) or inline markdown reports. HTML includes architecture diagrams, file maps, and change analysis. Markdown is the lighter alternative for terminal review or chat sharing. You write the output directly — no templates, no intermediate JSON, no agent chains.
 
 ## Instructions
 
@@ -22,8 +21,6 @@ Parse `--format` first:
 | Flag | Values | Default | Meaning |
 |------|--------|---------|---------|
 | `--format` | `html` \| `md` | `html` | `html` → full interactive dashboard at `${CLAUDE_PLUGIN_DATA}/reports/`. `md` → inline markdown report, delivered in the response |
-
-**Principle:** HTML is the default because visual reporting is the point of this skill. Only choose `md` when the user explicitly asks for markdown, when running in a non-browser context (cowork, headless CI), or when the user wants something they can paste into a PR description or chat.
 
 ### Scope Detection
 
@@ -68,8 +65,6 @@ If the request is ambiguous (e.g., just a branch name with no context), use AskU
 Defaults (when not specified):
 - Audience: the user themselves
 - Focus: balanced coverage across all sections
-
-Pass audience and focus context to the report generation phase to adjust section depth and emphasis.
 
 ### Data Gathering
 
@@ -127,17 +122,53 @@ Branch on `--format`:
 
 #### HTML mode (default)
 
-Follow `../../references/report-generation-workflow.md` with these parameters:
+Write the entire HTML file yourself — `<!DOCTYPE html>` to `</html>`. A self-contained single file with inline CSS and scripts.
 
-| Parameter | Value |
-|-----------|-------|
-| `{output-path}` | `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`) |
-| `{template-name}` | `diff-visual.html` |
-| `{skill-prefix}` | `diff-visual` |
-| `{expected-sections}` | `7` |
-| `{report-title}` | `"Diff Visual: {scope description}"` |
-| `{aesthetic-hint}` | `"Editorial"` (or `"Blueprint"` for infrastructure-heavy diffs) |
-| `{agent-prompt-data}` | All gathered data: stats, metrics, architecture, features |
+**Report structure** — adapt based on the diff's content, but this is the default section set:
+
+| Section | Content |
+|---|---|
+| **Overview** | Commits, files changed, lines +/−, scope description |
+| **File Map** | Tree/nested diagram of changed files grouped by directory |
+| **Architecture Impact** | How the change affects system structure — with diagram |
+| **Change Classification** | Feature/refactor/test/docs/config breakdown table |
+| **Dependency Shift** | Before/after imports, packages, connections — with diagram |
+| **New Components** | Architecture diagram focused on new modules |
+| **Hot Spots** | Impact vs frequency — quadrant chart or table |
+
+Skip sections that don't apply to the diff (e.g., no "New Components" if nothing was added).
+
+**Diagrams**: Read these reference files for implementation:
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Mermaid syntax, theming, dark mode, zoom
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` — Color/font roles, Mermaid themeVariables
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` — 13-type selection guide
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` — Complexity budgets
+
+Key diagram rules (always apply):
+1. Max 9 nodes, 12 arrows per diagram. Over budget → split
+2. 1-2 focal accents only
+3. No `rgba()` or `color:` in Mermaid classDef — parser breaks
+4. Always `theme: 'base'` with themeVariables from semantic-tokens
+5. Table > diagram when a 3-column table conveys it equally well
+
+**CSS essentials**: Write your own CSS inline. Must support:
+- `prefers-color-scheme: dark` via CSS custom properties
+- Korean font stack (CJK font in font-family)
+- `transform: scale()` for Mermaid zoom (not `zoom` property)
+- `min-width: 0` on flex/grid children
+- `prefers-reduced-motion: reduce`
+
+**Content integrity**: Every number, file path, function name, and behavioral claim in the report must trace back to the verified fact sheet. If you're writing "this change affects X" — that must be in your fact sheet. Numbers must match git output exactly.
+
+**Output path**: `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`).
+
+**Validation**: After writing the HTML, run artifact-gate:
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
+```
+If violations found: fix inline, max 2 retries.
+
+Then run `open <output-path>`.
 
 #### Markdown mode (`--format md`)
 
@@ -188,5 +219,11 @@ Assemble an inline markdown report and deliver it directly in the response. Do N
 
 ### Reference Files
 
-- `../../references/report-generation-workflow.md` — Shared report generation steps (resolve paths, delegate, assemble, validate, cleanup)
-- `references/section-structure.md` — HTML structure patterns for each report section
+Read these during report generation (not upfront — read the relevant one when you need it):
+
+| File | When to read |
+|---|---|
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex |

@@ -1,6 +1,5 @@
 ---
 name: plugin-visual
-disable-model-invocation: true
 description: >
   Analyze agent extensions and generate self-contained HTML wiki reports with security audit
   and architecture diagrams. Use when asked to analyze, audit, or document a plugin.
@@ -276,168 +275,68 @@ Output the report directly to the user (inline markdown).
 
 #### Phase 5R: HTML Report Generation (analyze mode — default format)
 
-For `analyze` mode with HTML format (the default), generate a self-contained HTML file.
+For `analyze` mode with HTML format (the default), write a self-contained HTML file yourself — `<!DOCTYPE html>` to `</html>`. No templates, no intermediate JSON, no agent chains.
 
-1. **Determine output path**:
+**1. Determine output path**:
 
-   Default output path: `${CLAUDE_PLUGIN_DATA}/reports/{YYYY-MM-DD}-{plugin-name}-report.html`
+Default output path: `${CLAUDE_PLUGIN_DATA}/reports/{YYYY-MM-DD}-{plugin-name}-report.html`
 
-   Where:
-   - `{YYYY-MM-DD}` is today's date (e.g., `2026-03-14`)
-   - `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json)
+Where:
+- `{YYYY-MM-DD}` is today's date
+- `{plugin-name}` is from plugin.json name field (or directory name if no plugin.json)
 
-   The Write tool creates parent directories automatically — no `mkdir` needed.
+**Existing report check**: Before generating, use Glob to search for `*-{plugin-name}-report.html` in `${CLAUDE_PLUGIN_DATA}/reports/`. If any exist, use AskUserQuestion to let the user choose between creating new or updating existing.
 
-   **Existing report check**: Before generating, use Glob to search for `*-{plugin-name}-report.html` in `${CLAUDE_PLUGIN_DATA}/reports/`. If any exist, use AskUserQuestion:
+**2. Write the HTML report**:
 
-   > Found existing report(s) for {plugin-name}:
-   > - {filename1}
-   > - {filename2}
-   >
-   > 1. Create new report ({today's date})
-   > 2. Update {most-recent-filename}
+Include all analysis data from Phase 4 (feature-architect + security-auditor) and Phase 4.5 (environment fit diagnosis). The report should contain these sections (adapt based on analysis results):
 
-   (Translate to output language.)
+| Section | Content |
+|---|---|
+| **Identity & Overview** | Plugin name, version, author, description, component inventory chart |
+| **Architecture** | Component map diagram — skills, agents, commands, hooks, MCP connections |
+| **Feature Deep Dive** | Per-component analysis from feature-architect |
+| **Security Audit** | Risk summary, permission matrix, findings from security-auditor |
+| **Environment Fit** | Verdict, context budget, overlap, hook impact from Phase 4.5 |
+| **Skill Design Quality** | Category distribution, per-skill assessment from feature-architect |
+| **Plugin Profile** | Maturity, documentation, quality checklist |
+| **Recommendations** | Grouped by priority |
 
-   - If user chooses "create new" → use the default dated path
-   - If user chooses "update" → use the existing file path as output
-   - If no existing reports found → proceed with default dated path without asking
+Skip sections with no data (e.g., no security findings → slim security section).
 
-2. **Resolve paths and read references**:
+**Diagrams**: Read these reference files for implementation:
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Mermaid syntax, theming, dark mode, zoom
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` — Color/font roles, Mermaid themeVariables
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` — 13-type selection guide
+- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` — Complexity budgets
 
-   Use `${CLAUDE_PLUGIN_ROOT}` — it expands to the plugin install directory at invocation time, which is stable across local/marketplace installs and does not depend on the current working directory.
+Key diagram rules (always apply):
+1. Max 9 nodes, 12 arrows per diagram. Over budget → split
+2. 1-2 focal accents only
+3. No `rgba()` or `color:` in Mermaid classDef — parser breaks
+4. Always `theme: 'base'` with themeVariables from semantic-tokens
+5. Architecture diagrams with 15+ components → show 3-5 representatives per layer with total counts, keep under 25 nodes
 
-   - Template: `${CLAUDE_PLUGIN_ROOT}/templates/plugin-visual.html`
-   - JSON schema: `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/sections-data-schema.md`
-   - Semantic tokens: `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md`
-   - Diagram type selection: `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md`
-   - Diagram density rules: `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md`
-   - Taste gate: `${CLAUDE_PLUGIN_ROOT}/references/design-system/taste-gate.md`
-   - JSON validator script: `${CLAUDE_PLUGIN_ROOT}/scripts/validate-sections-data.js`
-   - Render script: `${CLAUDE_PLUGIN_ROOT}/scripts/render-sections.js`
-   - Assembler script: `${CLAUDE_PLUGIN_ROOT}/scripts/assemble-report.js`
-   - Rotation script: `${CLAUDE_PLUGIN_ROOT}/scripts/aesthetic-rotation.js`
-   - Shared directory: `${CLAUDE_PLUGIN_ROOT}/shared/`
+**CSS essentials**: Write your own CSS inline. Must support:
+- `prefers-color-scheme: dark` via CSS custom properties
+- Korean font stack (CJK font in font-family)
+- `transform: scale()` for Mermaid zoom (not `zoom` property)
+- `min-width: 0` on flex/grid children
+- `prefers-reduced-motion: reduce`
+- Status indicators: colored dots via CSS, no emoji
 
-   **Read 5 reference files** in a single parallel Read call:
-   1. JSON schema (`${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/sections-data-schema.md`)
-   2. Semantic tokens (`${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md`)
-   3. Diagram type selection (`${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md`)
-   4. Diagram density rules (`${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md`)
-   5. Taste gate (`${CLAUDE_PLUGIN_ROOT}/references/design-system/taste-gate.md`)
+**Source links**: When `source_type` is `github`, make file paths clickable with `{github_url}/{relative-path}` links. For local sources, use `file://` URLs.
 
-   Also fetch recent aesthetic choices to pass as an avoid list:
-   ```
-   Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/aesthetic-rotation.js recent --n 3)
-   ```
+**Content integrity**: All analysis data from sub-agents must survive intact in the report — specific numbers, finding details, risk levels, recommendations. If you're writing "the security audit found issues" instead of listing the actual findings — that's compression.
 
-   Save their content for step 4. Do NOT read the template, assembler, render script, rotation script, or shared directory — those are passed as paths or executed as CLIs.
+**3. Validate**: Run artifact-gate after writing:
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
+```
+If violations found: fix inline, max 2 retries.
 
-3. **Create sections temp directory**:
-   The sections directory path: `/tmp/plugin-visual-{dirname}-sections/`
-   (reuse the same `{dirname}` from Phase 1 if GitHub clone, or generate one for local sources)
-   The JSON data file path: `/tmp/plugin-visual-{dirname}-sections/sections-data.json`
-   No mkdir needed — Write auto-creates directories, and render-sections.js creates the sections dir.
-
-4. **Delegate to visual-report-writer agent (JSON mode)**:
-   ```
-   Task(subagent_type: "vision-powers:visual-report-writer", prompt: {
-     **Output mode: JSON**
-     Write a single file: {sections-data-json-path}
-
-     feature-architect analysis results (full text, including Plugin Summary, Raw Content Excerpts, and Skill Design Quality),
-     security-auditor analysis results (full text),
-     plugin metadata (name, version, author, license, keywords, description),
-     output language,
-     JSON schema content (full text read in step 2),
-     semantic tokens content (full text read in step 2),
-     taste gate content (full text read in step 2),
-     report title: "Agent Extension Visual: {plugin-name}",
-     aesthetic hint: "Editorial",
-     source context: { source_type, source_base, github_url (if applicable) },
-     environment fit diagnosis: { verdict, verdict_summary, installation_status,
-       context_budget: {
-         always_loaded: { skill_descriptions, rules, claude_md, total_tokens },
-         deferred: { mcp_tools, zero_cost_skills, on_demand_rules, total_tokens },
-         rows (backward compat — render script uses always_loaded/deferred when available),
-         hook_injection },
-       dependency_check, overlap_findings, trigger_collisions,
-       hook_impact: { current, adding, projected, types, event_collisions, severity },
-       component_deps,
-       scope_impact: { installation_scope, affected_scopes, scope_conflicts, appropriateness },
-       bundle_source: { type, identifier },
-       recommendations } (from Phase 4.5; when RECOMMENDED with no findings, pass minimal verdict-only data),
-     skill design quality: { category_distribution, design_assessment[], summary }
-       (from feature-architect's Skill Design Quality output; include in Plugin Profile section)
-   })
-   ```
-   Pass the **file contents** read in step 2, not paths. This eliminates the agent's read turn.
-   The agent writes a single `sections-data.json` file (1 Write call instead of ~13 in HTML mode).
-
-   **Do NOT background this agent.** Plugin-defined agents silently ignore `permissionMode`, so the visual-report-writer needs user approval for the Write call. Backgrounded agents cannot prompt for permissions and will fail silently. Always run in the foreground.
-
-5. **Validate sections data** — enforce the JSON contract before rendering:
-   ```
-   Bash(node {json-validator-path} {sections-data-json-path} --expected-sections 11)
-   ```
-   `{json-validator-path}` = `{plugin-root}/scripts/validate-sections-data.js`
-
-   This is the boundary between the LLM writer and deterministic renderer. It checks that schema array fields are arrays, not table wrappers like `{note, rows}` or `{headers, rows}`.
-
-   If FAIL: do not write Python fixup scripts and do not continue to render. Re-run `visual-report-writer` in JSON mode with the validator errors and require a full `sections-data.json` rewrite. Retry at most twice; if validation still fails, report the schema errors to the user.
-
-6. **Render sections** — convert validated JSON data into HTML section files + metadata.json:
-   ```
-   Bash(node {render-script-path} --data {sections-data-json-path} --output {sections-dir})
-   ```
-   This script produces `section-1.html` through `section-11.html` and `metadata.json` with correct CSS class names hardcoded. No LLM-generated class names.
-
-7. **Assemble report** — run the assembler script to combine template + sections:
-   ```
-   Bash(node {assembler-path} --template {template-path} --sections {sections-dir} --metadata {sections-dir}/metadata.json --shared {shared-dir-path} --output {output-path})
-   ```
-
-8. **Report validation** — run the validation script:
-   ```
-   Bash(node {validator-path} {output-path} --expected-sections 11)
-   ```
-   `{validator-path}` = `{plugin-root}/scripts/validate-report.js`
-
-   The script checks: unreplaced placeholders (section + metadata), section content density, Mermaid diagram-type keywords, Chart.js data arrays, and section count. It exits 0 on PASS, 1 on FAIL with a list of issues.
-
-   If FAIL because report content or Mermaid syntax is invalid: edit `sections-data.json`, then re-run render, assemble, and report validation. The final HTML is a generated artifact; do not edit it directly for report content. Only edit the final HTML for assembler/template injection defects that cannot be represented in `sections-data.json`.
-
-   **Optional Coherence Review** — if `--verify` flag was specified or `auto_verify` is `true` in user config:
-   Run the coherence review agent (see `../../references/report-generation-workflow.md` Step 6). If HIGH severity issues are found, apply content fixes in `sections-data.json`, then re-run render, assemble, and validation.
-
-   **Optional Chrome visual verification** — only if `--verify` flag was specified AND `mcp__claude-in-chrome__*` tools are available. Skip entirely otherwise:
-   1. Start a local HTTP server to serve the report (Chrome extensions cannot access `file://` URLs):
-      ```
-      Bash(python3 -m http.server 0 -d "$(dirname {output-path})" 2>&1 & echo $!)
-      ```
-      Capture the PID and port from the output.
-   2. Call `tabs_context_mcp` (with `createIfEmpty: true`) to get or create an MCP tab group.
-   3. Use `navigate` to open `http://localhost:{port}/{filename}` in the MCP tab.
-   4. Use `javascript_tool` to check for Mermaid render errors (`document.querySelectorAll('.mermaid svg').length`) and empty sections.
-   5. Fix content issues in `sections-data.json`, then re-run data validation, render, assemble, and report validation.
-   6. Kill the server: `Bash(kill {pid} 2>/dev/null)`
-
-8. **Report completion + Feedback Loop**:
-
-   Use `AskUserQuestion` with the `file://` URL embedded in the question text itself:
-   ```
-   Report generated: [Open Report](file://{output-path})
-
-   Review the report. Each section has a ✎ button — write feedback and click **Save**.
-   When done, click **"Copy to Clipboard"** at the bottom bar and paste here.
-   Or just tell me what to change directly.
-   ```
-   (Translate to output language. `{output-path}` is the actual path determined in step 1. Always include the `file://` URL as a markdown link — this is how the user opens the report.)
-
-   - If the user pastes exported feedback JSON → parse it and apply changes to sections with `status: "issue"`. Do NOT read the full HTML file — only Edit the specific sections that need changes. This prevents context bloat.
-   - If the user describes changes in natural language → apply modifications via targeted Edit calls on the HTML file
-   - After applying changes, ask again with the same URL
-   - If the user confirms completion → proceed to Phase 7
+**4. Open and present**:
+Run `open <output-path>`. Tell the user the report is ready and ask if they want changes.
 
 #### Phase 7: Cleanup
 
@@ -470,18 +369,12 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **Skill category misclassification**: Skills that span multiple categories (e.g., a deploy skill with review features) should be classified by primary purpose — what the user invokes it for. Don't try to assign multiple categories; pick the best fit and note the overlap in the description.
 - **Design quality false negatives**: A skill with no `scripts/` directory isn't necessarily "Basic" — some skills genuinely don't need scripts (pure knowledge/reference skills). Apply the N/A classification for criteria that don't apply to the skill type.
 - **New hook events**: The security-auditor knows about 22 hook events as of 2026-03. If new events are added to Claude Code, the event list in `security-rules.md` and `security-auditor.md` may need updating.
-- **Do not background visual-report-writer**: Plugin-defined agents silently ignore `permissionMode`, so backgrounding visual-report-writer prevents Write permission prompts from reaching the user, causing silent failure. Always run in foreground.
 - **Plugin agent ignored frontmatter fields**: `permissionMode`, `hooks`, `mcpServers` are silently ignored on plugin agents. The fields `effort`, `model`, `tools`, `disallowedTools`, `maxTurns`, `skills`, `memory`, `background`, `isolation` work normally. Analysis agents use `effort: high` and inherit the session model.
 - **Agent `effort` field**: The `effort` field (low/medium/high/max) is distinct from the `model` field. A Haiku agent with `effort: max` is different from an Opus agent with default effort. Report both when present.
 - **Instruction layer analysis false positives**: Step 10 of the security-auditor analyzes SKILL.md body text for adversarial patterns (env var exfiltration, obfuscation, undeclared URLs). Setup/config skills that reference env var names as documentation, API skills with endpoint URLs, and encoding skills with base64 examples will trigger pattern matches. Context Modifiers handle common cases, but review flagged findings carefully — a MEDIUM on a config skill's env var reference is usually informational, not a real threat.
-- **Mermaid node labels with special chars**: Node labels containing `:`, `/`, `<`, `>` must be double-quoted in Mermaid code (`C1["gsd:new-project"]` not `C1[gsd:new-project]`). Unquoted special chars cause Mermaid parsing errors and can produce oversized layouts. The render script auto-quotes these, but the visual-report-writer should generate quoted labels to begin with.
-- **Command-based plugins and empty Skill Design Quality**: Plugins built on `commands/` instead of `skills/` will have empty skill_design_quality arrays and missing features/KPIs. The render script skips empty sections gracefully, but the visual-report-writer should adapt its analysis for command-based plugins rather than leaving fields empty.
-- **security_summary as object**: The visual-report-writer sometimes passes `security_summary` as a JSON object (with `risk_level`, `findings_by_severity`, `positive_features`) instead of a plain string. The render script handles both formats, but a string summary is preferred.
-- **LLM schema mismatches handled by normalize**: The `render-sections.js` normalize function auto-corrects 15 common LLM output variations. Do NOT write Python fixup scripts in Bash — the normalize layer handles these deterministically. Key patterns: `features` as `[{title, description}]` → `string[]`, `recommendations` as `[{priority, text}]` → `string[]`, `keywords` as array → comma-separated string, `installation_status` as string → `{status, detail}`, `dependency_check` missing `status`/`severity`, `philosophy` cards with empty `name`, chart labels by purpose instead of extension type, `workflow_trace` title leading numbers stripped, and `context_budget` empty budget columns filled with official doc values.
-- **Architecture diagrams with large plugins**: Plugins with 15+ components cause the LLM to list all nodes individually, producing broken Mermaid layouts or "...N more" truncation. The schema now instructs showing 3-5 representatives per architectural layer with total counts, keeping under 25 nodes per diagram.
-- **Overview chart must use extension types**: The chart labels must be extension types (Skills, Agents, Commands, Hooks, MCP, LSP) not purpose categories (Scaffolding, Automation, etc.). The normalize function auto-corrects this by counting from the components section, but the schema also instructs this explicitly.
-- **Never Read the full HTML report for feedback**: The generated HTML report can be 10,000+ tokens. Reading it into context for feedback processing causes context bloat and slow responses. Instead, use the Export Feedback JSON (a few hundred tokens) or have the user describe changes verbally. When edits are needed, use targeted Edit calls on specific line ranges — never Read the entire file.
-- **Do not edit generated report HTML for content fixes**: The final report HTML is a build artifact generated from `sections-data.json`; direct edits disappear on the next render. If report content, tables, or Mermaid diagrams need changes, edit `sections-data.json` and re-run validate-sections-data.js, render-sections.js, assemble-report.js, and validate-report.js.
+- **Mermaid node labels with special chars**: Node labels containing `:`, `/`, `<`, `>` must be double-quoted in Mermaid code (`C1["gsd:new-project"]` not `C1[gsd:new-project]`). Unquoted special chars cause Mermaid parsing errors.
+- **Command-based plugins and empty Skill Design Quality**: Plugins built on `commands/` instead of `skills/` will have empty skill_design_quality data. Adapt analysis for command-based plugins rather than leaving sections empty.
+- **Architecture diagrams with large plugins**: Plugins with 15+ components → show 3-5 representatives per architectural layer with total counts, keep under 25 nodes per diagram.
 - **Discovery phase must use Glob only, never Bash**: Phase 2 file discovery must use Glob calls exclusively. Bash calls like `ls` or `find` are not in `allowed-tools` and trigger a user permission prompt that blocks execution (observed: 185s wait). All file listing needs are covered by Glob patterns — there is no case where Bash is needed for discovery.
 - **Rules with `paths:` frontmatter are deferred**: Rules that have a `paths:` field in frontmatter are NOT always-loaded — they only activate when matching file paths are in context. Treat them as zero always-on cost in context budget analysis. Rules WITHOUT `paths:` load their full content at session start.
 - **Plugin settings.json only supports `agent` field**: A plugin's `settings.json` at the root level only supports the `agent` field for setting a default agent. It does NOT support `permissions`, `hooks`, or other settings — these are silently ignored. Don't report unsupported settings as features.
@@ -491,15 +384,15 @@ This is informational — just a brief suggestion, not an automatic invocation.
 
 ### Reference Files
 
-- `references/platforms/claude-code/analysis-criteria.md` — Plugin Profile criteria (component inventory, docs, quality checklist, skill categories, design quality)
-- `references/platforms/claude-code/security-rules.md` — Security patterns and risk classification (with context modifiers)
-- `references/platforms/claude-code/report-template.md` — Report output format templates (inline markdown)
-- `references/platforms/claude-code/env-fit-diagnosis.md` — Environment Fit Diagnosis detailed steps (Phase 4.5)
-- `references/sections-data-schema.md` — JSON data schema for all 11 report sections. Visual-report-writer reads it to generate `sections-data.json`
-- `references/section-structure.md` — HTML structure patterns for each report section (used by render-sections.js, not by the writer in JSON mode)
-- `../../templates/plugin-visual.html` — HTML template with all CSS/JS baked in. The assembler script combines it with section files
-- `../../scripts/validate-sections-data.js` — JSON contract validator that must pass before rendering `sections-data.json`
-- `../../scripts/render-sections.js` — Render script (Node.js) that converts validated `sections-data.json` into HTML section files + metadata.json with correct CSS class names
-- `../../scripts/assemble-report.js` — Assembler script (Node.js) that merges template + section files + metadata into the final HTML report
-- `../../references/design-system/semantic-tokens.md` — Font pairing and color token selection guide. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
-- `../../references/design-system/taste-gate.md` — Quality checklist for report writing. Read by the orchestrator in Phase 5R step 2 and passed as content to visual-report-writer
+Read these during report generation (not upfront — read the relevant one when you need it):
+
+| File | When to read |
+|---|---|
+| `references/platforms/claude-code/analysis-criteria.md` | Plugin Profile criteria — component inventory, docs, quality checklist, skill categories, design quality |
+| `references/platforms/claude-code/security-rules.md` | Security patterns and risk classification (with context modifiers) |
+| `references/platforms/claude-code/report-template.md` | Report output format templates (inline markdown — Phase 5) |
+| `references/platforms/claude-code/env-fit-diagnosis.md` | Environment Fit Diagnosis detailed steps (Phase 4.5) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram (Phase 5R) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme (Phase 5R) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section (Phase 5R) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex (Phase 5R) |
