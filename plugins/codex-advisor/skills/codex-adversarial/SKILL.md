@@ -1,7 +1,7 @@
 ---
 name: codex-adversarial
 description: "Run Codex adversarial review — actively tries to break confidence in the change. Use when asked \"adversarial review\", \"적대적 리뷰\", or wants thorough security/correctness challenge."
-argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL] [focus text]"
+argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL] [--no-preview] [focus text]"
 allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -52,6 +52,7 @@ Rules:
   - Never pass through.
 - **Duplicate flag** → `AskUserQuestion` which one.
 - **Ambiguous** → `AskUserQuestion` (interactive) or exit 1 (non-interactive, see `references/companion-usage.md §9`).
+- **`--no-preview`** → skip Phase 1.5 draft review. Power users who trust the translation.
 
 **Input validation** (allowed in Phase 1):
 
@@ -85,6 +86,58 @@ Parsed: base=develop, scope=auto, focus="check SQL injection in login"   (meta: 
 Order: apply-codex-config.py output first, Parsed line second.
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
+
+---
+
+## Phase 1.5: Draft Review
+
+**Skip this phase entirely if `--no-preview` was parsed in Phase 1.**
+
+Before launching the adversarial review, show the user the exact
+command that will be executed. Adversarial uses Pattern A (positional
+args to companion), so the command itself IS the prompt.
+
+### Display the draft
+
+Show the full companion command in a fenced code block:
+
+````
+**Codex에 보낼 적대적 리뷰 커맨드:**
+
+```bash
+node "$CODEX_COMPANION" adversarial-review --json \
+  --base develop \
+  --scope auto \
+  "check SQL injection in login handler"
+```
+````
+
+Each flag/arg line must match what Phase 2 will actually execute.
+Omit lines for flags the user did not provide. If focus text was
+transformed from the user's original input, show both:
+
+```
+원문: "로그인 핸들러에서 SQL 인젝션 확인해줘"
+→ focus: "check SQL injection in login handler"
+```
+
+### Ask for approval
+
+Use `AskUserQuestion` exactly once:
+
+- Question: "이 커맨드로 적대적 리뷰를 실행합니다."
+- Options:
+  1. "승인 — 이대로 실행"
+  2. "수정 필요"
+  3. "취소"
+
+### Handle the response
+
+- **승인** → proceed to Phase 2 with the displayed parameters.
+- **수정 필요** → the user will describe what to change (e.g., change
+  base branch, adjust scope, reword focus text). Apply edits,
+  re-display, re-ask. No loop limit.
+- **취소** → stop execution. Do not proceed to Phase 2.
 
 ---
 

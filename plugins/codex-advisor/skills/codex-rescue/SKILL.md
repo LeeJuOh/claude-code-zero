@@ -1,7 +1,7 @@
 ---
 name: codex-rescue
 description: "Delegate an implementation task to Codex, then Claude reviews the result. Use when asked \"codex rescue\", \"codex 위임\", \"코덱스한테 시켜\", or wants Codex to implement or fix something."
-argument-hint: "task description [--write] [--model MODEL] [--effort LEVEL] [--resume-last|--resume|--fresh]"
+argument-hint: "task description [--write] [--model MODEL] [--effort LEVEL] [--resume-last|--resume|--fresh] [--no-preview]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -42,6 +42,7 @@ You are a translator. Use LM intelligence, not regex tables.
 - `--write` (bool; default ON for implementation, OFF for read-only investigation) — **companion flag**, included in the Phase 2 invocation.
 - `--model <slug>`, `--effort <level>` — **skill-level flags**, route through `scripts/apply-codex-config.py` (see Apply block below) and **never reach the companion**. The alias `spark` auto-expands to `gpt-5.3-codex-spark`. The script validates effort against `{minimal, low, medium, high, xhigh}` (`none` is only valid for `plan_mode_reasoning_effort`) and additionally cross-checks against the requested model's `supported_reasoning_levels` from `~/.codex/models_cache.json` — out-of-set values still save but surface a warning so the user sees it. If the user gives an obviously wrong value (typo), prefer `AskUserQuestion` in Phase 1 over letting it propagate.
 - `--resume-last` / `--resume` / `--fresh` — mutually exclusive companion flags. Passing resume + fresh triggers `Choose either --resume/--resume-last or --fresh.` (`:750`). If ANALYZE produces a conflict, `AskUserQuestion`; never forward both.
+- `--no-preview` (bool) — skip Phase 1.5 draft review. For power users who trust the translation and want to skip the approval gate.
 
 **Everything else in `$ARGUMENTS` is the task description**, which
 becomes the prompt body. Translate it cleanly:
@@ -78,6 +79,52 @@ For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 
 ---
 
+## Phase 1.5: Draft Review
+
+**Skip this phase entirely if `--no-preview` was parsed in Phase 1.**
+
+Before sending anything to Codex, show the user exactly what will be
+sent. The user approved the *intent* — now they approve the *prompt*.
+
+### Display the draft
+
+Show the cleaned task description (the text that will go into
+PROMPT_FILE) in a fenced code block, along with the companion flags
+that will be used:
+
+````
+**Codex에 보낼 프롬프트:**
+
+```
+<the cleaned task description from Phase 1 — verbatim, nothing added>
+```
+
+Flags: `--write` `--resume-last`
+````
+
+The code block must contain the **exact text** that will be written to
+PROMPT_FILE. No summarization, no rewording from the Parsed line.
+
+### Ask for approval
+
+Use `AskUserQuestion` exactly once:
+
+- Question: "이 프롬프트를 Codex task로 보냅니다."
+- Options:
+  1. "승인 — 이대로 실행"
+  2. "수정 필요"
+  3. "취소"
+
+### Handle the response
+
+- **승인** → proceed to Phase 2 with the displayed text.
+- **수정 필요** → the user will describe what to change. Apply their
+  edit to the draft, then re-display and re-ask. No loop limit — the
+  user controls when to stop.
+- **취소** → stop execution. Do not proceed to Phase 2.
+
+---
+
 ## Phase 2: Invoke (Pattern B — companion `--background` + stdin pipe)
 
 `task --background` is honored by the companion (`:758-790` →
@@ -103,10 +150,10 @@ echo "PRE_SHA=$PRE_SHA"
 git status --porcelain > "$PRE_LIST" 2>/dev/null || true
 git rev-parse HEAD > "$PRE_SHA"
 
-# Write the cleaned task description. Replace <literal ...> with the
-# value built in Phase 1. Do NOT include meta-instructions or flags.
+# Write the approved task description from Phase 1.5.
+# This is the exact text the user approved (or the original if --no-preview).
 cat > "$PROMPT_FILE" <<'EOF'
-<literal cleaned task description from Phase 1>
+<literal approved task description from Phase 1.5>
 EOF
 
 # Launch via stdin pipe. Each flag line below is optional — include only
