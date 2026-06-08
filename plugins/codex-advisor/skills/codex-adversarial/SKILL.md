@@ -102,7 +102,7 @@ args to companion), so the command itself IS the prompt.
 Show the full companion command in a fenced code block:
 
 ````
-**Codex에 보낼 적대적 리뷰 커맨드:**
+**Adversarial review command to execute:**
 
 ```bash
 node "$CODEX_COMPANION" adversarial-review --json \
@@ -117,7 +117,7 @@ Omit lines for flags the user did not provide. If focus text was
 transformed from the user's original input, show both:
 
 ```
-원문: "로그인 핸들러에서 SQL 인젝션 확인해줘"
+Original: "로그인 핸들러에서 SQL 인젝션 확인해줘"
 → focus: "check SQL injection in login handler"
 ```
 
@@ -125,19 +125,19 @@ transformed from the user's original input, show both:
 
 Use `AskUserQuestion` exactly once:
 
-- Question: "이 커맨드로 적대적 리뷰를 실행합니다."
+- Question: "This command will run the adversarial review."
 - Options:
-  1. "승인 — 이대로 실행"
-  2. "수정 필요"
-  3. "취소"
+  1. "Approve — execute as shown"
+  2. "Needs changes"
+  3. "Cancel"
 
 ### Handle the response
 
-- **승인** → proceed to Phase 2 with the displayed parameters.
-- **수정 필요** → the user will describe what to change (e.g., change
-  base branch, adjust scope, reword focus text). Apply edits,
+- **Approve** → proceed to Phase 2 with the displayed parameters.
+- **Needs changes** → the user will describe what to change (e.g.,
+  change base branch, adjust scope, reword focus text). Apply edits,
   re-display, re-ask. No loop limit.
-- **취소** → stop execution. Do not proceed to Phase 2.
+- **Cancel** → stop execution. Do not proceed to Phase 2.
 
 ---
 

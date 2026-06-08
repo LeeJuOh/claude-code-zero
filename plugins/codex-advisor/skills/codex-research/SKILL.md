@@ -163,7 +163,7 @@ Show the XML prompt header (everything except the document body) in a
 fenced code block, plus document info if attached:
 
 ````
-**Codex에 보낼 프롬프트:**
+**Prompt to send to Codex research:**
 
 ```xml
 <task>
@@ -204,20 +204,21 @@ PROMPT_FILE. Do not summarize or abbreviate the XML structure.
 
 Use `AskUserQuestion` exactly once:
 
-- Question: "이 프롬프트를 Codex research로 보냅니다."
+- Question: "This prompt will be sent to Codex research."
 - Options:
-  1. "승인 — 이대로 실행"
-  2. "수정 필요"
-  3. "취소"
+  1. "Approve — execute as shown"
+  2. "Needs changes"
+  3. "Cancel"
 
 ### Handle the response
 
-- **승인** → proceed to Phase 2 with the current PROMPT_FILE.
-- **수정 필요** → the user will describe what to change (e.g., topic
-  rewording, adding/removing XML blocks, changing research framing).
-  Rewrite PROMPT_FILE with the updated content (re-append the document
-  if in document mode), then re-display and re-ask. No loop limit.
-- **취소** → clean up PROMPT_FILE and JOB_JSON_FILE, stop execution.
+- **Approve** → proceed to Phase 2 with the current PROMPT_FILE.
+- **Needs changes** → the user will describe what to change (e.g.,
+  topic rewording, adding/removing XML blocks, changing research
+  framing). Rewrite PROMPT_FILE with the updated content (re-append
+  the document if in document mode), then re-display and re-ask. No
+  loop limit.
+- **Cancel** → clean up PROMPT_FILE and JOB_JSON_FILE, stop execution.
 
 ---
 

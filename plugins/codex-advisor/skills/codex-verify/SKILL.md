@@ -161,7 +161,7 @@ Show the XML prompt header (everything except the `<document>` body)
 in a fenced code block, plus document info:
 
 ````
-**Codex에 보낼 검수 프롬프트:**
+**Verification prompt to send to Codex:**
 
 ```xml
 <task>
@@ -205,21 +205,21 @@ PROMPT_FILE (minus the document body). Do not summarize.
 
 Use `AskUserQuestion` exactly once:
 
-- Question: "이 프롬프트로 Codex 검수를 실행합니다."
+- Question: "This verification prompt will be sent to Codex."
 - Options:
-  1. "승인 — 이대로 실행"
-  2. "수정 필요"
-  3. "취소"
+  1. "Approve — execute as shown"
+  2. "Needs changes"
+  3. "Cancel"
 
 ### Handle the response
 
-- **승인** → proceed to Phase 2 with the current PROMPT_FILE.
-- **수정 필요** → the user will describe what to change. Common edits:
-  reword focus areas, add domain-specific review criteria, remove
-  irrelevant focus areas, change the review tone. Rewrite PROMPT_FILE
-  with updated XML header, re-append the document via blind redirect,
-  then re-display and re-ask. No loop limit.
-- **취소** → clean up PROMPT_FILE and JOB_JSON_FILE, stop execution.
+- **Approve** → proceed to Phase 2 with the current PROMPT_FILE.
+- **Needs changes** → the user will describe what to change. Common
+  edits: reword focus areas, add domain-specific review criteria,
+  remove irrelevant focus areas, change the review tone. Rewrite
+  PROMPT_FILE with updated XML header, re-append the document via
+  blind redirect, then re-display and re-ask. No loop limit.
+- **Cancel** → clean up PROMPT_FILE and JOB_JSON_FILE, stop execution.
 
 ---
 

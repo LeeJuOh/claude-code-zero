@@ -93,7 +93,7 @@ PROMPT_FILE) in a fenced code block, along with the companion flags
 that will be used:
 
 ````
-**Codex에 보낼 프롬프트:**
+**Prompt to send to Codex:**
 
 ```
 <the cleaned task description from Phase 1 — verbatim, nothing added>
@@ -109,19 +109,19 @@ PROMPT_FILE. No summarization, no rewording from the Parsed line.
 
 Use `AskUserQuestion` exactly once:
 
-- Question: "이 프롬프트를 Codex task로 보냅니다."
+- Question: "This prompt will be sent to Codex task."
 - Options:
-  1. "승인 — 이대로 실행"
-  2. "수정 필요"
-  3. "취소"
+  1. "Approve — execute as shown"
+  2. "Needs changes"
+  3. "Cancel"
 
 ### Handle the response
 
-- **승인** → proceed to Phase 2 with the displayed text.
-- **수정 필요** → the user will describe what to change. Apply their
-  edit to the draft, then re-display and re-ask. No loop limit — the
-  user controls when to stop.
-- **취소** → stop execution. Do not proceed to Phase 2.
+- **Approve** → proceed to Phase 2 with the displayed text.
+- **Needs changes** → the user will describe what to change. Apply
+  their edit to the draft, then re-display and re-ask. No loop
+  limit — the user controls when to stop.
+- **Cancel** → stop execution. Do not proceed to Phase 2.
 
 ---
 
