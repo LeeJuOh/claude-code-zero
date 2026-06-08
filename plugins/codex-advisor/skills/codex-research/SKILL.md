@@ -1,7 +1,7 @@
 ---
 name: codex-research
 description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when asked \"codex research\", \"codex 리서치\", \"딥다이브\". Not for code review or plan verification."
-argument-hint: "topic [path/to/document.md] [--model SLUG] [--effort LEVEL]"
+argument-hint: "topic [path/to/document.md] [--model SLUG] [--effort LEVEL] [--no-preview]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -52,6 +52,7 @@ Rules:
 - **Meta-instructions addressed to YOU** ("한국어로", "빨리", "thoroughly") → obey for your own behavior, never include in the prompt.
 - **No args** → `AskUserQuestion`: "What should I research?"
 - **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. research has no companion flags to forward. `--model`/`--effort` are the only skill-level flags and route through `apply-codex-config.py`, not the companion.
+- **`--no-preview`** → skip Phase 1.5 draft review. Power users who trust the translation.
 
 ### If a document was provided, validate it
 
@@ -144,6 +145,80 @@ Parsed: topic="performance regression analysis", doc="benchmarks/results.md" (DO
 Order: apply-codex-config.py output first, Parsed line second. Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, and (if any) `USER_DOC` paths.
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (ANALYZE rules) and `§8` (blind-payload details).
+
+---
+
+## Phase 1.5: Draft Review
+
+**Skip this phase entirely if `--no-preview` was parsed in Phase 1.**
+
+Before sending anything to Codex, show the user what will be sent.
+The XML payload is already written to PROMPT_FILE (without the
+document body for document mode — that's blind-appended). Show the
+prompt structure so the user can verify the topic and framing.
+
+### Display the draft
+
+Show the XML prompt header (everything except the document body) in a
+fenced code block, plus document info if attached:
+
+````
+**Prompt to send to Codex research:**
+
+```xml
+<task>
+You are a technical researcher conducting a deep investigation.
+Topic: GraphQL vs tRPC performance in 2026
+Investigate thoroughly. Use web search if helpful.
+Surface non-obvious insights, not just the first answer.
+</task>
+
+<compact_output_contract>
+Structured analysis with clear sections.
+Separate: observed facts, reasoned inferences, open questions.
+Identify risks, trade-offs, alternative perspectives.
+</compact_output_contract>
+
+<research_mode>
+Breadth first, then depth where evidence changes the recommendation.
+</research_mode>
+
+<citation_rules>
+Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
+</citation_rules>
+
+<grounding_rules>
+Ground claims in evidence. Label hypotheses clearly.
+</grounding_rules>
+```
+
+Document: `benchmarks/results.md` (512 lines) — blind-appended as `<context_document>`
+````
+
+For topic-only mode (no document), omit the Document line.
+
+The XML block must reflect the **exact content** written to
+PROMPT_FILE. Do not summarize or abbreviate the XML structure.
+
+### Ask for approval
+
+Use `AskUserQuestion` exactly once:
+
+- Question: "This prompt will be sent to Codex research."
+- Options:
+  1. "Approve — execute as shown"
+  2. "Needs changes"
+  3. "Cancel"
+
+### Handle the response
+
+- **Approve** → proceed to Phase 2 with the current PROMPT_FILE.
+- **Needs changes** → the user will describe what to change (e.g.,
+  topic rewording, adding/removing XML blocks, changing research
+  framing). Rewrite PROMPT_FILE with the updated content (re-append
+  the document if in document mode), then re-display and re-ask. No
+  loop limit.
+- **Cancel** → clean up PROMPT_FILE and JOB_JSON_FILE, stop execution.
 
 ---
 

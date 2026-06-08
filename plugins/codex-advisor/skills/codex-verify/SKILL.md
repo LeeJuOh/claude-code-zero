@@ -1,7 +1,7 @@
 ---
 name: codex-verify
 description: "Verify a plan or document using Codex as independent reviewer with PASS/FAIL verdict. Use when asked \"codex 검수\", \"verify this plan\", \"플랜 검수\"."
-argument-hint: "path/to/document.md [--model SLUG] [--effort LEVEL]"
+argument-hint: "path/to/document.md [--model SLUG] [--effort LEVEL] [--no-preview]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -51,6 +51,7 @@ Rules:
 - **Meta-instructions addressed to YOU** ("한국어로 평가해", "엄격하게") → obey for your own behavior, never include in the prompt.
 - **No args** → `AskUserQuestion`: "What document should I verify?"
 - **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. verify has no companion flags to forward. `--model`/`--effort` are skill-level and route through `apply-codex-config.py`.
+- **`--no-preview`** → skip Phase 1.5 draft review. Power users who trust the translation.
 
 ### Resolve the document path
 
@@ -142,6 +143,83 @@ Parsed: doc="docs/plan.md" (DOC_LINES=247), payload=PROMPT_FILE
 Order: apply-codex-config.py output first, Parsed line second. Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, and `USER_DOC` paths. They are needed in later phases.
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (ANALYZE rules) and `§8` (blind-payload details).
+
+---
+
+## Phase 1.5: Draft Review
+
+**Skip this phase entirely if `--no-preview` was parsed in Phase 1.**
+
+Before sending anything to Codex, show the user the verification
+prompt. The XML payload is already written to PROMPT_FILE (with the
+document blind-appended). Show the prompt structure — especially the
+focus areas — so the user can verify or customize the review framing.
+
+### Display the draft
+
+Show the XML prompt header (everything except the `<document>` body)
+in a fenced code block, plus document info:
+
+````
+**Verification prompt to send to Codex:**
+
+```xml
+<task>
+You are a brutally honest technical reviewer. Review the following document for
+material issues that would cause implementation failure.
+Focus areas:
+- Logical gaps and unstated assumptions
+- Missing error handling or edge cases
+- Overcomplexity (is there a simpler approach?)
+- Feasibility risks (what could go wrong?)
+- Missing dependencies or sequencing issues
+- Internal contradictions or ambiguous requirements
+</task>
+
+<compact_output_contract>
+Return a structured verdict:
+1. PASS or FAIL (with clear reasons)
+2. Blocking issues (P1) — must fix before proceeding
+3. Recommendations (P2) — non-blocking improvements
+Be direct. No compliments. Just the problems.
+</compact_output_contract>
+
+<grounding_rules>
+Ground every finding in the document text. Cite specific sections.
+Do not speculate about issues not evidenced in the document.
+</grounding_rules>
+
+<completeness_contract>
+Review the entire document before finalizing.
+Check for interactions between sections that may create contradictions.
+</completeness_contract>
+```
+
+Document: `docs/plan.md` (247 lines) — blind-appended as `<document>`
+````
+
+The XML block must reflect the **exact content** written to
+PROMPT_FILE (minus the document body). Do not summarize.
+
+### Ask for approval
+
+Use `AskUserQuestion` exactly once:
+
+- Question: "This verification prompt will be sent to Codex."
+- Options:
+  1. "Approve — execute as shown"
+  2. "Needs changes"
+  3. "Cancel"
+
+### Handle the response
+
+- **Approve** → proceed to Phase 2 with the current PROMPT_FILE.
+- **Needs changes** → the user will describe what to change. Common
+  edits: reword focus areas, add domain-specific review criteria,
+  remove irrelevant focus areas, change the review tone. Rewrite
+  PROMPT_FILE with updated XML header, re-append the document via
+  blind redirect, then re-display and re-ask. No loop limit.
+- **Cancel** → clean up PROMPT_FILE and JOB_JSON_FILE, stop execution.
 
 ---
 
