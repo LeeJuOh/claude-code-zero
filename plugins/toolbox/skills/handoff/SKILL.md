@@ -65,8 +65,8 @@ date: YYYY-MM-DD
 **Conditional (include only when there's meaningful content):**
 
 5. **Decisions Made** — Key decisions + rationale. Prevents re-debate
-6. **What Worked** — Successful approaches worth reusing
-7. **What Didn't Work** — Failed approaches. Mark critical constraints with ⚠️
+6. **What Worked** — Successful approaches worth reusing. Include *how you worked*, not only what you built — a process that paid off (grilling the design before coding, tight commit cadence) is as reusable as a technical fix
+7. **What Didn't Work** — Failed approaches. Mark critical constraints with ⚠️. Include *process* lessons too — a working rhythm that dragged (confirming every line, too slow to commit) or misfired, so the next session can adjust instead of repeating it
 8. **Blockers** — What must be resolved before proceeding
 9. **Next Steps** — Remaining action items after First Action
 
