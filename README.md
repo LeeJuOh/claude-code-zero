@@ -117,6 +117,16 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
+### [hermes-tweet](https://github.com/Xquik-dev/hermes-tweet)
+
+**Problem:** X/Twitter research and social workflows need a Hermes Agent native plugin with read-first defaults and explicit action gates.
+
+**Solution:** Adds Hermes Agent skills for X/Twitter research, drafting, and approval-gated actions using Hermes-compatible plugin metadata.
+
+`hermes-tweet`
+
+---
+
 ### [toolbox](plugins/toolbox/README.md)
 
 **Problem:** WebFetch gets blocked by bot detection. Session context vanishes between conversations. Secrets end up hardcoded. References drift out of sync.
