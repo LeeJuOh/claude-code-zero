@@ -1,8 +1,27 @@
 # vision-powers
 
+## Why this exists
+
+Claude Code is strong at analysis but flat at expression. Whether terminal text or
+markdown, relationships, hierarchies, and proportions are described in words — never
+shown. Past a handful of nodes, no amount of prose makes the shape visible.
+
+vision-powers gives Claude visual expression. Diagrams show relationships, structured
+sections make output navigable, and both HTML and markdown outputs improve on Claude's
+bare output. HTML goes further — interactive, spatial, shareable as a single file.
+Markdown fits where browsers can't: PR descriptions, chat threads, headless CI.
+
+The thesis behind this plugin echoes what Thariq Shihipar (Anthropic, Claude Code team)
+articulated in [The unreasonable effectiveness of HTML](https://thariqs.github.io/html-effectiveness/)
+— HTML preserves the spatial, structural, and interactive information that plain text
+flattens. vision-powers existed before that essay; the essay validated the direction.
+
+## What it does
+
 Turns verbose AI output — diffs, plugins, documents, answers — into visual explainer
 artifacts a human can grasp at a glance. Each sibling skill owns one input slice
-(`diff-visual`, `plugin-visual`, `doc-visual`); they share a design system and gate.
+(`diff-visual`, `plugin-visual`, `doc-visual`, `context-health-visual`); they share a
+design system and gate.
 
 ## Language
 
