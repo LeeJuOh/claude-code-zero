@@ -21,7 +21,7 @@ The single color/font source for vision-powers. All Layer 1 skills must referenc
 | `body` | Geist (sans) | Body text, node names |
 | `mono` | Geist Mono | Technical content only (ports/URLs/paths) |
 
-**Do not use JetBrains Mono as a blanket dev font.** Mono is for technical content only.
+**Do not set a mono font as body text — mono is for technical content only** (ports, URLs, paths). The specific mono face (Geist Mono is the default; JetBrains Mono and others are fine) is a free choice; what's forbidden is monospacing the prose.
 
 ## Mermaid themeVariables mapping
 
@@ -63,4 +63,4 @@ aesthetic-rotation.js picks one of the following sets:
 
 - `rgba()` in Mermaid classDef (parser breakage — use 8-digit hex `#RRGGBBAA`)
 - violet/fuchsia family (`#8b5cf6`, `#7c3aed`, `#a78bfa`, `#d946ef`) as default palette
-- Blanket use of JetBrains Mono
+- Mono as a blanket body font (mono is for technical spans only — the face itself is unrestricted)

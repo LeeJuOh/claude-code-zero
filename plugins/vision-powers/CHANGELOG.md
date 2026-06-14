@@ -1,5 +1,24 @@
 # Changelog
 
+## 4.3.0 — 2026-06-14
+
+### Added
+
+- **Artifact gate now enforces five rules it previously only documented.** CONTEXT.md and ADR 0002 name the gate as the one form of leverage the model "can't be merely *asked* to guarantee," yet `artifact-gate.js` enforced only 3 checks while `semantic-tokens.md`/`artifact-gate.md` declared more as FORBIDDEN and left them to authoring judgment. Five checks close that gap (all fail-level, run through the existing fix-retry loop):
+  - **Mermaid classDef colour traps** — `rgb()`/`rgba()` (Mermaid parser breakage) or an explicit `color:` (overrides CSS dark-mode tokens) inside a classDef.
+  - **Forbidden palette** — the violet/fuchsia "AI purple" hexes (`#8b5cf6`, `#7c3aed`, `#a78bfa`, `#d946ef`) banned by `semantic-tokens.md`. Exact-hex match (also catches 8-digit alpha variants); `hsl()`/`oklch()` purple detection deferred.
+  - **Anchor href integrity** — `<a>` with missing/empty/`#` href; pure `id`/`name` jump targets are exempt.
+  - **Image alt** — `<img>` missing an `alt` attribute (`alt=""` for decorative images is allowed).
+  - **Placeholder leak** — unfilled `{{ … }}`, lorem ipsum, or bracketed stubs (`[YOUR NAME]`, `[TODO]`); bare `TODO`/`FIXME` and code regions are deliberately exempt so reports can quote source faithfully.
+
+### Changed
+
+- **Dropped the `semantic-tokens.md` "JetBrains Mono is forbidden" rule** — it was not grounded in the references it claimed to mine. Both Kami (bundles JetBrains Mono as its own `--mono`) and taste-skill (recommends `Satoshi + JetBrains Mono`) treat it as a legitimate mono. The genuine, reference-backed principle — *mono is for technical spans, not body text* — is retained; only the unfounded singling-out of JetBrains Mono by name is removed, and the planned gate check that would have enforced it was cut.
+
+### Docs
+
+- `references/design-system/artifact-gate.md` and `skills/doc-visual/SKILL.md` — the "checks three things" automation lists now enumerate all eight checks, and note that accent ≤ 2 and lang consistency remain authoring-judgment items.
+
 ## 4.1.1 — 2026-04-19
 
 ### Fixed

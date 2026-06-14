@@ -100,7 +100,10 @@ Key rules (always apply, no need to look up):
 3. **No rgba() in Mermaid classDef** — parser breaks. Use 8-digit hex `#RRGGBBAA`
 4. **No `color:` in classDef** — breaks parser. Style text via themeVariables only
 5. **Theme**: Always `theme: 'base'` with themeVariables from semantic-tokens
-6. **Table vs diagram**: If a 3-column table conveys it equally well, use the table
+6. **Palette**: No violet/fuchsia "AI purple" hexes (`#8b5cf6`/`#7c3aed`/`#a78bfa`/`#d946ef`) — the gate fails on these
+7. **Table vs diagram**: If a 3-column table conveys it equally well, use the table
+
+The gate also fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders.
 
 ### CSS essentials
 
@@ -135,12 +138,17 @@ After writing the HTML file, run artifact-gate:
 node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-html-path>
 ```
 
-It checks 3 things:
+It checks, in this order:
 1. **Missing images** — any `<img src="...">` pointing to nonexistent local files
 2. **Raw markdown remnants** — `##`, `**`, ` ``` ` leaked into HTML body
 3. **Mermaid density** — diagrams exceeding complexity budgets
+4. **Mermaid classDef colour traps** — `rgb()/rgba()` (parser break) or `color:` (dark-mode break) in a classDef
+5. **Forbidden palette** — violet/fuchsia "AI purple" hexes banned by semantic-tokens.md
+6. **Anchor href integrity** — `<a>` with no/empty/`#` href (pure id/name jump targets are exempt)
+7. **Image alt** — `<img>` missing an alt attribute (`alt=""` for decorative images is allowed)
+8. **Placeholder leak** — unfilled `{{ … }}`, lorem ipsum, or bracketed stubs left in the body
 
-If violations found: fix them inline (re-edit the HTML). Max 2 retry cycles. If still failing after 2 fixes, remove the offending diagram and log a warning.
+If violations found: fix them inline (re-edit the HTML). Max 2 retry cycles. If still failing after 2 fixes, remove the offending element and log a warning.
 
 ## Output
 

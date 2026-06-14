@@ -314,8 +314,11 @@ Key diagram rules (always apply):
 1. Max 9 nodes, 12 arrows per diagram. Over budget → split
 2. 1-2 focal accents only
 3. No `rgba()` or `color:` in Mermaid classDef — parser breaks
-4. Always `theme: 'base'` with themeVariables from semantic-tokens
-5. Architecture diagrams with 15+ components → show 3-5 representatives per layer with total counts, keep under 25 nodes
+4. No violet/fuchsia "AI purple" hexes (`#8b5cf6`/`#7c3aed`/`#a78bfa`/`#d946ef`) — the gate fails on these
+5. Always `theme: 'base'` with themeVariables from semantic-tokens
+6. Architecture diagrams with 15+ components → show 3-5 representatives per layer with total counts, keep under 25 nodes
+
+The gate also fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders.
 
 **CSS essentials**: Write your own CSS inline. Must support:
 - `prefers-color-scheme: dark` via CSS custom properties
