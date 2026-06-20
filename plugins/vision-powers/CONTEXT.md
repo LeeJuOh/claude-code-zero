@@ -8,7 +8,11 @@ shown. Past a handful of nodes, no amount of prose makes the shape visible.
 
 vision-powers gives Claude visual expression. Diagrams show relationships, structured
 sections make output navigable, and both HTML and markdown outputs improve on Claude's
-bare output. HTML goes further — interactive, spatial, shareable as a single file.
+bare output. HTML goes further — interactive, spatial, shareable as a single file. (Two honest
+limits today: diagrams render through the Mermaid library loaded from a CDN, so the
+first view needs network, and web fonts aren't bundled — outputs carry a system
+fallback chain instead. Genuine offline self-containment, the way Kami pre-renders
+inline SVG, is a possible future step, not a current guarantee.)
 Markdown fits where browsers can't: PR descriptions, chat threads, headless CI.
 
 The thesis behind this plugin echoes what Thariq Shihipar (Anthropic, Claude Code team)
@@ -55,13 +59,15 @@ bare model — is four things: design brief, source passthrough, boilerplate, ga
 bare model. The artifact lives on that blade.
 
 **Design brief**:
-The `css-patterns` design system offered to the model as a *palette/menu* (reading width,
+The `design-system` reference set offered to the model as a *palette/menu* (reading width,
 Korean font, one accent, component options), never as a rigid fill-in template.
 
 **Gate**:
 An unattended, mechanical safety net run after authoring — checks data integrity the model
-can't be merely *asked* to guarantee (lang consistency, raw-markdown leak, image alt, link
-href, accent discipline). A request without a gate is a wish. See [[0002]].
+can't be merely *asked* to guarantee: raw-markdown leaks, missing or alt-less images, dead
+links, the forbidden AI-purple palette, Mermaid `classDef` colour traps, diagram density, and
+leftover placeholders. (Language consistency and accent-count discipline are still held by
+authoring guidance, not yet by the gate.) A request without a gate is a wish. See [[0002]].
 
 **Slop**:
 Landing-page aesthetics inappropriate for explainer docs: glassmorphism, double-bezel cards,

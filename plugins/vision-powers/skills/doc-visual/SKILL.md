@@ -109,7 +109,7 @@ The gate also fails on dead links, alt-less images, and leftover scaffolding: gi
 
 You write your own CSS inline. These constraints matter:
 
-- **Korean font stack**: Include a CJK font in your font-family (the document might be Korean). Model picks the specific font
+- **Font stacks**: Always end every `font-family` with a system fallback chain (e.g. `Geist, system-ui, -apple-system, sans-serif`) — the web fonts aren't bundled, so a bare family name silently drops to a browser default offline. See semantic-tokens.md for the per-role chains. Include a CJK font when the document might be Korean
 - **Dark mode**: Support `prefers-color-scheme: dark` via CSS custom properties. Map semantic roles (paper, ink, muted, accent) to both schemes
 - **Mermaid scaling**: Use `transform: scale()` for zoom — preserves vector quality. Never `zoom` property
 - **Overflow protection**: `min-width: 0` on flex/grid children

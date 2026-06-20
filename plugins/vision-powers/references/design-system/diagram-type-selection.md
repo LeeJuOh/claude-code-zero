@@ -1,6 +1,6 @@
 # Diagram Type Selection
 
-The single source that section-analyzer and diagram-generator are **required to reference** when mapping section intent → diagram type.
+The single source the authoring model **must reference** when mapping section intent → diagram type.
 
 ## 13-type selection guide
 
@@ -33,9 +33,9 @@ The single source that section-analyzer and diagram-generator are **required to 
 4. Do not turn simple lists into diagrams — keep them as bullets
 5. Use sequence only for conversational message flows. Do not substitute flowchart
 
-## Mapping priority (for section-analyzer)
+## Mapping priority
 
-Match against section headers and body keywords. The section-analyzer should interpret these semantically and match equivalents in the source document's language.
+Match against section headers and body keywords. Interpret these semantically and match equivalents in the source document's language.
 
 - "architecture", "components" → architecture
 - "flow", "steps" → flowchart
