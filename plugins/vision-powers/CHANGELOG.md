@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.4.1 — 2026-06-20
+
+### Documentation
+
+- README now advertises the **visual self-audit** behavior (render → PNG → read back → check density/hierarchy/Mermaid/overflow → fix & re-render, max 2; graceful skip without `claude-in-chrome`). The behavior shipped in 4.4.0 wiring but was previously undocumented for users. No code change.
+
 ## 4.4.0 — 2026-06-20
 
 ### Added
