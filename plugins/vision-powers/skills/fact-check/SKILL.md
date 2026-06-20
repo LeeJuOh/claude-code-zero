@@ -6,7 +6,7 @@ description: >
   Use when asked to verify, fact-check, or audit claims in a report or document.
   Accepts a file path or auto-detects the most recent HTML report.
 argument-hint: "[file-path] [--format html|md] [--lang <code>]"
-allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(git shortlog *), Bash(wc -l *), Bash(ls -t *)
+allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(git shortlog *), Bash(wc -l *), Bash(ls -t *), Bash(node *)
 ---
 
 # Fact Check
@@ -200,6 +200,14 @@ Insert a verification summary into the document. Choose block type based on reso
 ```
 
 Place the verification section as the last content section, before `</main>` or the closing layout wrapper.
+
+**Re-check the gate (HTML output only).** After injecting the HTML verification section, re-run the artifact-gate on the final output to confirm the inserted summary didn't break the artifact:
+
+```
+node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <report-path>
+```
+
+If the gate flags violations, fix them inline (max 2 retries), consistent with how the other skills handle gate output. **Only do this for HTML output** — the artifact-gate is HTML-only. If the summary was appended as Markdown (`.md` file or markdown block), skip the re-check entirely; there is nothing for the gate to validate.
 
 **For Markdown files** — append at the end:
 

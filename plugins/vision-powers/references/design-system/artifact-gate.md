@@ -28,17 +28,26 @@ The checklist that model-authored HTML must pass **before** saving. `scripts/art
 ## Typography
 - [ ] Person/node names = body sans (no mono)?
 - [ ] Technical content (ports, URLs, paths, field types) = mono?
-- [ ] No JetBrains Mono?
+- [ ] Mono confined to technical spans, never the body font?
 
 ## Automation
 
-`scripts/artifact-gate.js` checks three things programmatically:
+`scripts/artifact-gate.js` checks these programmatically:
 
 1. **Missing images** — `<img src="...">` pointing to nonexistent local files
 2. **Raw markdown remnants** — `##`, `**`, ` ``` ` leaked into HTML body (outside `<pre>`/`<code>`/`<script>`/`<style>`)
 3. **Mermaid density** — diagrams exceeding per-type complexity budgets (nodes, arrows, lifelines, etc.)
+4. **Mermaid classDef colour traps** — `rgb()`/`rgba()` (parser breakage) or `color:` (dark-mode breakage) inside a classDef
+5. **Forbidden palette** — the violet/fuchsia "AI purple" hexes banned above (`#8b5cf6`, `#7c3aed`, `#a78bfa`, `#d946ef`)
+6. **Anchor href integrity** — `<a>` with missing/empty/`#` href (pure `id`/`name` jump targets exempt)
+7. **Image alt** — `<img>` missing an `alt` attribute (`alt=""` for decorative images is allowed)
+8. **Placeholder leak** — unfilled `{{ … }}`, lorem ipsum, or bracketed stubs (`[YOUR NAME]`, `[TODO]`) left in the body
+9. **Gradient-clipped text** — `background-clip: text` (decorative gradient/clipped text) in any real `<style>` block or inline `style=` attribute; quoted CSS inside `<pre>`/`<code>` is exempt
+10. **Font fallback chain** — any `font-family` that names only web fonts with no generic family (e.g. `font-family: Geist` instead of `Geist, system-ui, sans-serif`); `@font-face`, bare keywords, and `var()`-only chains are exempt
 
-Items requiring manual judgment (Remove test, Type fit) should be considered during authoring.
+Checks 4–5 mechanize the **Technical** and **Signal** rules above, and 9–10 the **Typography** rule and the anti-slop catalogue, that were previously left to authoring judgment — a request without a gate is a wish.
+
+Items still requiring manual judgment (Remove test, Type fit, accent ≤ 2, lang consistency) should be considered during authoring; they are not yet mechanically enforced.
 
 ## On violation
 

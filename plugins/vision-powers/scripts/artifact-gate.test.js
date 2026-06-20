@@ -3,7 +3,18 @@ const { test } = require('node:test');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { runArtifactGate, checkRawMarkdown, checkMermaidDensity } = require('./artifact-gate');
+const {
+  runArtifactGate,
+  checkRawMarkdown,
+  checkMermaidDensity,
+  checkMermaidClassDef,
+  checkForbiddenColors,
+  checkAnchorHrefs,
+  checkImageAlt,
+  checkPlaceholders,
+  checkGradientText,
+  checkFontFallback,
+} = require('./artifact-gate');
 
 function withTempHtml(content, fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'artifact-gate-'));
@@ -39,8 +50,8 @@ test('detects missing local image', () => {
 
 test('ignores external URLs and data URIs', () => {
   const html = `<html><body>
-<img src="https://example.com/img.png">
-<img src="data:image/png;base64,iVBOR">
+<img src="https://example.com/img.png" alt="external">
+<img src="data:image/png;base64,iVBOR" alt="inline">
 </body></html>`;
   withTempHtml(html, (file) => {
     const result = runArtifactGate(file);
@@ -49,7 +60,7 @@ test('ignores external URLs and data URIs', () => {
 });
 
 test('passes when local image exists', () => {
-  const html = '<html><body><img src="logo.png"></body></html>';
+  const html = '<html><body><img src="logo.png" alt="logo"></body></html>';
   withTempHtml(html, (file, dir) => {
     fs.writeFileSync(path.join(dir, 'logo.png'), 'fake');
     const result = runArtifactGate(file);
@@ -156,4 +167,153 @@ test('multiple violations from different checks', () => {
     assert.ok(rules.has('raw-markdown'));
     assert.ok(rules.has('mermaid-density'));
   });
+});
+
+// --- Check 4: Mermaid classDef colour traps (A1 + A2) ---
+
+test('detects rgba()/rgb() in mermaid classDef', () => {
+  const html = '<html><body><pre class="mermaid">flowchart TD\n  A --> B\n  classDef focal fill:rgba(0,0,0,.5),stroke:#1c1917</pre></body></html>';
+  const violations = checkMermaidClassDef(html);
+  assert.ok(violations.some(v => v.rule === 'mermaid-classdef-color-fn'));
+});
+
+test('detects color: in mermaid classDef', () => {
+  const html = '<html><body><pre class="mermaid">flowchart TD\n  A --> B\n  classDef focal fill:#b5523a,color:#ffffff</pre></body></html>';
+  const violations = checkMermaidClassDef(html);
+  assert.ok(violations.some(v => v.rule === 'mermaid-classdef-color'));
+});
+
+test('clean classDef (fill/stroke hex only) passes', () => {
+  const html = '<html><body><pre class="mermaid">flowchart TD\n  A --> B\n  classDef focal fill:#b5523a,stroke:#1c1917</pre></body></html>';
+  assert.strictEqual(checkMermaidClassDef(html).length, 0);
+});
+
+// --- Check 5: Forbidden violet/fuchsia palette (A3) ---
+
+test('detects forbidden violet hex', () => {
+  const html = '<html><head><style>.x{color:#8B5CF6}</style></head><body>x</body></html>';
+  const violations = checkForbiddenColors(html);
+  assert.ok(violations.some(v => v.rule === 'forbidden-color'));
+});
+
+test('allows the sanctioned accent hex', () => {
+  const html = '<html><head><style>.x{color:#b5523a}</style></head><body>x</body></html>';
+  assert.strictEqual(checkForbiddenColors(html).length, 0);
+});
+
+// --- Check 6: Anchor href integrity (B1) ---
+
+test('detects anchor without href', () => {
+  const html = '<html><body><a>dead link</a></body></html>';
+  assert.ok(checkAnchorHrefs(html).some(v => v.rule === 'anchor-href'));
+});
+
+test('detects placeholder hash href', () => {
+  const html = '<html><body><a href="#">click</a></body></html>';
+  assert.ok(checkAnchorHrefs(html).some(v => v.rule === 'anchor-href'));
+});
+
+test('exempts pure jump targets (id/name, no href)', () => {
+  const html = '<html><body><a id="section-2"></a><a name="top"></a></body></html>';
+  assert.strictEqual(checkAnchorHrefs(html).length, 0);
+});
+
+test('allows a real link', () => {
+  const html = '<html><body><a href="https://example.com">go</a><a href="#section-2">jump</a></body></html>';
+  // "#section-2" is a same-page jump (non-empty fragment) → allowed; only bare "#" fails.
+  const v = checkAnchorHrefs(html);
+  assert.strictEqual(v.length, 0);
+});
+
+// --- Check 7: Image alt text (B2) ---
+
+test('detects img missing alt', () => {
+  const html = '<html><body><img src="x.png"></body></html>';
+  assert.ok(checkImageAlt(html).some(v => v.rule === 'image-alt'));
+});
+
+test('allows empty alt (decorative)', () => {
+  const html = '<html><body><img src="divider.png" alt=""></body></html>';
+  assert.strictEqual(checkImageAlt(html).length, 0);
+});
+
+// --- Check 8: Placeholder / scaffold leak (C1) ---
+
+test('detects mustache placeholder', () => {
+  const html = '<html><body><h1>{{ title }}</h1></body></html>';
+  assert.ok(checkPlaceholders(html).some(v => v.rule === 'placeholder'));
+});
+
+test('detects lorem ipsum', () => {
+  const html = '<html><body><p>Lorem ipsum dolor sit amet.</p></body></html>';
+  assert.ok(checkPlaceholders(html).some(v => v.rule === 'placeholder'));
+});
+
+test('detects bracketed stub', () => {
+  const html = '<html><body><p>Author: [YOUR NAME]</p></body></html>';
+  assert.ok(checkPlaceholders(html).some(v => v.rule === 'placeholder'));
+});
+
+test('does NOT flag bare TODO in prose', () => {
+  const html = '<html><body><p>This plugin should add a TODO list feature.</p></body></html>';
+  assert.strictEqual(checkPlaceholders(html).length, 0);
+});
+
+test('exempts placeholder-looking text inside code blocks', () => {
+  const html = '<html><body><pre>const tpl = "{{ name }}";</pre><code>lorem ipsum</code></body></html>';
+  assert.strictEqual(checkPlaceholders(html).length, 0);
+});
+
+// --- Check 9: Gradient-clipped text ---
+
+test('detects gradient-clipped text in a style block', () => {
+  const html = `<html><head><style>.hero{background:linear-gradient(90deg,#b5523a,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}</style></head><body>x</body></html>`;
+  assert.ok(checkGradientText(html).some(v => v.rule === 'gradient-text'));
+});
+
+test('detects gradient-clipped text in an inline style attribute', () => {
+  const html = `<html><body><h1 style="background-clip: text; color: transparent">Title</h1></body></html>`;
+  assert.ok(checkGradientText(html).some(v => v.rule === 'gradient-text'));
+});
+
+test('does NOT flag background-clip:text quoted inside a code block', () => {
+  const html = `<html><body><pre>h1 { -webkit-background-clip: text; }</pre></body></html>`;
+  assert.strictEqual(checkGradientText(html).length, 0);
+});
+
+test('clean styling without clipped text passes', () => {
+  const html = `<html><head><style>.x{background:#b5523a;color:#fff}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkGradientText(html).length, 0);
+});
+
+// --- Check 10: Font-family fallback chain ---
+
+test('detects a bare font-family with no generic fallback', () => {
+  const html = `<html><head><style>body{font-family:Geist}</style></head><body>x</body></html>`;
+  assert.ok(checkFontFallback(html).some(v => v.rule === 'font-fallback'));
+});
+
+test('passes a font-family that ends in a generic family', () => {
+  const html = `<html><head><style>body{font-family:Geist, system-ui, sans-serif}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkFontFallback(html).length, 0);
+});
+
+test('passes a quoted family with a generic fallback', () => {
+  const html = `<html><head><style>h1{font-family:"Instrument Serif", Georgia, serif}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkFontFallback(html).length, 0);
+});
+
+test('exempts @font-face which declares a font name, not a usage', () => {
+  const html = `<html><head><style>@font-face{font-family:"Geist";src:url(geist.woff2)}body{font-family:Geist, sans-serif}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkFontFallback(html).length, 0);
+});
+
+test('trusts a var()-only font-family chain', () => {
+  const html = `<html><head><style>body{font-family:var(--body-font)}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkFontFallback(html).length, 0);
+});
+
+test('flags a bare font-family in an inline style attribute', () => {
+  const html = `<html><body><p style="font-family: Geist">hi</p></body></html>`;
+  assert.ok(checkFontFallback(html).some(v => v.rule === 'font-fallback'));
 });

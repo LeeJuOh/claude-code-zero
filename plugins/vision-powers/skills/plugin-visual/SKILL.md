@@ -256,7 +256,7 @@ Save the combined `environment_fit` data for Phase 5/5R. Omit empty categories.
 
 For `security` mode, `overview` mode, or `analyze` mode with `--format md` — assemble inline markdown report:
 
-Assemble the report using `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/report-template.md` format:
+Assemble the report using `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/report-template.md` format. This template is an *information-structure schema* — which sections appear and what data each one carries — not an aesthetic template; it governs the inline-markdown report only and says nothing about visual design. (The HTML mode in Phase 5R is templateless by contrast: you author its design from scratch.)
 
 - **`overview` mode**: Identity + Component Inventory sections only
 - **`security` mode**: Security-focused report with risk summary, permission matrix, findings
@@ -271,11 +271,13 @@ Output the report in the detected language, using `${CLAUDE_PLUGIN_ROOT}/skills/
 Translate all section headers, labels, and descriptions to the target language.
 Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, LOW) untranslated.
 
+**Before delivering**, give the assembled markdown a quick pass (a guideline, not a script). The md path has no artifact-gate — `artifact-gate.js` is HTML-only — so this hand-check is what catches the scaffolding the gate would otherwise flag: no leftover `{placeholder}` / `{{ }}` / `[STUB]` tokens copied from the template schema, and every link resolves — source links use the full `github_url`/`file://` base from the source context, not a bare relative path that breaks once the report leaves this directory. Fix any you find, then deliver.
+
 Output the report directly to the user (inline markdown).
 
 #### Phase 5R: HTML Report Generation (analyze mode — default format)
 
-For `analyze` mode with HTML format (the default), write a self-contained HTML file yourself — `<!DOCTYPE html>` to `</html>`. No templates, no intermediate JSON, no agent chains.
+For `analyze` mode with HTML format (the default), write a self-contained HTML file yourself — `<!DOCTYPE html>` to `</html>`. No visual template, no intermediate JSON, no agent chains: the design is yours to author from scratch. (The md mode's `report-template.md` is an information-structure schema for the inline-markdown path, not a visual template — it doesn't apply here.)
 
 **1. Determine output path**:
 
@@ -314,8 +316,11 @@ Key diagram rules (always apply):
 1. Max 9 nodes, 12 arrows per diagram. Over budget → split
 2. 1-2 focal accents only
 3. No `rgba()` or `color:` in Mermaid classDef — parser breaks
-4. Always `theme: 'base'` with themeVariables from semantic-tokens
-5. Architecture diagrams with 15+ components → show 3-5 representatives per layer with total counts, keep under 25 nodes
+4. No violet/fuchsia "AI purple" hexes (`#8b5cf6`/`#7c3aed`/`#a78bfa`/`#d946ef`) — the gate fails on these
+5. Always `theme: 'base'` with themeVariables from semantic-tokens
+6. Architecture diagrams with 15+ components → show 3-5 representatives per layer with total counts, keep under 25 nodes
+
+The gate also fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders.
 
 **CSS essentials**: Write your own CSS inline. Must support:
 - `prefers-color-scheme: dark` via CSS custom properties
@@ -329,13 +334,36 @@ Key diagram rules (always apply):
 
 **Content integrity**: All analysis data from sub-agents must survive intact in the report — specific numbers, finding details, risk levels, recommendations. If you're writing "the security audit found issues" instead of listing the actual findings — that's compression.
 
+This cardinal rule (call it *summary-leak*) is one of seven authoring reflexes that pass every mechanical gate and still flatten the output. Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue — linear dump, forced diagram, generic label, uniform density, empty decoration, accent overuse. They're named defaults to break, not design rules: layout and taste stay yours, the catalogue just flags the habits worth resisting (e.g. a forced flowchart on a flat permission list, or every section — security, architecture, dependency map — rendered at the same weight).
+
 **3. Validate**: Run artifact-gate after writing:
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
 ```
 If violations found: fix inline, max 2 retries.
 
-**4. Open and present**:
+**4. Visual self-audit (HTML only)**:
+
+The gate reads the HTML as *text* — it never sees the rendered picture. An architecture or dependency-map diagram can pass the density check and still render as an unreadable tangle; a long permission-matrix label can clip at the container edge; the security/architecture/profile hierarchy that reads fine in source can collapse into a flat wall once styled. After the gate passes, **render the report and look at it** before delivering:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path>
+```
+
+On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
+
+- **Density** — is any section a uniform grey wall, or is the architecture/dependency diagram past its budget and unreadable?
+- **Hierarchy** — does anything draw the eye first, or are the security, architecture, and component-map sections all the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
+- **Mermaid integrity** — did the component map or security diagram render as raw `<pre>` text or as crossing/overlapping edges?
+- **Overflow** — does a diagram, permission matrix, or label run past its container or off the page?
+
+Fix what you see and re-render. **Cap at 2 audit passes** — if something still looks off after the second, ship with a one-line note to the user rather than looping. This catches gross breakage, not pixel-perfection.
+
+**If Chrome is absent**, `render-report.js` exits `1` (non-zero). Skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found — set `CHROME_BIN` or install Chrome"). The report already passed the gate; the visual pass is an enhancement and **never blocks delivery**.
+
+Full procedure, limits (fixed-height clipping, downscaling, render cost), and the rationale for *not* mechanizing this with a measurement script live in `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md`.
+
+**5. Open and present**:
 Run `open <output-path>`. Tell the user the report is ready and ask if they want changes.
 
 #### Phase 7: Cleanup
@@ -390,9 +418,11 @@ Read these during report generation (not upfront — read the relevant one when 
 |---|---|
 | `references/platforms/claude-code/analysis-criteria.md` | Plugin Profile criteria — component inventory, docs, quality checklist, skill categories, design quality |
 | `references/platforms/claude-code/security-rules.md` | Security patterns and risk classification (with context modifiers) |
-| `references/platforms/claude-code/report-template.md` | Report output format templates (inline markdown — Phase 5) |
+| `references/platforms/claude-code/report-template.md` | Information-structure schema for the inline-markdown report — section layout and data, not visual design (Phase 5) |
 | `references/platforms/claude-code/env-fit-diagnosis.md` | Environment Fit Diagnosis detailed steps (Phase 4.5) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram (Phase 5R) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme (Phase 5R) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section (Phase 5R) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex (Phase 5R) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` | While shaping content — to check you're not falling into a behavioral-slop reflex (Phase 5R) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md` | After the gate passes — the render-and-look loop, full procedure (Phase 5R) |

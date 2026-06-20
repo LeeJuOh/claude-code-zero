@@ -218,6 +218,8 @@ Output path: `${CLAUDE_PLUGIN_DATA}/reports/<scan_date>-context-health-visual.ht
 
 Include a header with: graded tally (N 🟢 / N 🟡 / N 🔴), top lever (one sentence), estimated startup load.
 
+While shaping the dashboard, watch for seven authoring reflexes that pass every mechanical gate and still flatten the output — summary-leak (a KPI label where the actual number/finding belongs), linear dump (sections stacked at equal weight with no proportion), forced diagram (a quadrant or timeline on data a table conveys better), generic label (a panel titled "Section 3" instead of what it diagnoses), uniform density (every status panel the same visual weight), empty decoration (a callout or icon carrying no signal), and accent overuse (more than 1–2 focal points per view). Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue. They're named defaults to break, not design rules: layout and which area leads stay yours — the catalogue just flags the habits worth resisting.
+
 **Diagrams**: Read these reference files for implementation:
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Mermaid syntax, theming, dark mode
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` — Color/font roles, Mermaid themeVariables
@@ -243,6 +245,27 @@ Key diagram rules:
 node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
 ```
 If violations found: fix inline, max 2 retries.
+
+**Visual self-audit (HTML only)**
+
+The gate reads the HTML as *text* — it never sees the rendered dashboard. A quadrant or timeline can pass the density check and still render as an unreadable tangle; a long skill name or finding can clip at a panel edge; a graded tally that reads fine in source can flatten into a uniform grid of identical cards once styled. After the gate passes, **render the dashboard and look at it** before delivering:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path>
+```
+
+On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
+
+- **Density** — is any section a uniform wall of KPI cards or a table past its budget, or a diagram too dense to read?
+- **Hierarchy** — does the section you judged load-bearing draw the eye first, or are all 10 sections the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
+- **Diagram integrity** — did a Mermaid quadrant/timeline/status diagram render as raw `<pre>` text or as crossing/overlapping edges?
+- **Overflow** — does a panel, table, long skill name, or collision pair run past its container or off the page?
+
+Fix what you see and re-render. **Cap at 2 audit passes** — if something still looks off after the second, ship with a one-line note to the user rather than looping. This catches gross breakage, not pixel-perfection.
+
+**If Chrome is absent**, `render-report.js` exits `1` (non-zero). Skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found — set `CHROME_BIN` or install Chrome"). The report already passed the gate; the visual pass is an enhancement and **never blocks delivery**.
+
+Full procedure, limits (fixed-height clipping, downscaling, render cost), and the rationale for *not* mechanizing this with a measurement script live in `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md`.
 
 Then run `open <output-path>`.
 
@@ -393,3 +416,5 @@ Read these as needed (not upfront):
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS/Mermaid theme |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` | While shaping content — to check you're not falling into a behavioral-slop reflex |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md` | After the gate passes — the render-and-look loop (full procedure) |

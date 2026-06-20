@@ -405,26 +405,6 @@ The template includes hover styles for clickable nodes:
 .mermaid .clickable:hover { filter: brightness(1.15); }
 ```
 
-## PNG Export
-
-Each `.mermaid-wrap` automatically gets a PNG export button (injected by `shared.js`). The export:
-
-1. Clones the SVG element
-2. Renders to canvas at 4x DPI for high-resolution output
-3. Fills background based on current color scheme (white for light, dark for dark)
-4. Triggers a download as `{document-title}.png`
-
-No additional markup needed — the button appears alongside the zoom controls automatically.
-
-## Touch Gestures
-
-Mobile touch support is built into `shared.js`:
-
-- **Pinch-to-zoom**: Two-finger pinch gesture zooms the diagram in/out (same range as scroll zoom: 0.3x to 30x)
-- **Touch drag**: Single-finger drag pans the diagram within the `.mermaid-wrap` container
-
-These work alongside the existing mouse controls (Ctrl/Cmd+scroll, click-drag panning).
-
 ## classDef Rules
 
 `classDef` values are static text inside `<pre>` — they can't use CSS variables or JS ternaries.
@@ -637,7 +617,7 @@ flowchart TD
 
 ### venn (fallback — inline SVG)
 
-Not supported by Mermaid. assemble-report.js generates a 3-circle overlap SVG:
+Not supported by Mermaid. Write a 3-circle overlap SVG inline:
 
 ```html
 <svg viewBox="0 0 300 200">

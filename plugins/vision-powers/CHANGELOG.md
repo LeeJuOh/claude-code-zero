@@ -1,5 +1,54 @@
 # Changelog
 
+## 4.4.0 — 2026-06-20
+
+### Added
+
+- **Two new gate checks, both reference-grounded and confined to generated chrome** (so neither fights the source-passthrough or taste-delegation principles). Test suite grows 32 → 42:
+  - **Gradient-clipped text** (`gradient-text`) — fails on `background-clip: text` in any real `<style>` block or inline `style=` attribute. Decorative gradient/clipped text is the landing-page flourish CONTEXT.md now lists as slop and taste-skill restricts; it hurts readability and never carries source content. CSS quoted inside `<pre>`/`<code>` is exempt, so reports can still document the trick.
+  - **Font fallback chain** (`font-fallback`) — fails on any `font-family` that names only web fonts with no generic family (`font-family: Geist` instead of `Geist, system-ui, sans-serif`). This mechanizes the 4.3.1 rule: the plugin bundles no web fonts, so a bare name silently drops to a browser default offline. `@font-face` (which declares a font's own name), bare CSS keywords, and `var()`-only chains are exempt.
+
+### Notes
+
+- **Deliberately not built:** an em-dash ban (would fight vision-powers' verbatim source-passthrough — em-dashes in the source must survive) and an off-palette/token-allowlist check (would fight the delegation of colour/taste to the model and the token-set rotation). An accent-count gate was also declined: how a focal node is marked in Mermaid (themeVariables vs `classDef` vs inline) is too varied to detect mechanically without false fires, so the focal ≤ 2 rule stays authoring guidance, as documented in 4.3.1.
+
+## 4.3.1 — 2026-06-20
+
+A documentation-truth audit of the whole plugin, in the same spirit as the 4.3.0 "JetBrains Mono" correction: every design-system rule and CONTEXT claim was checked against the actual code and against the `Kami` / `taste-skill` reference projects. Findings were corrections to the docs only — no behaviour change.
+
+### Fixed
+
+- **Stale references to scripts and agents removed in the 4.2.0 direct-authoring refactor.** Several design docs still described a pipeline that no longer exists, which would mislead the authoring model into assuming work is done for it:
+  - `semantic-tokens.md` claimed `aesthetic-rotation.js` picks the token set — that script is gone; the model now picks the set itself.
+  - `diagram-type-selection.md` named `section-analyzer` / `diagram-generator` agents as required readers — those agents no longer exist; the authoring model reads the file directly.
+  - `mermaid-patterns.md` attributed the venn SVG to `assemble-report.js` — the SVG is written inline by the model; only the attribution was wrong.
+  - `CONTEXT.md` called the design system `css-patterns` — the actual directory is `references/design-system/`.
+- **Phantom PNG-export and touch-gesture features cut from `mermaid-patterns.md`.** Both sections claimed a `shared.js` "automatically injects" the behaviour with "no markup needed," but `shared.js` does not exist anywhere in the plugin and no inline implementation was provided — so every report silently shipped without these features. The misleading sections are removed (the real, code-backed zoom/pan/keyboard controls are unchanged).
+- **Gate-enforcement overclaims corrected.** `diagram-density-rules.md` said `artifact-gate.js` "enforces the limits in this file"; the gate actually checks only the node/arrow/lifeline/lane/entity/nesting/depth budgets, so the focal-accent, quadrant, venn, pyramid, and per-document caps are now labelled authoring guidance. `CONTEXT.md`'s gate glossary listed "lang consistency" and "accent discipline" as gate checks — neither is implemented, so the glossary now lists the checks that actually run and notes the two as guidance-only.
+
+### Changed
+
+- **Font fallback chains + honest self-containment caveat.** The plugin bundles no web fonts and renders diagrams via the Mermaid CDN, so the "shareable as a single file" promise was overstated. `semantic-tokens.md` and `doc-visual` now require a full system fallback chain on every `font-family` (so output degrades gracefully offline, the way Kami's per-language `--serif` chains do), and `CONTEXT.md` states the two real limits (Mermaid CDN at first view, fonts not bundled) plain.
+
+## 4.3.0 — 2026-06-14
+
+### Added
+
+- **Artifact gate now enforces five rules it previously only documented.** CONTEXT.md and ADR 0002 name the gate as the one form of leverage the model "can't be merely *asked* to guarantee," yet `artifact-gate.js` enforced only 3 checks while `semantic-tokens.md`/`artifact-gate.md` declared more as FORBIDDEN and left them to authoring judgment. Five checks close that gap (all fail-level, run through the existing fix-retry loop):
+  - **Mermaid classDef colour traps** — `rgb()`/`rgba()` (Mermaid parser breakage) or an explicit `color:` (overrides CSS dark-mode tokens) inside a classDef.
+  - **Forbidden palette** — the violet/fuchsia "AI purple" hexes (`#8b5cf6`, `#7c3aed`, `#a78bfa`, `#d946ef`) banned by `semantic-tokens.md`. Exact-hex match (also catches 8-digit alpha variants); `hsl()`/`oklch()` purple detection deferred.
+  - **Anchor href integrity** — `<a>` with missing/empty/`#` href; pure `id`/`name` jump targets are exempt.
+  - **Image alt** — `<img>` missing an `alt` attribute (`alt=""` for decorative images is allowed).
+  - **Placeholder leak** — unfilled `{{ … }}`, lorem ipsum, or bracketed stubs (`[YOUR NAME]`, `[TODO]`); bare `TODO`/`FIXME` and code regions are deliberately exempt so reports can quote source faithfully.
+
+### Changed
+
+- **Dropped the `semantic-tokens.md` "JetBrains Mono is forbidden" rule** — it was not grounded in the references it claimed to mine. Both Kami (bundles JetBrains Mono as its own `--mono`) and taste-skill (recommends `Satoshi + JetBrains Mono`) treat it as a legitimate mono. The genuine, reference-backed principle — *mono is for technical spans, not body text* — is retained; only the unfounded singling-out of JetBrains Mono by name is removed, and the planned gate check that would have enforced it was cut.
+
+### Docs
+
+- `references/design-system/artifact-gate.md` and `skills/doc-visual/SKILL.md` — the "checks three things" automation lists now enumerate all eight checks, and note that accent ≤ 2 and lang consistency remain authoring-judgment items.
+
 ## 4.1.1 — 2026-04-19
 
 ### Fixed

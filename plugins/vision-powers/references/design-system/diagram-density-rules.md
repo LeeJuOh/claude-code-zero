@@ -1,6 +1,6 @@
 # Diagram Density Rules
 
-Keep each diagram **light**; when the budget is exceeded, split it into multiple diagrams. `artifact-gate.js` **enforces** the limits in this file.
+Keep each diagram **light**; when the budget is exceeded, split it into multiple diagrams. `artifact-gate.js` **enforces the node, arrow, sequence-lifeline, swimlane-lane, ER-entity, nesting-level, and tree-depth budgets** below. The remaining limits (focal/accent count, quadrant items, venn circles, pyramid/layer-stack depth, per-document diagram caps) are **authoring guidance the gate does not check** — hold to them yourself.
 
 ## Complexity budget per type
 

@@ -107,15 +107,21 @@ function checkMissingImages(html, htmlDir) {
   return violations;
 }
 
-// --- Check 2: Raw markdown remnants ---
+// --- Shared: strip regions where prose-level rules don't apply ---
 
-function checkRawMarkdown(html) {
-  const violations = [];
-  const stripped = html
+function stripCodeRegions(html) {
+  return html
     .replace(/<pre[\s>][\s\S]*?<\/pre>/gi, '')
     .replace(/<code[\s>][\s\S]*?<\/code>/gi, '')
     .replace(/<script[\s>][\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s>][\s\S]*?<\/style>/gi, '');
+}
+
+// --- Check 2: Raw markdown remnants ---
+
+function checkRawMarkdown(html) {
+  const violations = [];
+  const stripped = stripCodeRegions(html);
 
   const headings = stripped.match(/^\s*#{1,6}\s+\S/gm);
   if (headings) {
@@ -169,6 +175,183 @@ function checkMermaidDensity(html) {
   return violations;
 }
 
+// --- Shared: extract decoded Mermaid source blocks ---
+
+function extractMermaidBlocks(html) {
+  const blocks = [];
+  const mermaidRe = /<pre\s+class=["']mermaid["'][^>]*>([\s\S]*?)<\/pre>/gi;
+  for (const m of html.matchAll(mermaidRe)) {
+    blocks.push(m[1].replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'));
+  }
+  return blocks;
+}
+
+// --- Check 4: Mermaid classDef colour traps (A1 + A2) ---
+// rgb()/rgba() silently break the Mermaid parser, and an explicit `color:` in a
+// classDef overrides our CSS dark-mode token so the node text turns unreadable in
+// one of the two schemes. Both are declared FORBIDDEN in semantic-tokens.md and
+// artifact-gate.md, but were previously left to authoring discipline — i.e. a wish.
+
+function checkMermaidClassDef(html) {
+  const violations = [];
+  let idx = 0;
+  for (const code of extractMermaidBlocks(html)) {
+    idx++;
+    for (const line of code.split('\n')) {
+      if (!/\bclassDef\b/.test(line)) continue;
+      if (/\brgba?\s*\(/i.test(line)) {
+        violations.push({ rule: 'mermaid-classdef-color-fn', hint: `Diagram #${idx}: rgb()/rgba() in classDef breaks the Mermaid parser — use 8-digit hex #RRGGBBAA` });
+      }
+      if (/(?:^|[,\s])color\s*:/i.test(line)) {
+        violations.push({ rule: 'mermaid-classdef-color', hint: `Diagram #${idx}: 'color:' in classDef overrides dark-mode tokens — set node text via a CSS .nodeLabel override instead` });
+      }
+    }
+  }
+  return violations;
+}
+
+// --- Check 5: Forbidden violet/fuchsia palette (A3) ---
+// The violet/fuchsia family is the LLM-default "AI purple" that semantic-tokens.md
+// bans as a palette colour. Exact-hex match keeps false positives at zero; the
+// substring test also catches 8-digit (alpha) variants. hsl()/oklch() purple
+// detection is deliberately deferred to a later pass.
+
+const FORBIDDEN_HEXES = ['#8b5cf6', '#7c3aed', '#a78bfa', '#d946ef'];
+
+function checkForbiddenColors(html) {
+  const violations = [];
+  const lower = html.toLowerCase();
+  for (const hex of FORBIDDEN_HEXES) {
+    if (lower.includes(hex)) {
+      violations.push({ rule: 'forbidden-color', hint: `Violet/fuchsia palette colour ${hex} is the AI-default accent banned by semantic-tokens.md` });
+    }
+  }
+  return violations;
+}
+
+// --- Check 6: Anchor href integrity (B1) ---
+// CONTEXT.md names link-href as a gate check. A dead anchor (no href, empty, or
+// "#") is a broken affordance the model can leave behind. Pure jump targets that
+// carry an id/name but no href are legitimate and exempt.
+
+function checkAnchorHrefs(html) {
+  const violations = [];
+  for (const m of html.matchAll(/<a\b([^>]*)>/gi)) {
+    const attrs = m[1];
+    const href = /href\s*=\s*["']([^"']*)["']/i.exec(attrs);
+    if (!href) {
+      if (!/\b(?:id|name)\s*=/i.test(attrs)) {
+        violations.push({ rule: 'anchor-href', hint: `<a> without href — dead link or missing target` });
+      }
+      continue;
+    }
+    const val = href[1].trim();
+    if (val === '' || val === '#') {
+      violations.push({ rule: 'anchor-href', hint: `<a href="${val}"> is a placeholder link` });
+    }
+  }
+  return violations;
+}
+
+// --- Check 7: Image alt text (B2) ---
+// CONTEXT.md names image-alt as a gate check: an <img> with no alt attribute is
+// invisible to screen readers and reads as a hastily-dropped asset. An empty
+// alt="" is a valid choice for decorative images, so only a missing attribute fails.
+
+function checkImageAlt(html) {
+  const violations = [];
+  for (const m of html.matchAll(/<img\b([^>]*)>/gi)) {
+    if (!/\balt\s*=/i.test(m[1])) {
+      const src = /src\s*=\s*["']([^"']*)["']/i.exec(m[1]);
+      violations.push({ rule: 'image-alt', hint: `<img> missing alt attribute${src ? `: ${src[1]}` : ''}` });
+    }
+  }
+  return violations;
+}
+
+// --- Check 8: Placeholder / scaffold leak (C1) ---
+// Template scaffolding the model forgot to fill — mustache tokens, lorem ipsum,
+// or bracketed stubs — is content the report promised but never delivered. Bare
+// "TODO"/"FIXME" are intentionally NOT matched: vision-powers reports legitimately
+// discuss source code that contains them. Code regions are stripped so quoted
+// source stays exempt.
+
+function checkPlaceholders(html) {
+  const violations = [];
+  const body = stripCodeRegions(html);
+  if (/\{\{[^}]*\}\}/.test(body)) {
+    violations.push({ rule: 'placeholder', hint: `Unfilled mustache placeholder ({{ ... }}) left in output` });
+  }
+  if (/lorem ipsum/i.test(body)) {
+    violations.push({ rule: 'placeholder', hint: `Lorem ipsum filler text left in output` });
+  }
+  if (/\[(?:placeholder|todo|fixme|your[\s_][^\]]*|insert\b[^\]]*)\]/i.test(body)) {
+    violations.push({ rule: 'placeholder', hint: `Bracketed placeholder stub left in output` });
+  }
+  return violations;
+}
+
+// --- Shared: pull the real CSS (style blocks + inline style attrs) ---
+// stripCodeRegions removes <style>, but these CSS checks must look *inside* the
+// stylesheet, so they read <style> blocks and inline style="" attributes — the CSS
+// the browser actually applies. A <pre>/<code> block that merely *quotes* CSS is
+// HTML-escaped (&lt;style&gt;), so it never matches the real <style> tag; quoted
+// source therefore stays exempt and the source-passthrough rule is preserved.
+
+function extractStyleRegions(html) {
+  let css = '';
+  for (const m of html.matchAll(/<style[\s>][\s\S]*?<\/style>/gi)) css += '\n' + m[0];
+  for (const m of html.matchAll(/\bstyle\s*=\s*["']([^"']*)["']/gi)) css += '\n' + m[1];
+  return css;
+}
+
+// --- Check 9: Gradient-clipped text (D1) ---
+// `background-clip: text` paints text with a clipped gradient/image fill — the
+// decorative landing-page flourish CONTEXT.md classes as slop and taste-skill
+// restricts. It hurts readability and is never reproduced source content (it lives
+// only in generated chrome), so it is safe to fail on. Grounded in taste-skill's
+// gradient-text restraint + Kami's ban on gradient fills, not invented here.
+
+function checkGradientText(html) {
+  const css = extractStyleRegions(html);
+  if (/-?(?:webkit-)?background-clip\s*:\s*text\b/i.test(css)) {
+    return [{ rule: 'gradient-text', hint: `background-clip:text (gradient-clipped text) is decorative slop — use a solid accent colour so the text stays readable` }];
+  }
+  return [];
+}
+
+// --- Check 10: Font-family fallback chain (D2) ---
+// semantic-tokens.md requires every font-family to end in a system fallback, because
+// the plugin bundles no web fonts: a bare `font-family: Geist` silently drops to an
+// arbitrary browser default offline. A declaration passes as long as it carries at
+// least one generic family; bare keywords and unresolvable var() chains are trusted.
+// @font-face blocks declare a font's *own* name (no fallback expected) and are exempt.
+
+const GENERIC_FAMILIES = new Set([
+  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy',
+  'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded',
+  'math', 'emoji', 'fangsong', '-apple-system', 'blinkmacsystemfont',
+]);
+const FONT_KEYWORDS = new Set(['inherit', 'initial', 'unset', 'revert', 'revert-layer']);
+
+function checkFontFallback(html) {
+  const violations = [];
+  const css = extractStyleRegions(html).replace(/@font-face\s*\{[^}]*\}/gi, '');
+  for (const m of css.matchAll(/font-family\s*:\s*([^;}]+)/gi)) {
+    const value = m[1].replace(/!important/i, '').trim();
+    if (!value) continue;
+    if (FONT_KEYWORDS.has(value.toLowerCase())) continue;
+    const tokens = value.split(',')
+      .map(t => t.trim().replace(/^["']|["']$/g, '').toLowerCase())
+      .filter(Boolean);
+    if (tokens.length === 1 && /^var\(/.test(tokens[0])) continue;
+    if (!tokens.some(t => GENERIC_FAMILIES.has(t))) {
+      violations.push({ rule: 'font-fallback', hint: `font-family "${value}" has no generic fallback (end it with e.g. sans-serif) — bare web-font names drop to a browser default offline` });
+    }
+  }
+  return violations;
+}
+
 // --- Main ---
 
 function runArtifactGate(htmlPath) {
@@ -182,12 +365,32 @@ function runArtifactGate(htmlPath) {
     ...checkMissingImages(html, htmlDir),
     ...checkRawMarkdown(html),
     ...checkMermaidDensity(html),
+    ...checkMermaidClassDef(html),
+    ...checkForbiddenColors(html),
+    ...checkAnchorHrefs(html),
+    ...checkImageAlt(html),
+    ...checkPlaceholders(html),
+    ...checkGradientText(html),
+    ...checkFontFallback(html),
   ];
 
   return { ok: violations.length === 0, violations };
 }
 
-module.exports = { runArtifactGate, checkMissingImages, checkRawMarkdown, checkMermaidDensity, DENSITY_BUDGETS };
+module.exports = {
+  runArtifactGate,
+  checkMissingImages,
+  checkRawMarkdown,
+  checkMermaidDensity,
+  checkMermaidClassDef,
+  checkForbiddenColors,
+  checkAnchorHrefs,
+  checkImageAlt,
+  checkPlaceholders,
+  checkGradientText,
+  checkFontFallback,
+  DENSITY_BUDGETS,
+};
 
 if (require.main === module) {
   const htmlPath = process.argv[2];
