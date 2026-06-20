@@ -57,6 +57,12 @@
       "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Dedicated commands per phase (/duck-design, /duck-plan, /duck-verify, /duck-review, /duck-orient) plus /duck for auto-detect. Auto-hooks at plan creation, spec documents, PR/MR, and git push."
     },
     {
+      "name": "x-twitter-scraper",
+      "source": "./plugins/x-twitter-scraper",
+      "version": "1.0.0",
+      "description": "Plan Xquik X/Twitter research, monitoring, REST API, and remote MCP workflows with scoped requests and credential-safe setup."
+    },
+    {
       "name": "e2e-test-runner",
       "source": "./plugins/e2e-test-runner",
       "version": "0.2.0",
