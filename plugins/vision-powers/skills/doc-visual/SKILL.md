@@ -128,6 +128,8 @@ The source document's substance must survive intact in the report. This means:
 
 If you're writing "this section covers X" or "the document describes Y" — stop. That's a summary of the content, not the content. Include the actual content.
 
+This cardinal rule (call it *summary-leak*) is one of seven authoring reflexes that pass every mechanical gate and still flatten the output. Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue — linear dump, forced diagram, generic label, uniform density, empty decoration, accent overuse. They're named defaults to break, not design rules: layout and taste stay yours, the catalogue just flags the habits worth resisting.
+
 Short documents (<500 chars) get 1 section + 1 hero diagram. Long documents get proper sectioning but still preserve all substance.
 
 ## Validation (HTML only)
@@ -149,6 +151,27 @@ It checks, in this order:
 8. **Placeholder leak** — unfilled `{{ … }}`, lorem ipsum, or bracketed stubs left in the body
 
 If violations found: fix them inline (re-edit the HTML). Max 2 retry cycles. If still failing after 2 fixes, remove the offending element and log a warning.
+
+## Visual self-audit (HTML only)
+
+The gate reads the HTML as *text* — it never sees the rendered picture. A diagram can pass the density check and still render as an unreadable tangle; a label can clip at the container edge; hierarchy that reads fine in source can collapse into a flat wall once styled. After the gate passes, **render the report and look at it** before delivering:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-html-path>
+```
+
+On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
+
+- **Density** — is any section a uniform grey wall, or a diagram past its budget and unreadable?
+- **Hierarchy** — does anything draw the eye first, or is every section the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
+- **Mermaid integrity** — did a diagram render as raw `<pre>` text or as crossing/overlapping edges?
+- **Overflow** — does a diagram, table, or label run past its container or off the page?
+
+Fix what you see and re-render. **Cap at 2 audit passes** — if something still looks off after the second, ship with a one-line note to the user rather than looping. This catches gross breakage, not pixel-perfection.
+
+**If Chrome is absent**, `render-report.js` exits `1` (non-zero). Skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found — set `CHROME_BIN` or install Chrome"). The report already passed the gate; the visual pass is an enhancement and **never blocks delivery**.
+
+Full procedure, limits (fixed-height clipping, downscaling, render cost), and the rationale for *not* mechanizing this with a measurement script live in `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md`.
 
 ## Output
 
@@ -174,3 +197,5 @@ Read these during report generation (not upfront — read the relevant one when 
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` | While shaping content — to check you're not falling into a behavioral-slop reflex |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md` | After the gate passes — the render-and-look loop (full procedure) |
