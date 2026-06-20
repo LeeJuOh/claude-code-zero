@@ -29,7 +29,7 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "4.4.0",
+      "version": "4.4.1",
       "description": "Analyze Claude Code plugins and visualize development artifacts as interactive HTML or diagram-enhanced markdown reports. Six skills: plugin-visual (local/installed/GitHub plugin audits with security + architecture), diff-visual (git diffs), doc-visual (markdown docs with Mermaid diagrams), fact-check (claim verification against code + git history), context-health-visual (environment health with skill-security scan and hook schema validation), report-manager (list/open/delete/search/refine). Every report supports --format md, --lang, and in-browser per-section feedback."
     },
     {
