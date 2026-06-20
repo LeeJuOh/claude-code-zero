@@ -105,7 +105,13 @@ Surgically edit a section of an existing report without full regeneration.
    ```
    node ${CLAUDE_SKILL_DIR}/../../scripts/render-report.js <report-path>
    ```
-   On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge — **density** (uniform grey wall, or a diagram past its budget), **hierarchy** (does anything draw the eye first, or is every section the same weight?), **Mermaid integrity** (rendered as raw `<pre>` or as crossing/overlapping edges?), and **overflow** (a diagram, table, or label running past its container). Fix what you see and re-render — **cap at 2 audit passes**, then ship with a one-line note rather than looping. **If Chrome is absent**, `render-report.js` exits non-zero; skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found"). The visual pass is an enhancement and **never blocks** delivery. Full procedure: `${CLAUDE_SKILL_DIR}/../../references/design-system/visual-self-audit.md`.
+   On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
+   - **Density** — is the edited section a uniform grey wall, or a diagram past its budget and unreadable?
+   - **Hierarchy** — does anything draw the eye first, or is every section the same weight?
+   - **Mermaid integrity** — did a diagram render as raw `<pre>` text or as crossing/overlapping edges?
+   - **Overflow** — does a diagram, table, or label run past its container or off the page?
+
+   Fix what you see and re-render — **cap at 2 audit passes**, then ship with a one-line note rather than looping. **If Chrome is absent**, `render-report.js` exits non-zero; skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found — set `CHROME_BIN` or install Chrome"). The visual pass is an enhancement and **never blocks** delivery. Full procedure: `${CLAUDE_SKILL_DIR}/../../references/design-system/visual-self-audit.md`.
 8. **Report**: Print `file://` URL, summarize what changed
 
 ### Feedback harvesting

@@ -218,7 +218,7 @@ Output path: `${CLAUDE_PLUGIN_DATA}/reports/<scan_date>-context-health-visual.ht
 
 Include a header with: graded tally (N 🟢 / N 🟡 / N 🔴), top lever (one sentence), estimated startup load.
 
-While shaping the dashboard, watch for seven authoring reflexes that pass every mechanical gate and still flatten the output — summary-leak (a KPI label where the actual number/finding belongs), linear dump (sections stacked at equal weight with no proportion), forced diagram (a quadrant or timeline on data a table conveys better), generic label (a panel titled "Section 3" instead of what it diagnoses), uniform density (every status panel the same visual weight), empty decoration (a callout or icon carrying no signal), and accent overuse (more than 1–2 focal points per view). Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue. They're named defaults to break, not design rules: the layout, palette, and which area leads stay yours — the catalogue just flags the habits worth resisting.
+While shaping the dashboard, watch for seven authoring reflexes that pass every mechanical gate and still flatten the output — summary-leak (a KPI label where the actual number/finding belongs), linear dump (sections stacked at equal weight with no proportion), forced diagram (a quadrant or timeline on data a table conveys better), generic label (a panel titled "Section 3" instead of what it diagnoses), uniform density (every status panel the same visual weight), empty decoration (a callout or icon carrying no signal), and accent overuse (more than 1–2 focal points per view). Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue. They're named defaults to break, not design rules: layout and which area leads stay yours — the catalogue just flags the habits worth resisting.
 
 **Diagrams**: Read these reference files for implementation:
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Mermaid syntax, theming, dark mode
@@ -257,7 +257,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path>
 On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
 
 - **Density** — is any section a uniform wall of KPI cards or a table past its budget, or a diagram too dense to read?
-- **Hierarchy** — does the top lever / critical area draw the eye first, or are all 10 sections the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
+- **Hierarchy** — does the section you judged load-bearing draw the eye first, or are all 10 sections the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
 - **Diagram integrity** — did a Mermaid quadrant/timeline/status diagram render as raw `<pre>` text or as crossing/overlapping edges?
 - **Overflow** — does a panel, table, long skill name, or collision pair run past its container or off the page?
 

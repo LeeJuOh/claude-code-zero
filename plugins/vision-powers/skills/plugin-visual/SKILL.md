@@ -271,7 +271,7 @@ Output the report in the detected language, using `${CLAUDE_PLUGIN_ROOT}/skills/
 Translate all section headers, labels, and descriptions to the target language.
 Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, LOW) untranslated.
 
-**Before delivering**, give the assembled markdown a quick pass (a guideline, not a script): no leftover `{placeholder}` / `{{ }}` / `[STUB]` tokens copied from the template schema, and every link resolves — source links use the full `github_url`/`file://` base from the source context, not a bare relative path that breaks once the report leaves this directory. Fix any you find, then deliver.
+**Before delivering**, give the assembled markdown a quick pass (a guideline, not a script). The md path has no artifact-gate — `artifact-gate.js` is HTML-only — so this hand-check is what catches the scaffolding the gate would otherwise flag: no leftover `{placeholder}` / `{{ }}` / `[STUB]` tokens copied from the template schema, and every link resolves — source links use the full `github_url`/`file://` base from the source context, not a bare relative path that breaks once the report leaves this directory. Fix any you find, then deliver.
 
 Output the report directly to the user (inline markdown).
 
@@ -342,7 +342,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
 ```
 If violations found: fix inline, max 2 retries.
 
-**3.5. Visual self-audit (HTML only)**:
+**4. Visual self-audit (HTML only)**:
 
 The gate reads the HTML as *text* — it never sees the rendered picture. An architecture or dependency-map diagram can pass the density check and still render as an unreadable tangle; a long permission-matrix label can clip at the container edge; the security/architecture/profile hierarchy that reads fine in source can collapse into a flat wall once styled. After the gate passes, **render the report and look at it** before delivering:
 
@@ -363,7 +363,7 @@ Fix what you see and re-render. **Cap at 2 audit passes** — if something still
 
 Full procedure, limits (fixed-height clipping, downscaling, render cost), and the rationale for *not* mechanizing this with a measurement script live in `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md`.
 
-**4. Open and present**:
+**5. Open and present**:
 Run `open <output-path>`. Tell the user the report is ready and ask if they want changes.
 
 #### Phase 7: Cleanup

@@ -182,7 +182,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path>
 On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
 
 - **Density** — is any section a uniform grey wall, or a file-map / dependency-shift diagram past its budget and unreadable?
-- **Hierarchy** — does the load-bearing change (architecture impact, hot spots) draw the eye first, or is every section the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
+- **Hierarchy** — does the change you judged load-bearing draw the eye first, or is every section the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
 - **Mermaid integrity** — did the file map, dependency-shift subgraphs, or hot-spots quadrant render as raw `<pre>` text or as crossing/overlapping edges?
 - **Overflow** — does a diagram, classification table, or long file path run past its container or off the page?
 
