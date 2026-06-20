@@ -163,6 +163,8 @@ The gate also fails on dead links, alt-less images, and leftover scaffolding: gi
 
 **Content integrity**: Every number, file path, function name, and behavioral claim in the report must trace back to the verified fact sheet. If you're writing "this change affects X" — that must be in your fact sheet. Numbers must match git output exactly.
 
+Beyond integrity, seven authoring reflexes pass every mechanical gate and still flatten the output — summary-leak (a one-line gist where the diff's actual changes belong), linear dump (file-by-file with no proportion), forced diagram (a flowchart for a change classification a table conveys better), generic label, uniform density, empty decoration, accent overuse. Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue. They're named defaults to break, not design rules: layout and taste stay yours — the catalogue just flags the habits worth resisting (e.g. let the load-bearing hot spot draw the eye first, don't render the dependency shift and a two-line aside at the same weight).
+
 **Output path**: `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`).
 
 **Validation**: After writing the HTML, run artifact-gate:
@@ -170,6 +172,25 @@ The gate also fails on dead links, alt-less images, and leftover scaffolding: gi
 node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
 ```
 If violations found: fix inline, max 2 retries.
+
+**Visual self-audit (HTML only)**: The gate reads the HTML as *text* — it never sees the rendered picture. A file-map tree can pass the density check and still render as an unreadable tangle; a long file path can clip at the container edge; the hot-spots quadrant that reads fine in source can collapse into a flat wall once styled. After the gate passes, **render the report and look at it** before delivering:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path>
+```
+
+On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
+
+- **Density** — is any section a uniform grey wall, or a file-map / dependency-shift diagram past its budget and unreadable?
+- **Hierarchy** — does the load-bearing change (architecture impact, hot spots) draw the eye first, or is every section the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
+- **Mermaid integrity** — did the file map, dependency-shift subgraphs, or hot-spots quadrant render as raw `<pre>` text or as crossing/overlapping edges?
+- **Overflow** — does a diagram, classification table, or long file path run past its container or off the page?
+
+Fix what you see and re-render. **Cap at 2 audit passes** — if something still looks off after the second, ship with a one-line note to the user rather than looping. This catches gross breakage, not pixel-perfection.
+
+**If Chrome is absent**, `render-report.js` exits `1` (non-zero). Skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found — set `CHROME_BIN` or install Chrome"). The report already passed the gate; the visual pass is an enhancement and **never blocks delivery**.
+
+Full procedure, limits (fixed-height clipping, downscaling, render cost), and the rationale for *not* mechanizing this with a measurement script live in `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md`.
 
 Then run `open <output-path>`.
 
@@ -230,3 +251,5 @@ Read these during report generation (not upfront — read the relevant one when 
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` | While shaping content — to check you're not falling into a behavioral-slop reflex |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md` | After the gate passes — the render-and-look loop (full procedure) |

@@ -94,13 +94,19 @@ Surgically edit a section of an existing report without full regeneration.
 2. **Harvest in-browser feedback (optional, see "Feedback harvesting" below)**: if the user has been leaving notes via the ✎ UI, read them before asking for more
 3. **Identify section**: If feedback (from step 2 or user message) names specific sections, use those. Otherwise parse from message; if still ambiguous, Read the report, list `<section id="...">` headings, and use AskUserQuestion to let the user pick
 4. **Gather context**: If feedback references source code or git data, use Grep/Read to get correct info
-5. **Apply edit**: Read the target section, use Edit to modify it. Preserve HTML structure, CSS classes, `style="--i: N"` values, and Mermaid/Chart.js formatting. Do not touch other sections
+5. **Apply edit**: Read the target section, use Edit to modify it. Preserve HTML structure, CSS classes, `style="--i: N"` values, and Mermaid/Chart.js formatting. Do not touch other sections.
+   - When you re-author the section's *content* (not just patch a value), don't reintroduce behavioral slop. Read `${CLAUDE_SKILL_DIR}/../../references/design-system/anti-slop-tells.md` for the catalogue of named defaults to break — summary-leak, linear dump, forced diagram, generic label, uniform density, empty decoration, accent overuse. They're reflexes to resist, not a layout to apply: taste and structure stay yours.
 6. **Validate**:
    ```
    node ${CLAUDE_SKILL_DIR}/../../scripts/artifact-gate.js <report-path>
    ```
    If violations found, fix inline and re-validate (max 2 retries).
-7. **Report**: Print `file://` URL, summarize what changed
+7. **Visual self-audit (HTML only)**: The gate reads the HTML as *text* — it never sees the rendered picture, so a re-authored section can pass the gate and still render as a tangled diagram, a clipped label, or a flat grey wall. After the gate passes, render the report and look at it:
+   ```
+   node ${CLAUDE_SKILL_DIR}/../../scripts/render-report.js <report-path>
+   ```
+   On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge — **density** (uniform grey wall, or a diagram past its budget), **hierarchy** (does anything draw the eye first, or is every section the same weight?), **Mermaid integrity** (rendered as raw `<pre>` or as crossing/overlapping edges?), and **overflow** (a diagram, table, or label running past its container). Fix what you see and re-render — **cap at 2 audit passes**, then ship with a one-line note rather than looping. **If Chrome is absent**, `render-report.js` exits non-zero; skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found"). The visual pass is an enhancement and **never blocks** delivery. Full procedure: `${CLAUDE_SKILL_DIR}/../../references/design-system/visual-self-audit.md`.
+8. **Report**: Print `file://` URL, summarize what changed
 
 ### Feedback harvesting
 
@@ -114,7 +120,7 @@ Every vision-powers HTML report embeds a per-section feedback UI (the ✎ pencil
 
 When the user invokes `/refine` without specifying what to change (e.g., "refine the last report"), try to harvest their in-browser notes first — they may have already written the feedback.
 
-**Path A: MCP available** — detect by attempting `tabs_context_mcp` first; if it returns without a "tool not found" error, Path A is live and you proceed with the steps below. If the call errors out (tool unavailable, extension disconnected), fall through to Path B.
+**Path A: MCP available** — detect by attempting `tabs_context_mcp` first; if it returns without a "tool not found" error, Path A is live and you proceed with the steps below. If the call errors out (tool unavailable, extension disconnected), tell the user the in-browser feedback couldn't be retrieved (e.g. "note: couldn't reach the browser to harvest your ✎ notes — falling back to asking"), then fall through to Path B.
 
 1. `tabs_context_mcp` with `createIfEmpty: true` — get a tab
 2. `navigate` to the report's `file://` URL
