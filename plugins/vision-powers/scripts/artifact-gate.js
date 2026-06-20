@@ -291,6 +291,67 @@ function checkPlaceholders(html) {
   return violations;
 }
 
+// --- Shared: pull the real CSS (style blocks + inline style attrs) ---
+// stripCodeRegions removes <style>, but these CSS checks must look *inside* the
+// stylesheet, so they read <style> blocks and inline style="" attributes — the CSS
+// the browser actually applies. A <pre>/<code> block that merely *quotes* CSS is
+// HTML-escaped (&lt;style&gt;), so it never matches the real <style> tag; quoted
+// source therefore stays exempt and the source-passthrough rule is preserved.
+
+function extractStyleRegions(html) {
+  let css = '';
+  for (const m of html.matchAll(/<style[\s>][\s\S]*?<\/style>/gi)) css += '\n' + m[0];
+  for (const m of html.matchAll(/\bstyle\s*=\s*["']([^"']*)["']/gi)) css += '\n' + m[1];
+  return css;
+}
+
+// --- Check 9: Gradient-clipped text (D1) ---
+// `background-clip: text` paints text with a clipped gradient/image fill — the
+// decorative landing-page flourish CONTEXT.md classes as slop and taste-skill
+// restricts. It hurts readability and is never reproduced source content (it lives
+// only in generated chrome), so it is safe to fail on. Grounded in taste-skill's
+// gradient-text restraint + Kami's ban on gradient fills, not invented here.
+
+function checkGradientText(html) {
+  const css = extractStyleRegions(html);
+  if (/-?(?:webkit-)?background-clip\s*:\s*text\b/i.test(css)) {
+    return [{ rule: 'gradient-text', hint: `background-clip:text (gradient-clipped text) is decorative slop — use a solid accent colour so the text stays readable` }];
+  }
+  return [];
+}
+
+// --- Check 10: Font-family fallback chain (D2) ---
+// semantic-tokens.md requires every font-family to end in a system fallback, because
+// the plugin bundles no web fonts: a bare `font-family: Geist` silently drops to an
+// arbitrary browser default offline. A declaration passes as long as it carries at
+// least one generic family; bare keywords and unresolvable var() chains are trusted.
+// @font-face blocks declare a font's *own* name (no fallback expected) and are exempt.
+
+const GENERIC_FAMILIES = new Set([
+  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy',
+  'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded',
+  'math', 'emoji', 'fangsong', '-apple-system', 'blinkmacsystemfont',
+]);
+const FONT_KEYWORDS = new Set(['inherit', 'initial', 'unset', 'revert', 'revert-layer']);
+
+function checkFontFallback(html) {
+  const violations = [];
+  const css = extractStyleRegions(html).replace(/@font-face\s*\{[^}]*\}/gi, '');
+  for (const m of css.matchAll(/font-family\s*:\s*([^;}]+)/gi)) {
+    const value = m[1].replace(/!important/i, '').trim();
+    if (!value) continue;
+    if (FONT_KEYWORDS.has(value.toLowerCase())) continue;
+    const tokens = value.split(',')
+      .map(t => t.trim().replace(/^["']|["']$/g, '').toLowerCase())
+      .filter(Boolean);
+    if (tokens.length === 1 && /^var\(/.test(tokens[0])) continue;
+    if (!tokens.some(t => GENERIC_FAMILIES.has(t))) {
+      violations.push({ rule: 'font-fallback', hint: `font-family "${value}" has no generic fallback (end it with e.g. sans-serif) — bare web-font names drop to a browser default offline` });
+    }
+  }
+  return violations;
+}
+
 // --- Main ---
 
 function runArtifactGate(htmlPath) {
@@ -309,6 +370,8 @@ function runArtifactGate(htmlPath) {
     ...checkAnchorHrefs(html),
     ...checkImageAlt(html),
     ...checkPlaceholders(html),
+    ...checkGradientText(html),
+    ...checkFontFallback(html),
   ];
 
   return { ok: violations.length === 0, violations };
@@ -324,6 +387,8 @@ module.exports = {
   checkAnchorHrefs,
   checkImageAlt,
   checkPlaceholders,
+  checkGradientText,
+  checkFontFallback,
   DENSITY_BUDGETS,
 };
 

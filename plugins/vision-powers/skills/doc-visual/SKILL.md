@@ -103,7 +103,7 @@ Key rules (always apply, no need to look up):
 6. **Palette**: No violet/fuchsia "AI purple" hexes (`#8b5cf6`/`#7c3aed`/`#a78bfa`/`#d946ef`) — the gate fails on these
 7. **Table vs diagram**: If a 3-column table conveys it equally well, use the table
 
-The gate also fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders.
+The gate also fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders. It also fails on `background-clip: text` (gradient-clipped text — decorative slop) and on any `font-family` without a generic fallback, so end every stack with a system family (`…, sans-serif`).
 
 ### CSS essentials
 

@@ -12,6 +12,8 @@ const {
   checkAnchorHrefs,
   checkImageAlt,
   checkPlaceholders,
+  checkGradientText,
+  checkFontFallback,
 } = require('./artifact-gate');
 
 function withTempHtml(content, fn) {
@@ -260,4 +262,58 @@ test('does NOT flag bare TODO in prose', () => {
 test('exempts placeholder-looking text inside code blocks', () => {
   const html = '<html><body><pre>const tpl = "{{ name }}";</pre><code>lorem ipsum</code></body></html>';
   assert.strictEqual(checkPlaceholders(html).length, 0);
+});
+
+// --- Check 9: Gradient-clipped text ---
+
+test('detects gradient-clipped text in a style block', () => {
+  const html = `<html><head><style>.hero{background:linear-gradient(90deg,#b5523a,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}</style></head><body>x</body></html>`;
+  assert.ok(checkGradientText(html).some(v => v.rule === 'gradient-text'));
+});
+
+test('detects gradient-clipped text in an inline style attribute', () => {
+  const html = `<html><body><h1 style="background-clip: text; color: transparent">Title</h1></body></html>`;
+  assert.ok(checkGradientText(html).some(v => v.rule === 'gradient-text'));
+});
+
+test('does NOT flag background-clip:text quoted inside a code block', () => {
+  const html = `<html><body><pre>h1 { -webkit-background-clip: text; }</pre></body></html>`;
+  assert.strictEqual(checkGradientText(html).length, 0);
+});
+
+test('clean styling without clipped text passes', () => {
+  const html = `<html><head><style>.x{background:#b5523a;color:#fff}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkGradientText(html).length, 0);
+});
+
+// --- Check 10: Font-family fallback chain ---
+
+test('detects a bare font-family with no generic fallback', () => {
+  const html = `<html><head><style>body{font-family:Geist}</style></head><body>x</body></html>`;
+  assert.ok(checkFontFallback(html).some(v => v.rule === 'font-fallback'));
+});
+
+test('passes a font-family that ends in a generic family', () => {
+  const html = `<html><head><style>body{font-family:Geist, system-ui, sans-serif}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkFontFallback(html).length, 0);
+});
+
+test('passes a quoted family with a generic fallback', () => {
+  const html = `<html><head><style>h1{font-family:"Instrument Serif", Georgia, serif}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkFontFallback(html).length, 0);
+});
+
+test('exempts @font-face which declares a font name, not a usage', () => {
+  const html = `<html><head><style>@font-face{font-family:"Geist";src:url(geist.woff2)}body{font-family:Geist, sans-serif}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkFontFallback(html).length, 0);
+});
+
+test('trusts a var()-only font-family chain', () => {
+  const html = `<html><head><style>body{font-family:var(--body-font)}</style></head><body>x</body></html>`;
+  assert.strictEqual(checkFontFallback(html).length, 0);
+});
+
+test('flags a bare font-family in an inline style attribute', () => {
+  const html = `<html><body><p style="font-family: Geist">hi</p></body></html>`;
+  assert.ok(checkFontFallback(html).some(v => v.rule === 'font-fallback'));
 });

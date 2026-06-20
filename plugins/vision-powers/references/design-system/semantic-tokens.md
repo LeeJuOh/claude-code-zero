@@ -66,3 +66,5 @@ The authoring model picks one of the following sets per report — vary it from 
 - `rgba()` in Mermaid classDef (parser breakage — use 8-digit hex `#RRGGBBAA`)
 - violet/fuchsia family (`#8b5cf6`, `#7c3aed`, `#a78bfa`, `#d946ef`) as default palette
 - Mono as a blanket body font (mono is for technical spans only — the face itself is unrestricted)
+- gradient-clipped text (`background-clip: text`) — decorative slop that hurts readability; use a solid accent colour
+- a `font-family` with no generic fallback — the gate fails a bare web-font name (`font-family: Geist`); always end the chain with a system family

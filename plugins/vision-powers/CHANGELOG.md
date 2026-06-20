@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.4.0 — 2026-06-20
+
+### Added
+
+- **Two new gate checks, both reference-grounded and confined to generated chrome** (so neither fights the source-passthrough or taste-delegation principles). Test suite grows 32 → 42:
+  - **Gradient-clipped text** (`gradient-text`) — fails on `background-clip: text` in any real `<style>` block or inline `style=` attribute. Decorative gradient/clipped text is the landing-page flourish CONTEXT.md now lists as slop and taste-skill restricts; it hurts readability and never carries source content. CSS quoted inside `<pre>`/`<code>` is exempt, so reports can still document the trick.
+  - **Font fallback chain** (`font-fallback`) — fails on any `font-family` that names only web fonts with no generic family (`font-family: Geist` instead of `Geist, system-ui, sans-serif`). This mechanizes the 4.3.1 rule: the plugin bundles no web fonts, so a bare name silently drops to a browser default offline. `@font-face` (which declares a font's own name), bare CSS keywords, and `var()`-only chains are exempt.
+
+### Notes
+
+- **Deliberately not built:** an em-dash ban (would fight vision-powers' verbatim source-passthrough — em-dashes in the source must survive) and an off-palette/token-allowlist check (would fight the delegation of colour/taste to the model and the token-set rotation). An accent-count gate was also declined: how a focal node is marked in Mermaid (themeVariables vs `classDef` vs inline) is too varied to detect mechanically without false fires, so the focal ≤ 2 rule stays authoring guidance, as documented in 4.3.1.
+
 ## 4.3.1 — 2026-06-20
 
 A documentation-truth audit of the whole plugin, in the same spirit as the 4.3.0 "JetBrains Mono" correction: every design-system rule and CONTEXT claim was checked against the actual code and against the `Kami` / `taste-skill` reference projects. Findings were corrections to the docs only — no behaviour change.

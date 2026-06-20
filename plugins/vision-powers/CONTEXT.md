@@ -65,14 +65,16 @@ Korean font, one accent, component options), never as a rigid fill-in template.
 **Gate**:
 An unattended, mechanical safety net run after authoring — checks data integrity the model
 can't be merely *asked* to guarantee: raw-markdown leaks, missing or alt-less images, dead
-links, the forbidden AI-purple palette, Mermaid `classDef` colour traps, diagram density, and
-leftover placeholders. (Language consistency and accent-count discipline are still held by
-authoring guidance, not yet by the gate.) A request without a gate is a wish. See [[0002]].
+links, the forbidden AI-purple palette, Mermaid `classDef` colour traps, diagram density,
+leftover placeholders, gradient-clipped text, and missing font-fallback chains. (Language
+consistency and accent-count discipline are still held by authoring guidance, not yet by the
+gate.) A request without a gate is a wish. See [[0002]].
 
 **Slop**:
 Landing-page aesthetics inappropriate for explainer docs: glassmorphism, double-bezel cards,
-spring/staggered motion, bento grids, forced dark mode, icon libraries. Adding slop is how a
-skill makes output *worse* than bare model. Mined from references but explicitly rejected.
+spring/staggered motion, bento grids, forced dark mode, icon libraries, gradient-clipped text.
+Adding slop is how a skill makes output *worse* than bare model. Mined from references but
+explicitly rejected.
 
 **Mode**:
 The document's presentation register. Two in v1: **explainer** (teaching/learning prose) and
