@@ -80,7 +80,7 @@ echo "JOB_JSON_FILE=$JOB_JSON_FILE"
 
 # Header via heredoc. Replace <literal topic> with the cleaned research
 # topic from Phase 1. Do NOT embed the user's meta-instructions.
-# blocks copied from official gpt-5-4-prompting (prompt-blocks.md); re-sync if the official guide updates
+# block tags from official gpt-5-4-prompting (prompt-blocks.md); bodies adapted to this skill's output schema — re-sync the tag set if the official guide updates
 cat > "$PROMPT_FILE" <<'EOF'
 <task>
 You are a technical researcher conducting a deep investigation.
