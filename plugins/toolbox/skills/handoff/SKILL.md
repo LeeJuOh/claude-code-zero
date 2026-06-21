@@ -7,6 +7,23 @@ disable-model-invocation: true
 
 Distill the current session into a handoff document so the next agent can resume cold.
 
+## Accuracy: verify before asserting
+
+A handoff is only worth writing if the next agent can trust it and act without re-checking. That makes a wrong fact the worst possible output: a bad path, line number, or "done" claim sends a cold agent down a false trail and costs far more than the handoff ever saved. Silence is safer than a confident error.
+
+Almost every wrong fact comes from one habit — writing from memory of the session instead of from the repo as it is *now*. After a long session, or once context has been summarized, recall of specifics gets lossy and the gaps fill with plausible-but-wrong detail. So before a concrete claim goes in, ground it.
+
+Treat two kinds of statement differently:
+
+- **Checkable facts** — paths, symbol and function names, line numbers, commands, branch, commits, dirty files, and anything you describe as done. Confirm each against the repo as you write it: `git status`, `git log --oneline -15`, and `git diff --stat` for state; Read / Grep / Glob for paths and symbols. Don't transcribe these from memory. If you can't confirm one, it doesn't get asserted — drop it, or mark it `(unverified)` so the next agent knows to check.
+- **Recollection and judgment** — the plan, why a decision was made, your mental state, what worked and what didn't. These can't be verified against the repo, so write them plainly as recollection and resist inventing specifics to make them sound authoritative.
+
+**Drive Current Progress from git, not memory.** The state of the repo — branch, what's committed, what's still dirty — is the part that most often turns out wrong, because it's written from recall at the end of a long session. So don't recall it. Run `${CLAUDE_PLUGIN_ROOT}/skills/handoff/scripts/repo_facts.sh` first and paste its output as the factual base of Current Progress, then write the narrative around it. A "done" item with no matching commit or diff in that output is the single most common wrong part — demote it to "in progress" or mark it `(unverified)`.
+
+**Prefer durable anchors to line numbers.** Reference `bar.ts` → `parseConfig()` rather than `bar.ts:40`. Line numbers drift between sessions and are easy to misremember, so they age into wrong facts faster than anything else; reach for one only when it genuinely helps, and grep to confirm it as you write.
+
+**Do the review yourself before saving.** Re-read the finished draft and recheck every concrete reference — each path, symbol, line, and "done" claim — against ground truth one last time. This is exactly the review you'd otherwise leave for the next agent to discover the hard way; doing it now is the whole point.
+
 ## Arguments
 
 `$ARGUMENTS` is an optional topic name (e.g., `/handoff auth-refactor`). Used for filename and frontmatter. If empty, infer from session context. If inference fails, ask via AskUserQuestion — never fall back to generic names like "untitled" or "session".
@@ -60,7 +77,7 @@ date: YYYY-MM-DD
 1. **Goal** — What we're trying to accomplish
 2. **First Action** — Single most immediate action when resuming. Must be actionable without reading any other section. Include skill recommendation if applicable (e.g., "run `/tdd` to add the missing test" or "run `/diagnose` to investigate the timeout")
 3. **Context** — Mental state when pausing: what you were thinking, the plan, where your attention was
-4. **Current Progress** — What's done. Include uncommitted changes (`git status`/`git diff --stat`) if any
+4. **Current Progress** — What's done, read off the commits and working tree rather than memory (see *Accuracy: verify before asserting* above). Include uncommitted changes (`git status` / `git diff --stat`) if any
 
 **Conditional (include only when there's meaningful content):**
 
@@ -81,6 +98,7 @@ date: YYYY-MM-DD
 - **Distill, don't copy** — filter session noise. The handoff should be shorter and more structured than the conversation that produced it. Failed experiments, tangential discussions, and corrections belong in What Didn't Work (if informative) or nowhere.
 - **Reference, don't duplicate** — if a PRD, ADR, plan, commit, or diff already captures information, point to it by path. Duplicating creates staleness.
 - **Rewrite, don't update** — when continuing a topic, read the old handoff for context, then write fresh. Merging old + current into a new document from scratch produces better results than patching.
+- **Verify, don't recall** — confirm every checkable fact against the repo before it goes in. See *Accuracy: verify before asserting* — this is the difference between a handoff the next agent trusts and one it has to re-audit.
 
 ## Gotchas
 
@@ -91,3 +109,4 @@ date: YYYY-MM-DD
 5. **Don't include session noise** — corrections, tangents, and dead ends go in What Didn't Work only if they prevent the next agent from repeating them.
 6. **Scan before creating** — always check for existing same-topic handoffs. Reuse the topic name for continuity.
 7. **Don't guess the topic** — if `$ARGUMENTS` is empty and session context is ambiguous, ask the user. Generic names destroy findability.
+8. **Don't assert from memory** — paths, line numbers, symbol names, and "done" claims are exactly the parts that turn out wrong on review. Confirm each against the repo (git + Read/Grep) as you write; if you can't, mark it `(unverified)` rather than stating it as fact.
