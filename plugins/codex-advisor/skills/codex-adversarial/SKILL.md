@@ -1,6 +1,6 @@
 ---
 name: codex-adversarial
-description: "Run Codex adversarial review — actively tries to break confidence in the change. Use when asked \"adversarial review\", \"적대적 리뷰\", or wants thorough security/correctness challenge."
+description: "Run Codex adversarial review — actively tries to break confidence in the change. Use when asked \"adversarial review\", \"red-team this change\", or wants thorough security/correctness challenge."
 argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL] [--no-preview] [focus text]"
 allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
@@ -42,7 +42,7 @@ You are a translator. Use LM intelligence, not regex tables.
 
 Rules:
 
-- **Meta-instructions addressed to YOU** ("한국어로", "빨리", "thoroughly") → obey for your own behavior, never forward.
+- **Meta-instructions addressed to YOU** (e.g. "in Korean", "quickly", "thoroughly" — often typed in the user's own language) → obey for your own behavior, never forward.
 - **Junk, emoji, trailing punctuation on flag values** → drop (`--base develop,` → `base=develop`).
 - **Focus text** — unlike `/codex-review`, adversarial DOES accept it. Collect all non-flag, non-meta tokens and join with spaces. This becomes the positional prompt passed after the flags. Never embed meta-instructions in the focus text.
 - **Unknown flag** (e.g., `--commit`, `--uncommitted`, `--wait`, `--foo`) → `AskUserQuestion` to clarify. Common corrections:
@@ -80,7 +80,7 @@ If neither flag was provided, still call with two empty strings so the user sees
 **Before Phase 2, also print the Parsed line:**
 
 ```
-Parsed: base=develop, scope=auto, focus="check SQL injection in login"   (meta: "빨리" obeyed)
+Parsed: base=develop, scope=auto, focus="check SQL injection in login"   (meta: "quickly" obeyed)
 ```
 
 Order: apply-codex-config.py output first, Parsed line second.
@@ -117,7 +117,7 @@ Omit lines for flags the user did not provide. If focus text was
 transformed from the user's original input, show both:
 
 ```
-Original: "로그인 핸들러에서 SQL 인젝션 확인해줘"
+Original: "pls look at the login handler for sql injection stuff"
 → focus: "check SQL injection in login handler"
 ```
 

@@ -48,7 +48,7 @@ Subcommand `task` pipes stdin **raw** — `readTaskPrompt = positionalPrompt || 
 prompt**. There is no "official task prompt" to distort; only our own prompt quality matters.
 
 **Vendored prompt blocks**:
-The XML blocks our task prompts use (`task`, `compact_output_contract`, `grounding_rules`,
+The XML blocks our task prompts use (`task`, `structured_output_contract`, `grounding_rules`,
 `completeness_contract`, `research_mode`, `citation_rules`, `action_safety`, `verification_loop`)
 are copied from the Official plugin's `gpt-5-4-prompting` skill (`prompt-blocks.md`) and
 **internalized at design time** — not imported at runtime. The official skill is

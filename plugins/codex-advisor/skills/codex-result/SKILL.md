@@ -1,6 +1,6 @@
 ---
 name: codex-result
-description: "Show the final stored result of a completed Codex job. Use when asked \"codex result\", \"코덱스 결과\", \"작업 결과 보여줘\", or wants output from a finished job."
+description: "Show the final stored result of a completed Codex job. Use when asked \"codex result\", \"show the codex output\", \"show me the job result\", or wants output from a finished job."
 argument-hint: "[job-id]"
 allowed-tools: ["Bash", "Read", "Glob"]
 ---

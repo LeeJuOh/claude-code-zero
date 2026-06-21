@@ -1,6 +1,6 @@
 ---
 name: codex-status
-description: "List active and recent Codex jobs plus stored review files. Use when asked \"codex status\", \"진행중인 코덱스\", or wants to see Codex job state."
+description: "List active and recent Codex jobs plus stored review files. Use when asked \"codex status\", \"what codex jobs are running\", or wants to see Codex job state."
 argument-hint: "[job-id] [--wait] [--timeout-ms MS] [--all]"
 allowed-tools: ["Bash", "Read", "Glob"]
 ---

@@ -1,6 +1,6 @@
 ---
 name: codex-review
-description: "Run Codex code review with Claude's independent double-check. Use when asked \"codex review\", \"codex 리뷰\", or wants Codex to review code changes. For adversarial review use /codex-adversarial."
+description: "Run Codex code review with Claude's independent double-check. Use when asked \"codex review\", \"review my code with codex\", or wants Codex to review code changes. For adversarial review use /codex-adversarial."
 argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
@@ -44,7 +44,7 @@ You are a translator. Use LM intelligence, not regex tables.
 
 Rules:
 
-- **Meta-instructions addressed to YOU** ("분석 먼저 하지마", "한국어로", "빨리", "thoroughly") → obey for your own behavior, never forward to the companion.
+- **Meta-instructions addressed to YOU** (e.g. "don't analyze first", "in Korean", "quickly", "thoroughly" — often typed in the user's own language) → obey for your own behavior, never forward to the companion.
 - **Junk, emoji, trailing punctuation** → drop. Strip trailing `,` `.` `)` from flag values (e.g., `--base develop,` → `base=develop`).
 - **Focus text detected** (any natural-language string not addressed to you and not a whitelisted flag) → use `AskUserQuestion` to offer the adversarial redirect: "This looks like focus text — use `/codex-adversarial <focus>` instead? The built-in review rejects focus text at `codex-companion.mjs:272-273`." Do NOT pass focus text to the companion.
 - **Unknown flag** (e.g., `--commit`, `--uncommitted`, `--wait`, `--foo`) → `AskUserQuestion` to clarify. Common corrections:
@@ -83,7 +83,7 @@ If the user passed *neither* flag, still call the script with two empty strings 
 **Before Phase 2, also print the Parsed line:**
 
 ```
-Parsed: base=develop, scope=auto   (meta: "분석 먼저 하지마" obeyed)
+Parsed: base=develop, scope=auto   (meta: "don't analyze first" obeyed)
 ```
 
 Order: apply-codex-config.py output first, Parsed line second.
