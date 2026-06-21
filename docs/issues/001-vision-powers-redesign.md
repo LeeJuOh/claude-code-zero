@@ -3,7 +3,7 @@
 > 상태: 구현 대기 · 생성: 2026-06-06
 > 플랜: `docs/superpowers/plans/2026-06-03-doc-visual-artifact-redesign.md`
 > ADR: `docs/adr/0002-doc-visual-direct-model-authoring.md`
-> 용어집: `plugins/vision-powers/CONTEXT.md`
+> 용어집: `docs/context/vision-powers.md`
 
 ## What to build
 

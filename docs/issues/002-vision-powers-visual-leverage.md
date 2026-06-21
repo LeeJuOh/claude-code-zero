@@ -1,7 +1,7 @@
 # vision-powers 시각 레버리지 강화: Kami/taste-skill 증명 패턴 흡수
 
 > 상태: 구현 대기 · 생성: 2026-06-20
-> 용어집: `plugins/vision-powers/CONTEXT.md`
+> 용어집: `docs/context/vision-powers.md`
 > 근거 레퍼런스: `references/Kami`, `references/taste-skill`
 > 선행 이슈: `docs/issues/001-vision-powers-redesign.md` (파이프라인 폐기 → 모델 직접작성)
 

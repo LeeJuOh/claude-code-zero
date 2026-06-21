@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.4.2 — 2026-06-21
+
+### Changed
+
+- Design-system references (`anti-slop-tells.md`, `visual-self-audit.md`) are now self-contained: the design philosophy they relied on is stated inline instead of pointing at a separate glossary file, so each rule reads fully on its own. No behavior change.
+
 ## 4.4.1 — 2026-06-20
 
 ### Documentation

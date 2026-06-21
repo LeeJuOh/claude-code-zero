@@ -3,7 +3,7 @@
 > 상태: 구현 대기 · 생성: 2026-06-21
 > 지시서: `docs/handoff/2026-06-21-rubber-duck-tutor-redesign.md`
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
-> 용어집: `plugins/rubber-duck-tutor/CONTEXT.md`
+> 용어집: `docs/context/rubber-duck-tutor.md`
 
 Vertical-slice issues for the v2.4.1 → 3.0.0 redesign. Each slice is independently grabbable and
 verifiable on its own. Decisions are locked — see the ADR, glossary, and implementation
@@ -13,20 +13,21 @@ confrontation, artifact-level vs code-level comprehension, shared ship budget).
 ## Dependency graph
 
 ```
-S1  S2  S3 ──────────────────┐
-                              ▼
-                   S4 ──► S5 ──► S6 ──► S8
-                    │      │
-                    └──► S7 (also needs S3)
-                           S5 ──► S9
+independent leaves (block nothing):  S1   S2
+
+S3 ──────────┐
+             ├─► S7
+S4 ──┬───────┘
+     └─► S5 ─┬─► S6 ─► S8
+             └─► S9
 ```
 
-Slices with no blocker (S1, S2, S3, S4) can start immediately. Version handling: each Phase 1
-slice carries a patch bump on commit; the breaking command removal lands the major bump in S9.
+Slices with no blocker (S1, S2, S3, S4) can start immediately. Version handling: the whole S1–S9
+redesign ships as one release — intermediate slices don't bump `marketplace.json`; the single
+bump to `3.0.0` lands in S9 (breaking: `/duck-design` and `/duck-plan` removed).
 
-The ASCII is a transitive simplification — the authoritative blockers are each slice's
-**Blocked by** field. Edges not visible above: S7 needs both S3 and S4; S9 needs S5; S6 also
-inherits S4 through S5.
+The authoritative blockers are each slice's **Blocked by** field. S6 inherits S4 transitively
+through S5; S1 and S2 are pure leaves that block nothing.
 
 ---
 
@@ -107,16 +108,17 @@ None — can start immediately.
 Promote the shared rules in `core.md` to a model-invoked `ducking` skill — the reusable
 comprehension-discipline engine that auto-engages when the agent detects rubber-stamping. Move
 the helper scripts (`log-gap.sh`, `recent-gaps.sh`) into the engine's own `scripts/` directory
-and repoint every path that referenced the old location. **Six sites** hardcode
+and repoint every path that referenced the old location. **Seven lines** hardcode
 `${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/...` and must be repointed: the `allowed-tools` lines
 in the five mode SKILL.md files (`duck-design`, `duck-plan`, `duck-verify`, `duck-review`,
-`duck-orient`) plus the in-body script path in `core.md` (now the engine). A missed `allowed-tools`
+`duck-orient`), the in-body script path in `core.md` (now the engine), and the in-body
+`recent-gaps.sh` path inside `duck-orient` (a line separate from its `allowed-tools`). A missed
 path fails silently as a Bash-permission mismatch, so the grep below is the real gate.
 
 ### Acceptance criteria
 - [ ] A model-invoked `ducking` skill exists and auto-engages on detected rubber-stamping.
 - [ ] Helper scripts run from the engine's new `scripts/` path.
-- [ ] `grep -rn 'skills/duck/scripts'` returns no live references — all six repoint sites updated.
+- [ ] `grep -rn 'skills/duck/scripts'` returns no live references — all seven repoint lines updated.
 - [ ] No skill or reference points at the old `core.md` path (grep is clean).
 
 ### Blocked by
@@ -140,6 +142,7 @@ command pointer survives. The reference set is larger than the handoff checklist
 - the plan/doc hooks — `post-plan.sh`, `post-write-plan.sh` (their `additionalContext` says `/duck-plan`)
 - plugin `README.md` — command table, Quick Start, hooks paragraph
 - **repo-root `README.md` and `README.ko.md`** — the marketplace command list (missed by the handoff checklist)
+- the engine body — `core.md` (becomes `ducking` in S4) line 3 enumerates `/duck-design` / `/duck-plan` in its mode list
 
 Scope boundary: the `plugin.json` / `marketplace.json` **description** prose is rewritten in S9
 (identity rewrite), so S5 does **not** touch those two strings — that avoids an S5/S9 write-write

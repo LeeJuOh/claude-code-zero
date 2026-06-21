@@ -45,7 +45,7 @@ On success it prints one absolute PNG path to stdout (default `$CLAUDE_PLUGIN_DA
 A reasonable instinct is to mechanize this the way Kami does — measure whitespace ratio, count pages, assert margins. **We deliberately do not**, for two reasons:
 
 1. **HTML has no fixed canvas.** Kami pre-renders to a known page geometry; a vision-powers report is fluid HTML whose height depends on content and whose `render-report.js` "page size" is just a viewport argument, not a real page. "Margin %" and "page count" have no stable definition here, so any number a script produced would be measuring the screenshot window, not the design.
-2. **It would violate delegation.** Mechanizing a *design* judgment — "this has the right whitespace," "the hierarchy is correct" — is exactly the leverage-vs-delegation line `CONTEXT.md` draws. Taste stays with the model. This audit gives the model *eyes* (a rendered image to react to); it does not give a script a *ruler* to grade design with. The model looks and decides, the same way a person would.
+2. **It would violate delegation.** Mechanizing a *design* judgment — "this has the right whitespace," "the hierarchy is correct" — is exactly the leverage-vs-delegation line this plugin draws. Taste stays with the model. This audit gives the model *eyes* (a rendered image to react to); it does not give a script a *ruler* to grade design with. The model looks and decides, the same way a person would.
 
 So the audit is intentionally a **judgment loop, not a metric.** The rubric above is a prompt for the eye, not a checklist a script evaluates.
 
