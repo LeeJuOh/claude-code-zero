@@ -15,14 +15,18 @@ Almost every wrong fact comes from one habit — writing from memory of the sess
 
 Treat two kinds of statement differently:
 
-- **Checkable facts** — paths, symbol and function names, line numbers, commands, branch, commits, dirty files, and anything you describe as done. Confirm each against the repo as you write it: `git status`, `git log --oneline -15`, and `git diff --stat` for state; Read / Grep / Glob for paths and symbols. Don't transcribe these from memory. If you can't confirm one, it doesn't get asserted — drop it, or mark it `(unverified)` so the next agent knows to check.
+- **Checkable facts** — paths, symbol and function names, line numbers, commands, branch, commits, dirty files, and anything you describe as done. Confirm each against the repo as you write it: `git status`, `git log --oneline -10`, and `git diff --stat` for state; Read / Grep / Glob for paths and symbols. Don't transcribe these from memory. If you can't confirm one, it doesn't get asserted — drop it, or mark it `(unverified)` so the next agent knows to check.
 - **Recollection and judgment** — the plan, why a decision was made, your mental state, what worked and what didn't. These can't be verified against the repo, so write them plainly as recollection and resist inventing specifics to make them sound authoritative.
 
 **Drive Current Progress from git, not memory.** The state of the repo — branch, what's committed, what's still dirty — is the part that most often turns out wrong, because it's written from recall at the end of a long session. So don't recall it. Run `${CLAUDE_PLUGIN_ROOT}/skills/handoff/scripts/repo_facts.sh` first and paste its output as the factual base of Current Progress, then write the narrative around it. A "done" item with no matching commit or diff in that output is the single most common wrong part — demote it to "in progress" or mark it `(unverified)`.
 
 **Prefer durable anchors to line numbers.** Reference `bar.ts` → `parseConfig()` rather than `bar.ts:40`. Line numbers drift between sessions and are easy to misremember, so they age into wrong facts faster than anything else; reach for one only when it genuinely helps, and grep to confirm it as you write.
 
-**Do the review yourself before saving.** Re-read the finished draft and recheck every concrete reference — each path, symbol, line, and "done" claim — against ground truth one last time. This is exactly the review you'd otherwise leave for the next agent to discover the hard way; doing it now is the whole point.
+**Do the review yourself before saving.** Re-read the finished draft and recheck every concrete reference — each path, symbol, and line — against ground truth one last time: grep the path, confirm the symbol exists. This is the review you'd otherwise leave for the next agent to discover the hard way; doing it now is the whole point.
+
+**Hand "done" claims to fresh eyes.** One blind spot survives your own review: the work you believe you finished. You wrote "implemented X" from the memory of doing it and you re-read it through that same memory, so a "done" that isn't rarely catches your eye — and it's the costliest fact to miss, since the next agent then builds on a foundation that isn't there.
+
+So once the draft is saved, hand *just this slice* to a subagent that carries none of your session memory — its lack of any stake in the work being done is exactly what makes it useful here. Point it at the saved draft and have it check each completed claim in Current Progress against `git diff` and `git log`, returning for each one: supported, partial, or unsupported, with the commit hash or diff hunk as evidence. Keep its scope to done-claims only — it has no context to judge the plan, the decisions, or what you were thinking (that's yours to review), and paths and symbols you already confirmed yourself. Then demote anything it can't support to "in progress" or `(unverified)` and save again. Skip the step when Current Progress reports only in-progress or not-yet-started work — with no completed claim there is nothing to falsify, and a fresh agent earns its cost only when there is.
 
 ## Arguments
 

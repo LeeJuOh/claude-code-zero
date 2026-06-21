@@ -12,7 +12,7 @@
 set -euo pipefail
 
 repo="${1:-$(pwd)}"
-cd "$repo" 2>/dev/null || { echo "_repo_facts: cannot cd to $repo_"; exit 0; }
+cd "$repo" 2>/dev/null || { echo "_repo_facts: cannot cd to ${repo}_"; exit 0; }
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "_repo_facts: $repo is not a git repository — describe progress manually and verify each file path with Read/Glob._"
