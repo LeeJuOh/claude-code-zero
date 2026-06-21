@@ -1,6 +1,6 @@
 ---
 name: codex-research
-description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when asked \"codex research\", \"codex 리서치\", \"딥다이브\". Not for code review or plan verification."
+description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when asked \"codex research\", \"deep dive with codex\", \"investigate this topic\". Not for code review or plan verification."
 argument-hint: "topic [path/to/document.md] [--model SLUG] [--effort LEVEL] [--no-preview]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
@@ -49,7 +49,7 @@ Rules:
 - **A single path** → treat as a context document; the research task comes from the surrounding text or the filename.
 - **`resume [follow-up]`** → pass `--resume-last` to the companion.
 - **Mixed** (topic + path) → both, in the blind payload template.
-- **Meta-instructions addressed to YOU** ("한국어로", "빨리", "thoroughly") → obey for your own behavior, never include in the prompt.
+- **Meta-instructions addressed to YOU** (e.g. "in Korean", "quickly", "thoroughly" — often typed in the user's own language) → obey for your own behavior, never include in the prompt.
 - **No args** → `AskUserQuestion`: "What should I research?"
 - **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. research has no companion flags to forward. `--model`/`--effort` are the only skill-level flags and route through `apply-codex-config.py`, not the companion.
 - **`--no-preview`** → skip Phase 1.5 draft review. Power users who trust the translation.
@@ -80,6 +80,7 @@ echo "JOB_JSON_FILE=$JOB_JSON_FILE"
 
 # Header via heredoc. Replace <literal topic> with the cleaned research
 # topic from Phase 1. Do NOT embed the user's meta-instructions.
+# block tags from official gpt-5-4-prompting (prompt-blocks.md); bodies adapted to this skill's output schema — re-sync the tag set if the official guide updates
 cat > "$PROMPT_FILE" <<'EOF'
 <task>
 You are a technical researcher conducting a deep investigation.
@@ -88,11 +89,11 @@ Investigate thoroughly. Use web search if helpful.
 Surface non-obvious insights, not just the first answer.
 </task>
 
-<compact_output_contract>
+<structured_output_contract>
 Structured analysis with clear sections.
 Separate: observed facts, reasoned inferences, open questions.
 Identify risks, trade-offs, alternative perspectives.
-</compact_output_contract>
+</structured_output_contract>
 
 <research_mode>
 Breadth first, then depth where evidence changes the recommendation.
@@ -173,11 +174,11 @@ Investigate thoroughly. Use web search if helpful.
 Surface non-obvious insights, not just the first answer.
 </task>
 
-<compact_output_contract>
+<structured_output_contract>
 Structured analysis with clear sections.
 Separate: observed facts, reasoned inferences, open questions.
 Identify risks, trade-offs, alternative perspectives.
-</compact_output_contract>
+</structured_output_contract>
 
 <research_mode>
 Breadth first, then depth where evidence changes the recommendation.

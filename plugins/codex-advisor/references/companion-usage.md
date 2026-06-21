@@ -323,7 +323,7 @@ For each token in `$ARGUMENTS`:
 2. **Duplicate flag?** e.g., `--base develop --base main` → AskUserQuestion
    which one is intended. Never silently pick "last wins".
 3. **Natural-language meta-instruction addressed to YOU?** e.g.,
-   "분석 먼저 하지마", "한국어로 답해", "빨리", "thoroughly" → obey for your
+   "don't analyze first", "answer in Korean", "quickly", "thoroughly" → obey for your
    own behavior, never forward to companion.
 4. **Junk?** emoji, stray punctuation, `, ` → drop.
 5. **Focus text on `codex-review`?** → AskUserQuestion offering the
@@ -340,11 +340,11 @@ For each token in `$ARGUMENTS`:
 ```
 INPUT                                                   → PARSED
 --base develop                                          → base=develop
-develop 브랜치 대비로                                    → base=develop
---base=develop, 분석 먼저 하지마                          → base=develop (meta-instruction obeyed)
-HEAD~3부터                                              → base=HEAD~3
+against the develop branch                              → base=develop
+--base=develop, don't analyze first                     → base=develop (meta-instruction obeyed)
+from HEAD~3                                             → base=HEAD~3
 --base develop --base main                              → AskUserQuestion (which base?)
-😤 빨리                                                  → no flags (auto-detect scope)
+😤 quickly                                               → no flags (auto-detect scope)
 --uncommitted                                           → AskUserQuestion (not on whitelist — did you mean --scope working-tree?)
 --commit abc123                                         → AskUserQuestion (not on whitelist — did you mean --base abc123~1 --scope branch?)
 --foo bar implement login (on codex-rescue)             → FATAL (--foo not on rescue whitelist; treat as ANALYZE regression if it reaches companion)
@@ -355,7 +355,7 @@ HEAD~3부터                                              → base=HEAD~3
 Before Phase 2, print exactly one line:
 
 ```
-Parsed: base=develop, scope=auto   (meta-instructions: "분석 먼저 하지마")
+Parsed: base=develop, scope=auto   (meta-instructions: "don't analyze first")
 ```
 
 This makes the translation step auditable in the session log.
@@ -408,7 +408,7 @@ cat > "$PROMPT_FILE" <<'EOF'
 ...skill-specific task block...
 </task>
 
-<compact_output_contract>...</compact_output_contract>
+<structured_output_contract>...</structured_output_contract>
 <grounding_rules>...</grounding_rules>
 
 <document>
@@ -497,7 +497,7 @@ pragmatic pattern is "try and fall back":
 - **Pattern A requires `run_in_background=true`.** The companion's own
   `--background` is a no-op on `review` / `adversarial-review`.
 - **Natural language in `$ARGUMENTS` is for YOU, not the companion.**
-  Meta-instructions like "분석 먼저 하지마" modify YOUR behavior; they
+  Meta-instructions like "don't analyze first" modify YOUR behavior; they
   never become companion flags or prompt content.
 - **Unknown flags don't error — they silently become prompt content.**
   ANALYZE whitelist is the only line of defense.

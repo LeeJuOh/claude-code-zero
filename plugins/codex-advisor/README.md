@@ -10,13 +10,13 @@ that bite you at exactly the wrong moment.
 **Example — what used to happen in v4.0.1:**
 
 ```
-/codex-advisor:codex-review --base develop, 절대 너가 먼저 코드 분석하지말고 그냥 리뷰 프롬프트만 보내고 코덱스 결과 더블체크해
+/codex-advisor:codex-review --base develop, don't pre-analyze the code yourself — just send the review prompt and double-check Codex's result
 ```
 
 That single line triggered four failures in a row:
 
 1. The trailing `,` was forwarded to `git rev-parse develop,` — unknown revision.
-2. The Korean meta-instruction `절대 너가...` was shoved into Codex's argument parser as a focus text, which the built-in reviewer rejects.
+2. The free-text meta-instruction (`don't pre-analyze...`) was shoved into Codex's argument parser as focus text, which the built-in reviewer rejects.
 3. The review ran in the foreground and hit Bash's 5-minute per-call timeout, so the wrapper got SIGKILLed mid-flight.
 4. Claude improvised a manual polling loop with a wrong job ID, burned 28 minutes, and never ran the double-check.
 
@@ -82,7 +82,7 @@ prompt and double-check". All four failures were wrapper bugs.
 | `/codex-setup` | Preflight (CLI, auth, Official plugin) + `config.toml` editor |
 | `/codex-review` | Code review + double-check |
 | `/codex-adversarial` | Adversarial (skeptical) review + focus text |
-| `/codex-rescue` | Task delegation + diff review |
+| `/codex-rescue` | Task delegation (structured, preview-approved prompt) + diff review |
 | `/codex-verify` | Document/plan verification, PASS/FAIL verdict |
 | `/codex-research` | Deep-dive research, cross-model synthesis |
 | `/codex-status` | Active + recent Codex jobs plus saved reports |

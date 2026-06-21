@@ -1,6 +1,6 @@
 ---
 name: codex-cancel
-description: "Cancel an active background Codex job. Use when asked \"codex cancel\", \"코덱스 취소\", \"작업 중단\", or wants to stop a running Codex task."
+description: "Cancel an active background Codex job. Use when asked \"codex cancel\", \"stop codex\", \"abort the codex job\", or wants to stop a running Codex task."
 argument-hint: "[job-id]"
 allowed-tools: ["Bash", "AskUserQuestion"]
 ---

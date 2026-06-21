@@ -1,6 +1,6 @@
 ---
 name: codex-rescue
-description: "Delegate an implementation task to Codex, then Claude reviews the result. Use when asked \"codex rescue\", \"codex 위임\", \"코덱스한테 시켜\", or wants Codex to implement or fix something."
+description: "Delegate an implementation task to Codex, then Claude reviews the result. Use when asked \"codex rescue\", \"delegate to codex\", \"have codex do it\", or wants Codex to implement or fix something."
 argument-hint: "task description [--write] [--model MODEL] [--effort LEVEL] [--resume-last|--resume|--fresh] [--no-preview]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
@@ -9,8 +9,16 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 
 You are a **translator + executor + double-checker**. The user is
 handing off an implementation task. Your job is to parse their messy
-input into a clean `task` invocation, let Codex do the work in the
-background, then review what changed.
+input, wrap the **verbatim** task text in standard prompt scaffolding,
+let Codex do the work in the background, then review what changed. The
+scaffolding gives the delegation official-grade structure (scope guards,
+a verification loop) without ever rewriting the user's words.
+
+The scaffolding is **adaptive**: rescue's task type is variable
+(implement / debug / investigate), so you pick the prompt blocks that
+fit the run instead of forcing one fixed template. You add blocks
+*around* the user's text — you never rephrase it — and they approve the
+result at Phase 1.5.
 
 **Critical:** do NOT explore the repo before Codex runs. The point of
 delegating is that Codex builds the context. Exploring first biases
@@ -45,9 +53,10 @@ You are a translator. Use LM intelligence, not regex tables.
 - `--no-preview` (bool) — skip Phase 1.5 draft review. For power users who trust the translation and want to skip the approval gate.
 
 **Everything else in `$ARGUMENTS` is the task description**, which
-becomes the prompt body. Translate it cleanly:
+becomes the `<task>` body — you wrap it in prompt blocks below (see
+*Wrap the task in prompt blocks*). Translate it cleanly:
 
-- **Meta-instructions addressed to YOU** ("한국어로 답해", "먼저 읽지 마") → obey for your own behavior, never include in the task prompt (they'd confuse Codex).
+- **Meta-instructions addressed to YOU** (e.g. "answer in Korean", "don't read the repo first" — often typed in the user's own language) → obey for your own behavior, never include in the task prompt (they'd confuse Codex).
 - **Junk, emoji** → drop.
 - **Vague task** (e.g., just "fix it", "do something") → `AskUserQuestion` for clarification. Never explore the repo to guess intent.
 - **Unknown flag** (e.g., `--foo`, `--background`, `--wait`) → `AskUserQuestion`. `--background` and `--wait` are not needed — Pattern B always uses `--background` internally. `--wait` on task is **silent prompt corruption**; we never accept it.
@@ -77,6 +86,57 @@ Order: apply-codex-config.py output first, Parsed line second. (Model/effort alr
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 
+### Wrap the task in prompt blocks
+
+The cleaned task text is **not** sent bare. Wrap it in standard
+scaffolding so the delegation carries the same structure verify/research
+get — but keep the user's words **verbatim** inside `<task>` (no
+summarizing, no rewording). You add blocks *around* their text; you
+never rewrite it. That's the whole point: structure without distortion.
+
+Pick the blocks by task type — `--write` is the signal. An
+implementation or fix mutates the repo, so it needs scope + verification
+guards; a read-only investigation needs grounding instead.
+
+- **Always:** `<task>` — the approved task text, verbatim.
+- **`--write` ON (implement / fix):** add `<completeness_contract>`, `<verification_loop>`, `<action_safety>`.
+- **`--write` OFF (read-only investigation):** add `<completeness_contract>`, `<grounding_rules>`.
+
+<!-- blocks copied from official gpt-5-4-prompting (prompt-blocks.md); re-sync if the official guide updates -->
+
+Block bodies — copy exactly:
+
+```xml
+<completeness_contract>
+Resolve the task fully before stopping.
+Do not stop at the first plausible answer.
+Check whether there are follow-on fixes, edge cases, or cleanup needed for a correct result.
+</completeness_contract>
+
+<verification_loop>
+Before finalizing, verify the result against the task requirements and the changed files or tool outputs.
+If a check fails, revise the answer instead of reporting the first draft.
+</verification_loop>
+
+<action_safety>
+Keep changes tightly scoped to the stated task.
+Avoid unrelated refactors, renames, or cleanup unless they are required for correctness.
+Call out any risky or irreversible action before taking it.
+</action_safety>
+
+<grounding_rules>
+Ground every claim in the provided context or your tool outputs.
+Do not present inferences as facts.
+If a point is a hypothesis, label it clearly.
+</grounding_rules>
+```
+
+Assemble the wrapped prompt with `<task>` first, then the selected
+blocks in the order listed. This wrapped XML — **not** the bare task
+text — is what Phase 1.5 previews and Phase 2 writes to PROMPT_FILE.
+Because wrapping happens here in Phase 1, it still applies when
+`--no-preview` skips the preview gate.
+
 ---
 
 ## Phase 1.5: Draft Review
@@ -88,22 +148,45 @@ sent. The user approved the *intent* — now they approve the *prompt*.
 
 ### Display the draft
 
-Show the cleaned task description (the text that will go into
-PROMPT_FILE) in a fenced code block, along with the companion flags
-that will be used:
+Show the **wrapped XML prompt** (everything that will go into
+PROMPT_FILE) in a fenced code block, along with the companion flags that
+will be used — `<task>` holds their verbatim text, surrounded by the
+blocks selected in Phase 1.
 
 ````
 **Prompt to send to Codex:**
 
-```
-<the cleaned task description from Phase 1 — verbatim, nothing added>
+```xml
+<task>
+<the approved task description from Phase 1 — verbatim, nothing added>
+</task>
+
+<completeness_contract>
+Resolve the task fully before stopping.
+Do not stop at the first plausible answer.
+Check whether there are follow-on fixes, edge cases, or cleanup needed for a correct result.
+</completeness_contract>
+
+<verification_loop>
+Before finalizing, verify the result against the task requirements and the changed files or tool outputs.
+If a check fails, revise the answer instead of reporting the first draft.
+</verification_loop>
+
+<action_safety>
+Keep changes tightly scoped to the stated task.
+Avoid unrelated refactors, renames, or cleanup unless they are required for correctness.
+Call out any risky or irreversible action before taking it.
+</action_safety>
 ```
 
 Flags: `--write` `--resume-last`
 ````
 
-The code block must contain the **exact text** that will be written to
-PROMPT_FILE. No summarization, no rewording from the Parsed line.
+The example above shows the `--write` block set. For a read-only run,
+swap `<verification_loop>` + `<action_safety>` for `<grounding_rules>`
+(per the Phase 1 selection). The fenced block must contain the **exact
+wrapped XML** that will be written to PROMPT_FILE — the user's text
+verbatim inside `<task>`, no summarization, no rewording.
 
 ### Ask for approval
 
@@ -150,10 +233,12 @@ echo "PRE_SHA=$PRE_SHA"
 git status --porcelain > "$PRE_LIST" 2>/dev/null || true
 git rev-parse HEAD > "$PRE_SHA"
 
-# Write the approved task description from Phase 1.5.
-# This is the exact text the user approved (or the original if --no-preview).
+# Write the approved WRAPPED prompt from Phase 1.5 — <task> with the
+# user's verbatim text plus the Phase 1 blocks. With --no-preview the
+# preview is skipped, but the wrapping is NOT: write the wrapped prompt
+# assembled in Phase 1, never the bare task text.
 cat > "$PROMPT_FILE" <<'EOF'
-<literal approved task description from Phase 1.5>
+<literal approved wrapped XML prompt from Phase 1.5 (or the Phase 1 wrapped prompt if --no-preview)>
 EOF
 
 # Launch via stdin pipe. Each flag line below is optional — include only

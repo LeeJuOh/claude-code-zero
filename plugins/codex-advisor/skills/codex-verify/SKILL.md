@@ -1,6 +1,6 @@
 ---
 name: codex-verify
-description: "Verify a plan or document using Codex as independent reviewer with PASS/FAIL verdict. Use when asked \"codex 검수\", \"verify this plan\", \"플랜 검수\"."
+description: "Verify a plan or document using Codex as independent reviewer with PASS/FAIL verdict. Use when asked \"codex verify\", \"verify this plan\", \"review this doc for issues\"."
 argument-hint: "path/to/document.md [--model SLUG] [--effort LEVEL] [--no-preview]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
@@ -48,7 +48,7 @@ Rules:
 - **A single path** → treat as the document to verify.
 - **`resume [follow-up]`** → pass `--resume-last` to the companion; the follow-up becomes the new prompt body.
 - **Multiple paths** → `AskUserQuestion` which one.
-- **Meta-instructions addressed to YOU** ("한국어로 평가해", "엄격하게") → obey for your own behavior, never include in the prompt.
+- **Meta-instructions addressed to YOU** (e.g. "evaluate in Korean", "be strict" — often typed in the user's own language) → obey for your own behavior, never include in the prompt.
 - **No args** → `AskUserQuestion`: "What document should I verify?"
 - **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. verify has no companion flags to forward. `--model`/`--effort` are skill-level and route through `apply-codex-config.py`.
 - **`--no-preview`** → skip Phase 1.5 draft review. Power users who trust the translation.
@@ -77,7 +77,8 @@ JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/verify-job-${TS}.json"
 echo "PROMPT_FILE=$PROMPT_FILE"
 echo "JOB_JSON_FILE=$JOB_JSON_FILE"
 
-# Header via heredoc — no document content yet
+# Header via heredoc — no document content yet.
+# block tags from official gpt-5-4-prompting (prompt-blocks.md); bodies adapted to this skill's output schema — re-sync the tag set if the official guide updates
 cat > "$PROMPT_FILE" <<'EOF'
 <task>
 You are a brutally honest technical reviewer. Review the following document for
@@ -91,13 +92,13 @@ Focus areas:
 - Internal contradictions or ambiguous requirements
 </task>
 
-<compact_output_contract>
+<structured_output_contract>
 Return a structured verdict:
 1. PASS or FAIL (with clear reasons)
 2. Blocking issues (P1) — must fix before proceeding
 3. Recommendations (P2) — non-blocking improvements
 Be direct. No compliments. Just the problems.
-</compact_output_contract>
+</structured_output_contract>
 
 <grounding_rules>
 Ground every finding in the document text. Cite specific sections.
@@ -176,13 +177,13 @@ Focus areas:
 - Internal contradictions or ambiguous requirements
 </task>
 
-<compact_output_contract>
+<structured_output_contract>
 Return a structured verdict:
 1. PASS or FAIL (with clear reasons)
 2. Blocking issues (P1) — must fix before proceeding
 3. Recommendations (P2) — non-blocking improvements
 Be direct. No compliments. Just the problems.
-</compact_output_contract>
+</structured_output_contract>
 
 <grounding_rules>
 Ground every finding in the document text. Cite specific sections.

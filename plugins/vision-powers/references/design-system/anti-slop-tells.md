@@ -8,7 +8,7 @@ A named catalogue of the *behaviors* that quietly make an explainer artifact wor
 
 This file covers the other half: **behavioral slop** — the authoring habits that pass every mechanical check and still flatten the output. A page can have a flawless palette and zero gate violations and still be a linear dump with a forced diagram on top. No script catches that; the author has to.
 
-Two anchors from `CONTEXT.md` frame every Tell below:
+Two anchors frame every Tell below:
 
 - **Slop** makes output *worse* than the bare model. If a habit adds nothing a reader can use, it is slop even when it looks polished.
 - **Leverage vs delegation.** Taste, layout, and CSS stay delegated to the model — these Tells do **not** dictate design. They name bad *defaults* so the model can choose freely *against* them. The instruction is never "use this layout"; it is "don't fall into this reflex."
@@ -23,7 +23,7 @@ The taste-skill convention is borrowed wholesale: **name the default, say why it
 
 **What it is.** Replacing a body of substance with a one-line gist — "This section explains the auth flow" instead of re-presenting the auth flow.
 
-**Why it's slop.** This is the **cardinal sin** in `CONTEXT.md`: compression *is* the linear-dump problem turned inward. The artifact exists to preserve substance and change its *shape*; a summary throws the substance away. The reader came for the detail and got a label.
+**Why it's slop.** This is the **cardinal sin**: compression *is* the linear-dump problem turned inward. The artifact exists to preserve substance and change its *shape*; a summary throws the substance away. The reader came for the detail and got a label.
 
 **Before → After.**
 - Before: `<p>The retry logic handles transient failures.</p>` (the source had three paragraphs on backoff, jitter, and the dead-letter path)
@@ -43,7 +43,7 @@ The taste-skill convention is borrowed wholesale: **name the default, say why it
 
 **What it is.** Reaching for Mermaid (or any diagram) on content that isn't spatial — rendering a sequential list or a two-axis comparison as a flowchart because "diagram-rich" was misread as "diagram per section."
 
-**Why it's slop.** A diagram that a 3-column table would convey better is noise that costs render time and reading effort. `artifact-gate.md` ("Type fit": *could a 3-column table convey the same? → drop the diagram*) and `diagram-type-selection.md` already encode this — consult them. The resolved guidance in `CONTEXT.md` is "use the *right* visual generously," not "one diagram per section."
+**Why it's slop.** A diagram that a 3-column table would convey better is noise that costs render time and reading effort. `artifact-gate.md` ("Type fit": *could a 3-column table convey the same? → drop the diagram*) and `diagram-type-selection.md` already encode this — consult them. The resolved guidance is "use the *right* visual generously," not "one diagram per section."
 
 **Before → After.**
 - Before: a `graph TD` with five nodes restating "config → validate → build → test → deploy."
@@ -73,7 +73,7 @@ The taste-skill convention is borrowed wholesale: **name the default, say why it
 
 **What it is.** A visual element that carries no information — an icon as ornament, a callout with nothing callout-worthy, a diagram that restates a sentence already on the page, a divider purely for texture.
 
-**Why it's slop.** Decoration without information is the behavioral cousin of the CSS slop `CONTEXT.md` rejects (glassmorphism, bento, decorative gradients). The gate catches the CSS subset (`background-clip: text`, etc.); it can't catch a *semantically* empty callout. The test from `artifact-gate.md`'s Remove test applies: if deleting the element loses no information, it was decoration.
+**Why it's slop.** Decoration without information is the behavioral cousin of the CSS slop this design system rejects (glassmorphism, bento, decorative gradients). The gate catches the CSS subset (`background-clip: text`, etc.); it can't catch a *semantically* empty callout. The test from `artifact-gate.md`'s Remove test applies: if deleting the element loses no information, it was decoration.
 
 **Before → After.**
 - Before: a highlighted callout reading "This is important." next to a 🎯 icon.
@@ -93,4 +93,4 @@ The taste-skill convention is borrowed wholesale: **name the default, say why it
 
 ## Using this catalogue
 
-These are defaults to break, not rules to obey. The model still chooses the layout, the palette set, the diagram type, the proportion — the entire design surface stays delegated, exactly as `CONTEXT.md` "Leverage vs delegation" requires. A Tell only flags a reflex worth resisting; the *better* choice is the model's to make. None of these seven are gate-enforced (the gate's reach is `artifact-gate.md`'s automation list) — they're caught by an author who knows their names.
+These are defaults to break, not rules to obey. The model still chooses the layout, the palette set, the diagram type, the proportion — the entire design surface stays delegated, exactly as the leverage-vs-delegation principle requires. A Tell only flags a reflex worth resisting; the *better* choice is the model's to make. None of these seven are gate-enforced (the gate's reach is `artifact-gate.md`'s automation list) — they're caught by an author who knows their names.
