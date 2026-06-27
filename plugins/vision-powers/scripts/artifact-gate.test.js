@@ -201,6 +201,41 @@ test('allows the sanctioned accent hex', () => {
   assert.strictEqual(checkForbiddenColors(html).length, 0);
 });
 
+test('exempts a forbidden hex quoted inside a verbatim code panel', () => {
+  // A diff that ADDS the ban (e.g. the commit defining FORBIDDEN_HEXES) quotes
+  // the hex as source; the report adopts no such colour.
+  const html = '<html><body><pre><code class="language-js">'
+    + 'const FORBIDDEN = [&#39;#8b5cf6&#39;, &#39;#7c3aed&#39;];'
+    + '</code></pre></body></html>';
+  assert.strictEqual(checkForbiddenColors(html).length, 0);
+});
+
+test('GATE-2: exempts a verbatim hex when attributes precede the class', () => {
+  // Highlighters often emit other attributes before class
+  // (`<code data-line="1" class="language-js">`). The exemption must still apply,
+  // or verbatim code re-triggers a false forbidden-color violation.
+  const html = '<html><body><pre><code data-line="1" class="language-js">'
+    + 'const FORBIDDEN = [&#39;#8b5cf6&#39;];'
+    + '</code></pre></body></html>';
+  assert.strictEqual(checkForbiddenColors(html).length, 0);
+});
+
+test('still flags a forbidden hex in an inline style attribute', () => {
+  const html = '<html><body><div style="color:#8b5cf6">x</div></body></html>';
+  assert.ok(checkForbiddenColors(html).some(v => v.rule === 'forbidden-color'));
+});
+
+test('still flags a forbidden hex inside a mermaid diagram', () => {
+  const html = '<html><body><pre class="mermaid">flowchart TD\n'
+    + '  A:::p\n  classDef p fill:#d946ef</pre></body></html>';
+  assert.ok(checkForbiddenColors(html).some(v => v.rule === 'forbidden-color'));
+});
+
+test('exemption is narrow: a bare <code> without language class is still scanned', () => {
+  const html = '<html><body><code>#a78bfa</code></body></html>';
+  assert.ok(checkForbiddenColors(html).some(v => v.rule === 'forbidden-color'));
+});
+
 // --- Check 6: Anchor href integrity (B1) ---
 
 test('detects anchor without href', () => {

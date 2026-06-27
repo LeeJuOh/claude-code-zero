@@ -15,7 +15,7 @@ The thesis behind this plugin echoes what Thariq Shihipar (Anthropic, Claude Cod
 | Skill | Description |
 |-------|-------------|
 | `plugin-visual` | Claude Code plugin deep analysis — 4 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
-| `diff-visual` | Visualize git diffs as interactive HTML reports with architecture diagrams, file map, classification heatmap, dependency shift, and hot spot analysis |
+| `diff-visual` | Visualize git diffs as interactive HTML reports — now showing the **actual changed code** as side-by-side split-diff (syntax-highlighted, build-time grounded so it's the real lines, not a paraphrase), plus a file map with change-flags, architecture diagrams, classification heatmap, dependency shift, and hot spot analysis |
 | `doc-visual` | Visualize any markdown document (research, spec, RFC, ADR, design doc) as a diagram-enhanced HTML or markdown report with Mermaid diagrams matched to section intent |
 | `fact-check` | Verify document accuracy against the actual codebase and git history |
 | `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, skill security scan (prompt injection, data exfil, destructive, credentials, obfuscation, safety override), hook schema validation, plugin components, CLAUDE.md & memory health. 6 graded areas + 5 observational, each threshold cited to official docs |

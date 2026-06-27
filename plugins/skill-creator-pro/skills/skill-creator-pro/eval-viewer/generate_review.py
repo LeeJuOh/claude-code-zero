@@ -276,7 +276,19 @@ def generate_html(
     if benchmark:
         embedded["benchmark"] = benchmark
 
-    data_json = json.dumps(embedded)
+    # Embedded in an inline <script>; an output file containing the literal
+    # "</script>" (e.g. an HTML artifact with its own scripts) would otherwise
+    # terminate the tag early and break the whole viewer. Neutralize the HTML
+    # parser's hot sequences via JSON unicode escapes — valid JSON, decodes
+    # back to the same characters, but invisible to the HTML tokenizer.
+    data_json = (
+        json.dumps(embedded)
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
 
     return template.replace("/*__EMBEDDED_DATA__*/", f"const EMBEDDED_DATA = {data_json};")
 

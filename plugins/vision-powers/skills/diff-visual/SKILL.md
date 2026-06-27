@@ -1,9 +1,10 @@
 ---
 name: diff-visual
 description: >
-  Visualize git diffs as interactive HTML reports with architecture diagrams and change analysis.
-  Use when asked to visualize, review, or summarize a diff, branch, commit, or PR.
-  Accepts branch names, commit hashes, HEAD, PR numbers, or commit ranges.
+  Visualize git diffs as interactive HTML reports with architecture diagrams, change analysis,
+  and side-by-side split-diff of the actual changed code. Use when asked to visualize, review, or
+  summarize a diff, branch, commit, or PR — including seeing the real changed lines, not just a
+  summary. Accepts branch names, commit hashes, HEAD, PR numbers, or commit ranges.
 argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>]"
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
@@ -129,14 +130,54 @@ Write the entire HTML file yourself — `<!DOCTYPE html>` to `</html>`. A self-c
 | Section | Content |
 |---|---|
 | **Overview** | Commits, files changed, lines +/−, scope description |
-| **File Map** | Tree/nested diagram of changed files grouped by directory |
+| **File Map** | Tree/nested diagram of changed files grouped by directory, each file carrying a **change-flag** (added / removed / modified / renamed) |
+| **Key Changes** | Side-by-side **split-diff** of the load-bearing changed files — the actual code, not a summary. See below |
 | **Architecture Impact** | How the change affects system structure — with diagram |
 | **Change Classification** | Feature/refactor/test/docs/config breakdown table |
 | **Dependency Shift** | Before/after imports, packages, connections — with diagram |
 | **New Components** | Architecture diagram focused on new modules |
 | **Hot Spots** | Impact vs frequency — quadrant chart or table |
 
-Skip sections that don't apply to the diff (e.g., no "New Components" if nothing was added).
+Skip sections that don't apply to the diff (e.g., no "New Components" if nothing was added). **Key
+Changes is the load-bearing section** for a code review — a reviewer wants the real lines first.
+Place it high (right after File Map) and let it draw the eye; don't bury it under the diagrams.
+
+**Key Changes (split-diff) — show the real code, grounded by extraction.** This is the one
+section whose facts must never pass through your hands. When the diff contains meaningful code
+hunks (most diffs do), render them as before/after split-diff — but the code comes from a script,
+not from you:
+
+1. **Auto-detect, no flag.** Turn the section on by content: if the diff has substantive code
+   changes (not pure renames/deletions/binary/lockfiles), include Key Changes. Skip it for a
+   trivial one-line change that reviews faster as plain text, or a diff that is all
+   generated/vendored files.
+2. **Select the load-bearing files** — 3–8 of them (budget in `structured-blocks.md`). These are
+   the files a reviewer must read, not every touched file.
+3. **Extract, never retype.** For each, get the verbatim escaped code from the bundled script:
+   ```bash
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/extract-hunks.js <scope> <file> [line-range]
+   # PR with no local refs: gh pr diff <N> | node ${CLAUDE_PLUGIN_ROOT}/scripts/extract-hunks.js --stdin <file> [line-range]
+   ```
+   Paste its `<pre><code>` BEFORE/AFTER blocks into the split-diff layout **verbatim**. You write
+   only the one-line summary (what the hunk does and why) and a few high-signal annotations —
+   never the code itself. Retyping code drifts and mis-escapes; a confidently-wrong diff is worse
+   than none in a review. (ADR 0005.)
+4. **Layout, CDN, budgets, network-0 degrade** all live in
+   `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md` — read it before writing
+   the section. One `<details>` per file (1–2 load-bearing files `open`, rest collapsed);
+   highlight.js from CDN with the same first-view-needs-network caveat as Mermaid; un-highlighted
+   monospace if offline.
+
+In **markdown mode**, there is no CDN highlighting: render Key Changes as fenced ` ```diff ` blocks
+(or per-file before/after fences) populated from `extract-hunks.js --json`, still extraction-grounded.
+
+**File Map change-flags.** Tag each file in the File Map with its change type — added / removed /
+modified / renamed — derived **mechanically** from `git diff {scope} --name-status` (the `A`/`D`/
+`M`/`R` status letters), never guessed. Colour the flags from the `semantic-tokens.md` palette
+(avoid the forbidden violet/fuchsia) and ensure they read in dark mode; reuse the same
+`--diff-added`/`--diff-removed` convention `structured-blocks.md` defines, with `modified` on
+`muted` and `renamed` on `link`. The flag is the footprint a reviewer scans before expanding
+anything.
 
 **Diagrams**: Read these reference files for implementation:
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Mermaid syntax, theming, dark mode, zoom
@@ -185,6 +226,7 @@ On success it prints a PNG path. **Read that PNG** (you read images multimodally
 - **Hierarchy** — does the change you judged load-bearing draw the eye first, or is every section the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
 - **Mermaid integrity** — did the file map, dependency-shift subgraphs, or hot-spots quadrant render as raw `<pre>` text or as crossing/overlapping edges?
 - **Overflow** — does a diagram, classification table, or long file path run past its container or off the page?
+- **Split-diff** — do the before/after panes sit side by side and stay within their columns (`min-width:0`), or does a long code line blow out the grid? Is the code highlighted (or cleanly monospace if offline), not a raw unstyled wall? Are only the 1–2 load-bearing files `open`?
 
 Fix what you see and re-render. **Cap at 2 audit passes** — if something still looks off after the second, ship with a one-line note to the user rather than looping. This catches gross breakage, not pixel-perfection.
 
@@ -209,7 +251,13 @@ Assemble an inline markdown report and deliver it directly in the response. Do N
 - **Lines:** +A / −B
 
 ## File Map
-<tree/nested diagram of changed files grouped by directory>
+<tree/nested diagram of changed files grouped by directory, each file tagged
+ [A]/[D]/[M]/[R] from --name-status>
+
+## Key Changes
+<for the 3-8 load-bearing files: a ```diff fenced block per file populated from
+ `extract-hunks.js --json` (extraction-grounded — never retyped), each under a
+ one-line summary of what the hunk changes and why>
 
 ## Architecture Impact
 <1-2 paragraphs + architecture diagram>
@@ -248,6 +296,7 @@ Read these during report generation (not upfront — read the relevant one when 
 | File | When to read |
 |---|---|
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md` | Before writing the Key Changes split-diff section (layout, highlight.js CDN, budgets, grounding, degrade) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex |
