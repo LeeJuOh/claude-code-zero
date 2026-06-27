@@ -117,6 +117,18 @@ function stripCodeRegions(html) {
     .replace(/<style[\s>][\s\S]*?<\/style>/gi, '');
 }
 
+// Strip ONLY verbatim source-code panels — `<code class="language-*">...</code>`,
+// the structured-block convention from references/design-system/structured-blocks.md.
+// These quote the diffed code byte-for-byte, so they may legitimately contain
+// strings a prose-level rule would otherwise flag (e.g. a banned hex in a commit
+// that ADDS that hex to the ban-list). Deliberately narrower than stripCodeRegions:
+// `<style>`, inline `style=`, and Mermaid diagrams (`<pre class="mermaid">`, which
+// carries no inner `<code class="language-*">`) are the report's OWN palette and
+// stay under the rule.
+function stripVerbatimCode(html) {
+  return html.replace(/<code\s+class="language-[^"]*"[^>]*>[\s\S]*?<\/code>/gi, '');
+}
+
 // --- Check 2: Raw markdown remnants ---
 
 function checkRawMarkdown(html) {
@@ -220,7 +232,10 @@ const FORBIDDEN_HEXES = ['#8b5cf6', '#7c3aed', '#a78bfa', '#d946ef'];
 
 function checkForbiddenColors(html) {
   const violations = [];
-  const lower = html.toLowerCase();
+  // Exempt verbatim code panels: a diff that quotes a banned hex (e.g. the very
+  // commit that bans it) is reporting source, not adopting the colour. The
+  // report's own palette — <style>, inline style=, Mermaid — is still scanned.
+  const lower = stripVerbatimCode(html).toLowerCase();
   for (const hex of FORBIDDEN_HEXES) {
     if (lower.includes(hex)) {
       violations.push({ rule: 'forbidden-color', hint: `Violet/fuchsia palette colour ${hex} is the AI-default accent banned by semantic-tokens.md` });

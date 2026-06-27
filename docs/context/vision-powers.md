@@ -46,6 +46,14 @@ artifact exists to fix. From the HTML-effectiveness thesis: markdown "flattens" 
 The structure that makes a linear dump navigable: TL;DR box, collapsible steps, tabbed
 snippets, comparison tables, diagrams, margin glossary. The *re-structuring*, applied without dropping content.
 
+**Structured block**:
+A scaffolding element that re-presents source *verbatim* in a typed layout — split-diff
+(before/after code), annotated-code (code + margin notes), data-model (schema change),
+api-endpoint (route contract), file-tree (with change flags). Distinct from a **diagram**
+(which *abstracts* relationships) and a **callout** (which the model *writes*): a structured
+block's factual content is the source itself, lifted unchanged. It widens the design-brief
+menu beyond diagrams to the code/contract layer reviewers actually read. See [[0005]].
+
 **Re-structuring (not compression)**:
 The north star. Original substance is preserved byte-for-byte; only the *shape* changes from
 flat prose to scaffolding. Compressing a body to a one-line summary is the **cardinal sin** —
@@ -69,6 +77,15 @@ links, the forbidden AI-purple palette, Mermaid `classDef` colour traps, diagram
 leftover placeholders, gradient-clipped text, and missing font-fallback chains. (Language
 consistency and accent-count discipline are still held by authoring guidance, not yet by the
 gate.) A request without a gate is a wish. See [[0002]].
+
+**Build-time grounding (true-by-construction)**:
+A second flavour of leverage beyond the post-hoc **Gate**. A **structured block** is filled by
+*mechanical extraction from the source* (e.g. the exact diff hunk), never retyped by the model —
+so its facts (code lines, paths, +/−) are correct *by construction*, not by later checking. The
+model contributes only selection and the prose around the block (why, risk, annotation). This is
+**Re-structuring** taken to its limit: the substance is not merely preserved, it is lifted
+byte-for-byte and never passes through the model's hands. Sharpens, does not replace, the Gate —
+which still guards what extraction can't. See [[0005]].
 
 **Slop**:
 Landing-page aesthetics inappropriate for explainer docs: glassmorphism, double-bezel cards,

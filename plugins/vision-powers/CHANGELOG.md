@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.5.0 — 2026-06-27
+
+### Added
+
+- **diff-visual now shows the actual changed code** — a new **Key Changes** section renders the load-bearing files as side-by-side **split-diff** (before | after), the single biggest hole in the old report (it drew file-maps and diagrams but never a line of code). Surfaced by content auto-detection — **no new user flag**.
+  - **`scripts/extract-hunks.js`** (new) — build-time grounding per ADR 0005: pulls the exact hunk from git, HTML-escapes it, and emits paste-ready `<pre><code>` panes with a `language-*` class set from the file extension. The model pastes the code verbatim and writes only the summary/annotations — it never retypes code (no drift, no mis-escape). Handles binary / missing / empty-diff safely; supports `--stdin` for PR diffs (`gh pr diff N | …`) and `--json` for markdown mode.
+  - **`references/design-system/structured-blocks.md`** (new) — shared pattern reference: split-diff layout/CSS, highlight.js runtime CDN (github/github-dark, `prefers-color-scheme`, explicit language class), budgets (3–8 files, ≤150 lines), the build-time grounding law, and the network-0 monospace degrade. Written generically for sibling skills to adopt later.
+- **File Map change-flags** — each file in the File Map now carries an added / removed / modified / renamed flag, derived mechanically from `git diff --name-status`, coloured from the semantic-tokens palette.
+
+### Fixed
+
+- **`diff-visual <commit-sha>` now shows that commit's own change.** `extract-hunks.js` resolved a lone sha with `git diff <sha>` (commit-vs-working-tree), which returns a cumulative/unrelated diff once the file moves on; it now uses `git show <sha>` and treats it as authoritative. Ranges (`a..b`) and refs (`HEAD`, branches) are unaffected.
+- **The forbidden violet/fuchsia gate no longer false-flags quoted source.** `artifact-gate.js`'s palette check scanned the whole document, so a split-diff that legitimately quotes a banned hex (e.g. the very commit that bans it) failed the gate. Verbatim `<code class="language-*">` panels are now exempt; the report's own `<style>`, inline `style=`, and Mermaid colours stay under the ban.
+
+### Notes
+
+- **Invariants kept:** zero-runtime self-contained `.html` (ADR 0002) — no renderer/server added; highlighting is a runtime CDN exactly like Mermaid, with the same first-view-needs-network caveat and a clean offline fallback. Layout/CSS stay delegated to the model; the gate's job for code blocks shrinks because verbatim + escaping are guaranteed at the source.
+
 ## 4.4.2 — 2026-06-21
 
 ### Changed
