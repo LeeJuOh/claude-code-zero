@@ -179,6 +179,14 @@
       height: 600px;
       border: none;
     }
+    /* Live-rendered HTML artifacts get a tall, internally-scrolling frame.
+       Sandbox lacks allow-same-origin, so the parent can't auto-size it. */
+    .output-file-content iframe.html-render {
+      height: 85vh;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+    }
     .output-file-content table {
       border-collapse: collapse;
       font-size: 0.8125rem;
@@ -761,6 +769,25 @@
     }
 
     // ---- Render outputs ----
+    // HTML artifacts (e.g. vision-powers diff reports) render live in a
+    // sandboxed iframe so reviewers see the rendered page, not its source.
+    // Everything else (json/md/txt/logs) stays as readable source in a <pre>.
+    // sandbox="allow-scripts" runs the report's own highlight.js/Mermaid but
+    // withholds allow-same-origin, so the report can't reach the viewer.
+    function appendTextOutput(file, container) {
+      if (file.name.toLowerCase().endsWith(".html")) {
+        const iframe = document.createElement("iframe");
+        iframe.className = "html-render";
+        iframe.setAttribute("sandbox", "allow-scripts allow-popups allow-popups-to-escape-sandbox");
+        iframe.srcdoc = file.content;
+        container.appendChild(iframe);
+      } else {
+        const pre = document.createElement("pre");
+        pre.textContent = file.content;
+        container.appendChild(pre);
+      }
+    }
+
     function renderOutputs(run) {
       const container = document.getElementById("outputs-body");
       container.innerHTML = "";
@@ -793,9 +820,7 @@
         content.className = "output-file-content";
 
         if (file.type === "text") {
-          const pre = document.createElement("pre");
-          pre.textContent = file.content;
-          content.appendChild(pre);
+          appendTextOutput(file, content);
         } else if (file.type === "image") {
           const img = document.createElement("img");
           img.src = file.data_uri;
@@ -953,9 +978,7 @@
         fc.className = "output-file-content";
 
         if (file.type === "text") {
-          const pre = document.createElement("pre");
-          pre.textContent = file.content;
-          fc.appendChild(pre);
+          appendTextOutput(file, fc);
         } else if (file.type === "image") {
           const img = document.createElement("img");
           img.src = file.data_uri;
