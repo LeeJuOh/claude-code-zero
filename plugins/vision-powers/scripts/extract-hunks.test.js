@@ -69,6 +69,57 @@ test('a sha range keeps the git diff path (commit-to-commit)', () => {
   });
 });
 
+test('SEC-1: a scope token starting with `-` is rejected, never reaches git', () => {
+  withTwoCommitRepo(({ dir, file }) => {
+    // scopeArgs are spread before git's `--`, so `--output=<victim>` would be a
+    // git option that writes the diff to an arbitrary file. The whole crafted
+    // scope is one argv element that does NOT start with `--`, so main()'s flag
+    // filter passes it through as the scope positional — the bypass the guard closes.
+    const victim = path.join(dir, 'VICTIM');
+    const result = runJson(dir, `HEAD --output=${victim}`, file);
+    assert.strictEqual(result.status, 'empty', 'injected scope returns safe-empty, no git run');
+    assert.ok(!fs.existsSync(victim), 'the option-injection must not create/overwrite any file');
+  });
+});
+
+// A repo whose final commit DELETES the file, so `git show <sha>` yields a
+// deletion diff (newPath === "/dev/null") — the condition that mislabels the
+// before-pane language.
+function withDeleteCommitRepo(fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'extract-hunks-del-'));
+  const git = (...args) => execFileSync('git', args, { cwd: dir, encoding: 'utf-8' }).trim();
+  const file = 'sample.js';
+  try {
+    git('init', '-q');
+    git('config', 'user.email', 'test@example.com');
+    git('config', 'user.name', 'Test');
+    git('config', 'commit.gpgsign', 'false');
+
+    fs.writeFileSync(path.join(dir, file), 'const x = "ALPHA";\n');
+    git('add', file);
+    git('commit', '-q', '-m', 'add sample');
+
+    fs.rmSync(path.join(dir, file));
+    git('add', '-A');
+    git('commit', '-q', '-m', 'delete sample');
+    const delSha = git('rev-parse', 'HEAD');
+
+    return fn({ dir, file, delSha });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('BUG-3: a deleted file keeps its real language (not plaintext from /dev/null)', () => {
+  withDeleteCommitRepo(({ dir, file, delSha }) => {
+    const result = runJson(dir, delSha, file);
+    // newPath is "/dev/null" for a delete; language must come from the user path.
+    assert.strictEqual(result.language, 'javascript', 'before-pane keeps .js highlighting');
+    const before = result.hunks.flatMap(h => h.beforeLines).join('\n');
+    assert.ok(before.includes('ALPHA'), 'the deleted content shows on the before-side');
+  });
+});
+
 test('stdin diff takes precedence over any scope token', () => {
   withTwoCommitRepo(({ dir, file, sha1 }) => {
     const diff = [

@@ -126,7 +126,10 @@ function stripCodeRegions(html) {
 // carries no inner `<code class="language-*">`) are the report's OWN palette and
 // stay under the rule.
 function stripVerbatimCode(html) {
-  return html.replace(/<code\s+class="language-[^"]*"[^>]*>[\s\S]*?<\/code>/gi, '');
+  // Match the class attribute wherever it sits — highlighters often emit other
+  // attributes first (`<code data-line="1" class="language-js">`). Requiring the
+  // class right after `<code` would miss those and re-expose verbatim hex.
+  return html.replace(/<code\b[^>]*class="language-[^"]*"[^>]*>[\s\S]*?<\/code>/gi, '');
 }
 
 // --- Check 2: Raw markdown remnants ---

@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.5.1 — 2026-06-27
+
+### Fixed
+
+- **Security — `extract-hunks.js` no longer lets a crafted diff scope inject git options.** The scope string is split on whitespace and spread *before* git's `--`, so a token like `--output=<path>` reached git as an option, not a pathspec — enough to overwrite an arbitrary file (`git diff --output`) or run an external diff. Any scope token starting with `-` is now rejected with a safe-empty result. Legitimate scopes (`HEAD`, branches, shas, `a..b` ranges) never start with `-`, so they are unaffected.
+- **The forbidden-color gate stops false-flagging verbatim code when attributes precede the class.** `artifact-gate.js` only exempted `<code class="language-*">` when the class came immediately after `<code`; a highlighter emitting other attributes first (`<code data-line="1" class="language-js">`) slipped past the exemption and re-triggered the violet/fuchsia violation on quoted source. The match now allows leading attributes.
+- **Deleted files keep their real language in the before-pane.** `extract-hunks.js` derived the highlight language from `entry.newPath`, which is `/dev/null` for a deletion (truthy), mislabeling the removed code as `plaintext`. It now uses the user-supplied path, correct for modify, rename-new, and delete alike.
+
 ## 4.5.0 — 2026-06-27
 
 ### Added

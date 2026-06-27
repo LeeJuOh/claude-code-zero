@@ -173,6 +173,12 @@ function getDiffForFile(scope, file, stdinDiff) {
   // Scope may be one token (`HEAD`, `main...feature`, `abc..def`) or several
   // (`HEAD~3 HEAD`); split on whitespace so both reach git as separate args.
   const scopeArgs = scope ? scope.trim().split(/\s+/) : [];
+  // scopeArgs are spread BEFORE git's `--`, so a token like `--output=/x` would
+  // be read as a git option, not a pathspec — letting a crafted scope overwrite
+  // files or run an ext-diff. A legitimate scope (HEAD, a branch, a sha, a..b
+  // range) never starts with `-`, so reject any such token and return safe-empty
+  // — same crash-safe contract as a git failure: never kill the skill.
+  if (scopeArgs.some(a => a.startsWith('-'))) return '';
   // A lone commit sha means "that commit's own change" — which is `git show
   // <sha>`, NOT `git diff <sha>`. `git diff <sha>` compares the commit to the
   // WORKING TREE, so once the file moves on it returns a cumulative/unrelated
@@ -231,7 +237,10 @@ function buildResult(file, diffText, range) {
     return { file, language: languageFor(file), status: 'binary', hunks: [] };
   }
 
-  const language = languageFor(entry.newPath || file);
+  // Use the user-supplied `file`, not entry.newPath: a delete sets newPath to
+  // "/dev/null" (truthy), which would mislabel the before-pane as plaintext.
+  // `file` is the correct path for modify, rename-new, and delete alike.
+  const language = languageFor(file);
   const selected = entry.hunks.filter(h => hunkOverlapsRange(h, range));
   const hunks = selected.map(h => ({
     heading: h.heading,

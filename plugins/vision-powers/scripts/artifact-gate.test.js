@@ -210,6 +210,16 @@ test('exempts a forbidden hex quoted inside a verbatim code panel', () => {
   assert.strictEqual(checkForbiddenColors(html).length, 0);
 });
 
+test('GATE-2: exempts a verbatim hex when attributes precede the class', () => {
+  // Highlighters often emit other attributes before class
+  // (`<code data-line="1" class="language-js">`). The exemption must still apply,
+  // or verbatim code re-triggers a false forbidden-color violation.
+  const html = '<html><body><pre><code data-line="1" class="language-js">'
+    + 'const FORBIDDEN = [&#39;#8b5cf6&#39;];'
+    + '</code></pre></body></html>';
+  assert.strictEqual(checkForbiddenColors(html).length, 0);
+});
+
 test('still flags a forbidden hex in an inline style attribute', () => {
   const html = '<html><body><div style="color:#8b5cf6">x</div></body></html>';
   assert.ok(checkForbiddenColors(html).some(v => v.rule === 'forbidden-color'));
