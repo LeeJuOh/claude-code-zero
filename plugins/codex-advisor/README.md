@@ -1,6 +1,6 @@
 # codex-advisor
 
-> Every Codex result gets a second opinion — Claude independently evaluates each finding before you act on it.
+> **Get Codex's second opinion on your code, plans, and research — and actually trust it.** Claude independently fact-checks every Codex finding before you act, so hallucinated citations never slip through.
 
 ## Why
 
@@ -33,6 +33,7 @@ prompt and double-check". All four failures were wrapper bugs.
 
 ## What you get
 
+- **A second opinion you can trust** — Codex reviews your code, verifies your plans, or researches for you; Claude then independently fact-checks what Codex returns. You get the cross-model check *and* a guardrail against Codex's confident hallucinations.
 - **Five-way finding classification** on every review — Agreed, Disputed, Nuanced, False Positive, Uncited. Catches hallucinated file:line citations before you act on them.
 - **Blind-payload independence** — for `codex-review` / `codex-adversarial`, Claude doesn't read the cited files until after Codex returns. For `codex-verify` / `codex-research`, the document is piped to Codex directly and never enters Claude's context.
 - **Background-resilient** — long jobs survive Bash's 5-minute timeout via background launch + `status --wait`. `/codex-result <job-id>` fetches the stored output even after the session that started it is gone.

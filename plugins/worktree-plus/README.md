@@ -4,11 +4,11 @@
 
 ## Why
 
-You create a worktree, `cd` in, run `npm start` — it fails because `.env` and `node_modules/` didn't come with you. You fix that, finish the work, delete the worktree — and your uncommitted tweaks are gone with it.
+You create a worktree, `cd` in, run `npm start` — it fails because `.env` and your local config didn't come with you. You recreate them, finish the work, delete the worktree — and your uncommitted tweaks are gone with it.
 
 That's Claude Code's built-in worktree. The full list of what bites:
 
-- **Skips gitignored files** — `.env`, `node_modules/`, `.venv/` don't follow you in, so the project won't run until you rebuild them.
+- **Skips gitignored files** — `.env`, local config, and local-only docs don't follow you in, so the project won't run until you recreate them.
 - **No cleanup guard** — `remove` wipes uncommitted changes, untracked files, and unpushed commits without warning.
 - **Branches from the remote default**, not `HEAD` — you can't fork a feature branch off the work you're sitting on.
 - **No remote tracking** — new branches don't track matching `origin/*`, so `git pull` / `push` need `-u` every time.
@@ -64,15 +64,19 @@ When a worktree is removed through the hook, worktree-plus blocks removal if the
 ```
 .env
 config/secrets.yaml
+notes/local-todo.md
 ```
 
-**`.worktreelink`** — files to symlink (shared, zero disk overhead):
+**`.worktreelink`** — directories to symlink (shared across worktrees, zero disk overhead):
 ```
-node_modules/
-.venv/
+models/
+assets/media/
+references/
 ```
 
-Good `.worktreelink` candidates are large gitignored directories that don't need per-worktree isolation (dependency caches, build artifacts). Git-tracked directories are already checked out into each worktree automatically — don't link them.
+Good `.worktreelink` candidates are large, **branch-invariant** gitignored directories that are safe to share: downloaded assets and datasets, content-addressed caches, read-only vendored repos.
+
+**Don't link `node_modules/`, `.venv/`, or any per-branch dependency state.** A symlink makes every worktree share one copy, so an install in one worktree silently mutates the others when two branches need different dependencies. Those belong in `.worktreeinclude` (copy) — or just reinstall them per worktree, since the git-tracked manifest (`package.json`, `requirements.txt`) is already checked out. Git-tracked directories are checked out into each worktree automatically — don't link them either.
 
 ### Configuration
 

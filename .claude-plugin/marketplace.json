@@ -35,7 +35,7 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "Replaces Claude Code's built-in worktree — aligns with native git worktree where CC diverges (HEAD base, origin/* auto-tracking) and adds layers native lacks: .worktreeinclude/.worktreelink for gitignored files, upstream-aware removal guard, idempotent re-entry."
     },
     {
@@ -47,8 +47,8 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "4.5.0",
-      "description": "Double-check layer for the Official Codex plugin — wraps every Codex interaction with Claude's independent critical evaluation. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Every skill accepts --model/--effort via config.toml. Tested against codex@openai-codex 1.0.4 and Codex CLI 0.125 (gpt-5.5)."
+      "version": "4.5.1",
+      "description": "Get Codex's second opinion on your code, plans, and research — and actually trust it: Claude independently fact-checks every Codex finding (Agreed/Disputed/Nuanced/False Positive/Uncited) before you act, catching hallucinated citations. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Every skill accepts --model/--effort via config.toml. Tested against codex@openai-codex 1.0.4 and Codex CLI 0.125 (gpt-5.5)."
     },
     {
       "name": "rubber-duck-tutor",
