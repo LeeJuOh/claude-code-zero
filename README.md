@@ -61,7 +61,7 @@ Run `/plugin` and check the **Installed** tab.
 
 **Problem:** Complex analysis buried in terminal text — architecture, security issues, git diffs all lose structure. Impossible to share with teammates.
 
-**Solution:** Generates interactive HTML reports with Mermaid diagrams and Chart.js dashboards. Analyzes plugins (local, installed, or GitHub), git diffs, and markdown docs. Visual self-audit renders reports to PNG for verification.
+**Solution:** Turns the analysis into a shareable report — your pick of a self-contained interactive HTML file (Mermaid diagrams + Chart.js dashboards) or portable Markdown for PRs and chat. Audits plugins (local, installed, or GitHub), git diffs, and markdown docs. Before delivering, Claude renders the report and reads it back as an image to catch diagrams that broke in layout.
 
 `plugin-visual` · `diff-visual` · `doc-visual` · `fact-check` · `context-health-visual` · `report-manager`
 
@@ -79,9 +79,9 @@ Run `/plugin` and check the **Installed** tab.
 
 ### [worktree-plus](plugins/worktree-plus/README.md)
 
-**Problem:** Claude Code's built-in worktree breaks on gitignored files (`.env`, `node_modules/`), doesn't track state, and can delete uncommitted work on removal.
+**Problem:** Claude Code's built-in worktree leaves your gitignored files behind — `.env`, local config, local-only docs — so the project won't run; it doesn't track state, and can delete uncommitted work on removal.
 
-**Solution:** `.worktreeinclude` / `.worktreelink` for selective file copy and symlink. Safety guard blocks removal if uncommitted changes or unpushed commits exist. Audit trail in `.worktree.log`.
+**Solution:** `.worktreeinclude` copies the small, irreplaceable files (`.env`, local docs) into each worktree; `.worktreelink` symlinks the big, branch-invariant ones (downloaded assets, shared caches) at zero disk cost. Safety guard blocks removal if uncommitted changes or unpushed commits exist. Audit trail in `.worktree.log`.
 
 `worktree-config` · auto-hooks on WorktreeCreate/Remove
 

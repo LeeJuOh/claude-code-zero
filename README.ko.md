@@ -61,7 +61,7 @@ npx skills add LeeJuOh/claude-code-zero
 
 **문제:** 복잡한 분석이 터미널 텍스트에 묻힙니다 — 아키텍처, 보안 이슈, git diff 모두 구조를 잃습니다. 팀원과 공유도 불가능합니다.
 
-**해결:** Mermaid 다이어그램과 Chart.js 대시보드가 포함된 인터랙티브 HTML 리포트를 생성합니다. 플러그인(로컬/설치됨/GitHub), git diff, 마크다운 문서를 분석합니다. 시각적 셀프 감사가 리포트를 PNG로 렌더링해 검증합니다.
+**해결:** 분석을 공유 가능한 리포트로 바꿉니다 — 자기완결형 인터랙티브 HTML 한 파일(Mermaid 다이어그램 + Chart.js 대시보드), 또는 PR·채팅용 Markdown 중 선택. 플러그인(로컬/설치됨/GitHub), git diff, 마크다운 문서를 분석합니다. 전달 전 Claude가 리포트를 렌더링해 이미지로 되읽어 깨진 다이어그램을 잡아냅니다.
 
 `plugin-visual` · `diff-visual` · `doc-visual` · `fact-check` · `context-health-visual` · `report-manager`
 
@@ -79,9 +79,9 @@ npx skills add LeeJuOh/claude-code-zero
 
 ### [worktree-plus](plugins/worktree-plus/README.md)
 
-**문제:** Claude Code 내장 worktree는 gitignore 파일(`.env`, `node_modules/`)에서 깨지고, 상태 추적이 없으며, 제거 시 커밋 안 된 작업을 삭제할 수 있습니다.
+**문제:** Claude Code 내장 worktree는 gitignore된 파일(`.env`, 로컬 설정, 로컬 전용 문서)을 두고 가서 프로젝트가 안 돌고, 상태 추적이 없으며, 제거 시 커밋 안 된 작업을 삭제할 수 있습니다.
 
-**해결:** `.worktreeinclude` / `.worktreelink`로 선택적 파일 복사와 심링크. 커밋 안 된 변경이나 푸시 안 된 커밋이 있으면 제거를 차단하는 안전 가드. `.worktree.log`에 감사 추적.
+**해결:** `.worktreeinclude`는 작고 복구 불가한 파일(`.env`, 로컬 문서)을 각 worktree로 복사, `.worktreelink`는 크고 브랜치 안 타는 것(다운로드 자산, 공유 캐시)을 디스크 비용 0으로 심링크. 커밋 안 된 변경·푸시 안 된 커밋 있으면 제거 차단. `.worktree.log` 감사 추적.
 
 `worktree-config` · WorktreeCreate/Remove 자동 훅
 
