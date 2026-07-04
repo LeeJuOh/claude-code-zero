@@ -94,8 +94,8 @@ prompt and double-check". All four failures were wrapper bugs.
 
 **Every skill accepts `--model <slug>` and `--effort <level>`.** They route through `scripts/apply-codex-config.py` and update `~/.codex/config.toml` before the Codex CLI runs. Two reasons:
 
-1. **`--effort` is not a registered review/adversarial flag.** The companion's `handleReviewCommand` accepts `--base`, `--scope`, `--model`, `--cwd` only (`codex-companion.mjs:684`). Passing `--effort` directly would become silent prompt corruption. Only the `model_reasoning_effort` key in `config.toml` reaches the review code path.
-2. **Consistency + persistence.** `--model` IS honored as a flag in companion 1.0.4+ (`lib/codex.mjs:56-66`), but routing it through `config.toml` keeps every codex-advisor skill identical and lets the value carry into the next session without re-typing.
+1. **`--effort` is not a registered review/adversarial flag.** The companion's `handleReviewCommand` accepts `--base`, `--scope`, `--model`, `--cwd` only (`codex-companion.mjs:714`). Passing `--effort` directly would become silent prompt corruption. Only the `model_reasoning_effort` key in `config.toml` reaches the review code path.
+2. **Consistency + persistence.** `--model` IS honored as a flag in companion 1.0.4+ (`lib/codex.mjs:1010-1015`), but routing it through `config.toml` keeps every codex-advisor skill identical and lets the value carry into the next session without re-typing.
 
 Examples:
 
@@ -128,7 +128,7 @@ The key discipline: **Claude never reads your source code before Codex runs.** T
 
 ## Prerequisites
 
-- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) **v1.0.4+** — **install required**. Earlier versions had a different review handler; codex-advisor's flag-routing assumes the v1.0.4 companion contract. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu.
+- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) **v1.0.4+** — **install required**. Earlier versions had a different review handler; codex-advisor's flag-routing assumes the v1.0.4+ companion contract, tested through 1.0.5. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu.
 - [OpenAI Codex CLI](https://github.com/openai/codex) — installed and authenticated (`/codex-setup` verifies both). Tested against Codex CLI 0.125.
 
 ## License

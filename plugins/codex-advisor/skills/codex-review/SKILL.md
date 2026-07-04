@@ -27,7 +27,7 @@ what Codex returns, without biasing yourself by reading the diff first.
 
 The companion collects the diff and context itself. Your value-add is
 the double-check, not pre-analysis. Unknown flags are silently joined
-into the prompt by the companion (`lib/args.mjs:47-49` + `:613-619`) —
+into the prompt by the companion (`lib/args.mjs:47-49` + `:643-650`) —
 there is NO post-hoc detection. Phase 1 whitelist is the only safety net.
 
 ---
@@ -39,8 +39,8 @@ You are a translator. Use LM intelligence, not regex tables.
 **Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`, `--model <slug>`, `--effort <level>`. Nothing else.
 
 `--model` and `--effort` route through `scripts/apply-codex-config.py` to update `~/.codex/config.toml` *before* the companion launches — see the Apply block below. Two reasons:
-1. **`--effort` is not a registered review flag** (`handleReviewCommand` `valueOptions = ["base", "scope", "model", "cwd"]` at `:684`). Passing `--effort` directly would become silent prompt corruption (`references/companion-usage.md §3`). Only the config.toml `model_reasoning_effort` key reaches the review path.
-2. **Consistency + persistence.** `--model` IS honored as a flag in v1.0.4 (`startThread({ model })`, `lib/codex.mjs:56-66`), but routing it through config.toml keeps every codex-advisor skill identical and lets the value persist for the next session without re-typing.
+1. **`--effort` is not a registered review flag** (`handleReviewCommand` `valueOptions = ["base", "scope", "model", "cwd"]` at `:714`). Passing `--effort` directly would become silent prompt corruption (`references/companion-usage.md §3`). Only the config.toml `model_reasoning_effort` key reaches the review path.
+2. **Consistency + persistence.** `--model` IS honored as a flag in v1.0.4+ (`startThread({ model })`, `lib/codex.mjs:1010-1015`), but routing it through config.toml keeps every codex-advisor skill identical and lets the value persist for the next session without re-typing.
 
 Rules:
 

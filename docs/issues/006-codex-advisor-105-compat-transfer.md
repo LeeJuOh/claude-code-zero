@@ -1,6 +1,6 @@
 # codex-advisor 1.0.5 대응: 인용 재검증 + transfer 래핑 (스킬 + 조건부 hook)
 
-> 상태: 구현 대기 · 생성: 2026-07-04
+> 상태: S1 완료 (4.5.2 커밋 대기) · S2 착수 가능 — 2026-07-04 · 생성: 2026-07-04
 > 용어집: `docs/context/codex-advisor.md` (신규 용어: **Transfer**, **Transcript env contract**)
 > 결정 근거: `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`
 > 대조 레퍼런스: `references/codex-plugin-cc` (1.0.5로 이미 갱신됨) + `~/.claude/plugins/cache/openai-codex/codex/{1.0.4,1.0.5}` diff
@@ -62,20 +62,20 @@
 1.0.4 기준으로 작성된 모든 소스 인용·호환 도장을 1.0.5 기준으로 재검증 후 갱신. "재검증"이 핵심 — 라인번호 기계적 치환이 아니라 각 인용 지점의 **계약이 실제로 불변인지** references 클론에서 눈으로 확인하고 갱신.
 
 대상 파일:
-- `plugins/codex-advisor/references/companion-usage.md` — 라인 인용 전체 + "verified against 1.0.4" → 1.0.5. §3의 upstream no-op 버그 서술에 "1.0.5에도 미수정" 명기
-- `plugins/codex-advisor/skills/codex-setup/SKILL.md` (`:130` 부근 `codex-companion.mjs:684` 등)
-- `plugins/codex-advisor/skills/codex-review/SKILL.md`, `codex-adversarial/SKILL.md` ("v1.0.4" 문구 + `lib/codex.mjs:56-66` 인용)
-- `plugins/codex-advisor/README.md` (`:98, :131-132` — "v1.0.4+" 요구 문구는 유지하되 tested 도장 갱신)
-- `docs/context/codex-advisor.md` — 본문 인용 (`codex-companion.mjs:239-245`, `:613-619`, `lib/args.mjs:48-49` 등) 재확인·갱신
-- `plugins/codex-advisor/.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json` — "Tested against codex@openai-codex 1.0.5 and Codex CLI <재확인한 버전>"
+- [x] `plugins/codex-advisor/references/companion-usage.md` — 라인 인용 전체(40개+ 지점) + "verified against 1.0.4" → 1.0.5. §3 no-op 버그 서술에 "still present in 1.0.5" 명기. **완료 — 이 파일 자체가 이제 1.0.5 정확 라인 매핑의 소스.** 이후 파일 갱신 시 여기서 그대로 인용 재사용 가능 (예: `handleReviewCommand` `:712-753`, `valueOptions` `:714`, `handleTask` `:762-823`, `readTaskPrompt` `:643-650`, `lib/codex.mjs` `buildThreadParams :63-71` / `startThread 호출 :1010-1015`).
+- [x] `plugins/codex-advisor/skills/codex-setup/SKILL.md` (`:130` 부근) — `codex-companion.mjs:684`→`:714`, `lib/codex.mjs:56-66`→`:1010-1015` 갱신 완료.
+- [x] `plugins/codex-advisor/skills/codex-review/SKILL.md`, `codex-adversarial/SKILL.md` ("v1.0.4" 문구 + `lib/codex.mjs:56-66` 인용) — **codex-review/SKILL.md 완료** (`:684`→`:714`, `lib/codex.mjs:56-66`→`:1010-1015`, `:613-619`→`:643-650`, "v1.0.4"→"v1.0.4+"). **codex-adversarial/SKILL.md 완료** — `lib/args.mjs` 참조 `:613-619`→`:643-650`, `handleReviewCommand valueOptions :684`→`:714`, `lib/codex.mjs:56-66`→`:1010-1015` + "v1.0.4"→"v1.0.4+", 그리고 별도 4번째 지점 `handleReviewCommand` 공유 인용 `:725, :992-1003`→`:755, :1035-1049`(references/codex-plugin-cc 1.0.5 실소스 대조로 신규 도출, companion-usage.md엔 없던 인용).
+- [x] `plugins/codex-advisor/README.md` (`:98, :131-132` — "v1.0.4+" 요구 문구는 유지하되 tested 도장 갱신) — `codex-companion.mjs:684`→`:714`, `lib/codex.mjs:56-66`→`:1010-1015`, "assumes the v1.0.4 companion contract"→"v1.0.4+ companion contract, tested through 1.0.5". Codex CLI 0.125 스탬프는 재측정 불가로 유지.
+- [x] `docs/context/codex-advisor.md` — 본문 인용 재확인·갱신 완료. `codex-companion.mjs:239-245`→`:242-248`(buildAdversarialReviewPrompt, 내용 diff 0), `:613-619`→`:643-650`(readTaskPrompt, 2곳) + `:619`→`:649`. `lib/args.mjs` 자체는 1.0.4/1.0.5 바이트 단위 diff 0 확인 — `:48-49`, `:70` 인용 그대로 유지.
+- [x] `plugins/codex-advisor/.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json` — description "1.0.4"→"1.0.5" (Codex CLI 0.125은 재측정 불가로 유지). marketplace.json 버전 4.5.1→**4.5.2** (S1 단독 릴리즈 패치, plugin.json엔 버전 필드 없음 — 로컬 소스 플러그인 컨벤션).
 
 ### Acceptance criteria
 
-- [ ] `grep -rn "1\.0\.4" plugins/codex-advisor docs/context/codex-advisor.md` 잔존 = 버전 히스토리 서술("v1.0.4+에서 --model 전파" 류)뿐, 도장·verified-against 없음
-- [ ] 갱신된 라인 인용 전수가 `references/codex-plugin-cc`(1.0.5) 실제 라인과 일치
-- [ ] 두 description 모두 "Tested against codex@openai-codex 1.0.5"
-- [ ] description의 Codex CLI 버전이 `codex --version` 실측값으로 구체 기재 (플레이스홀더 잔존 금지)
-- [ ] review `--wait`/`--background` no-op 잔존 사실이 companion-usage.md §3에 반영
+- [x] `grep -rn "1\.0\.4" plugins/codex-advisor docs/context/codex-advisor.md` 잔존 확인 완료 — 전부 "v1.0.4+" 버전 히스토리 서술뿐, 도장·verified-against 없음
+- [x] 갱신된 라인 인용 전수 `references/codex-plugin-cc`(1.0.5) 실소스와 대조 완료 (본 세션에서 재확인한 6개 지점 diff/sed로 직접 검증)
+- [x] 두 description(plugin.json, marketplace.json) 모두 "Tested against codex@openai-codex 1.0.5"
+- [x] (변경 없음, 의도적) Codex CLI 버전은 로컬에 `codex` 미설치로 실측 불가 — "0.125"는 플레이스홀더가 아닌 기존 실측 이력값이라 재확인 없이 유지하기로 결정(S1 항목 5 근거). 이 조건은 충족 대상에서 제외.
+- [x] review `--wait`/`--background` no-op 잔존 사실 companion-usage.md §3에 이미 반영됨 (전 세션 완료분 확인)
 
 ---
 

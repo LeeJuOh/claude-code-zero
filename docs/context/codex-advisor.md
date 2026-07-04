@@ -40,13 +40,13 @@ not the prompt text.
 **Native path** (`review`, `adversarial-review`):
 Subcommands whose prompt is owned by **Codex**, not us. `review` runs the server-side built-in
 reviewer; `adversarial-review` makes the companion load `prompts/adversarial-review.md` and
-interpolate `USER_FOCUS` + `REVIEW_INPUT` server-side (`codex-companion.mjs:239-245`). A caller can
+interpolate `USER_FOCUS` + `REVIEW_INPUT` server-side (`codex-companion.mjs:242-248`). A caller can
 supply only flags + focus text. **Distorting these prompts is structurally impossible** — they live
 in code we call, not in our payload.
 
 **Task path** (`verify`, `research`, `rescue`):
 Subcommand `task` pipes stdin **raw** — `readTaskPrompt = positionalPrompt || readStdinIfPiped()`
-(`codex-companion.mjs:613-619`). The companion wraps nothing, so **codex-advisor owns the entire
+(`codex-companion.mjs:643-650`). The companion wraps nothing, so **codex-advisor owns the entire
 prompt**. There is no "official task prompt" to distort; only our own prompt quality matters.
 
 **Vendored prompt blocks**:
@@ -76,7 +76,7 @@ is enforced by the **blind payload**.
 verify/research assemble the prompt with `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, empty
 stdout) then `cat "$PROMPT_FILE" | node companion task` (stdin pipe). The document text reaches
 Codex but **never enters Claude's context**. A positional arg after `task` would silently drop the
-whole payload (`:619`), so the pipe is load-bearing.
+whole payload (`:649`), so the pipe is load-bearing.
 
 **Transfer**:
 Session handoff — the current Claude Code conversation is imported into a resumable Codex thread
@@ -109,7 +109,7 @@ companion's `--background` **is** honored, returns a job immediately, then we po
 **Silent flag corruption**:
 The companion's `parseArgs` has no unknown-flag error — any unrecognized token is silently joined
 into the prompt body (`lib/args.mjs:48-49` for long flags, `:70` for short flags +
-`codex-companion.mjs:613-619`). There is **no companion-side safety net**;
+`codex-companion.mjs:643-650`). There is **no companion-side safety net**;
 each skill's Phase 1 ANALYZE whitelist is the only defense. This is why input is whitelisted, not
 blindly forwarded.
 
