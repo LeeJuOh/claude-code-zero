@@ -100,6 +100,16 @@ review a specific commit, use `--base <sha>~1 --scope branch`.
 | `--json` | bool |
 | (positional jobId) | — |
 
+### `transfer` (`handleTransfer` at `:825-836`, v1.0.5+)
+
+| Flag | Type | Notes |
+|------|------|-------|
+| `--source <path>` | value | Claude session `.jsonl` to import. Falls back to `CODEX_COMPANION_TRANSCRIPT_PATH` env (`resolveClaudeSessionPath`, `lib/claude-session-transfer.mjs:20-23`) when omitted. |
+| `--json` | bool | |
+| `--cwd <path>` | value | Accepted by `handleTransfer`'s `valueOptions` (`:827`) but **not shown in `printUsage`'s transfer line** (`:83`) — don't copy the usage line as the full flag set. |
+
+No `--model`/`--effort`/`--wait`/`--background` — transfer has no prompt and completes synchronously (≤2 min), so none of those concepts apply. Result payload includes `threadId` and `resumeCommand` (`codex resume <threadId>`) rendered verbatim by `renderTransferResult` (`:616-623`).
+
 ### 2a. `normalizeArgv` quirk
 
 `normalizeArgv` (`:130-...`) re-tokenizes input via `splitRawArgumentString`
@@ -283,6 +293,7 @@ Never retry silently. Never swallow errors. Never blame the user.
 |-------------------|----------|--------|--------|
 | `Official Codex plugin not found` | setup | `resolve-companion.sh` | Redirect to `/codex-setup` |
 | `not authenticated` / `OPENAI_API_KEY` | auth | `lib/codex.mjs:784` (status detail), surfaced via `codex-companion.mjs:194-196` | Suggest `codex login` |
+| `Codex CLI is not installed or is missing required runtime support.` | setup | `getCodexAvailability` check, thrown at multiple call sites incl. `lib/codex.mjs:1060-1062` (`importExternalAgentSession`) — reproduced live against 1.0.5 (`transfer` with no Codex CLI on `PATH`) | Companion binary resolves fine but the actual `codex` CLI it shells out to isn't installed. Direct to `npm install -g @openai/codex`, then `/codex-setup`. Not transfer-specific — any subcommand that needs a live app-server hits this. |
 | `not a git repository` | environment | `lib/git.mjs` `ensureGitRepository` | Tell user, stop |
 | `unknown revision` / `bad revision` | bad-input | `git rev-parse` | Show `git branch --list`, AskUserQuestion |
 | `does not support custom focus text` | wrong-skill | `:274` | Should NOT fire from codex-advisor: Phase 1 strips focus text and offers the adversarial redirect. If it fires, Phase 1 was skipped → SKILL.md regression. |
@@ -295,6 +306,10 @@ Never retry silently. Never swallow errors. Never blame the user.
 | JSON parse error on companion stdout | unexpected-format | n/a | Companion output format changed. Show raw stdout/stderr, abort, ask user to report. |
 | Pattern A 30-min cap exceeded | wait-timeout | n/a (Claude-side) | `KillShell` the bash_id; if `$OUT_FILE` parses as JSON treat as partial, else `recovery-impossible`. |
 | (no stderr — silently corrupted prompt) | silent-flag-corruption | `lib/args.mjs:47-49` + `:643-650` | **NOT detectable post-hoc.** Only Phase 1 ANALYZE whitelisting prevents it. If Codex echoes an unknown flag back as task content, treat as Phase 1 regression and AskUserQuestion. |
+| `Could not identify the current Claude transcript. Retry with --source <path-to-claude-jsonl>.` | setup/transcript-missing | `lib/claude-session-transfer.mjs:23` | No `CODEX_COMPANION_TRANSCRIPT_PATH` env and no `--source`. Tell user to enable the Official plugin (its SessionStart hook sets the env) or pass `--source` manually. |
+| `Codex can import Claude sessions only from <dir>: <path>` | bad-input | `lib/claude-session-transfer.mjs:41` | Source path resolved outside `~/.claude/projects/`. Show the offending path, do not retry with a modified path automatically. |
+| `Timed out waiting for Codex to finish importing the Claude session.` | wait-timeout | `lib/codex.mjs:52` (`EXTERNAL_AGENT_IMPORT_TIMEOUT_MS = 2 * 60 * 1000`), thrown at `:720` | Import RPC didn't complete in 2 min. Abort, don't retry silently — re-running may just return the same ledger-cached thread (see next row) or hit the same stall. |
+| (same file + same content re-imported → existing `threadId` returned) | **not an error** | ledger dedup, `lib/codex.mjs:661-677` (`external_agent_session_imports.json`) | Normal behavior, not a failure to surface as one. Codex recognizes the identical `sourcePath` + `content_sha256` pair and returns the prior thread instead of creating a duplicate. |
 | (other) | unknown | n/a | Show raw stderr verbatim. Do NOT retry. |
 
 **Never:**

@@ -1,7 +1,7 @@
 {
   "name": "codex-advisor",
-  "description": "Get Codex's second opinion on your code, plans, and research — and actually trust it: Claude independently fact-checks every Codex finding (Agreed/Disputed/Nuanced/False Positive/Uncited) before you act, catching hallucinated citations. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Every skill accepts --model/--effort via config.toml. Tested against codex@openai-codex 1.0.5 and Codex CLI 0.125 (gpt-5.5).",
+  "description": "Get Codex's second opinion on your code, plans, and research — and actually trust it: Claude independently fact-checks every Codex finding (Agreed/Disputed/Nuanced/False Positive/Uncited) before you act, catching hallucinated citations. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel, transfer. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Transfer hands the whole session off to a resumable Codex thread (v1.0.5+). Every skill accepts --model/--effort via config.toml. Tested against codex@openai-codex 1.0.5 and Codex CLI 0.125 (gpt-5.5).",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
-  "keywords": ["codex", "double-check", "cross-model", "evaluation", "review", "verification", "research", "status", "cancel", "gpt-5.5"]
+  "keywords": ["codex", "double-check", "cross-model", "evaluation", "review", "verification", "research", "status", "cancel", "transfer", "gpt-5.5"]
 }

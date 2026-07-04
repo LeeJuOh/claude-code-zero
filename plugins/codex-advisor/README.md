@@ -39,7 +39,7 @@ prompt and double-check". All four failures were wrapper bugs.
 - **Background-resilient** — long jobs survive Bash's 5-minute timeout via background launch + `status --wait`. `/codex-result <job-id>` fetches the stored output even after the session that started it is gone.
 - **Self-bias guardrail** on `codex-verify` — if Claude authored the document under review, extra honesty constraints are applied.
 - **Every call persists** to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failures save to `<type>-<timestamp>-failed.md` with a categorized error.
-- **9 skills**, works with the Official Codex plugin hidden — `/codex-result`, `/codex-status`, `/codex-cancel` call the companion script directly.
+- **10 skills**, works with the Official Codex plugin hidden — `/codex-result`, `/codex-status`, `/codex-cancel`, `/codex-transfer` call the companion script directly.
 
 ## Install
 
@@ -74,6 +74,7 @@ prompt and double-check". All four failures were wrapper bugs.
 /codex-status                          # who's running, what's stored
 /codex-result <job-id>                 # fetch final output of a job
 /codex-cancel <job-id>                 # stop a runaway task
+/codex-transfer                        # hand this whole session off to Codex
 ```
 
 ## Commands
@@ -89,6 +90,11 @@ prompt and double-check". All four failures were wrapper bugs.
 | `/codex-status` | Active + recent Codex jobs plus saved reports |
 | `/codex-result` | Final stored output of a completed job |
 | `/codex-cancel` | Cancel an active background job |
+| `/codex-transfer` | Move the current session into a resumable Codex thread |
+
+## Transfer vs rescue
+
+Easy to conflate — they're opposites. **Rescue** is a subcontractor: Codex does one task, Claude reads the diff, Claude keeps the wheel. **Transfer** is emigration: the whole conversation moves to Codex (`codex resume <id>`) and Claude's part in it ends — there's no diff to review because nothing comes back.
 
 ## Model & effort
 
@@ -126,9 +132,11 @@ Every skill does the same four things in order:
 
 The key discipline: **Claude never reads your source code before Codex runs.** That's what keeps the double-check independent. For document skills (verify / research), the document itself is streamed into Codex via a file pipe so it never enters Claude's context either.
 
+`/codex-transfer` is the one exception to this five-step shape — it stops after Invoke. Once the session hands off to Codex, there's nothing left in Claude's hands to double-check or report on.
+
 ## Prerequisites
 
-- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) **v1.0.4+** — **install required**. Earlier versions had a different review handler; codex-advisor's flag-routing assumes the v1.0.4+ companion contract, tested through 1.0.5. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu.
+- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) **v1.0.4+** — **install required**. Earlier versions had a different review handler; codex-advisor's flag-routing assumes the v1.0.4+ companion contract, tested through 1.0.5. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu. `/codex-transfer` specifically needs **v1.0.5+** — the `transfer` subcommand doesn't exist before that.
 - [OpenAI Codex CLI](https://github.com/openai/codex) — installed and authenticated (`/codex-setup` verifies both). Tested against Codex CLI 0.125.
 
 ## License

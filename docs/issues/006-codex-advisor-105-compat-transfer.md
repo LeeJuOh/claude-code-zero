@@ -1,6 +1,6 @@
 # codex-advisor 1.0.5 대응: 인용 재검증 + transfer 래핑 (스킬 + 조건부 hook)
 
-> 상태: S1 완료 (4.5.2 커밋 대기) · S2 착수 가능 — 2026-07-04 · 생성: 2026-07-04
+> 상태: S1 완료(커밋 79d9a38, 4.5.2) · S2 구현 완료(4.6.0, 커밋 대기 — 성공 경로는 로컬 Codex CLI 미설치로 부분 검증) · 다음: S3(조건부 SessionStart hook) — 2026-07-04 · 생성: 2026-07-04
 > 용어집: `docs/context/codex-advisor.md` (신규 용어: **Transfer**, **Transcript env contract**)
 > 결정 근거: `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`
 > 대조 레퍼런스: `references/codex-plugin-cc` (1.0.5로 이미 갱신됨) + `~/.claude/plugins/cache/openai-codex/codex/{1.0.4,1.0.5}` diff
@@ -87,23 +87,24 @@
 
 세션 이관용 신규 스킬. 기존 스킬 대비 구조 최소 — 검증(더블체크) 단계 없음 (이관 후 Claude 퇴장이므로 분류할 결과물이 없음, 용어집 **Transfer** 항목 참조).
 
-- Phase 구조: ANALYZE(화이트리스트: `--source <path>`, `--json`) → 실행(`transfer --json` 단발, Pattern A/B 불필요 — 동기 완료 ≤2분) → 결과 표출(**thread id와 `codex resume <id>` 명령을 원문 보존**해 표시).
-- env 부재 + `--source` 부재 시: 명확한 에러 안내 — "공식 플러그인 enable 또는 `--source` 지정" (S3 완료 후엔 이 경로 자체가 사라짐).
-- `companion-usage.md` §2에 transfer 플래그 표 추가 (`--source` value / `--json` bool / `--cwd` value — `--cwd`는 usage 줄엔 미표기, handler `valueOptions`에만 존재함을 명기해 usage-복사 오류 방지), §6에 에러 행 추가:
+- [x] Phase 구조: ANALYZE(화이트리스트: `--source <path>`, `--json`) → 실행(`transfer --json` 단발, Pattern A/B 불필요 — 동기 완료 ≤2분) → 결과 표출(**thread id와 `codex resume <id>` 명령을 원문 보존**해 표시). `plugins/codex-advisor/skills/codex-transfer/SKILL.md` 신규 작성 완료.
+- [x] env 부재 + `--source` 부재 시: 명확한 에러 안내 — "공식 플러그인 enable 또는 `--source` 지정" (S3 완료 후엔 이 경로 자체가 사라짐). SKILL.md Errors 섹션에 반영.
+- [x] `companion-usage.md` §2에 transfer 플래그 표 추가 (`--source` value / `--json` bool / `--cwd` value — `--cwd`는 usage 줄엔 미표기, handler `valueOptions`에만 존재함을 명기), §6에 에러 행 추가 완료:
   - `Could not identify the current Claude transcript` → setup/transcript-missing
   - `Codex can import Claude sessions only from` → bad-input (projects 밖 경로)
   - `Timed out waiting for Codex to finish importing` → wait-timeout (2분)
-  - 동일 파일+동일 내용 재이관 → 기존 thread id 반환은 **정상 동작** (ledger dedup, 에러 아님)으로 문서화
-- README transfer 섹션 (rescue와의 차이 — 하청 vs 이민 — 한 줄 대비 포함), plugin.json/marketplace.json description의 skills 목록에 transfer 추가.
-- 버전 범프 **4.6.0** (신규 스킬 = minor)을 이 슬라이스 커밋에 포함 ([[version-bump-with-fix]] — 기능이 들어가는 커밋이 범프를 진다). S1만 단독 릴리즈하게 되는 경우엔 S1에서 4.5.2 패치.
+  - 동일 파일+동일 내용 재이관 → 기존 thread id 반환은 **정상 동작**(ledger dedup, 에러 아님)으로 문서화
+  - **실제 라이브 호출로 발견한 추가 케이스**: `Codex CLI is not installed or is missing required runtime support.` (setup 카테고리) — companion은 정상 resolve되나 로컬에 `codex` CLI 바이너리 자체가 없을 때. transfer 전용 아님(다른 서브커맨드도 공유하는 `getCodexAvailability` 체크)이지만 이번에 처음 문서화.
+- [x] README transfer 섹션 (rescue와의 차이 — 하청 vs 이민 — 한 줄 대비 포함), plugin.json/marketplace.json description의 skills 목록에 transfer 추가.
+- [x] 버전 범프 **4.6.0** marketplace.json에 반영 (plugin.json엔 버전 필드 없음, 로컬 소스 플러그인 컨벤션).
 
 ### Acceptance criteria
 
-- [ ] 공식 플러그인 enabled 상태에서 `/codex-transfer` → `codex resume <id>` 명령 원문 보존 출력
-- [ ] `--source <jsonl>` 수동 지정 경로 동작
-- [ ] 화이트리스트 밖 토큰 → 기존 §7 규칙대로 FATAL (companion에 전달 금지)
-- [ ] README·두 description에 transfer 반영
-- [ ] marketplace.json 4.6.0 (이 커밋에 포함)
+- [~] 공식 플러그인 enabled 상태에서 `/codex-transfer` → `codex resume <id>` 명령 원문 보존 출력 — **부분 검증**. 이 환경엔 `codex` CLI 바이너리가 실제로 설치돼 있지 않아(`codex --version` 자체가 불가한 환경, S1에서도 동일 제약 기록) 성공 경로 끝까지 실행은 못 함. 대신 이 세션 자신의 transcript(`7b2e3786-...jsonl`)로 실제 `node codex-companion.mjs transfer --json --source <path>`를 라이브 실행해 두 에러 경로(`Could not identify...`, `Claude session file not found`, `Codex CLI is not installed...`)가 정확히 문서화한 문자열과 일치함을 실측 확인. 성공 경로(실제 thread 생성 + `codex resume` 출력)는 Codex CLI 설치된 환경에서 사용자가 직접 재확인 필요.
+- [x] `--source <jsonl>` 수동 지정 경로 동작 — 라이브 확인 완료 (위 항목의 실제 호출에서 `--source`로 전달, 정상적으로 파일 존재/경로 검증 로직까지 도달).
+- [x] 화이트리스트 밖 토큰 → 기존 §7 규칙대로 FATAL (companion에 전달 금지) — SKILL.md Phase 1 규칙으로 반영(정적 검토, companion 자체는 미사용 토큰을 무해하게 버림을 소스로 확인했으나 스킬은 여전히 whitelist 강제).
+- [x] README·두 description에 transfer 반영
+- [x] marketplace.json 4.6.0 (커밋 예정)
 
 ---
 
