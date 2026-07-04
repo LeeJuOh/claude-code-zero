@@ -35,7 +35,9 @@
 | `handleStatus` | :840 | :883 |
 | `handleResult` | :867 | :910 |
 
-`lib/codex.mjs`도 `:34`/`:43`/`:60` 부근 및 `:635` 이후 +88줄, `:961` 이후 +37줄 시프트 — `startThread` 인용(`:56-66`)과 `:916-921` 인용 재확인 필요.
+`lib/codex.mjs` diff hunk 실측: `:36` +5줄, `:45` +2줄, `:63-64` 내용 변경(-1), `:637` +88줄 삽입(import 함수군), `:963` +37줄 삽입 — 누적 시프트는 `startThread` 기준 +94(638→732), `runAppServerTurn` 기준 +131(964→1095).
+
+주의 — 기존 인용 `:56-66`은 `startThread`가 아니라 **`buildThreadParams`**(1.0.5에선 `:63` 시작). 이 구간은 라인 시프트가 아니라 **내용 변경**: `experimentalRawEvents: false` 줄이 삭제됨. 기계 치환 불가 — S1 재검증 원칙이 정확히 적용되는 지점. `startThread({model})` 호출부 인용 `:916-921`은 1.0.5 `:1010-1015`.
 
 **현재 우리 상태의 모순**: `resolve-companion.sh`는 registry/최고 semver 우선이라 **런타임은 이미 1.0.5 companion을 실행 중**. 문서만 1.0.4에 묶여 있음 (companion-usage.md "verified against 1.0.4", plugin.json/marketplace.json "Tested against 1.0.4").
 
@@ -87,7 +89,7 @@
 
 - Phase 구조: ANALYZE(화이트리스트: `--source <path>`, `--json`) → 실행(`transfer --json` 단발, Pattern A/B 불필요 — 동기 완료 ≤2분) → 결과 표출(**thread id와 `codex resume <id>` 명령을 원문 보존**해 표시).
 - env 부재 + `--source` 부재 시: 명확한 에러 안내 — "공식 플러그인 enable 또는 `--source` 지정" (S3 완료 후엔 이 경로 자체가 사라짐).
-- `companion-usage.md` §2에 transfer 플래그 표 추가 (`--source` value / `--json` bool / `--cwd` value), §6에 에러 행 추가:
+- `companion-usage.md` §2에 transfer 플래그 표 추가 (`--source` value / `--json` bool / `--cwd` value — `--cwd`는 usage 줄엔 미표기, handler `valueOptions`에만 존재함을 명기해 usage-복사 오류 방지), §6에 에러 행 추가:
   - `Could not identify the current Claude transcript` → setup/transcript-missing
   - `Codex can import Claude sessions only from` → bad-input (projects 밖 경로)
   - `Timed out waiting for Codex to finish importing` → wait-timeout (2분)
@@ -119,6 +121,7 @@
   2. env 파일에 `CODEX_COMPANION_TRANSCRIPT_PATH` 이미 존재 (공식 hook 선점 = enabled) → exit 0
   3. stdin JSON의 `transcript_path`가 존재하고 `.jsonl` → `export CODEX_COMPANION_TRANSCRIPT_PATH='<경로>'` 한 줄 append (공식과 동일 env 이름 — companion이 그대로 소비)
   4. stdout 출력 절대 없음 (SessionStart stdout은 컨텍스트 주입됨 — 토큰 0 유지)
+- 공식 hook은 env 3종(`CODEX_COMPANION_SESSION_ID`/`TRANSCRIPT_PATH`/`PLUGIN_DATA`)을 주입하지만 transfer의 소비처는 `CODEX_COMPANION_TRANSCRIPT_PATH` 1종뿐 (`lib/claude-session-transfer.mjs:21`이 유일한 소비 지점) — 우리 hook의 단일 env 주입으로 충분.
 - 실행 순서 레이스로 공식과 중복 기록돼도 무해 (같은 값, 마지막 export 승리) — 스크립트 주석 아닌 이 이슈/ADR에만 기록.
 - S2의 "env 부재 시 수동 안내" 경로를 "기본 환경에선 hook이 보장하므로 미발생, `CLAUDE_ENV_FILE` 미지원 환경에서만 `--source` 폴백"으로 갱신. **경로 삭제 금지** — 가드 1(`CLAUDE_ENV_FILE` 미설정 → exit 0) 때문에 여전히 도달 가능한 케이스.
 
