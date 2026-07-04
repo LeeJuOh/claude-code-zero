@@ -18,10 +18,11 @@ official prompt and when we structurally cannot — is the domain model below. S
 
 ## What it does
 
-Nine skills (`codex-review`, `codex-adversarial`, `codex-rescue`, `codex-verify`,
-`codex-research`, plus `codex-setup` / `codex-status` / `codex-result` / `codex-cancel`) translate
-messy human input into one clean companion invocation, run it resiliently, then double-check the
-result. Each maps to exactly one companion subcommand.
+Ten skills (`codex-review`, `codex-adversarial`, `codex-rescue`, `codex-verify`,
+`codex-research`, `codex-transfer` — landing via issue 006, plus `codex-setup` / `codex-status` /
+`codex-result` / `codex-cancel`) translate messy human input into one clean companion invocation,
+run it resiliently, then double-check the result — except `codex-transfer`, a one-way handoff
+with nothing returned to check (see **Transfer**). Each maps to exactly one companion subcommand.
 
 ## Language
 
@@ -32,8 +33,9 @@ at runtime by `scripts/resolve-companion.sh` (registry → version cache → mar
 companion **v1.0.4+**.
 
 **Companion subcommand**:
-`review` | `adversarial-review` | `task` | `status` | `result` | `cancel`. The stable interface
-codex-advisor adapts. The adapter boundary is *here* — the CLI contract — not the prompt text.
+`review` | `adversarial-review` | `task` | `transfer` (v1.0.5+) | `status` | `result` | `cancel`.
+The stable interface codex-advisor adapts. The adapter boundary is *here* — the CLI contract —
+not the prompt text.
 
 **Native path** (`review`, `adversarial-review`):
 Subcommands whose prompt is owned by **Codex**, not us. `review` runs the server-side built-in
@@ -75,6 +77,21 @@ verify/research assemble the prompt with `cat "$DOC" >> "$PROMPT_FILE"` (file-re
 stdout) then `cat "$PROMPT_FILE" | node companion task` (stdin pipe). The document text reaches
 Codex but **never enters Claude's context**. A positional arg after `task` would silently drop the
 whole payload (`:619`), so the pipe is load-bearing.
+
+**Transfer**:
+Session handoff — the current Claude Code conversation is imported into a resumable Codex thread
+(`codex resume <id>`), after which work continues *outside* Claude Code. One-way: unlike every
+other skill, there is no double-check phase, because nothing comes back to classify — Claude
+exits the loop at handoff. Not to be confused with rescue (delegation: Codex works, Claude
+reviews the result and keeps the wheel). The wrapper's value here is whitelisting, error
+taxonomy, and disable-parity — not verification. Requires companion v1.0.5+.
+
+**Transcript env contract**:
+`CODEX_COMPANION_TRANSCRIPT_PATH` — the env var through which the companion's `transfer` locates
+the current session's transcript. Planted at SessionStart by whichever hook runs first: the
+Official plugin's, or codex-advisor's conditional hook when the Official plugin is disabled.
+Hooks are the **only** channel that receives the transcript path; the model cannot derive it
+(mtime guessing breaks under concurrent sessions). See [[0006]].
 
 **Five-way classification**:
 Every double-check labels each Codex finding: **Agreed** / **Disputed** / **Nuanced** / **False
