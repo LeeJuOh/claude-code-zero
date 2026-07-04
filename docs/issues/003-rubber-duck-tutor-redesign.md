@@ -33,6 +33,8 @@ S4 ──┬───────┘
 S3, S4 ─► S10 ─► S12
 S3, S4 ─► S11 ─┬─► S12
                └─► S13
+
+S10, S11, S12 ─► S9   (README가 S10~S12 기능을 기술하므로)
 ```
 
 선행 블로커 없는 슬라이스(S1, S2, S3, S4)는 즉시 시작 가능. 버전 처리: S1–S13 재설계 전체가 한
@@ -74,6 +76,10 @@ alias `/continue`). 플러그인은 현재 이들을 외부 플러그인(`lab-ha
 이 레포 자신의 ADR 포함. **경로 기반** 매칭(`docs/adr/`, `docs/plans?/`, `docs/specs?/`,
 `docs/rfcs?/`)으로 전환하되 파일명 폴백, 커스텀 경로 regex용 선택적 override 키 하나, 그리고 footgun
 폴백(잘못된 override regex는 트리거를 끄지 않고 기본값으로 되돌림)을 둠.
+
+override 키는 `${CLAUDE_PLUGIN_DATA}/config.json`에 산다 — S2는 이 키 하나만 소유하고,
+`enabled`·기본 강도 키는 S7 소유(S5/S9식 키 단위 소유권 분리로 write-write 충돌 회피). config 파일
+부재·파손 시 기본 경로 집합으로 동작.
 
 ### Acceptance criteria
 - [ ] 번호형 ADR(`docs/adr/0003-....md`) 작성 시 트리거 발사.
@@ -138,7 +144,8 @@ S4 완료.
 ### Acceptance criteria
 - [ ] 모델 호출 `ducking` 스킬이 존재하고 rubber-stamping 감지 시 자동 작동.
 - [ ] 헬퍼 스크립트가 엔진의 새 `scripts/` 경로에서 실행됨.
-- [ ] `grep -rn 'skills/duck/scripts'`가 라이브 참조 없음 반환 — 일곱 재지정 줄 모두 갱신됨.
+- [ ] `grep -rn 'skills/duck/scripts'`가 라이브 참조 없음 반환 — 일곱 재지정 줄 모두 갱신됨. 단 역사
+      문서(`docs/handoff`, `docs/issues` — 이 이슈 자신이 문자열 포함)는 제외.
 - [ ] 어떤 스킬·참조도 옛 `core.md` 경로를 가리키지 않음(grep 깨끗).
 - [ ] 엔진에 관대 채점 금지 규칙 존재 — 모호한 답변을 정답 처리하지 않음.
 - [ ] trigger eval로 rubber-stamping 시나리오 발동률 측정·통과(미발동이 조용히 남지 않음).
@@ -209,7 +216,8 @@ S6는 S4·S5에 의존.
 ### What to build
 `${CLAUDE_PLUGIN_DATA}/config.json`에 영속 config — `enabled`(기본 켜짐; 마감일엔 끔)과 기본
 강도(`quick` / `standard` / `deep`). 명시적 `.enabled == false` 체크 사용(`//`-식 footgun 방어).
-ship 훅과 스킬 둘 다 준수 — `enabled: false`면 전부 침묵.
+ship 훅과 스킬 둘 다 준수 — `enabled: false`면 전부 침묵. S2가 같은 파일에 문서 트리거 override 키를
+먼저 두었을 수 있음 — S7은 자기 키만 추가하고 기존 키를 보존.
 
 ### Acceptance criteria
 - [ ] `enabled: false`면 ship-point confrontation이 발사 안 되고 스킬은 no-op.
@@ -221,14 +229,15 @@ S7는 S3(훅이 `enabled`를 읽어야)·S4(엔진이 강도를 읽음)에 의�
 
 ---
 
-## S8 — duck-verify의 turn-scoping
+## S8 — duck-verify의 session-scoping
 
 **Phase:** 3 · **Blocked by:** S6.
 
 ### What to build
-`duck-verify`는 `git diff`가 보여주는 것 너머 *이번 세션*에 만든 편집을 잡아야 함 — 마지막 유저
-프롬프트 이후의 `Edit`/`Write`/`MultiEdit`/`NotebookEdit`를 트랜스크립트에서 파싱(no-numb gate에서
-차용한 기법). 방어적으로 파싱: 트랜스크립트 포맷 변경 시 크래시 없이 우아하게 저하.
+`duck-verify`는 `git diff`가 보여주는 것 너머 *이번 세션*에 만든 편집을 잡아야 함 — 세션 전체
+트랜스크립트에서 `Edit`/`Write`/`MultiEdit`/`NotebookEdit`를 파싱(no-numb gate의 기법 차용 — 단
+no-numb은 마지막 유저 프롬프트 이후만 보지만, 여기는 수락 기준이 요구하는 대로 세션 전체가 윈도우).
+방어적으로 파싱: 트랜스크립트 포맷 변경 시 크래시 없이 우아하게 저하.
 
 ### Acceptance criteria
 - [ ] 이번 세션 앞서 만든 미커밋 편집을 `duck-verify`가 드러냄.
@@ -242,7 +251,7 @@ S8은 S6에 의존(`duck-verify` 래퍼 확정됨).
 
 ## S9 — 정체성 재작성 + 3.0.0 범프
 
-**Phase:** 3 · **Blocked by:** S5.
+**Phase:** 3 · **Blocked by:** S5, S10–S12.
 
 ### What to build
 README, `plugin.json`, `marketplace.json`에서 플러그인 정체성 재작성: AI 코딩 라이프사이클 전체에
@@ -261,7 +270,9 @@ scoreboard)도 반영. 스킬 경계 절(코드 리뷰·계획 그릴 불침범)
 - [ ] `marketplace.json` 버전이 `3.0.0`.
 
 ### Blocked by
-S9는 S5에 의존(명령이 거기서 리네임됨).
+S9는 S5에 의존(명령이 거기서 리네임됨). 2026-07-04 노트가 README에 S10~S12 기능 반영을 요구하므로
+S10–S12에도 의존 — S5 직후에 잡으면 미구현 기능을 README가 기술하게 되어 "각 슬라이스 독립 검증"
+원칙이 깨짐.
 
 ---
 
