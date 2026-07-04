@@ -136,7 +136,7 @@ The key discipline: **Claude never reads your source code before Codex runs.** T
 
 ## Prerequisites
 
-- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) **v1.0.4+** — **install required**. Earlier versions had a different review handler; codex-advisor's flag-routing assumes the v1.0.4+ companion contract, tested through 1.0.5. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu. `/codex-transfer` specifically needs **v1.0.5+** — the `transfer` subcommand doesn't exist before that.
+- [Official Codex plugin](https://github.com/openai/codex-plugin-cc) (`codex@openai-codex`) **v1.0.4+** — **install required**. Earlier versions had a different review handler; codex-advisor's flag-routing assumes the v1.0.4+ companion contract, tested through 1.0.5. Disabling is optional (see Quick Start); the companion script is always called directly via `scripts/resolve-companion.sh`, so disable just hides the Official `/codex:*` menu. `/codex-transfer` specifically needs **v1.0.5+** — the `transfer` subcommand doesn't exist before that. Disabling the Official plugin doesn't break `/codex-transfer` either: codex-advisor ships its own SessionStart hook (`hooks/session-start.mjs`) that fills in the transcript-path env var the Official plugin's own hook would otherwise provide.
 - [OpenAI Codex CLI](https://github.com/openai/codex) — installed and authenticated (`/codex-setup` verifies both). Tested against Codex CLI 0.125.
 
 ## License

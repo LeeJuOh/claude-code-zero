@@ -1,0 +1,16 @@
+{
+  "description": "Sets CODEX_COMPANION_TRANSCRIPT_PATH when the Official Codex plugin's own SessionStart hook is disabled, so /codex-transfer works without --source even then.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

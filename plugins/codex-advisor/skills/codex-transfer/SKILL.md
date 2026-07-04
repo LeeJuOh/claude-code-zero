@@ -19,7 +19,7 @@ not verification.
 — transfer has no prompt, so there is no focus text or model/effort to
 route.
 
-- `--source <path>` — explicit Claude session `.jsonl` to import. Optional; when omitted the companion falls back to the `CODEX_COMPANION_TRANSCRIPT_PATH` env var (set by the Official plugin's SessionStart hook when it's enabled).
+- `--source <path>` — explicit Claude session `.jsonl` to import. Optional; when omitted the companion falls back to the `CODEX_COMPANION_TRANSCRIPT_PATH` env var, which codex-advisor's own SessionStart hook (`hooks/session-start.mjs`) sets automatically — whether or not the Official plugin itself is enabled.
 - `--json` — when the user passes this, show them the raw JSON payload in Phase 3 instead of the friendly summary. This is independent of the `--json` codex-advisor always adds internally to the companion call (see Phase 2) — that one is for our own parsing, not the user's request.
 - **Unrecognized token** (any other flag, or free-standing text) → `AskUserQuestion`. Transfer has no positional argument — the companion silently discards anything it doesn't recognize as `--source`/`--cwd`/`--json` (`handleTransfer` destructures only `options`, never `positionals`), so passing it through would do nothing rather than corrupt a prompt. Still don't forward it: ask what the user meant. If it looks like a task description, suggest `/codex-rescue` instead — transfer moves the whole session, it doesn't run a task.
 
@@ -75,7 +75,7 @@ the user passed `--json` — this is what makes `threadId` and
 
 Full table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`. Highlights:
 
-- **`Could not identify the current Claude transcript...`** — no env, no `--source`. Tell the user: enable the Official Codex plugin (its SessionStart hook sets `CODEX_COMPANION_TRANSCRIPT_PATH` automatically) or pass `--source <path-to-claude-jsonl>` directly.
+- **`Could not identify the current Claude transcript...`** — no env, no `--source`. This codex-advisor's own SessionStart hook (`hooks/session-start.mjs`) sets `CODEX_COMPANION_TRANSCRIPT_PATH` automatically in normal environments regardless of whether the Official plugin is enabled, so this shouldn't fire there. It's expected only where `CLAUDE_ENV_FILE` itself isn't supported — tell the user to pass `--source <path-to-claude-jsonl>` directly in that case.
 - **`Codex can import Claude sessions only from ...`** — resolved path is outside `~/.claude/projects/`. Show the exact path from the error, don't guess a fix.
 - **`Timed out waiting for Codex to finish importing...`** — 2-minute internal cap hit. Don't silently retry; if the user retries manually and the same file/content was already imported, the ledger returns the same thread ID instead of a duplicate — that repeat is normal, not a second failure.
 - **`Unknown subcommand: transfer`** — the resolved companion is older than 1.0.5 (transfer didn't exist yet). Tell the user to update the Official Codex plugin.

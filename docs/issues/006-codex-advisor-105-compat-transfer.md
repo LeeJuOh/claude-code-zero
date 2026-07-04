@@ -1,6 +1,6 @@
 # codex-advisor 1.0.5 대응: 인용 재검증 + transfer 래핑 (스킬 + 조건부 hook)
 
-> 상태: S1 완료(커밋 79d9a38, 4.5.2) · S2 구현 완료(4.6.0, 커밋 대기 — 성공 경로는 로컬 Codex CLI 미설치로 부분 검증) · 다음: S3(조건부 SessionStart hook) — 2026-07-04 · 생성: 2026-07-04
+> 상태: S1 완료(79d9a38, 4.5.2) · S2 완료(a35c1b0, 4.6.0) · S3 구현 완료(4.6.1, 커밋 대기 — hook 단위 검증 5종 통과, 실 Codex CLI 없어 완전 E2E는 사용자 검증 필요) · 전체 검증 절차 1·2번 잔여 — 2026-07-04 · 생성: 2026-07-04
 > 용어집: `docs/context/codex-advisor.md` (신규 용어: **Transfer**, **Transcript env contract**)
 > 결정 근거: `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`
 > 대조 레퍼런스: `references/codex-plugin-cc` (1.0.5로 이미 갱신됨) + `~/.claude/plugins/cache/openai-codex/codex/{1.0.4,1.0.5}` diff
@@ -116,23 +116,23 @@
 
 이 플러그인의 **첫 hook** — 착수 전 `docs/reference/gotchas.md` 정독 필수.
 
-- `hooks/hooks.json`: SessionStart 단일 항목, `timeout: 5`.
-- hook 스크립트 로직 (고정 코드, 조기탈출 순서 엄수):
+- [x] `hooks/hooks.json`: SessionStart 단일 항목, `timeout: 5`. 공식 플러그인 자체 hooks.json(1.0.5)과 동일하게 matcher 생략(전체 source 매칭).
+- [x] hook 스크립트 로직 (`hooks/session-start.mjs`, 고정 코드, 조기탈출 순서 엄수):
   1. `CLAUDE_ENV_FILE` env 미설정 → exit 0
   2. env 파일에 `CODEX_COMPANION_TRANSCRIPT_PATH` 이미 존재 (공식 hook 선점 = enabled) → exit 0
   3. stdin JSON의 `transcript_path`가 존재하고 `.jsonl` → `export CODEX_COMPANION_TRANSCRIPT_PATH='<경로>'` 한 줄 append (공식과 동일 env 이름 — companion이 그대로 소비)
   4. stdout 출력 절대 없음 (SessionStart stdout은 컨텍스트 주입됨 — 토큰 0 유지)
-- 공식 hook은 env 3종(`CODEX_COMPANION_SESSION_ID`/`TRANSCRIPT_PATH`/`PLUGIN_DATA`)을 주입하지만 transfer의 소비처는 `CODEX_COMPANION_TRANSCRIPT_PATH` 1종뿐 (`lib/claude-session-transfer.mjs:21`이 유일한 소비 지점) — 우리 hook의 단일 env 주입으로 충분.
-- 실행 순서 레이스로 공식과 중복 기록돼도 무해 (같은 값, 마지막 export 승리) — 스크립트 주석 아닌 이 이슈/ADR에만 기록.
-- S2의 "env 부재 시 수동 안내" 경로를 "기본 환경에선 hook이 보장하므로 미발생, `CLAUDE_ENV_FILE` 미지원 환경에서만 `--source` 폴백"으로 갱신. **경로 삭제 금지** — 가드 1(`CLAUDE_ENV_FILE` 미설정 → exit 0) 때문에 여전히 도달 가능한 케이스.
+- [x] 공식 hook은 env 3종(`CODEX_COMPANION_SESSION_ID`/`TRANSCRIPT_PATH`/`PLUGIN_DATA`)을 주입하지만 transfer의 소비처는 `CODEX_COMPANION_TRANSCRIPT_PATH` 1종뿐 (`lib/claude-session-transfer.mjs:21`이 유일한 소비 지점, 실소스로 재확인) — 우리 hook의 단일 env 주입으로 충분.
+- [x] 실행 순서 레이스로 공식과 중복 기록돼도 무해 (같은 값, 마지막 export 승리) — 스크립트 주석엔 미기재, 이 이슈/ADR에만 기록(스크립트 주석엔 가드 순서·하드코딩 근거만).
+- [x] S2의 "env 부재 시 수동 안내" 경로를 codex-transfer/SKILL.md·companion-usage.md에서 "기본 환경에선 hook이 보장하므로 미발생, `CLAUDE_ENV_FILE` 미지원 환경에서만 `--source` 폴백"으로 갱신 완료. 경로 자체는 삭제하지 않음(가드 1 때문에 여전히 도달 가능).
 
 ### Acceptance criteria
 
-- [ ] 공식 disabled → 새 세션 → `/codex-transfer` 인자 없이 전자동 동작
-- [ ] 공식 enabled → 우리 hook이 env 파일에 줄 추가 안 함 (선점 가드 동작 확인)
-- [ ] codex 무관 세션에서 부작용 0 — stdout 없음, 즉시 종료
-- [ ] S2의 에러 안내 문구가 hook 반영으로 갱신됨 (`--source` 폴백 서술 유지, 삭제 아님)
-- [ ] `unset CLAUDECODE && claude plugin validate .` 통과
+- [~] 공식 disabled → 새 세션 → `/codex-transfer` 인자 없이 전자동 동작 — **정적 + 단위 검증만**. 실제 새 Claude Code 세션을 띄워 SessionStart 이벤트가 발화하는 전체 E2E는 중첩 세션 제약으로 미실행. 대신 `hooks/session-start.mjs`를 5개 시나리오(env파일 없음 / 신규 작성 / 이미 존재-선점 / non-.jsonl / malformed JSON)로 직접 실행해 각 가드가 스펙대로 동작하고 모든 경로에서 stdout이 0바이트임을 실측 확인.
+- [x] 공식 enabled → 우리 hook이 env 파일에 줄 추가 안 함 (선점 가드 동작 확인) — 위 시나리오 3("이미 존재")에서 실측: 기존 값(`/already/set.jsonl`)이 유지되고 새 값으로 덮어쓰지 않음.
+- [x] codex 무관 세션에서 부작용 0 — stdout 없음, 즉시 종료 — 5개 시나리오 전부 stdout 0바이트, non-zero exit 없음 확인.
+- [x] S2의 에러 안내 문구가 hook 반영으로 갱신됨 (`--source` 폴백 서술 유지, 삭제 아님) — codex-transfer/SKILL.md Phase 1 + Errors 섹션 갱신 완료.
+- [x] `unset CLAUDECODE && claude plugin validate .` 통과 — 경고 11개(모두 기존 로컬 플러그인 버전 필드 무관 경고)뿐, 에러 없음.
 
 ---
 
@@ -141,3 +141,8 @@
 1. `claude plugin disable codex-advisor@claude-code-zero` 후 `claude --plugin-dir ./plugins/codex-advisor` 로컬 테스트 (캐시 승리 gotcha 회피)
 2. 공식 enabled / disabled 두 상태 × `/codex-transfer` 각 1회 실제 이관 → `codex resume` 로 히스토리 보이는지 육안 확인
 3. `unset CLAUDECODE && claude plugin validate .`
+
+**진행 상황 (2026-07-04)**: 3번은 실행·통과(경고만, 에러 없음). 1·2번은 미실행 — 이 개발 환경엔 `codex` CLI 바이너리 자체가 없어(S1 acceptance criteria 4번과 동일 제약) 성공 경로(실제 thread 생성)를 끝까지 못 밟는다. 대신:
+- companion `transfer` 서브커맨드 자체를 이 세션의 실제 transcript(`7b2e3786-...jsonl`)로 라이브 호출해 에러 경로 3종(transcript-missing, file-not-found, Codex CLI 미설치)이 문서화한 문자열과 정확히 일치함을 실측.
+- `hooks/session-start.mjs`를 독립 실행해 가드 5개 시나리오 전부 통과.
+남은 것: Codex CLI가 실제 설치된 환경에서 사용자가 1·2번을 직접 실행해 `codex resume <id>`까지 끝까지 확인.
