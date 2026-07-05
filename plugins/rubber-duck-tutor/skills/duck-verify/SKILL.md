@@ -2,7 +2,7 @@
 name: duck-verify
 disable-model-invocation: true
 description: "Code-verification session with the rubber duck — user explains code just written, finds edge cases, fixes planted bugs. Use after implementing a feature, or when they say \"duck verify\", \"double check this\". Not for plan review (/duck-prebuild) or PR review (/duck-review)."
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *)
 ---
 
 # Duck — Code Verification Mode

@@ -13,6 +13,8 @@ source "$(dirname "$0")/lib.sh"
 
 duck__init
 
+duck__is_enabled || exit 0
+
 # Detect PR/MR creation commands
 COMMAND=$(duck__get '.tool_input.command')
 if ! echo "$COMMAND" | grep -qE '(gh\s+pr\s+create|glab\s+mr\s+create)'; then

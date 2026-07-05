@@ -10,6 +10,9 @@ set -uo pipefail
 source "$(dirname "$0")/lib.sh"
 
 duck__init
+
+duck__is_enabled || exit 0
+
 duck__check_rate_limit
 
 cat <<'HOOK_JSON'

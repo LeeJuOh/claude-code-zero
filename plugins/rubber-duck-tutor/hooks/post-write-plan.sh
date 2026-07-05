@@ -14,10 +14,14 @@ set -uo pipefail
 # The path regex is overridable via ${CLAUDE_PLUGIN_DATA}/config.json's
 # `docTriggerPathRegex` key. A malformed override (fails to compile) falls
 # back to the default set rather than silently disabling the trigger.
+# The same config file's `enabled` key (S7) is checked first -- see lib.sh's
+# duck__is_enabled.
 
 source "$(dirname "$0")/lib.sh"
 
 duck__init
+
+duck__is_enabled || exit 0
 
 # Only trigger for .md files
 FILE_PATH=$(duck__get '.tool_input.file_path')

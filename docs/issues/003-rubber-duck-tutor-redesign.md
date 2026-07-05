@@ -1,13 +1,79 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 중 — S1~S5·S14 완료 + S6 flag 선반영(2026-07-05), **S6 잔여 검증부터 이어서** · 생성: 2026-06-21 · 확장: 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
-> 지시서: `docs/handoff/2026-06-21-rubber-duck-tutor-redesign.md`
+> 상태: 구현 중 — S1~S7·S14 완료(2026-07-06 S6 잔여 검증 + S7 config 다이얼 구현·수동 테스트 완료),
+> **S8(duck-verify session-scoping)부터 이어서** · 생성: 2026-06-21 · 확장: 2026-07-04 (위키 그릴 — S10~S13
+> 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR 0003 참조 / S5 구현 중 S14
+> 신설 — 덕 페르소나 대사 전면 영어화)
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
 > 용어집: `docs/context/rubber-duck-tutor.md`
 
 v2.4.1 → 3.0.0 재설계의 수직 슬라이스 이슈. 각 슬라이스는 독립적으로 잡아서 단독 검증 가능. 결정은
-락됨 — 위의 ADR·용어집·구현 지시서 참조. 아래 어휘는 도메인 용어집을 따름(ducking, confrontation,
-ship-point confrontation, artifact-level vs code-level comprehension, shared ship budget).
+락됨 — 위의 ADR·용어집 참조. 아래 어휘는 도메인 용어집을 따름(ducking, confrontation, ship-point
+confrontation, artifact-level vs code-level comprehension, shared ship budget).
+
+## 다음 세션 시작점 (핸드오프, 2026-07-06)
+
+### First Action
+
+**S8(duck-verify session-scoping) 착수 전, 트랜스크립트 접근 방식부터 확인.**
+
+S8은 `duck-verify`가 `git diff`를 넘어 "이번 세션에서 만든 편집"까지 잡아야 한다(아래 S8 절 참조).
+그런데 트랜스크립트를 파싱하려면 먼저 **세션 트랜스크립트 파일 경로를 어떻게 얻는지부터 풀어야 한다**:
+
+- 이 저장소에 선례가 있음 — `plugins/codex-advisor/hooks/session-start.mjs:43-44`와
+  `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`. 단, 그건 **훅**(stdin JSON에
+  `.transcript_path` 필드가 직접 주어짐) 컨텍스트다.
+- `duck-verify`는 **유저가 직접 호출하는 스킬**이라 훅과 입력 형태가 다르다. 스킬 실행 컨텍스트에서
+  같은 방식으로 트랜스크립트 경로를 얻을 수 있는지 확인되지 않음 — `https://code.claude.com/docs/en/env-vars.md`를
+  먼저 확인하고, 안 되면 `~/.claude/projects/` 아래 세션 파일을 mtime 기준으로 추정하는 폴백이
+  필요할 수 있음(오탐 가능성 있으므로 신중히 설계).
+- no-numb `gate.sh`가 참고 기법이었으나 `references/no-numb`는 gitignore 대상이라 현재 로컬에 없음 —
+  재조사가 필요하면 다시 clone.
+
+확인되면 아래 S8 절의 acceptance criteria 3개를 그대로 구현 대상으로 삼으면 됨.
+
+### Context
+
+이전 세션 요청: "S6 잔여 검증부터, 이후 S7 → S8 → S9 → S10~13 순서로." 2026-07-06 세션에서 S6 잔여
+acceptance criterion(래퍼가 엔진 루프를 중복하지 않는지)을 5개 SKILL.md 직접 열람으로 검증하고, S7
+(config 다이얼)을 구현·수동 테스트까지 마쳤다. 유저가 "슬라이스 끝나면 멈추고 보고, 다음 슬라이스
+들어가지 말라"고 명시적으로 요청해 S7에서 정지.
+
+**S7 작업 중 짚어둔 설계 함정** — S9~S13에서 새 config 키를 추가할 때도 다시 점검할 것: jq의
+`.key // default` 연산자는 JSON `false`를 falsy로 취급한다. `enabled` 같은 boolean 다이얼에 이 패턴을
+그대로 쓰면 유저가 명시적으로 `enabled: false`를 설정해도 "미설정"으로 오인되어 조용히 `true`로
+되돌아간다 — 아래 S7 절이 미리 경고한 "`//`-식 footgun"이 바로 이것. `enabled`는 raw 값을 `"false"`
+문자열과 직접 비교하는 별도 로직으로 처리해야 하고, 문자열 값 다이얼(`defaultIntensity` 등)은 기존
+`// default` 패턴을 그대로 써도 안전하다(빈 문자열은 jq에서 falsy가 아니므로).
+
+### 미커밋 변경 (2026-07-06 세션, S6 검증 + S7 구현)
+
+- `plugins/rubber-duck-tutor/hooks/lib.sh` — `duck__is_enabled` 추가(footgun-safe, raw 값을
+  `"false"` 문자열과 직접 비교)
+- `plugins/rubber-duck-tutor/hooks/post-push.sh`, `post-pr.sh`, `post-plan.sh`,
+  `post-write-plan.sh` — 각각 `duck__init` 직후 `duck__is_enabled || exit 0` 추가
+- `plugins/rubber-duck-tutor/skills/ducking/engine.md` — "Config Check" 섹션 신설(세션 최초 동작,
+  `enabled` 체크) + Intensity Scaling 섹션이 `defaultIntensity` 읽도록 수정
+- `plugins/rubber-duck-tutor/skills/{duck,duck-prebuild,duck-verify,duck-review,duck-orient}/SKILL.md`
+  — `allowed-tools`에 `read-config.sh` Bash 권한 추가(5개 전부)
+- `plugins/rubber-duck-tutor/skills/ducking/scripts/read-config.sh` — 신규 파일(현재 untracked),
+  실행권한 부여됨, 훅과 별개로 스킬(모델 Bash 호출)이 config를 읽는 스크립트
+- 이 문서(`docs/issues/003-rubber-duck-tutor-redesign.md`) — S6·S7 acceptance criteria 체크, 상태
+  라인 갱신
+- **아직 커밋 안 됨** — 다음 세션 시작 시 커밋할지부터 확인.
+- **무관한 변경(손대지 말 것):** `docs/issues/007-vision-powers-artifact-channel.md`,
+  `plugins/vision-powers/README.md`, `plugins/vision-powers/skills/doc-visual/SKILL.md` — issue 007
+  작업, rubber-duck-tutor와 무관.
+
+### 핵심 파일 포인터
+
+- config 읽기 — 훅 쪽: `plugins/rubber-duck-tutor/hooks/lib.sh`의
+  `duck__config_get`/`duck__is_enabled`; 스킬(모델 Bash 호출) 쪽:
+  `plugins/rubber-duck-tutor/skills/ducking/scripts/read-config.sh`
+- 트랜스크립트 파싱 선례(훅 컨텍스트, S8 참고용): `plugins/codex-advisor/hooks/session-start.mjs`,
+  `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`
+
+---
 
 ## 스킬 경계 (2026-07-04 확정)
 
@@ -209,7 +275,10 @@ S5는 S4에 의존(래퍼가 `ducking` 엔진 문서를 읽어 들임).
 
 ### Acceptance criteria
 - [x] 모델 호출 가능 스킬 0개 — 전 스킬 `disable-model-invocation: true` (2026-07-05 선반영).
-- [ ] 어떤 유저 대면 래퍼도 엔진 루프를 중복하지 않음 — 각자 엔진 문서를 읽어 들임.
+- [x] 어떤 유저 대면 래퍼도 엔진 루프를 중복하지 않음 — 각자 엔진 문서를 읽어 들임 (2026-07-06 검증: `duck`,
+      `duck-prebuild`, `duck-verify`, `duck-review`, `duck-orient` 다섯 SKILL.md 모두 "Read first" 링크로
+      `../ducking/engine.md`를 참조할 뿐, persona·Wait-for-answer·Skeptical Grading·Session Wrap-up 등
+      루프 로직 원문을 재기술하지 않음. 각 파일은 모드 고유 flow만 서술).
 - [x] 이전 `duck-design` 자동 팝 동작이 래퍼에서 더는 발생하지 않음 (flag 선반영으로 해소).
 
 ### Blocked by
@@ -228,9 +297,19 @@ ship 훅과 스킬 둘 다 준수 — `enabled: false`면 전부 침묵. S2가 �
 먼저 두었을 수 있음 — S7은 자기 키만 추가하고 기존 키를 보존.
 
 ### Acceptance criteria
-- [ ] `enabled: false`면 ship-point confrontation이 발사 안 되고 스킬은 no-op.
-- [ ] 기본 강도를 `ducking` 엔진이 읽음.
-- [ ] config 파일이 없거나 잘못되면 크래시 대신 enabled / standard 기본값.
+- [x] `enabled: false`면 ship-point confrontation이 발사 안 되고 스킬은 no-op (2026-07-06: `hooks/lib.sh`의
+      `duck__is_enabled`를 4개 훅 — `post-push.sh`·`post-pr.sh`·`post-plan.sh`·`post-write-plan.sh` —
+      모두 `duck__init` 직후에서 체크; 엔진 `skills/ducking/engine.md`의 신설 "Config Check" 섹션이 모든
+      모드의 첫 동작으로 `read-config.sh enabled true`를 실행해 `false`면 한 줄 안내 후 정지).
+- [x] 기본 강도를 `ducking` 엔진이 읽음 (Intensity Scaling 섹션이 세션당 한 번
+      `read-config.sh defaultIntensity standard`를 실행해 시작 레벨을 정함).
+- [x] config 파일이 없거나 잘못되면 크래시 대신 enabled / standard 기본값 (수동 테스트: 파일 없음·malformed
+      JSON·jq 없는 환경 모두 `read-config.sh`가 `true`/`standard` 폴백 반환, 훅의 `duck__is_enabled`도
+      전부 0(enabled) 반환 — jq `//` 연산자가 명시적 `false`를 falsy로 삼켜버리는 footgun을 피하려
+      `enabled` 전용 raw-value 비교 로직을 훅·스킬 양쪽에 별도 구현).
+
+S2가 먼저 둔 `docTriggerPathRegex` 키는 그대로 보존됨(`post-write-plan.sh` 통합 테스트로 확인) — 두 config
+키가 write-write 충돌 없이 공존.
 
 ### Blocked by
 S7는 S3(훅이 `enabled`를 읽어야)·S4(엔진이 강도를 읽음)에 의존.

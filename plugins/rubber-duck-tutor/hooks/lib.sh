@@ -104,3 +104,26 @@ duck__config_get() {
     grep -oE "\"$key\" *: *\"[^\"]*\"" "$config_file" 2>/dev/null | head -1 | sed "s/\"$key\" *: *\"//;s/\"$//"
   fi
 }
+
+# --- enabled dial (S7) ---
+# Deliberately NOT built on duck__config_get: that helper's `.key // empty`
+# is a footgun for booleans -- jq's `//` treats JSON `false` as falsy, so
+# `.enabled // true` would silently turn an explicit `enabled: false` back
+# into `true`, defeating the whole point of a kill switch. This reads the
+# raw value and compares it against the literal string "false" instead, so
+# "false", "true", missing-key, and malformed-file are all distinguished
+# correctly. Returns 0 (enabled) unless the config explicitly says false.
+duck__is_enabled() {
+  local config_file="${CLAUDE_PLUGIN_DATA:-${TMPDIR:-/tmp}}/config.json"
+  [[ -f "$config_file" ]] || return 0
+
+  local val
+  if command -v jq &>/dev/null; then
+    val=$(jq -r '.enabled' "$config_file" 2>/dev/null)
+  else
+    val=$(grep -oE '"enabled" *: *(true|false)' "$config_file" 2>/dev/null | head -1 | grep -oE '(true|false)$')
+  fi
+
+  [[ "$val" == "false" ]] && return 1
+  return 0
+}

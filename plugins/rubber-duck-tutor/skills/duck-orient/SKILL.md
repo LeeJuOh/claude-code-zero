@@ -3,7 +3,7 @@ name: duck-orient
 disable-model-invocation: true
 description: "Codebase-orientation session with the rubber duck — generate or refresh .claude/orientation.md with interactive exercises. Use when new to a codebase, returning after a break, or says \"duck orient\", \"I'm new to this repo\"."
 argument-hint: "[refresh]"
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(find *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh *)
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(find *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *)
 ---
 
 # Duck — Orientation Mode

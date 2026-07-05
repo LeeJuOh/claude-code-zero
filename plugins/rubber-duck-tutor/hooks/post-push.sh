@@ -13,6 +13,8 @@ source "$(dirname "$0")/lib.sh"
 
 duck__init
 
+duck__is_enabled || exit 0
+
 # Detect git push commands
 COMMAND=$(duck__get '.tool_input.command')
 if ! echo "$COMMAND" | grep -qE 'git\s+push'; then

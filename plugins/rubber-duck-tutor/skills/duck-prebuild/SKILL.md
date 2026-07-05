@@ -2,7 +2,7 @@
 name: duck-prebuild
 disable-model-invocation: true
 description: "Pre-build session with the rubber duck — runs BEFORE implementation, covering both a pre-coding design sketch and plan/spec review. Use when the user states implementation intent (\"build this for me\", \"build me X\") with no plan or code yet, when a plan/spec/RFC was just produced, or says \"duck design\", \"duck plan\", \"sketch first\", \"review this plan\". Not for code already written — use /duck-verify or /duck-review."
-allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
+allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *)
 ---
 
 # Duck — Prebuild Mode (Design Sketch + Plan Review)

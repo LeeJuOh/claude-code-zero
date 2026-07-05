@@ -2,7 +2,7 @@
 name: duck-review
 disable-model-invocation: true
 description: "PR/change-review session with the rubber duck — user justifies every change and predicts consequences. Use before commit/push/PR, or when they say \"duck review\", \"check before review\". Not for code-level explanation (/duck-verify) or plan review (/duck-prebuild)."
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *)
 ---
 
 # Duck — PR / Change Review Mode

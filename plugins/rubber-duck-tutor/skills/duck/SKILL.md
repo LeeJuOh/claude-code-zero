@@ -2,7 +2,7 @@
 name: duck
 description: "Rubber duck tutor — auto-detects which review mode to run. Use when the user says \"duck\", \"tutor\", \"quiz me\", \"do I understand this\", or mentions rubber-stamping or learning while coding. For a specific phase use /duck-prebuild, /duck-verify, /duck-review, or /duck-orient."
 disable-model-invocation: true
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *)
 ---
 
 # Duck (auto-detect)
