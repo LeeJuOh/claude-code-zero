@@ -1,7 +1,9 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 중 — S1~S8·S14 완료(2026-07-06 S6 잔여 검증 + S7 config 다이얼 + S8 session-scoping 구현·수동
-> 테스트 완료), **S9(정체성 재작성)는 S10~S12 대기 — 다음은 S10 또는 S11부터** · 생성: 2026-06-21 · 확장:
+> 상태: 구현 중 — S1~S8·S10·S14 완료(2026-07-06 세션 — S6 잔여 검증 + S7 config 다이얼 + S8
+> session-scoping + S10 confrontation telemetry 구현·수동 테스트 완료; S8은 이번 세션 시작 시 이미
+> 커밋 `140527a`로 확인됨), **S9(정체성 재작성)는 S11·S12 대기 — 다음은 S11부터**(S10이 S12의 전제라
+> 순서대로 먼저 잡음) · 생성: 2026-06-21 · 확장:
 > 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR
 > 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
@@ -15,75 +17,45 @@ confrontation, artifact-level vs code-level comprehension, shared ship budget).
 
 ### First Action
 
-**S9는 아직 착수 불가(S10~S12 대기) — 다음 슬라이스는 S10 또는 S11부터.** 둘 다 블로커는 S3·S4뿐이고
-이미 완료됐으므로 즉시 시작 가능. 유저가 슬라이스 순서를 아직 명시하지 않았다면 시작 전에 확인할 것
-(S10 telemetry가 S12의 전제이므로 S10 먼저가 자연스러운 순서이나, S11 blind-spot triage가 더 무겁고
-독립적이라 먼저 잡아도 무방 — 그래프상 둘 사이 순서 제약 없음).
+S11(Blind-spot 정조준)부터 시작 — 블로커 S3·S4 완료, 즉시 착수 가능. 이후 S12 → S13 → S9 순.
 
 ### Context
 
-이전 세션 요청: "S6 잔여 검증부터, 이후 S7 → S8 → S9 → S10~13 순서로." 2026-07-06 세션에서 S6 잔여
-검증, S7(config 다이얼), S8(duck-verify session-scoping)을 순서대로 구현·수동 테스트까지 마쳤다. S8
-착수 전 First Action으로 남겨뒀던 "유저 호출 스킬이 트랜스크립트 경로를 어떻게 얻는가" 질문은
-`docs/adr/0006-codex-advisor-conditional-transcript-hook.md`을 재확인해 답을 확정했다 — **모델은
-자기 세션의 트랜스크립트 경로를 스스로 얻을 수 없다(훅만 stdin JSON으로 받음)**. 그래서 S8은
-codex-advisor의 SessionStart 훅 패턴을 그대로 차용: `hooks/session-start.sh`가 `transcript_path`를
-받아 `$CLAUDE_ENV_FILE`에 `DUCK_TRANSCRIPT_PATH`로 심어두고, `duck-verify`가 Bash로 호출하는
-`skills/ducking/scripts/session-edits.sh`가 그 env var를 읽어 트랜스크립트에서 이번 세션의
-Edit/Write/MultiEdit/NotebookEdit 대상 파일을 뽑는다. 유저가 "슬라이스 끝나면 멈추고 보고"를 이번
-세션에도 재확인해 S8에서 정지.
+2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10을 순서대로 구현·수동 테스트·커밋까지 마쳤다(git log 참조).
+유저 요청대로 슬라이스 끝나면 멈추고 보고하는 리듬 유지 중 — S10에서 정지.
 
-**S7 작업 중 짚어둔 설계 함정** — S9~S13에서 새 config 키를 추가할 때도 다시 점검할 것: jq의
-`.key // default` 연산자는 JSON `false`를 falsy로 취급한다. `enabled` 같은 boolean 다이얼에 이 패턴을
-그대로 쓰면 유저가 명시적으로 `enabled: false`를 설정해도 "미설정"으로 오인되어 조용히 `true`로
-되돌아간다. `enabled`는 raw 값을 `"false"` 문자열과 직접 비교하는 별도 로직으로 처리해야 하고, 문자열
-값 다이얼(`defaultIntensity` 등)은 기존 `// default` 패턴을 그대로 써도 안전하다(빈 문자열은 jq에서
-falsy가 아니므로).
+이어갈 때 참고할 것:
+- **S7 jq footgun**: `.key // default`는 JSON `false`를 삼킨다 — boolean 다이얼(`enabled`)은
+  raw-value 비교로 처리(`hooks/lib.sh`의 `duck__is_enabled` 참조). 새 config 키 추가 시 재확인.
+- **S8↔S11 파서 공유**: `session-edits.sh`(트랜스크립트를 한 줄씩 raw 파싱 — 깨진 줄 하나가 전체를
+  안 죽임)를 S11의 engagement 판정이 재사용할 수 있는지 착수 시 먼저 확인.
+- **S10에서 잡은 버그**: ship 훅에서 `set -u` 아래 `${CLAUDE_PLUGIN_ROOT}`를 무가드로 참조하면 훅
+  전체가 죽어 confrontation이 안 나갈 수 있었음 — `[[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]` 가드로 고침
+  (`session-start.sh`의 `${CLAUDE_ENV_FILE:-}` 선례 재사용). S11·S12도 훅에 새 Bash 호출 추가 시 이
+  가드 패턴 따를 것.
+- **S10 설계 판단**: ship confrontation은 `engine.md`를 안 읽는 경로다(ADR 0003·S4 — 훅의
+  `additionalContext`가 자기완결적 지시문). 그래서 outcome 로깅 지시도 훅 안에 직접 넣었고
+  `engine.md`는 안 건드렸다. S11·S12도 같은 패턴을 따를지는 열린 질문.
 
-**S8에서 새로 짚어둔 것 — S11이 재사용할 파싱 기법:** `session-edits.sh`는 `jq -R -r 'fromjson? | ...'`
-패턴을 쓴다(파일 전체를 JSON 모드로 파싱하지 않고, 한 줄씩 raw로 읽어 개별 파싱). 트랜스크립트 한 줄이
-깨져도 그 줄만 빈 결과로 스킵되고 나머지 줄은 영향 없음 — 파일 전체를 한 번에 `jq`에 먹이면 한 줄만
-깨져도 전체가 에러난다. S11이 "유저가 이 변경을 열람·논의했는가"를 판정할 때 같은 트랜스크립트를
-다시 파싱해야 하므로(S11 절의 "S8과 파서 공유" 노트), 이 스크립트를 `duck-verify` 전용에서 공용
-lib로 넣지 않은 이유는 아직 두 번째 소비자가 없어서다 — S11 착수 시 **먼저** 이 파일을 다시 열어서
-그대로 재사용 가능한지 확인할 것(이미 `skills/ducking/scripts/`에 있으므로 옮길 필요는 없을 가능성 높음).
+무관한 변경(손대지 말 것): `plugins/vision-powers/skills/plugin-visual/SKILL.md`,
+`plugins/vision-powers/skills/context-health-visual/SKILL.md` — vision-powers 계열 작업, rubber-duck-tutor와 무관.
 
-### 미커밋 변경 (2026-07-06 세션, S8 구현)
+### Current Progress
 
-- `plugins/rubber-duck-tutor/hooks/session-start.sh` — 신규 파일. SessionStart 훅, `transcript_path`를
-  `$CLAUDE_ENV_FILE`에 `DUCK_TRANSCRIPT_PATH`로 심음. `duck__is_enabled`로 게이팅하지 **않음**(경로만
-  심을 뿐 유저 대면 동작이 없고, 게이팅하면 세션 중 `enabled`를 다시 켜도 영영 못 심을 위험).
-- `plugins/rubber-duck-tutor/hooks/hooks.json` — `SessionStart` 훅 등록(matcher 없음 — startup·resume·
-  clear·compact 전부에서 발사, codex-advisor 선례와 동일).
-- `plugins/rubber-duck-tutor/skills/ducking/scripts/session-edits.sh` — 신규 파일, 실행권한 부여됨.
-  트랜스크립트에서 Edit/Write/MultiEdit/NotebookEdit 대상 파일 추출. jq 부재·파일 없음·파싱 실패 모두
-  빈 출력 + exit 0로 저하(수동 테스트: 정상 파싱, 존재하지 않는 파일, 깨진 줄 섞인 JSONL, jq 없는 PATH
-  네 가지 케이스 모두 확인).
-- `plugins/rubber-duck-tutor/skills/duck-verify/SKILL.md` — `allowed-tools`에 `session-edits.sh` Bash
-  권한 추가, Input 절을 `git diff` 단독에서 `session-edits.sh ∪ git diff --name-only`로 갱신(세션 중
-  커밋된 편집은 `git diff`가 놓치므로).
-- 이 문서(`docs/issues/003-rubber-duck-tutor-redesign.md`) — S8 acceptance criteria 체크, 상태 라인
-  갱신, 이 핸드오프 절 갱신.
-- S6·S7 미커밋 변경은 이번 세션 시작 시 별도 커밋으로 분리 완료(커밋 `3eb1340`). **S8은 아직 미커밋** —
-  다음 세션 시작 시 커밋할지부터 확인할 것(이번 세션에서 유저에게 물었으나 답변 전에 `/handoff`로 전환됨).
-- **무관한 변경(손대지 말 것, 2026-07-06 재확인 — 서브에이전트 교차검증 완료):**
-  `plugins/vision-powers/skills/plugin-visual/SKILL.md`,
-  `plugins/vision-powers/skills/context-health-visual/SKILL.md` — 둘 다 vision-powers 계열 작업으로
-  rubber-duck-tutor와 무관(각각 다른 진행 중 작업으로 보임, 한 세션이 아닐 수 있음). 이전에 나열했던
-  `docs/issues/007-...md`·`vision-powers/README.md`·`structured-blocks.md`·`diff-visual/SKILL.md`·
-  `doc-visual/SKILL.md`는 커밋 `a509f5e`로 이미 정리됨 — 목록에서 제외.
+S1-S8·S10·S14 완료, S9·S11·S12·S13 남음(git log 참조). S10 신규/변경 파일:
+`skills/ducking/scripts/log-telemetry.sh`(신규, fire/outcome append),
+`skills/ducking/scripts/telemetry-summary.sh`(신규, 조회),
+`hooks/post-push.sh`·`hooks/post-pr.sh`(fire 기록 + outcome 지시 + `CLAUDE_PLUGIN_ROOT` 가드),
+`skills/duck-orient/SKILL.md`(세션 시작 시 요약 노출) — 전부 `plugins/rubber-duck-tutor/` 아래.
 
 ### 핵심 파일 포인터
 
-- config 읽기 — 훅 쪽: `plugins/rubber-duck-tutor/hooks/lib.sh`의
-  `duck__config_get`/`duck__is_enabled`; 스킬(모델 Bash 호출) 쪽:
-  `plugins/rubber-duck-tutor/skills/ducking/scripts/read-config.sh`
-- 트랜스크립트 경로 심기(훅) — `plugins/rubber-duck-tutor/hooks/session-start.sh`; 소비(스킬) —
-  `plugins/rubber-duck-tutor/skills/ducking/scripts/session-edits.sh`. 원 선례:
-  `plugins/codex-advisor/hooks/session-start.mjs`, `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`.
-- S10~S13 착수 시 참고 — telemetry 로그 경로 규칙(`${CLAUDE_PLUGIN_DATA}/telemetry.jsonl`)과 gap 로그
-  규칙(`log-gap.sh`/`recent-gaps.sh`, 현재 `skills/ducking/scripts/`)이 이미 확립된 패턴이므로, S10의
-  telemetry append 로직도 같은 디렉터리·같은 "모델 개입 없이 훅이 직접 쓴다" 원칙을 따를 것(S10 절 참조).
+- config — 훅: `hooks/lib.sh`의 `duck__config_get`/`duck__is_enabled`; 스킬: `skills/ducking/scripts/read-config.sh`
+- 트랜스크립트 경로 — 심기(훅): `hooks/session-start.sh`; 소비(스킬): `skills/ducking/scripts/session-edits.sh`
+- Confrontation telemetry(S10) — 기록: `skills/ducking/scripts/log-telemetry.sh`; 조회:
+  `skills/ducking/scripts/telemetry-summary.sh`; 로그: `${CLAUDE_PLUGIN_DATA}/telemetry.jsonl`. S12의
+  ignore streak 계산은 outcome 이벤트의 **순서**(연속 무시 횟수)가 필요 — 이 JSONL의 시간순 append
+  특성에 의존하게 될 것.
 
 ---
 
@@ -394,10 +366,21 @@ outcome은 엔진이 대화 흐름을 보고 스크립트 호출로 기록(모�
 스킬 모두 조용히 정상 진행 — telemetry 실패가 confrontation을 죽이면 안 됨.
 
 ### Acceptance criteria
-- [ ] ship confrontation 발사 시 훅이 로그 1줄 append — 모델 개입 없이.
-- [ ] 응답/무시가 outcome으로 기록됨.
-- [ ] 로그 부재·파손 시 훅·스킬 정상 동작(크래시·침묵사 없음).
-- [ ] 발사/응답/무시 요약 조회 가능.
+- [x] ship confrontation 발사 시 훅이 로그 1줄 append — 모델 개입 없이 (`post-push.sh`·`post-pr.sh`가
+      `duck__check_rate_limit` 통과 직후 — 즉 confrontation이 실제로 발사될 때만 —
+      `log-telemetry.sh fire <push|pr> question`을 직접 호출. rate limit에 걸려 발사가 안 되면 fire도
+      안 남음, 수동 테스트로 확인).
+- [x] 응답/무시가 outcome으로 기록됨 (훅의 `additionalContext`가 모델에게 사용자 반응을 관찰한 뒤
+      `log-telemetry.sh outcome <trigger> answered|ignored`를 호출하도록 지시 — 대화 흐름 판단이
+      불가피한 유일 지점이라는 설계 그대로).
+- [x] 로그 부재·파손 시 훅·스킬 정상 동작(크래시·침묵사 없음) — 수동 테스트: 로그 파일 없음, 깨진 줄
+      섞임, jq 부재 세 경우 모두 `telemetry-summary.sh`가 크래시 없이 0 또는 all-time 카운트로 저하.
+      **버그 하나 발견·수정**: 훅 스크립트가 `set -uo pipefail` 아래서 `${CLAUDE_PLUGIN_ROOT}`를 무가드로
+      참조하면 그 변수가 비어있는 극단 상황에서 confrontation 출력 전체가 죽을 수 있었음(텔레메트리
+      실패가 아니라 훅 전체 크래시) — `session-start.sh`의 `${CLAUDE_ENV_FILE:-}` 가드 선례를 그대로
+      따라 `[[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]`로 감쌈.
+- [x] 발사/응답/무시 요약 조회 가능 (`telemetry-summary.sh [days]`, 기본 30일 — "Last 30 days: N fired,
+      M answered, K ignored" 한 줄 출력. `duck-orient` Flow 1단계가 세션 시작 시 노출).
 
 ### Blocked by
 S10은 S3(ship 훅이 기록 주체)·S4(엔진이 outcome 기록)에 의존.
