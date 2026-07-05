@@ -55,14 +55,23 @@ vision-powers의 **세 번째 전달 채널**로 흡수한다. 로컬 파일·�
 
 ### Acceptance criteria
 
-- [ ] `doc-visual` SKILL.md에 `--artifact` 분기 (자연어 동치 "아티팩트로", "공유 링크로" 포함): **페이지 작성 전 내장 artifact-design skill 로드**(도구 계약 MUST), **CSP-safe 페이지** 작성 — fragment(doctype/head/body 없음), 외부 요청 0, 라이트/다크 테마 대응, `<title>` 설정.
-- [ ] `doc-visual` frontmatter `allowed-tools`에 `Artifact` 추가 (현행엔 없음 — 없으면 퍼블리시 호출 불가).
-- [ ] Artifact 도구로 퍼블리시(`favicon` 이모지 + `description` 전달) → URL 출력 + 위임 고지 한 줄 동반. 소스 파일은 `${CLAUDE_PLUGIN_DATA}/reports/`에. 퍼블리시 성공 시 URL 사이드카 기록(S4.5 규약 — S1은 쓰기만, 최소 형태).
-- [ ] **같은 세션 내** 재생성(refine) 시 같은 파일 경로 재사용 — 같은 URL에 버전으로 쌓임. favicon·title 고정. (세션 넘는 refine의 URL 유지 = S4.5.)
-- [ ] Gate: artifact 변형엔 **콘텐츠 검사만** (raw-md 누출·placeholder·링크·alt). 디자인 계열(밀도·팔레트·폰트체인·Mermaid classDef)·PNG self-audit 스킵 — 내장 디자인 소관. 방식: `artifact-gate.js`에 `--content-only` 플래그 신설(검사 서브셋). 자동 시각검증이 0이 되는 트레이드오프는 의도 — ADR 0007 도그푸딩이 대체.
-- [ ] 폴백: Artifact 도구 미가용/퍼블리시 실패 = 로컬 html 저장 + 사유 한 줄, 묻지 않음.
-- [ ] `argument-hint`에 `[--artifact (native design + publish)]`.
-- [ ] 검증: 같은 md 입력으로 로컬 vs artifact 페이지 1회 비교 기록 (디자인 층 도그푸딩 시작점 — ADR 0007 열린 판정).
+- [x] `doc-visual` SKILL.md에 `--artifact` 분기 (자연어 동치 "아티팩트로", "공유 링크로" 포함): **페이지 작성 전 내장 artifact-design skill 로드**(도구 계약 MUST), **CSP-safe 페이지** 작성 — fragment(doctype/head/body 없음), 외부 요청 0, 라이트/다크 테마 대응, `<title>` 설정.
+- [x] `doc-visual` frontmatter `allowed-tools`에 `Artifact` 추가 (현행엔 없음 — 없으면 퍼블리시 호출 불가).
+- [x] Artifact 도구로 퍼블리시(`favicon` 이모지 + `description` 전달) → URL 출력 + 위임 고지 한 줄 동반. 소스 파일은 `${CLAUDE_PLUGIN_DATA}/reports/`에. 퍼블리시 성공 시 URL 사이드카 기록(S4.5 규약 — S1은 쓰기만, 최소 형태).
+- [x] **같은 세션 내** 재생성(refine) 시 같은 파일 경로 재사용 — 같은 URL에 버전으로 쌓임. favicon·title 고정. (세션 넘는 refine의 URL 유지 = S4.5.)
+- [x] Gate: artifact 변형엔 **콘텐츠 검사만** (raw-md 누출·placeholder·링크·alt). 디자인 계열(밀도·팔레트·폰트체인·Mermaid classDef)·PNG self-audit 스킵 — 내장 디자인 소관. 방식: `artifact-gate.js`에 `--content-only` 플래그 신설(검사 서브셋). 자동 시각검증이 0이 되는 트레이드오프는 의도 — ADR 0007 도그푸딩이 대체.
+- [x] 폴백: Artifact 도구 미가용/퍼블리시 실패 = 로컬 html 저장 + 사유 한 줄, 묻지 않음.
+- [x] `argument-hint`에 `[--artifact (native design + publish)]`.
+- [x] 검증: 같은 md 입력으로 로컬 vs artifact 페이지 1회 비교 기록 (디자인 층 도그푸딩 시작점 — ADR 0007 열린 판정).
+
+### 구현 완료 (2026-07-05)
+
+전 항목 반영: `doc-visual` SKILL.md artifact 분기(스킬 로드 MUST·fragment·CSP·테마·`<title>`), frontmatter(`allowed-tools`에 `Artifact`, `argument-hint`), `artifact-gate.js --content-only` 플래그(+테스트 2건, 총 49건 통과), `write-artifact-sidecar.js` 신규, 폴백 문구. `claude plugin validate .` 통과.
+
+**검증 (로컬 vs artifact 1회 비교)**: ADR 0007 문서로 양쪽 채널 실제 생성.
+- 로컬(warm-stone 팔레트, Instrument Serif+Geist, Mermaid CDN flowchart) — `artifact-gate.js` 풀체크 통과.
+- artifact(내장 artifact-design skill 로드 후 별도 팔레트로 직접 재설계 — cool-teal, 시스템 세리프/산세리프, inline SVG 다이어그램) — `--content-only` 통과 → 실제 Artifact 툴로 퍼블리시 성공: https://claude.ai/code/artifact/203122a5-aa68-4a0d-932a-8ea54265e663 → 사이드카(`*.artifact.json`) 기록 확인.
+- 관찰: 내장 스킬 가이드가 "템플릿화 회피"를 강하게 지시해서 두 채널이 같은 문서인데도 완전히 다른 시각 정체성으로 나옴(ADR이 승인한 결과와 일치). 다이어그램은 Mermaid 대신 inline SVG로 손색없이 대체됨. 폰트는 웹폰트 data-URI 내장 대신 시스템 폰트 스택으로 단순화(1회 검증용 판단 — 실사용 시 artifact-design 가이드가 data-URI 내장을 권장함을 유의).
 
 ### Blocked by
 

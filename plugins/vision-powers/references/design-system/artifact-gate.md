@@ -49,6 +49,14 @@ Checks 4–5 mechanize the **Technical** and **Signal** rules above, and 9–10 
 
 Items still requiring manual judgment (Remove test, Type fit, accent ≤ 2, lang consistency) should be considered during authoring; they are not yet mechanically enforced.
 
+### `--content-only` (Artifact channel)
+
+`node scripts/artifact-gate.js <path> --content-only` runs only checks 1, 2, 6, 7, 8 (missing images,
+raw markdown, anchor hrefs, image alt, placeholder leak). It skips 3–5 and 9–10 — density, palette,
+classDef, gradient text, font fallback — because on the Artifact channel the design layer belongs to
+the harness's built-in artifact-design skill, not this gate (ADR 0007). Use this mode whenever the
+page was authored for `--artifact`; the full check set stays the default for local html output.
+
 ## On violation
 
 1. Automated validation fails → fix inline (edit the HTML directly)
