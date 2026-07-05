@@ -35,7 +35,7 @@ The three shipping triggers share a single budget of 1 confrontation per session
 - **Uncertainty Check** — you're asked to verbalize your hunch *before* the duck responds, so you can't retrofit understanding from a hint.
 - **Temporal cost simulation** — at least one question per session asks where this decision will hurt in 6 months, to surface hidden maintenance costs.
 - **Intensity scaling** — Quick / Standard / Deep auto-calibrated to the artifact size, so a one-line fix doesn't get a 45-minute interrogation.
-- **Committable orientation artifact** — `/duck orient` produces `.claude/orientation.md` that's team-shareable so new contributors inherit your mental model.
+- **Committable orientation artifact** — `/duck-orient` produces `.claude/orientation.md` that's team-shareable so new contributors inherit your mental model.
 
 ## Scope
 
