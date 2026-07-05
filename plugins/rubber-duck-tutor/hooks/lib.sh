@@ -6,8 +6,9 @@
 #
 # Usage from hook scripts:
 #   source "$(dirname "$0")/lib.sh"
-#   duck__init              # reads stdin, exits if subagent
-#   duck__check_rate_limit  # exits if over 2 offers this session
+#   duck__init                          # reads stdin, exits if subagent
+#   duck__check_rate_limit              # default bucket, exits if over 2 offers this session
+#   duck__check_rate_limit "ship" 1     # named bucket + cap, e.g. shared ship budget
 
 set -uo pipefail
 
@@ -54,11 +55,19 @@ duck__init() {
   fi
 }
 
-# --- Session rate limiting (shared across all hook triggers) ---
+# --- Session rate limiting ---
+# Bucketed per caller: the default bucket covers the plan/spec-doc triggers
+# (post-plan.sh, post-write-plan.sh); the "ship" bucket is the shared budget
+# for {git push, gh pr create, glab mr create} (ADR 0003) — kept separate so
+# ship-point confrontation isn't starved by plan suggestions already having
+# used up the shared counter.
 
 DUCK_MAX_OFFERS=2
 
 duck__check_rate_limit() {
+  local bucket="${1:-default}"
+  local max="${2:-$DUCK_MAX_OFFERS}"
+
   local state_dir="${CLAUDE_PLUGIN_DATA:-${TMPDIR:-/tmp}}/sessions"
   mkdir -p "$state_dir"
 
@@ -66,16 +75,32 @@ duck__check_rate_limit() {
   find "$state_dir" -name "duck_auto_*.state" -mtime +0 -delete 2>/dev/null || true
 
   local safe_id="${DUCK_SESSION_ID//[^a-zA-Z0-9_-]/_}"
-  local state_file="${state_dir}/duck_auto_${safe_id}.state"
+  local state_file="${state_dir}/duck_auto_${bucket}_${safe_id}.state"
 
   local offers=0
   if [[ -f "$state_file" ]]; then
     offers=$(cat "$state_file" 2>/dev/null || echo 0)
   fi
 
-  if [[ "$offers" -ge "$DUCK_MAX_OFFERS" ]]; then
+  if [[ "$offers" -ge "$max" ]]; then
     exit 0
   fi
 
   echo $(( offers + 1 )) > "$state_file"
+}
+
+# --- Config file access (${CLAUDE_PLUGIN_DATA}/config.json) ---
+# Returns empty string if the file, key, or CLAUDE_PLUGIN_DATA is missing —
+# callers apply their own default. Never throws on a malformed file.
+
+duck__config_get() {
+  local key="$1"
+  local config_file="${CLAUDE_PLUGIN_DATA:-${TMPDIR:-/tmp}}/config.json"
+  [[ -f "$config_file" ]] || return 0
+
+  if command -v jq &>/dev/null; then
+    jq -r ".$key // empty" "$config_file" 2>/dev/null
+  else
+    grep -oE "\"$key\" *: *\"[^\"]*\"" "$config_file" 2>/dev/null | head -1 | sed "s/\"$key\" *: *\"//;s/\"$//"
+  fi
 }

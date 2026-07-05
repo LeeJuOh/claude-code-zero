@@ -22,7 +22,7 @@ This plugin builds that questioning habit into your workflow. The duck asks you 
 
 `/duck` with no argument auto-detects the right mode from context and routes you to the matching `/duck-<mode>` skill.
 
-Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec documents (Write on `plan*.md` / `spec*.md` / `design*.md` / `rfc*.md` / `adr*.md` — deterministic, non-AI, non-conversational files like README / CHANGELOG / CLAUDE.md and unrelated markdown like `notes.md` skip the hook), `gh pr create` / `glab mr create`, and `git push`. Hook matchers are scoped to those exact subcommands so unrelated git/gh/glab calls (`git status`, `gh issue list`) skip the hook entirely. When triggered, the duck suggests `/branch` + `/duck-<mode>` so the review happens in a forked conversation without interrupting your work. Rate-limited to 2 suggestions per session, with 24h TTL cleanup, and skipped entirely in subagent contexts.
+Auto-hooks fire at two kinds of checkpoint, and react differently. **Plan/spec creation** (plan creation, spec documents — Write under `docs/adr/`, `docs/plans?/`, `docs/specs?/`, `docs/rfcs?/`, with a filename-prefix fallback — `plan*.md` / `spec*.md` / `design*.md` / `rfc*.md` / `adr*.md` — for repos that don't nest docs that way; deterministic, non-AI, non-conversational files like README / CHANGELOG / CLAUDE.md and unrelated markdown like `notes.md` skip the hook either way) suggests `/branch` + `/duck-<mode>` so a full review session happens in a forked conversation without interrupting your work — capped at 2 suggestions per session. **Shipping** (`git push`, `gh pr create` / `glab mr create` — matchers scoped to those exact subcommands so unrelated calls like `git status` or `gh issue list` skip the hook entirely) confronts you inline with one understanding question about what you just shipped, rather than suggesting a command — no branching, no interruption. The three shipping triggers share a single budget of 1 confrontation per session (first one to fire wins, since `git push` alone also covers platforms the `gh`/`glab` hooks miss), falling back to the branch+session suggestion only when the shipped change is too large for one inline question. Both budgets get 24h TTL cleanup and are skipped entirely in subagent contexts.
 
 ## How the duck works
 
@@ -36,7 +36,7 @@ Auto-hooks suggest duck sessions at workflow checkpoints — plan creation, spec
 ## Prerequisites
 
 - **jq** (recommended, `brew install jq`) — hooks fall back to regex without it
-- **`/branch` and `/resume` commands** (optional) — the duck suggests `/branch` to fork the conversation before a review session and `/resume` to return afterward. These come from a separate plugin (e.g. `lab-harness-zero`). If your environment doesn't have them, the duck falls back to running `/duck <mode>` inline — you just lose the no-interruption guarantee.
+- **`/branch` and `/resume`** — Claude Code built-ins (`/branch [name]`, `/resume [session]`). Always available; no separate plugin needed.
 
 ## Install
 

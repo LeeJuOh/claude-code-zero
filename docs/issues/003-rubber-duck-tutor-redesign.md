@@ -1,6 +1,6 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 대기 · 생성: 2026-06-21 · 확장: 2026-07-04 (위키 그릴 세션 — S10~S13 추가, S4 보강)
+> 상태: 구현 중 — S1·S2·S3 완료(2026-07-05), S4부터 이어서 · 생성: 2026-06-21 · 확장: 2026-07-04 (위키 그릴 세션 — S10~S13 추가, S4 보강)
 > 지시서: `docs/handoff/2026-06-21-rubber-duck-tutor-redesign.md`
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
 > 용어집: `docs/context/rubber-duck-tutor.md`
@@ -47,7 +47,7 @@ S10, S11, S12 ─► S9   (README가 S10~S12 기능을 기술하므로)
 
 ---
 
-## S1 — 거짓 /branch · /resume 폴백 제거
+## S1 — 거짓 /branch · /resume 폴백 제거 ✅ 완료 (2026-07-05)
 
 **Phase:** 1 · **Blocked by:** 없음 — 즉시 시작 가능.
 
@@ -58,16 +58,16 @@ alias `/continue`). 플러그인은 현재 이들을 외부 플러그인(`lab-ha
 "빌트인, 항상 사용 가능"으로 단순화.
 
 ### Acceptance criteria
-- [ ] 어떤 플러그인 문서도 `/branch`·`/resume`가 외부 플러그인을 요구한다고 주장하지 않음.
-- [ ] "/branch·/resume 사용 불가 시" 폴백 분기 제거됨.
-- [ ] README Prerequisites가 외부 플러그인 의존성을 더는 나열하지 않음.
+- [x] 어떤 플러그인 문서도 `/branch`·`/resume`가 외부 플러그인을 요구한다고 주장하지 않음.
+- [x] "/branch·/resume 사용 불가 시" 폴백 분기 제거됨.
+- [x] README Prerequisites가 외부 플러그인 의존성을 더는 나열하지 않음.
 
 ### Blocked by
 없음 — 즉시 시작 가능.
 
 ---
 
-## S2 — 경로 기반 문서 트리거
+## S2 — 경로 기반 문서 트리거 ✅ 완료 (2026-07-05)
 
 **Phase:** 1 · **Blocked by:** 없음 — 즉시 시작 가능.
 
@@ -82,16 +82,16 @@ override 키는 `${CLAUDE_PLUGIN_DATA}/config.json`에 산다 — S2는 이 키 
 부재·파손 시 기본 경로 집합으로 동작.
 
 ### Acceptance criteria
-- [ ] 번호형 ADR(`docs/adr/0003-....md`) 작성 시 트리거 발사.
-- [ ] 파일명 스타일(`adr-foo.md`)도 폴백으로 여전히 매칭.
-- [ ] 잘못된 override regex는 기본 경로 집합으로 폴백; 트리거가 조용히 죽지 않음.
+- [x] 번호형 ADR(`docs/adr/0003-....md`) 작성 시 트리거 발사.
+- [x] 파일명 스타일(`adr-foo.md`)도 폴백으로 여전히 매칭.
+- [x] 잘못된 override regex는 기본 경로 집합으로 폴백; 트리거가 조용히 죽지 않음.
 
 ### Blocked by
 없음 — 즉시 시작 가능.
 
 ---
 
-## S3 — Ship 훅: shared ship budget + suggest→confront
+## S3 — Ship 훅: shared ship budget + suggest→confront ✅ 완료 (2026-07-05)
 
 **Phase:** 1 · **Blocked by:** 없음 — 즉시 시작 가능.
 
@@ -107,9 +107,9 @@ ship 훅에 두 가지 변경. (1) **Shared ship budget**: `{git push, gh pr cre
 버그 아님. "단순화"로 제거하지 말 것. alias / `hub` 커버리지(다른 명령 이름)는 별도 저우선 갭, 범위 밖.
 
 ### Acceptance criteria
-- [ ] 세션 첫 ship 액션은 confrontation 하나 발사; 같은 세션 두 번째 ship 액션은 침묵.
-- [ ] `git push` 단독(`gh`/`glab` 없이)도 confrontation 발사.
-- [ ] 주입된 컨텍스트는 명령 실행 제안이 아니라 질문으로 confront.
+- [x] 세션 첫 ship 액션은 confrontation 하나 발사; 같은 세션 두 번째 ship 액션은 침묵.
+- [x] `git push` 단독(`gh`/`glab` 없이)도 confrontation 발사.
+- [x] 주입된 컨텍스트는 명령 실행 제안이 아니라 질문으로 confront.
 
 ### Blocked by
 없음 — 즉시 시작 가능.

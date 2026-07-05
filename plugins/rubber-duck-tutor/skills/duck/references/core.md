@@ -84,8 +84,6 @@ Duck sessions should not interrupt the user's main work. When suggesting a duck 
 
 This way learning and productivity never compete. The user reviews when ready, not when interrupted.
 
-**Fallback when `/branch` and `/resume` are unavailable** (these commands come from an external plugin like `lab-harness-zero`): if the user replies that the commands don't exist, drop the branch step and run the duck command directly. Acknowledge once: "이 환경엔 `/branch`가 없네. 그냥 여기서 바로 돌릴게." Don't keep suggesting it.
-
 Do not offer when:
 - User declined this session
 - User is actively debugging or in a flow state
@@ -166,8 +164,9 @@ Use the exact gap sentence as the argument. Skip the call when no gap was spotte
 ## Session Limits
 
 - User declines → no more offers this session
-- Maximum 2 unsolicited suggestions per session (auto-hook only)
-- Suggestions are one short sentence, never pushy
+- Plan/spec-doc triggers (`/duck-plan` suggestions): max 2 unsolicited offers per session (auto-hook only)
+- Ship-point confrontation: max 1 per session, shared across `{git push, gh pr create, glab mr create}` — first to fire wins (ADR 0003 shared ship budget); separate budget from the plan/spec triggers so shipping isn't starved by them
+- Suggestions and confrontations are one short sentence/question, never pushy
 
 ## Facilitation
 
