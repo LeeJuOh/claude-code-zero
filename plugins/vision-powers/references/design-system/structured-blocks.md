@@ -36,6 +36,11 @@ by another name and breaks the verbatim guarantee. Highlighting is a **runtime**
 
 ## Syntax highlighting: runtime CDN, same shape as Mermaid
 
+**Scope: local channel only.** Everything in this section — the CDN `<link>`/`<script>` tags, the
+`<head>` injection — applies to the default local-file HTML output. The Artifact channel forbids
+external requests outright (CSP), so it never emits any of this; see "Artifact channel: no CDN,
+forced degrade" below for what to do instead.
+
 `diff-visual` already renders Mermaid from a CDN `<script>` (ADR 0002). Highlighting follows the
 same pattern with **highlight.js** — the model emits plain escaped `<pre><code class="language-X">`
 and the browser colours it at view time. The model does not colour anything.
@@ -92,6 +97,40 @@ applies whether or not hljs runs:
 Because the hljs github theme sets its own `.hljs` background/colour on the `<code>`, it cleanly
 takes over when present; your rule is the floor it falls back to. Test this: load the report with
 the network off and confirm the code is readable, just un-coloured.
+
+### Artifact channel: no CDN, forced degrade
+
+On the Artifact channel, don't emit the highlight.js `<link>`/`<script>` tags at all — the same
+zero-external-requests rule that already bans the Mermaid CDN on this channel applies symmetrically
+here. There's no "try CDN, degrade if offline" branch on this channel; the no-CDN path above is the
+*only* path, always. That's an accepted degrade, not a gap: plain monospace code is exactly what the
+Network-0 degrade case above already guarantees looks clean and readable — the Artifact channel just
+takes that branch unconditionally instead of as a fallback.
+
+One adjustment when you carry that fallback CSS over: the `var(--paper-2)`, `var(--ink)`, and
+`var(--mono)` custom properties above are vision-powers' local-channel design tokens
+(`semantic-tokens.md`) — they aren't defined on an Artifact page, which uses whatever palette the
+built-in artifact-design skill guided you to for that specific page. Rewrite the block against your
+page's actual custom properties (or literal values, if you didn't define one for this role), keeping
+the same shape — a block background, an ink colour, and a font stack ending in the generic
+`monospace` fallback:
+
+```css
+.split-diff pre code {
+  display: block;
+  padding: .75rem .9rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; /* end in the generic family either way */
+  font-size: .82rem;
+  line-height: 1.5;
+  background: #1e1e1e; /* substitute this page's own container colour */
+  color: #d4d4d4;      /* substitute this page's own text colour */
+  white-space: pre;
+  tab-size: 2;
+}
+```
+
+The grounding law is unaffected by any of this — `extract-hunks.js`'s escaped `<pre><code>` output
+is pasted verbatim on every channel; only the CSS/highlight mechanism around it changes.
 
 ## split-diff: before | after, side by side
 

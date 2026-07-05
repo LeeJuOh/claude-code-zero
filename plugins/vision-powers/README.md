@@ -48,6 +48,8 @@ analyze ./plugins/my-plugin --lang ko                     # output in Korean (IS
 
 **Output formats.** Every report skill accepts `--format html` (default) or `--format md`. HTML reports go to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback. Markdown reports are delivered in the chat response — suitable for pasting into PR descriptions, Slack, or any non-browser context.
 
+**Artifact publishing (`doc-visual`).** Add `--artifact` to publish as a claude.ai link instead of a local file — design is delegated to Claude's built-in Artifact renderer, so the look differs from local reports. In `--format md --artifact`, diagrams stay as fenced code blocks — claude.ai's markdown renderer doesn't render Mermaid — so use `--format html --artifact` when you need diagrams to actually render.
+
 **Multi-language output.** Every visual skill accepts `--lang <ISO code>` (e.g., `ko`, `ja`, `es`). Without the flag, output language is detected from the user message.
 
 **Scope breadth.** `plugin-visual` resolves local paths, installed plugin names (via cache lookup), GitHub repository root URLs, and GitHub `/tree/<branch>/<subpath>` URLs — a single skill covers "my local plugin", "a plugin I installed from the marketplace", and "that monorepo folder on GitHub".

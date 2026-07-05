@@ -1,6 +1,6 @@
 # vision-powers Artifact 채널: claude.ai 퍼블리시를 전달 채널로 (공식 Artifacts 위임)
 
-> 상태: 구현 대기 · 생성: 2026-07-05
+> 상태: 구현 중 (S1·S2·S3 완료, S4 대기 — 아래 참고) · 생성: 2026-07-05
 > 용어집: `docs/context/vision-powers.md` (신규 용어: **Artifact channel**)
 > 결정 근거: `docs/adr/0007-artifact-channel-delegates-visual-design.md` (선행 `0002` 직접작성 · `0005` grounding)
 > 공식 문서: `https://code.claude.com/docs/en/artifacts`
@@ -89,10 +89,24 @@ md 리포트를 **무변형 그대로** 퍼블리시한다 (공식 스펙: `.md`
 ### Acceptance criteria
 
 - [x] **사전 테스트 (5분)**: claude.ai md 렌더러가 Mermaid 블록을 그리는지 확인, 결과를 이 이슈에 기록. → **미렌더 확인**(2026-07-05). `mermaid` 코드블록 포함 md 파일을 Artifact로 퍼블리시 후 브라우저 실제 확인: 소스 그대로 monospace 코드블록으로 표시, 다이어그램 미생성. md+artifact 채널은 다이어그램을 코드로만 전달.
-- [ ] **명시 요청** (`--format md --artifact` 직접 입력): 묻지 않고 md 그대로 퍼블리시 (재구조화 없음 — 이미 visual artifact). 다이어그램 포함 시 URL 옆 한 줄: "다이어그램은 코드로 표시 — 렌더는 `--format html --artifact`".
-- [ ] **모호 요청** (자연어 "링크로 공유해줘" 등 + md 리포트에 mermaid 블록 존재): AskUserQuestion 1회 — ① html+artifact로 재생성 (다이어그램 렌더, 추천) ② md 그대로 퍼블리시 (다이어그램 코드) ③ 로컬 유지. 다이어그램 없으면 묻지 않고 md 퍼블리시.
-- [ ] 한계 한 줄 문서화: md+artifact에선 다이어그램이 코드 블록으로 보임 (README·SKILL.md — 사전 테스트로 확정, 2026-07-05).
-- [ ] 폴백: 퍼블리시 불가 = 채팅 md 전달로 강등 + 사유. (폴백은 여전히 묻지 않음 — 질문은 퍼블리시 **전** 형식 선택에만.)
+- [x] **명시 요청** (`--format md --artifact` 직접 입력): 묻지 않고 md 그대로 퍼블리시 (재구조화 없음 — 이미 visual artifact). 다이어그램 포함 시 URL 옆 한 줄: "다이어그램은 코드로 표시 — 렌더는 `--format html --artifact`".
+- [x] **모호 요청** (자연어 "링크로 공유해줘" 등 + md 리포트에 mermaid 블록 존재): AskUserQuestion 1회 — ① html+artifact로 재생성 (다이어그램 렌더, 추천) ② md 그대로 퍼블리시 (다이어그램 코드) ③ 로컬 유지. 다이어그램 없으면 묻지 않고 md 퍼블리시.
+- [x] 한계 한 줄 문서화: md+artifact에선 다이어그램이 코드 블록으로 보임 (README·SKILL.md — 사전 테스트로 확정, 2026-07-05).
+- [x] 폴백: 퍼블리시 불가 = 채팅 md 전달로 강등 + 사유. (폴백은 여전히 묻지 않음 — 질문은 퍼블리시 **전** 형식 선택에만.)
+
+### 구현 완료 (2026-07-06)
+
+`doc-visual` SKILL.md: frontmatter에 `AskUserQuestion` 추가, "Format detection"에 명시/모호 분기
+규칙(둘 다 리터럴 플래그 = 명시 · 자연어 아티팩트 의도 = 모호), 신규 "Markdown format — Artifact
+channel" 섹션(분기별 동작 + AskUserQuestion 3지선다 + 퍼블리시 경로), "Publish (`--artifact`)" 절을
+html/md 겸용으로 일반화(디자인 위임 고지는 html만, 다이어그램 한계 고지는 md만), Error handling 표에
+포맷별 폴백 행 분리. README에 `doc-visual` 전용 "Artifact publishing" 문단 추가(전체 2×2 표는 S5 몫).
+`claude plugin validate .` 경고 없이 통과(버전 미지정 경고 11건은 로컬 플러그인 컨벤션상 정상).
+
+**미검증**: 이번 세션엔 vision-powers 플러그인이 로드돼 있지 않아(available skills 목록에 없음)
+실제 `--format md --artifact` 퍼블리시 end-to-end(명시/모호 양쪽 분기, AskUserQuestion 트리거)는
+아직 라이브로 실행해보지 않음. `claude --plugin-dir ./plugins/vision-powers`로 별도 세션에서
+검증 필요 — S1의 "로컬 vs artifact 비교"처럼 실퍼블리시 1회 권장.
 
 ### Blocked by
 
@@ -109,11 +123,30 @@ md 리포트를 **무변형 그대로** 퍼블리시한다 (공식 스펙: `.md`
 
 ### Acceptance criteria
 
-- [ ] `diff-visual` SKILL.md artifact 분기 (S1 패턴).
-- [ ] 그라운딩 주입 규칙 명문화: structured block은 `extract-hunks.js` 출력을 **그대로 삽입**, 모델 재타이핑 금지. (스크립트 수정 불필요 — 출력이 이미 무스타일 `<pre><code class="language-*">`; 그릴 중 검증됨. 모델은 클래스에 인라인 CSS만 입힘.)
-- [ ] 하이라이트: **highlight.js CDN `<link>`/`<script>` 태그도 emit 금지** (Mermaid와 대칭 — structured-blocks.md의 `<head>` 삽입 지시는 로컬 채널 한정). no-CDN fallback 경로만, 단색 monospace 강등 허용, 깨지지 않음. fallback CSS의 `var(--paper-2)/--ink/--mono` 등 디자인시스템 변수는 artifact 페이지에 없음 — 구체 색값으로 치환.
-- [ ] 다이어그램: Mermaid 런타임 금지 — inline SVG/HTML+CSS (내장 skill 가이드대로).
-- [ ] 대형 diff 1회로 16 MiB 렌더 한도 체감 확인, 결과 기록.
+- [x] `diff-visual` SKILL.md artifact 분기 (S1 패턴). → 신규 "HTML mode — Artifact channel" 절 신설(스킬 로드 MUST·fragment·CSP·테마·`<title>`), frontmatter(`allowed-tools`에 `Artifact`, `argument-hint`), Format Detection에 `--artifact` 행 + 자연어 동치 + md 조합 스코프아웃 문구.
+- [x] 그라운딩 주입 규칙 명문화: structured block은 `extract-hunks.js` 출력을 **그대로 삽입**, 모델 재타이핑 금지. → `structured-blocks.md` 신규 절 말미 및 diff-visual SKILL.md 양쪽에 "그라운딩 법칙은 채널 불문 불변 — CSS/하이라이트 메커니즘만 바뀐다"로 명문화. (스크립트 수정 없음.)
+- [x] 하이라이트: **highlight.js CDN `<link>`/`<script>` 태그도 emit 금지** (Mermaid와 대칭 — structured-blocks.md의 `<head>` 삽입 지시는 로컬 채널 한정). no-CDN fallback 경로만, 단색 monospace 강등 허용, 깨지지 않음. fallback CSS의 `var(--paper-2)/--ink/--mono` 등 디자인시스템 변수는 artifact 페이지에 없음 — 구체 색값으로 치환. → `structured-blocks.md`에 "Syntax highlighting" 절 스코프를 로컬 채널로 명시하고 신규 "Artifact channel: no CDN, forced degrade" 절 추가(항상 no-CDN 경로, 페이지 자체 색값으로 대체한 fallback CSS 예시 포함).
+- [x] 다이어그램: Mermaid 런타임 금지 — inline SVG/HTML+CSS (내장 skill 가이드대로). → artifact 절에 명문화, doc-visual과 동일 원칙 재사용.
+- [x] 대형 diff 1회로 16 MiB 렌더 한도 체감 확인, 결과 기록. → 실측 완료(2026-07-06): 커밋 `29d2849`(1483줄 변경 단일 파일)를 `extract-hunks.js`로 추출 시 65,873바이트(~44바이트/줄). `structured-blocks.md` 예산(3–8 파일 × ≤150줄)을 지키면 split-diff 총량은 수만~십수만 바이트대 — 16 MiB와는 수백 배 이상 차이. 결론: 캡은 예산을 지키면 실질적으로 도달 불가능한 안전판이고, 예산 이탈(전체 diff 그대로 붙이기 등)이 유일한 위험 경로 — SKILL.md "Size headroom" 한 줄로 반영(별도 완화 로직 없음).
+
+`artifact-gate.js`의 `--content-only` 플래그는 이미 범용(doc-visual 전용 아님) — diff-visual도 그대로 재사용 가능, 스크립트 수정 불필요. `--format md`와의 조합은 S3 스코프 밖(md+artifact는 issue 007 S2에서 doc-visual로만 검증됨) — diff-visual은 S1처럼 html 채널만 우선 구현하고 md는 기존처럼 미지원으로 문서화(Format Detection 절에 명시).
+
+### 구현 완료 (2026-07-06)
+
+`diff-visual` SKILL.md: frontmatter(`allowed-tools`에 `Artifact`, `argument-hint`), Format Detection
+`--artifact` 행 + 자연어 동치 + md 조합 스코프아웃, 신규 `#### HTML mode — Artifact channel` 절
+(스킬 로드 MUST · fragment · Mermaid/하이라이트 CDN 이중 금지 · 테마 대응 · 세션 내 경로 재사용 ·
+content-only 게이트 · visual self-audit 스킵 · 16 MiB 여유 결론 한 줄), 신규 "Publish (--artifact)"
+절(Artifact 도구 호출·사이드카·폴백, doc-visual S1과 동일 패턴). `structured-blocks.md`:
+"Syntax highlighting" 절 스코프를 로컬 채널로 한정하는 문구 추가, 신규 "Artifact channel: no CDN,
+forced degrade" 절(no-CDN 강제·디자인토큰 대체 fallback CSS 예시·그라운딩 불변 재확인). 스크립트
+변경 없음(`extract-hunks.js`·`artifact-gate.js` 모두 기존 그대로 재사용 확인). `claude plugin
+validate .` 통과(버전 미지정 경고 11건은 기존과 동일, 신규 경고 없음).
+
+**미검증**: 이번 세션도 vision-powers 플러그인이 로드돼 있지 않아 실제 `diff-visual ... --artifact`
+퍼블리시 end-to-end(특히 split-diff의 no-CDN 강등이 실제 브라우저에서 읽히는지, inline SVG 다이어그램
+전환)는 라이브로 실행해보지 않음. `claude --plugin-dir ./plugins/vision-powers`로 별도 세션에서
+대형 diff 1건 실퍼블리시 검증 권장 — S1의 "로컬 vs artifact 비교"에 준하는 절차.
 
 ### Blocked by
 
@@ -130,7 +163,9 @@ md 리포트를 **무변형 그대로** 퍼블리시한다 (공식 스펙: `.md`
 
 ### Acceptance criteria
 
-- [ ] `plugin-visual` artifact 분기 (4-에이전트 분석 포함 페이지).
+- [ ] `plugin-visual` artifact 분기 (4-에이전트 분석 포함 페이지). **다음 세션 여기부터** — S1/S3 패턴
+  그대로 복제(스킬 로드 MUST → fragment → gate `--content-only` → 퍼블리시 → 사이드카). 고유 리스크:
+  4-에이전트 분석 리포트(보안 표 등)가 artifact 프래그먼트에서 레이아웃이 깨지는지 실제로 봐야 함.
 - [ ] `context-health-visual` artifact 분기.
 - [ ] 각각 로컬 대비 1회 비교 기록 (도메인 레이아웃 표본 — ADR 0007 Plan B 판정 재료).
 
