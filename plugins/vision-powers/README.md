@@ -19,7 +19,7 @@ The thesis behind this plugin echoes what Thariq Shihipar (Anthropic, Claude Cod
 | `doc-visual` | Visualize any markdown document (research, spec, RFC, ADR, design doc) as a diagram-enhanced HTML or markdown report with Mermaid diagrams matched to section intent |
 | `fact-check` | Verify document accuracy against the actual codebase and git history |
 | `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, skill security scan (prompt injection, data exfil, destructive, credentials, obfuscation, safety override), hook schema validation, plugin components, CLAUDE.md & memory health. 6 graded areas + 5 observational, each threshold cited to official docs |
-| `report-manager` | List, open, delete, and search generated reports |
+| `report-manager` | List, open, delete, search, and refine generated reports — surfaces stored Artifact URLs and republishes a refined report to the same claude.ai link, even across sessions |
 
 ## Install
 
@@ -46,7 +46,16 @@ refine section 3 of the last report                       # targeted re-render f
 analyze ./plugins/my-plugin --lang ko                     # output in Korean (ISO code)
 ```
 
-**Output formats.** Every report skill accepts `--format html` (default) or `--format md`. HTML reports go to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback. Markdown reports are delivered in the chat response — suitable for pasting into PR descriptions, Slack, or any non-browser context.
+**Output formats.** Every report skill accepts `--format html` (default) or `--format md`. HTML reports go to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback. Markdown reports are delivered in the chat response — suitable for pasting into PR descriptions, Slack, or any non-browser context — and a copy is saved to the same reports directory, so `report-manager` can list, search, and refine them later.
+
+**Artifact publishing.** Add `--artifact` to `doc-visual`, `diff-visual`, `plugin-visual` (`analyze` mode), or `context-health-visual` to publish as a claude.ai link instead of a local file:
+
+| | `--artifact` off (default) | `--artifact` on |
+|---|---|---|
+| **html** | our design, local file | built-in Artifact design, claude.ai URL |
+| **md** | chat/PR text | the generated markdown published as-is, URL |
+
+Design on the artifact channel is delegated to Claude's built-in Artifact renderer, so the look differs from local reports. In `--format md --artifact`, diagrams stay as fenced code blocks — claude.ai's markdown renderer doesn't render Mermaid — so use `--format html --artifact` when you need diagrams to actually render. Sharing is limited to members of your Team/Enterprise organization; on Pro/Max the URL is private to you, and getting a report to someone outside your organization still means the local `.html` file. Prefer never typing the flag? Tell Claude to make `artifact` (or `default_format`) your default and it's saved to config — a flag or natural-language request for one run still overrides the stored default.
 
 **Multi-language output.** Every visual skill accepts `--lang <ISO code>` (e.g., `ko`, `ja`, `es`). Without the flag, output language is detected from the user message.
 

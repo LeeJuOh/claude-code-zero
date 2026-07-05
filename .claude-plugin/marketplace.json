@@ -17,7 +17,7 @@
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "1.17.0",
+      "version": "2.0.0",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -29,8 +29,8 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "4.5.1",
-      "description": "Analyze Claude Code plugins and visualize development artifacts as interactive HTML or diagram-enhanced markdown reports. Six skills: plugin-visual (local/installed/GitHub plugin audits with security + architecture), diff-visual (git diffs, with side-by-side split-diff of the actual changed code and File Map change-flags), doc-visual (markdown docs with Mermaid diagrams), fact-check (claim verification against code + git history), context-health-visual (environment health with skill-security scan and hook schema validation), report-manager (list/open/delete/search/refine). Every report supports --format md, --lang, and in-browser per-section feedback."
+      "version": "4.6.0",
+      "description": "Analyze Claude Code plugins and visualize development artifacts as interactive HTML or diagram-enhanced markdown reports — or publish them as claude.ai Artifacts via --artifact (doc-visual, diff-visual, plugin-visual, context-health-visual), with config.json defaults so you don't need the flag every time. Six skills: plugin-visual (local/installed/GitHub plugin audits with security + architecture), diff-visual (git diffs, with side-by-side split-diff of the actual changed code and File Map change-flags), doc-visual (markdown docs with Mermaid diagrams), fact-check (claim verification against code + git history), context-health-visual (environment health with skill-security scan and hook schema validation), report-manager (list/open/delete/search/refine, now surfacing stored Artifact URLs and republishing to the same link). Every report supports --format md, --lang, and in-browser per-section feedback."
     },
     {
       "name": "worktree-plus",
@@ -47,14 +47,14 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "4.5.1",
-      "description": "Get Codex's second opinion on your code, plans, and research — and actually trust it: Claude independently fact-checks every Codex finding (Agreed/Disputed/Nuanced/False Positive/Uncited) before you act, catching hallucinated citations. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Every skill accepts --model/--effort via config.toml. Tested against codex@openai-codex 1.0.4 and Codex CLI 0.125 (gpt-5.5)."
+      "version": "4.6.2",
+      "description": "Get Codex's second opinion on your code, plans, and research — and actually trust it: Claude independently fact-checks every Codex finding (Agreed/Disputed/Nuanced/False Positive/Uncited) before you act, catching hallucinated citations. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel, transfer. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Transfer hands the whole session off to a resumable Codex thread (v1.0.5+). Prompt-running skills accept --model/--effort via config.toml. Tested against codex@openai-codex 1.0.5 and Codex CLI 0.125 (gpt-5.5)."
     },
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "2.4.1",
-      "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Dedicated commands per phase (/duck-design, /duck-plan, /duck-verify, /duck-review, /duck-orient) plus /duck for auto-detect. Auto-hooks at plan creation, spec documents, PR/MR, and git push."
+      "version": "3.0.0",
+      "description": "Rubber duck tutor that keeps you engaged across the whole AI-coding lifecycle — before you ask AI to build (/duck-prebuild), once code is written and before you ship (/duck-verify, /duck-review), and when orienting to unfamiliar code (/duck-orient), plus /duck for auto-detect. Ship-point hooks triage what you just pushed against six risk categories and target the riskiest change you didn't actually discuss, fall back to retrieving an unresolved gap from a past session, or demote to a non-blocking scoreboard after three ignored confrontations in a row. Confrontation telemetry (fired/answered/ignored) is queryable from /duck-orient. Doesn't overlap /code-review or /grilling — duck only checks whether you understand, never whether the code or plan is good."
     },
     {
       "name": "e2e-test-runner",

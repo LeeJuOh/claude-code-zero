@@ -1,13 +1,13 @@
 ---
 name: duck-review
 disable-model-invocation: true
-description: "PR/change-review session with the rubber duck — user justifies every change and predicts consequences. Use before commit/push/PR, or when they say \"duck review\", \"리뷰 전에 점검\". Not for code-level explanation (/duck-verify) or plan review (/duck-plan)."
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
+description: "PR/change-review session with the rubber duck — user justifies every change and predicts consequences. Use before commit/push/PR, or when they say \"duck review\", \"check before review\". Not for code-level explanation (/duck-verify) or plan review (/duck-prebuild)."
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *)
 ---
 
 # Duck — PR / Change Review Mode
 
-**Read first**: [../duck/references/core.md](../duck/references/core.md) — persona, "Wait for their answer", Confidence Check (PR/Change Review row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
+**Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Confidence Check (PR/Change Review row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
 
 **Input**: Run `git diff` (or `git diff --staged`, or PR diff).
 
@@ -33,29 +33,29 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *
 
    After their answer, compare with the actual implementation. Discuss trade-offs.
 
-5. **Confidence check** — run the PR/Change Review row from the [Confidence Check (shared)](../duck/references/core.md#confidence-check-shared) table.
+5. **Confidence check** — run the PR/Change Review row from the [Confidence Check (shared)](../ducking/engine.md#confidence-check-shared) table.
 
 ## Temporal cost simulation
 
 Frame the change on a 6-month horizon, not just "does it work now":
 
-> **Your turn:** 6개월 뒤 누군가 (미래의 너일 수도) 이 코드를 고쳐야 하는 상황이 올 거야. 어디가 제일 먼저 아플 것 같아? 왜?
+> **Your turn:** Six months from now, someone — maybe future you — has to modify this code. Where's it going to hurt first? Why?
 
 Follow-ups depending on their answer:
-- Names a specific file/function → "거기가 왜 취약해? 현재 구조의 어떤 가정이 깨지는 순간이야?"
-- "아무데도 안 아플 것 같아" → "그 자신감의 근거는? 이 diff의 어떤 추상화가 그걸 보장해?"
-- Vague ("전체적으로 좀") → "딱 한 군데만. 지금 커밋하면 제일 먼저 후회할 지점은?"
+- Names a specific file/function → "Why is that spot fragile? What assumption in the current structure breaks first?"
+- "Nothing feels fragile" → "What's that confidence based on? What abstraction in this diff guarantees that?"
+- Vague ("kind of everywhere") → "Just one spot. If you commit this now, what's the first thing you'll regret?"
 
 ## Question Frameworks
 
-**Assumptions** — "이 변경이 성립하려면 뭐가 참이어야 해?" Surface dependencies on other code, data formats, or system state.
+**Assumptions** — "What has to be true for this change to hold up?" Surface dependencies on other code, data formats, or system state.
 
-**Blindspots** — "이 diff 밖에서 깨질 수 있는 건?" Force them to think beyond the changed files.
+**Blindspots** — "What could break outside this diff?" Force them to think beyond the changed files.
 
 ## Techniques
 
-Prioritize: teach-back, generation then comparison, concrete to abstract. See [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md) for execution details.
+Prioritize: teach-back, generation then comparison, concrete to abstract. See [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md) for execution details.
 
 ## Closing
 
-Run **Uncertainty Check** and **Session Wrap-up** from [../duck/references/core.md](../duck/references/core.md), including gap persistence.
+Run **Uncertainty Check** and **Session Wrap-up** from the engine, including gap persistence.

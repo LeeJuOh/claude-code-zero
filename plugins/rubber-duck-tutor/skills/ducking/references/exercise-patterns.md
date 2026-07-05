@@ -158,7 +158,7 @@ This combines the benefit of active code navigation (stronger memory traces) wit
 
 ## Hint Ladder (When the User Is Stuck)
 
-Use when the user says "막혔어", "모르겠어", "hint please", goes silent for 30+ seconds after a question, or explicitly asks for help.
+Use when the user says "I'm stuck", "I don't know", "hint please", goes silent for 30+ seconds after a question, or explicitly asks for help.
 
 The rule that separates duck hints from ordinary hints: **hints shrink the *search space*, not the *answer*.** At every rung you still make the user produce the insight themselves; you just narrow where they're looking.
 
@@ -166,17 +166,17 @@ Start at the lowest useful rung. Climb only if the current rung doesn't unblock 
 
 | Rung | What you give | What it looks like |
 |------|---------------|--------------------|
-| **L0. Reframe** | Same question, narrower scope. | "전체 파일 말고 `initHandler` 함수만 봐. 거기서 네가 이해 안 되는 라인을 하나만 골라봐." |
-| **L1. Location** | File path (or directory). No function name. | "`src/auth/session.ts` 근처에서 찾아봐." |
-| **L2. Symbol** | Function/class/variable name. | "`validateSession`에 단서 있어." |
-| **L3. One-word category** | The *kind* of problem, not the fix. | "타이밍 문제야." / "타입 좁히는 지점이야." / "비동기 경쟁이야." |
-| **L4. Structural hint** | Shape of the failure mode — still no code. | "비동기 경쟁인데, 두 호출 중 하나가 `await` 없이 나가서 순서가 깨져. 어느 호출일지 찾아봐." |
+| **L0. Reframe** | Same question, narrower scope. | "Forget the whole file — just look at `initHandler`. Pick one line in there you don't understand." |
+| **L1. Location** | File path (or directory). No function name. | "Look around `src/auth/session.ts`." |
+| **L2. Symbol** | Function/class/variable name. | "The clue's in `validateSession`." |
+| **L3. One-word category** | The *kind* of problem, not the fix. | "It's a timing issue." / "It's a type-narrowing spot." / "It's an async race." |
+| **L4. Structural hint** | Shape of the failure mode — still no code. | "It's an async race — one of the two calls fires without `await`, so the order breaks. Find which call." |
 
 **Forbidden at every rung:**
 - Showing code (even 2-3 lines).
-- Stating the final answer in words ("그냥 `await` 붙이면 돼").
-- Listing *all* candidates ("이 세 줄 중 하나야").
+- Stating the final answer in words ("just add `await`").
+- Listing *all* candidates ("it's one of these three lines").
 
-**If L4 doesn't unblock them**, that's not a cue to give the answer. It's a signal the exercise is above their current level for this session. Say so honestly: "여기서 더 가면 학습 안 되고 내가 답 알려주는 꼴이야. 오늘은 여기까지 하고, 다음 번에 [구체적 선행 학습 제안]부터 보는 게 낫겠어." Then stop.
+**If L4 doesn't unblock them**, that's not a cue to give the answer. It's a signal the exercise is above their current level for this session. Say so honestly: "Going further from here stops being learning and starts being me handing you the answer. Let's stop here for today — next time, start with [specific prerequisite suggestion]." Then stop.
 
 **Why the ladder works**: each rung preserves the predict-before-observe cycle that builds procedural memory. Revealing the answer at any rung collapses that cycle and degrades the exercise into AI-assisted reading.

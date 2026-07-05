@@ -5,8 +5,8 @@ description: >
   and side-by-side split-diff of the actual changed code. Use when asked to visualize, review, or
   summarize a diff, branch, commit, or PR — including seeing the real changed lines, not just a
   summary. Accepts branch names, commit hashes, HEAD, PR numbers, or commit ranges.
-argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>]"
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
+argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>] [--artifact (native design + publish)]"
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Artifact, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
 
 # Diff Visual
@@ -22,6 +22,20 @@ Parse `--format` first:
 | Flag | Values | Default | Meaning |
 |------|--------|---------|---------|
 | `--format` | `html` \| `md` | `html` | `html` → full interactive dashboard at `${CLAUDE_PLUGIN_DATA}/reports/`. `md` → inline markdown report, delivered in the response |
+| `--artifact` | switch | off | Publish the `html` dashboard as a claude.ai Artifact instead of a local file — see "HTML format — Artifact channel" below |
+
+`--artifact` also triggers on natural-language equivalents — "as an artifact", "publish as a link",
+"share as a URL" — without the literal flag, in whatever language the user is writing in. It applies
+to `--format html` (the default) only. If combined with `--format md`, ignore it and use the normal
+markdown response path below — publishing a diff-visual md report as-is is out of scope for this
+slice (doc-visual's simpler single-file input validated that combination first; diff-visual's diff
+scope makes it a separate follow-up, not a S3 requirement).
+
+**Config precedence.** Before falling back to the defaults in the table, check stored preferences
+once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
+`default_format` value replaces the `html` default; `artifact: true` replaces off, the same as the
+`--artifact` flag. Anything the user actually says this turn — a literal flag or a natural-language
+equivalent — always overrides config; config only fills in when the request is silent on format/channel.
 
 ### Scope Detection
 
@@ -236,9 +250,70 @@ Full procedure, limits (fixed-height clipping, downscaling, render cost), and th
 
 Then run `open <output-path>`.
 
+#### HTML mode — Artifact channel (`--artifact`)
+
+Same content decisions as the default HTML mode above (report structure, section-to-diagram
+mapping, split-diff, anti-slop-tells) — only the page's shape and delivery mechanism change,
+because it ships inside Claude Code's official Artifacts feature instead of as a local file.
+
+**Before writing anything**, load the built-in `artifact-design` skill (Skill tool, skill name
+`artifact-design`). This is a tool contract MUST, not a suggestion — it conditions you for the CSP
+sandbox this page runs in, and skipping it is how a page ends up broken on publish.
+
+Then write the page as a **fragment**, not a full document:
+- No `<!DOCTYPE>`, `<html>`, `<head>`, or `<body>` tags — content only, starting from your first
+  real element. The Artifact tool wraps the file in that skeleton at publish time.
+- Set a concise `<title>` directly in the content — it names the artifact in the browser tab. Keep
+  it stable across every republish of the same diff in this session.
+- **Zero external requests** — the Artifact viewer's CSP blocks all of them:
+  - **Diagrams**: no Mermaid CDN `<script>`. Architecture Impact, Dependency Shift, New Components,
+    and Hot Spots become inline SVG or HTML+CSS layouts instead (follow the artifact-design skill's
+    guidance) — same diagram-type decision from `diagram-type-selection.md`, different rendering
+    technique. `mermaid-patterns.md`'s CDN setup and `classDef` rules don't apply here.
+  - **Key Changes / split-diff**: no highlight.js CDN either — symmetric with the Mermaid ban. Read
+    `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md`'s "Artifact channel: no
+    CDN, forced degrade" subsection before writing this section: the code always renders as clean
+    monospace, never coloured, and the fallback CSS must use this page's own colours (not
+    vision-powers' `--paper-2`/`--ink`/`--mono` tokens, which don't exist here). The grounding law
+    doesn't change — `extract-hunks.js` output is still pasted verbatim; only the CSS around it does.
+- Support both themes: `@media (prefers-color-scheme: dark)` as the default signal, plus
+  `:root[data-theme="dark"]` / `:root[data-theme="light"]` overrides — the artifact viewer's theme
+  toggle stamps `data-theme` on the root and it must win in both directions.
+
+Save the fragment to `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.artifact.html` — a distinct
+filename from the default channel's output, so the two never collide or overwrite each other for
+the same scope. Re-running this skill on the same scope within the same conversation reuses that
+same path; publishing to the same `file_path` again redeploys to the same URL instead of minting a
+new one, so keep the `<title>` and `favicon` identical across those republishes (the tool reads a
+changed favicon as a different page). If `${output-path}.artifact.json` already exists from an
+earlier publish this session, read it first and reuse its `title`/`favicon` verbatim.
+
+**Validation**: run the gate in content-only mode instead of the full check:
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path> --content-only
+```
+This checks only missing images, raw markdown leakage, anchor hrefs, image alt, and placeholders —
+the facts that must survive regardless of who designed the page. Density/classDef/palette checks
+don't apply: the built-in artifact-design skill owns the design layer on this channel (ADR 0007).
+
+**Skip the visual self-audit (render-report.js) entirely on this channel.** The rendered picture is
+the built-in artifact-design skill's responsibility here, not this skill's — there's no local
+Chrome render loop to run before publishing.
+
+**Size headroom**: a large single-file diff (1483 changed lines, extracted 2026-07-06) measured
+~44 bytes/line through `extract-hunks.js`, so a split-diff section that keeps to the budget above
+(3–8 files, ≤150 lines each) lands in the tens-to-low-hundreds of KB — hundreds of times under the
+platform's 16 MiB artifact render ceiling. The ceiling is only reachable by ignoring the budget
+(e.g. pasting a whole large diff verbatim instead of the load-bearing hunks); no extra size-limiting
+logic is needed as long as the section stays inside it.
+
+Once the gate passes, publish — see "Publish (`--artifact`)" below.
+
 #### Markdown mode (`--format md`)
 
-Assemble an inline markdown report and deliver it directly in the response. Do NOT write to disk — markdown mode is intentionally ephemeral. Use this structure:
+Assemble an inline markdown report and deliver it directly in the response, and save the same
+content to `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.md` — the chat text is the delivery,
+the file is the record that lets report-manager list and refine this report later. Use this structure:
 
 ```
 # Diff Visual: <scope description>
@@ -280,6 +355,26 @@ Assemble an inline markdown report and deliver it directly in the response. Do N
 
 **Length cap:** Keep the markdown report under 300 lines. If data exceeds this, truncate with `(+N more)` notes rather than expanding the report.
 
+### Publish (`--artifact`)
+
+After the content-only gate passes (see "HTML mode — Artifact channel" above):
+
+1. Publish with the `Artifact` tool: `file_path` = the fragment you saved, `favicon` = one or two
+   emoji fitting the diff's scope (reused unchanged if a sidecar from this session already set
+   one — see above), `description` = one sentence on what changed.
+2. Record the publish so a later refine (even across sessions, once that lands) can find this URL:
+   ```bash
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
+   ```
+3. Report the URL to the user with one line noting the design delegation — e.g. "Design delegated
+   to Claude's built-in Artifact renderer — this differs from the local report's look." (phrase it
+   in whatever language you're already replying in).
+
+**Fallback** — if the `Artifact` tool is unavailable or the publish call fails: keep the local
+fragment you already saved, `open` it as the default HTML channel does, and state the fallback in
+one generic line (e.g. "Artifact publish unavailable — opened the local file instead."). Don't
+guess at the specific cause, and don't ask before falling back.
+
 ### Gotchas
 
 - **Three-dot vs two-dot range**: `git diff a..b` shows all changes between a and b. `git diff a...b` shows changes on b since it diverged from a. Users often say "compare branches" meaning `...` (three-dot). When in doubt, use three-dot for branch comparisons and two-dot for commit ranges.
@@ -296,7 +391,7 @@ Read these during report generation (not upfront — read the relevant one when 
 | File | When to read |
 |---|---|
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram |
-| `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md` | Before writing the Key Changes split-diff section (layout, highlight.js CDN, budgets, grounding, degrade) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md` | Before writing the Key Changes split-diff section (layout, highlight.js CDN, budgets, grounding, degrade — including the Artifact-channel no-CDN variant) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex |

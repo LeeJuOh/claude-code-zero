@@ -1,6 +1,6 @@
 {
   "name": "rubber-duck-tutor",
-  "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Dedicated commands per phase (/duck-design, /duck-plan, /duck-verify, /duck-review, /duck-orient) plus /duck for auto-detect, with auto-hooks at plan, spec, PR/MR, and git push.",
+  "description": "Rubber duck tutor that keeps you sharp across the whole AI-coding lifecycle, not just after code lands: /duck-prebuild before you ask AI to build, /duck-verify and /duck-review once it's written and before you ship, /duck-orient when you're new to a codebase, plus /duck for auto-detect. Ship-point hooks (git push, gh pr create, glab mr create) confront you inline — targeting the highest-risk change you didn't actually discuss, retrying an unresolved gap from a past session, or demoting to a non-blocking scoreboard after three ignored confrontations in a row — and every fire/answer/ignore is logged so you can see whether it's working. Doesn't referee code quality or plan design — that's /code-review and /grilling's job; duck only checks whether you understand.",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
   "keywords": ["rubber-duck", "tutor", "learning", "code-review", "rubber-stamping", "skill-development"]

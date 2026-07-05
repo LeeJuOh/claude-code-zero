@@ -5,11 +5,34 @@ set -uo pipefail
 #
 # Fires after Bash tool use filtered by `if: Bash(git push)` / `if: Bash(git push *)`.
 # Inline regex defends against compound commands (e.g. `npm test && git push`).
-# Rate-limited. Silently exits in subagent contexts.
+# Shares the "ship" rate-limit bucket (max 1/session) with post-pr.sh — whichever
+# of {git push, gh pr create, glab mr create} fires first wins for the session
+# (ADR 0003 shared ship budget). Silently exits in subagent contexts.
+#
+# S10: the moment a confrontation actually fires (rate limit passed), this
+# script appends a "fire" telemetry event directly -- deterministic, no model
+# involvement. The model records the matching "outcome" event later, once it
+# can see whether the user engaged (see additionalContext below).
+#
+# S12: 3+ consecutive ignores (computed deterministically in shell from
+# telemetry, no model/transcript involvement) demotes this confrontation from
+# a question to a non-blocking scoreboard statement -- still fires, still
+# non-blocking (ADR 0003), just stops asking once asking has stopped working.
+#
+# S13: in question mode, when triage (S11) lands on no target -- nothing
+# high-risk, or every high-risk artifact already engaged -- the fallback isn't
+# straight to a generic artifact-level question anymore. It first checks for an
+# unresolved gap logged in a past session (gaps.log via recent-gaps.sh) and
+# retrieves that instead (learning-science spacing effect). Priority ladder:
+# blind-spot target (S11) > unresolved gap retrieval (S13) > generic
+# artifact-level question. Scoreboard mode is untouched -- it never asks a
+# question, so there's no fallback rung to insert into.
 
 source "$(dirname "$0")/lib.sh"
 
 duck__init
+
+duck__is_enabled || exit 0
 
 # Detect git push commands
 COMMAND=$(duck__get '.tool_input.command')
@@ -17,10 +40,31 @@ if ! echo "$COMMAND" | grep -qE 'git\s+push'; then
   exit 0
 fi
 
-duck__check_rate_limit
+duck__check_rate_limit "ship" 1
 
-cat <<'HOOK_JSON'
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] Code was just pushed to remote. In one short sentence, suggest the user type `/branch` then `/duck-review` to review without interrupting their current work. Stay in duck character. If they decline, do not offer again. If another plugin has already suggested a review, skip silently."}}
+STREAK=0
+if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
+  STREAK=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/ignore-streak.sh" 2>/dev/null)
+fi
+[[ "$STREAK" =~ ^[0-9]+$ ]] || STREAK=0
+
+MODE="question"
+if [[ "$STREAK" -ge 3 ]]; then
+  MODE="scoreboard"
+fi
+
+if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
+  bash "${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-telemetry.sh" fire push "$MODE" 2>/dev/null || true
+fi
+
+if [[ "$MODE" == "scoreboard" ]]; then
+  cat <<'HOOK_JSON'
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] Code was just pushed to remote. This is scoreboard mode, not question mode: the user has ignored the last 3 ship-point confrontations in a row (telemetry-tracked, deterministic -- you don't need to check it yourself), so another question right now would be nagging, not learning. Don't ask anything. Instead: (1) list the distinct artifacts (files/modules) this push touches; (2) judge each against the same six risk categories duck always uses -- concurrency, security, performance, data schema, public API, architecture boundary (see the plugin engine doc's Risk Taxonomy section for the full definitions if you need them); (3) for every artifact landing in a risk category, judge engagement from this conversation alone -- did the user actually discuss, question, or direct that specific piece themselves? (4) deliver one factual scoreboard line, no question mark: name every high-risk artifact from this push and how many of them the user engaged with, e.g. \"Scoreboard: 3 high-risk changes this push -- auth middleware, payment retry logic, session schema -- you engaged with 1 of them.\" Always name the artifacts; never collapse this into a bare percentage or vague count. If nothing here is high-risk, say so plainly (\"No high-risk changes this push\") instead of forcing a tally. End your message right there -- this is a statement, not a prompt, so there's nothing to wait for. Stay in duck character but don't soften it into a question. Then watch how the user responds on their own: if they engage with the scoreboard unprompted (push back, comment, ask about one of the named changes), log it as answered -- this breaks the ignore streak, so the next ship confrontation goes back to asking a real question; if they move on without engaging, log it as ignored, silently, without mentioning it to them: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-telemetry.sh outcome push answered` or `... outcome push ignored`."}}
 HOOK_JSON
+else
+  cat <<'HOOK_JSON'
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[rubber-duck-tutor-auto] Code was just pushed to remote. Before you ask anything, triage what shipped instead of defaulting to a generic question about the whole change: (1) list the distinct artifacts (files/modules) this push touches; (2) judge each against six risk categories -- always a judgement call, never a strict rule -- concurrency (locking, shared state, async ordering), security (auth, secrets, input validation), performance (hot paths, added I/O, complexity), data schema (migrations, persisted/serialized shape), public API (anything another package, plugin, or external caller depends on), and architecture boundary (a seam moved, a new cross-module dependency direction); (3) for any artifact landing in a risk category, judge engagement from this conversation alone -- did the user actually discuss, question, or direct that specific piece themselves? Silence, agreement, or you writing it unprompted does not count; (4) if exactly one high-risk, low-engagement artifact stands out, name it and ask about an interface fact -- an invariant, an error mode, an ordering constraint, or a trade-off it makes -- never code quality or style (that's /code-review's job, not duck's); (5) if several tie, pick whichever would be worst to get wrong in production; if nothing is high-risk, or every high-risk artifact was already engaged with, don't drop straight to a generic question -- first run `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh 1` to check for one unresolved gap from a past session in this repo. If it prints a gap, retrieve it instead of asking about this push at all: \"Last time your understanding of [gap] was shaky -- can you explain that now?\" If they demonstrate they can, mark it resolved so it stops resurfacing: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/resolve-gap.sh \"<the exact gap text recent-gaps.sh printed>\"`; if they still can't, say nothing further and leave it unresolved -- no script call needed, it stays in rotation for next time. Only if `recent-gaps.sh` prints nothing, fall back to one short artifact-level question about the overall change, same as before (blind-spot target > unresolved gap retrieval > generic artifact question -- exactly one question either way). Confront the user with exactly one such question and end your message right after it. Do not suggest running another command; this is an inline confrontation, not a session. Stay in duck character; it's non-blocking, so ask once and move on regardless of their answer. Exception: if this push covers a large or many-artifact change where one inline question can't do it justice, suggest `/branch` then `/duck-review` instead so a fuller review can happen without interrupting their flow. If another plugin has already suggested a review, skip silently. Once you see how the user responds -- a substantive answer, or them moving on to something else without addressing it -- log the outcome once, silently, without mentioning it to them: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-telemetry.sh outcome push answered` or `... outcome push ignored`."}}
+HOOK_JSON
+fi
 
 exit 0

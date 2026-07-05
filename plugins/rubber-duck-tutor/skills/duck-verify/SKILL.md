@@ -1,15 +1,19 @@
 ---
 name: duck-verify
 disable-model-invocation: true
-description: "Code-verification session with the rubber duck — user explains code just written, finds edge cases, fixes planted bugs. Use after implementing a feature, or when they say \"duck verify\", \"재확인해줘\". Not for plan review (/duck-plan) or PR review (/duck-review)."
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
+description: "Code-verification session with the rubber duck — user explains code just written, finds edge cases, fixes planted bugs. Use after implementing a feature, or when they say \"duck verify\", \"double check this\". Not for plan review (/duck-prebuild) or PR review (/duck-review)."
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/session-edits.sh *)
 ---
 
 # Duck — Code Verification Mode
 
-**Read first**: [../duck/references/core.md](../duck/references/core.md) — persona, "Wait for their answer", Confidence Check (Code Verification row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Hint Ladder, Gotchas. They apply here.
+**Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Confidence Check (Code Verification row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Hint Ladder, Gotchas. They apply here.
 
-**Input**: Recently changed files — use `git diff` or conversation context.
+**Input**: Union of two sources, not `git diff` alone — a mid-session commit makes the diff go clean while the edit itself still needs verifying:
+- `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/session-edits.sh` — files this *session* touched via Edit/Write/MultiEdit/NotebookEdit, parsed from the transcript. Catches edits already committed mid-session.
+- `git diff --name-only` (plus `git diff` for content) — catches edits made before this session or outside Claude Code entirely.
+
+Empty `session-edits.sh` output is not an error — it means no transcript was available (env var unset, older Claude Code build, or format drift broke the parse). Fall back to `git diff` / conversation context alone, silently.
 
 ## Flow
 
@@ -36,32 +40,32 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/s
    If they miss it → point to the specific location and explain why it's a problem.
    → Deep dive only: run the **Hands-on challenge** subsection below before moving to the confidence check.
 
-6. **Confidence check** (after 2+ questions) — run the Code Verification row from the [Confidence Check (shared)](../duck/references/core.md#confidence-check-shared) table.
+6. **Confidence check** (after 2+ questions) — run the Code Verification row from the [Confidence Check (shared)](../ducking/engine.md#confidence-check-shared) table.
 
 ## Hands-on challenge (opt-in, Deep dive only)
 
 Skip during Quick check / Standard. Offer, don't impose:
 
-> 이 버그, 네가 직접 고쳐볼래? 내가 코드 안 써줄게. 파일 위치만 알려줄 테니까 네 손으로 쳐봐. 막히면 힌트 달라고 하면 돼. (그냥 지나가도 돼.)
+> Want to fix this bug yourself? I won't write the code — I'll just point you to the file, and you type the fix by hand. Ask for a hint if you get stuck. (Totally fine to skip this.)
 
 If they accept:
 - Give file path + function name only. No diff, no snippets.
 - They type the fix themselves.
-- If stuck, use the Hint Ladder (see [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md)) — never reveal code.
-- When done, ask: "왜 이렇게 고쳤어? 다른 접근도 있었을 텐데."
+- If stuck, use the Hint Ladder (see [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md)) — never reveal code.
+- When done, ask: "Why did you fix it this way? There were other approaches."
 
 Why this matters: teach-back tests the cognitive stage; typing the fix activates the associative→autonomous stage of procedural memory. Reading AI-generated fixes cannot do this.
 
 ## Question Frameworks
 
-**Blindspots** — "이 코드가 조용히 실패하는 경우는?" Focus on silent failures, not compile errors. Edge cases, null states, race conditions.
+**Blindspots** — "Where does this code fail silently?" Focus on silent failures, not compile errors. Edge cases, null states, race conditions.
 
-**Not Checked** — "아직 확인 안 한 건 뭐야?" The question itself reveals what they skipped.
+**Not Checked** — "What haven't you checked yet?" The question itself reveals what they skipped.
 
 ## Techniques
 
-Prioritize: debug this, trace the path, error analysis, pair finding. See [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md) for execution details.
+Prioritize: debug this, trace the path, error analysis, pair finding. See [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md) for execution details.
 
 ## Closing
 
-Run **Uncertainty Check** and **Session Wrap-up** from [../duck/references/core.md](../duck/references/core.md), including gap persistence.
+Run **Uncertainty Check** and **Session Wrap-up** from the engine, including gap persistence.

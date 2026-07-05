@@ -6,11 +6,12 @@ in a SKILL.md don't cover an edge case, or when an error needs categorization.
 
 All line numbers below cite
 `references/codex-plugin-cc/plugins/codex/scripts/codex-companion.mjs`
-(verified against `codex@openai-codex` 1.0.4). Earlier versions of the
+(verified against `codex@openai-codex` 1.0.5). Earlier versions of the
 Official Codex plugin had a different review handler that silently
 discarded `--model`; v1.0.4+ propagates it through `executeReviewRun` →
-`runAppServerReview` → `startThread({ model })` (`lib/codex.mjs:56-66,
-916-921`). codex-advisor requires the 1.0.0+ companion.
+`runAppServerReview` → `startThread({ model })` (`lib/codex.mjs:63-71`
+builds the params, `lib/codex.mjs:1010-1015` makes the call).
+codex-advisor requires the 1.0.0+ companion.
 
 ---
 
@@ -31,60 +32,60 @@ the user to `/codex-setup` and stop.
 ## 2. Verified flag whitelists per subcommand
 
 Every flag below was verified against `codex-companion.mjs`. "Documented"
-means it appears in `printUsage` (`:73-83`); "parser-only" means it is
+means it appears in `printUsage` (`:75-89`); "parser-only" means it is
 accepted by `parseArgs` but not printed in usage.
 
-### `review` (`handleReviewCommand` at `:682-725`)
+### `review` (`handleReviewCommand` at `:712-753`)
 
 | Flag | Type | Status | Honored? |
 |------|------|--------|----------|
 | `--base <ref>` | value | documented | yes |
 | `--scope <auto\|working-tree\|branch>` | value | documented | yes |
-| `--model <m>` | value | parser-only | **yes** — `executeReviewRun :367-371` → `runAppServerReview :908-921` → `startThread({ model })` (`lib/codex.mjs:56-66, 916-921`). codex-advisor still routes `--model` through `apply-codex-config.py` for **consistency across skills** and so the value persists for the next session — not because the flag is ignored. |
+| `--model <m>` | value | parser-only | **yes** — `executeReviewRun :358-371` → `runAppServerReview` (`lib/codex.mjs:1002`) → `startThread({ model })` (`lib/codex.mjs:1010-1015`). codex-advisor still routes `--model` through `apply-codex-config.py` for **consistency across skills** and so the value persists for the next session — not because the flag is ignored. |
 | `--cwd <path>` | value | parser-only | yes |
 | `--json` | bool | parser-only | yes |
-| `--effort <level>` | — | **NOT REGISTERED** | `valueOptions` at `:684` is `["base", "scope", "model", "cwd"]`. `--effort` becomes silent prompt corruption (§3). codex-advisor sets it via `~/.codex/config.toml` (`model_reasoning_effort`). |
-| `--background` | bool | documented in `:78` | **NO — silent no-op** (see §3) |
-| `--wait` | bool | documented in `:78` | **NO — silent no-op** (see §3) |
-| (positional focus text) | — | — | **rejected** by `validateNativeReviewRequest` (`:268-282`) |
+| `--effort <level>` | — | **NOT REGISTERED** | `valueOptions` at `:714` is `["base", "scope", "model", "cwd"]`. `--effort` becomes silent prompt corruption (§3). codex-advisor sets it via `~/.codex/config.toml` (`model_reasoning_effort`). |
+| `--background` | bool | documented in `:80` | **NO — silent no-op** (see §3) |
+| `--wait` | bool | documented in `:80` | **NO — silent no-op** (see §3) |
+| (positional focus text) | — | — | **rejected** by `validateNativeReviewRequest` (`:271-284`) |
 
-### `adversarial-review` (`handleReviewCommand` via `:995-999`)
+### `adversarial-review` (`handleReviewCommand` via `:1038-1042`)
 
 Identical valueOptions / booleanOptions as `review` (same handler). The
 only difference: adversarial does NOT pass `validateNativeReviewRequest`,
-so positional focus text IS accepted (joined with spaces at `:693`).
+so positional focus text IS accepted (joined with spaces at `:723`).
 
 **Neither** review nor adversarial has `--commit` or `--uncommitted`. To
 review a specific commit, use `--base <sha>~1 --scope branch`.
 
-### `task` (`handleTask` at `:732-...`)
+### `task` (`handleTask` at `:762-823`)
 
 | Flag | Type | Status | Notes |
 |------|------|--------|-------|
 | `--write` | bool | documented | enables code changes |
-| `--background` | bool | documented | **honored** — `:758-790` calls `enqueueBackgroundTask` |
+| `--background` | bool | documented | **honored** — `:788-805` calls `enqueueBackgroundTask` |
 | `--resume-last` | bool | documented | resume most recent completed task |
-| `--resume` | bool | documented | alias for `resume-last` per `:747` |
-| `--fresh` | bool | documented | opposite of resume; mutually exclusive (`:750`) |
+| `--resume` | bool | documented | alias for `resume-last` per `:777` |
+| `--fresh` | bool | documented | opposite of resume; mutually exclusive (`:778-780`) |
 | `--json` | bool | parser-only | structured output |
-| `--model <m>` | value | documented | accepts `spark` alias (`:70`) |
-| `--effort <level>` | value | documented | one of `{none, minimal, low, medium, high, xhigh}` (`:69`, `:111-122`) |
+| `--model <m>` | value | documented | accepts `spark` alias (`:72`) |
+| `--effort <level>` | value | documented | one of `{none, minimal, low, medium, high, xhigh}` (`:71`, `:114-125`) |
 | `--cwd <path>` | value | parser-only | |
-| `--prompt-file <path>` | value | **parser-only** (not in `:80` usage) | reads file at `:614-615` |
+| `--prompt-file <path>` | value | **parser-only** (not in `:82` usage) | reads file at `:644-646` |
 | `--wait` | — | **NOT REGISTERED** | silently pushed to positionals → **prompt corruption**, see §3 |
 
-### `status` (`handleStatus` at `:840-865`)
+### `status` (`handleStatus` at `:883-908`)
 
 | Flag | Type | Status | Notes |
 |------|------|--------|-------|
-| `--wait` | bool | parser-only | **honored** — calls `waitForSingleJobSnapshot` (`:849-853`) |
-| `--timeout-ms <ms>` | value | parser-only | default `240000` (`:67`); cap per call |
-| `--poll-interval-ms <ms>` | value | parser-only | default `2000` (`:68`) |
+| `--wait` | bool | parser-only | **honored** — calls `waitForSingleJobSnapshot` (`:893-897`) |
+| `--timeout-ms <ms>` | value | parser-only | default `240000` (`:69`); cap per call |
+| `--poll-interval-ms <ms>` | value | parser-only | default `2000` (`:70`) |
 | `--all` | bool | documented | list all jobs |
 | `--json` | bool | documented | |
-| (positional jobId) | — | — | required when using `--wait` (`:859-861`) |
+| (positional jobId) | — | — | required when using `--wait` (`:902-904`) |
 
-### `result` (`handleResult` at `:867-883`)
+### `result` (`handleResult` at `:910-926`)
 
 | Flag | Type | Notes |
 |------|------|-------|
@@ -99,9 +100,19 @@ review a specific commit, use `--base <sha>~1 --scope branch`.
 | `--json` | bool |
 | (positional jobId) | — |
 
+### `transfer` (`handleTransfer` at `:825-836`, v1.0.5+)
+
+| Flag | Type | Notes |
+|------|------|-------|
+| `--source <path>` | value | Claude session `.jsonl` to import. Falls back to `CODEX_COMPANION_TRANSCRIPT_PATH` env (`resolveClaudeSessionPath`, `lib/claude-session-transfer.mjs:20-23`) when omitted. |
+| `--json` | bool | |
+| `--cwd <path>` | value | Accepted by `handleTransfer`'s `valueOptions` (`:827`) but **not shown in `printUsage`'s transfer line** (`:83`) — don't copy the usage line as the full flag set. |
+
+No `--model`/`--effort`/`--wait`/`--background` — transfer has no prompt and completes synchronously (≤2 min), so none of those concepts apply. Result payload includes `threadId` and `resumeCommand` (`codex resume <threadId>`) rendered verbatim by `renderTransferResult` (`:616-623`).
+
 ### 2a. `normalizeArgv` quirk
 
-`normalizeArgv` (`:127-...`) re-tokenizes input via `splitRawArgumentString`
+`normalizeArgv` (`:130-...`) re-tokenizes input via `splitRawArgumentString`
 **only when `argv.length === 1`**. An old broken pattern like
 
 ```bash
@@ -124,32 +135,33 @@ This is the single most important thing to understand about the companion.
 
 ### `status --wait <jobId>` — REAL
 
-- `booleanOptions` at `:843` includes `wait`.
-- Handler honors it at `:849-853` via `waitForSingleJobSnapshot`.
-- Uses `DEFAULT_STATUS_WAIT_TIMEOUT_MS = 240000` (`:67`), safely under
+- `booleanOptions` at `:886` includes `wait`.
+- Handler honors it at `:893-897` via `waitForSingleJobSnapshot`.
+- Uses `DEFAULT_STATUS_WAIT_TIMEOUT_MS = 240000` (`:69`), safely under
   Bash's 300s tool timeout.
 - This is the **only** universal wait mechanism in the companion.
 
 ### `review --wait`, `adversarial-review --wait` — SILENT NO-OP
 
-- `booleanOptions` at `:685` includes both `background` AND `wait`, so the
+- `booleanOptions` at `:715` includes both `background` AND `wait`, so the
   parser accepts them.
-- BUT `handleReviewCommand` (`:682-723`) **never reads** `options.wait` or
-  `options.background`. Line 709 unconditionally calls
+- BUT `handleReviewCommand` (`:712-753`) **never reads** `options.wait` or
+  `options.background`. Line 739 unconditionally calls
   `runForegroundCommand`.
 - Both flags are silent no-ops. Review / adversarial-review always run in
   the foreground.
-- `printUsage` at `:78` still advertises `review [--wait|--background]`
-  — this is an upstream bug (fix candidate to file upstream).
+- `printUsage` at `:80` still advertises `review [--wait|--background]`
+  — this is an upstream bug (fix candidate to file upstream, still present
+  in 1.0.5).
 
 ### `task --wait` — SILENT PROMPT CORRUPTION
 
-- `task`'s `booleanOptions` at `:735` is
+- `task`'s `booleanOptions` at `:765` is
   `["json", "write", "resume-last", "resume", "fresh", "background"]`.
   **No `wait`.**
 - `parseArgs` (`lib/args.mjs:47-49`) does NOT raise an unknown-flag error.
   It silently pushes `--wait` into `positionals`.
-- `readTaskPrompt` (`:613-619`) does `positionals.join(" ")` and uses that
+- `readTaskPrompt` (`:643-650`) does `positionals.join(" ")` and uses that
   as the task prompt body.
 - Result: Codex receives the literal string `"--wait"` as part of its task
   prompt. No stderr. No exit code. Silent prompt corruption.
@@ -227,7 +239,7 @@ echo "JOB_JSON_FILE=$JOB_JSON_FILE"
 # (Assemble $PROMPT_FILE — see §8 for the blind-payload pattern)
 
 # Invoke via stdin pipe. NEVER pass a positional arg — readTaskPrompt
-# short-circuits on positionalPrompt (:591), silently dropping stdin.
+# short-circuits on positionalPrompt (:649), silently dropping stdin.
 cat "$PROMPT_FILE" | node "$CODEX_COMPANION" task --background --json \
   > "$JOB_JSON_FILE" 2> "${JOB_JSON_FILE}.stderr" \
   || { echo "task launch failed:" >&2; cat "${JOB_JSON_FILE}.stderr" >&2; exit 1; }
@@ -268,7 +280,7 @@ cap, surface as `wait-timeout` (§6).
   similar pipeline. Without it, a failing left side (e.g., missing
   `PROMPT_FILE`) sends 0 bytes into the companion, which then throws
   `Provide a prompt, a prompt file, piped stdin, or use --resume-last.`
-  (`:624`) — masking the real root cause.
+  (`:654`) — masking the real root cause.
 
 ---
 
@@ -280,19 +292,24 @@ Never retry silently. Never swallow errors. Never blame the user.
 | Pattern in stderr (verbatim where quoted) | Category | Source | Action |
 |-------------------|----------|--------|--------|
 | `Official Codex plugin not found` | setup | `resolve-companion.sh` | Redirect to `/codex-setup` |
-| `not authenticated` / `OPENAI_API_KEY` | auth | `lib/codex.mjs:690` (status detail), surfaced via `codex-companion.mjs:184-193` | Suggest `codex login` |
+| `not authenticated` / `OPENAI_API_KEY` | auth | `lib/codex.mjs:784` (status detail), surfaced via `codex-companion.mjs:194-196` | Suggest `codex login` |
+| `Codex CLI is not installed or is missing required runtime support.` | setup | `getCodexAvailability` check, thrown at multiple call sites incl. `lib/codex.mjs:1060-1062` (`importExternalAgentSession`) — reproduced live against 1.0.5 (`transfer` with no Codex CLI on `PATH`) | Companion binary resolves fine but the actual `codex` CLI it shells out to isn't installed. Direct to `npm install -g @openai/codex`, then `/codex-setup`. Not transfer-specific — any subcommand that needs a live app-server hits this. |
 | `not a git repository` | environment | `lib/git.mjs` `ensureGitRepository` | Tell user, stop |
 | `unknown revision` / `bad revision` | bad-input | `git rev-parse` | Show `git branch --list`, AskUserQuestion |
-| `does not support custom focus text` | wrong-skill | `:271` | Should NOT fire from codex-advisor: Phase 1 strips focus text and offers the adversarial redirect. If it fires, Phase 1 was skipped → SKILL.md regression. |
-| `Provide a prompt, a prompt file, piped stdin, or use --resume-last.` | prompt-empty | `:624` | Pattern B failed before consuming stdin. Common cause: `cat` failed and `set -o pipefail` was missing, OR a positional arg overrode stdin (§3). |
-| `Task <id> is still running. Use /codex:status before continuing it.` | concurrency-conflict | `:340` | Previous Codex task in flight. Show user the active jobId, stop. Do NOT silently cancel. |
-| `Unsupported reasoning effort "<value>"` | bad-input | `:111-122` | codex-rescue: effort must be `{none, minimal, low, medium, high, xhigh}`. Re-prompt via AskUserQuestion. |
-| `Choose either --resume/--resume-last or --fresh.` | bad-input | `:750` | codex-rescue: ANALYZE produced conflicting flags. Re-prompt. |
+| `does not support custom focus text` | wrong-skill | `:274` | Should NOT fire from codex-advisor: Phase 1 strips focus text and offers the adversarial redirect. If it fires, Phase 1 was skipped → SKILL.md regression. |
+| `Provide a prompt, a prompt file, piped stdin, or use --resume-last.` | prompt-empty | `:654` | Pattern B failed before consuming stdin. Common cause: `cat` failed and `set -o pipefail` was missing, OR a positional arg overrode stdin (§3). |
+| `Task <id> is still running. Use /codex:status before continuing it.` | concurrency-conflict | `:343` | Previous Codex task in flight. Show user the active jobId, stop. Do NOT silently cancel. |
+| `Unsupported reasoning effort "<value>"` | bad-input | `:114-125` | codex-rescue: effort must be `{none, minimal, low, medium, high, xhigh}`. Re-prompt via AskUserQuestion. |
+| `Choose either --resume/--resume-last or --fresh.` | bad-input | `:780` | codex-rescue: ANALYZE produced conflicting flags. Re-prompt. |
 | `Missing value for --<key>` | bad-input | `lib/args.mjs:39,63` | Phase 1 should have caught this → ANALYZE regression. |
-| `Stored job <id> is missing its task request payload.` | recovery-impossible | `:813` | Detached task-worker couldn't load the stored request. Surfaced via `result <jobId>` or the job log file, NOT from the original `task --background --json` stdout. Abort, save failure report. |
+| `Stored job <id> is missing its task request payload.` | recovery-impossible | `:856` | Detached task-worker couldn't load the stored request. Surfaced via `result <jobId>` or the job log file, NOT from the original `task --background --json` stdout. Abort, save failure report. |
 | JSON parse error on companion stdout | unexpected-format | n/a | Companion output format changed. Show raw stdout/stderr, abort, ask user to report. |
 | Pattern A 30-min cap exceeded | wait-timeout | n/a (Claude-side) | `KillShell` the bash_id; if `$OUT_FILE` parses as JSON treat as partial, else `recovery-impossible`. |
-| (no stderr — silently corrupted prompt) | silent-flag-corruption | `lib/args.mjs:47-49` + `:613-619` | **NOT detectable post-hoc.** Only Phase 1 ANALYZE whitelisting prevents it. If Codex echoes an unknown flag back as task content, treat as Phase 1 regression and AskUserQuestion. |
+| (no stderr — silently corrupted prompt) | silent-flag-corruption | `lib/args.mjs:47-49` + `:643-650` | **NOT detectable post-hoc.** Only Phase 1 ANALYZE whitelisting prevents it. If Codex echoes an unknown flag back as task content, treat as Phase 1 regression and AskUserQuestion. |
+| `Could not identify the current Claude transcript. Retry with --source <path-to-claude-jsonl>.` | setup/transcript-missing | `lib/claude-session-transfer.mjs:23` | No `CODEX_COMPANION_TRANSCRIPT_PATH` env and no `--source`. Tell user to enable the Official plugin (its SessionStart hook sets the env) or pass `--source` manually. |
+| `Codex can import Claude sessions only from <dir>: <path>` | bad-input | `lib/claude-session-transfer.mjs:41` | Source path resolved outside `~/.claude/projects/`. Show the offending path, do not retry with a modified path automatically. |
+| `Timed out waiting for Codex to finish importing the Claude session.` | wait-timeout | `lib/codex.mjs:52` (`EXTERNAL_AGENT_IMPORT_TIMEOUT_MS = 2 * 60 * 1000`), thrown at `:720` | Import RPC didn't complete in 2 min. Abort, don't retry silently — re-running may just return the same ledger-cached thread (see next row) or hit the same stall. |
+| (same file + same content re-imported → existing `threadId` returned) | **not an error** | ledger dedup, `lib/codex.mjs:661-677` (`external_agent_session_imports.json`) | Normal behavior, not a failure to surface as one. Codex recognizes the identical `sourcePath` + `content_sha256` pair and returns the prior thread instead of creating a duplicate. |
 | (other) | unknown | n/a | Show raw stderr verbatim. Do NOT retry. |
 
 **Never:**
@@ -328,7 +345,7 @@ For each token in `$ARGUMENTS`:
 4. **Junk?** emoji, stray punctuation, `, ` → drop.
 5. **Focus text on `codex-review`?** → AskUserQuestion offering the
    adversarial redirect (do NOT pass it; the companion will reject it at
-   `:271`).
+   `:274`).
 6. **Ambiguous?** → AskUserQuestion (interactive) or exit 1 with a clear
    stderr message (non-interactive). See §9.
 7. **Unknown token (not on whitelist, not meta-instruction, not junk)?**
@@ -374,11 +391,11 @@ piping so the content never enters Bash's stdout.
   stdout, content never enters Claude's context.
 - **`cat "$PROMPT_FILE" | node companion task --background --json`** —
   sends payload over the stdin pipe, not as a positional.
-- **Never add a positional prompt after `task`** in Pattern B. `:619` does
+- **Never add a positional prompt after `task`** in Pattern B. `:649` does
   `positionalPrompt || readStdinIfPiped()`; any positional short-circuits
   stdin and the entire blind payload is silently dropped.
-- **`--prompt-file` is parser-only** (`:734` vs `:80`). Stdin is the
-  first-class path (`readTaskPrompt` at `:613-619` handles it explicitly
+- **`--prompt-file` is parser-only** (`:764` vs `:82`). Stdin is the
+  first-class path (`readTaskPrompt` at `:643-650` handles it explicitly
   via `lib/fs.mjs:35-40`). Use stdin.
 - **`set -o pipefail`** is mandatory. Without it, a cat-side failure
   sends 0 bytes and the companion's `prompt-empty` error masks the real
@@ -503,7 +520,7 @@ pragmatic pattern is "try and fall back":
   ANALYZE whitelist is the only line of defense.
 - **Pattern B stdin pipe never combines with a positional arg.**
   `readTaskPrompt` does `positionalPrompt || readStdinIfPiped()`
-  (`:613-619`); a positional silently overrides stdin and drops the
+  (`:643-650`); a positional silently overrides stdin and drops the
   entire blind payload.
 - **Always `set -o pipefail` before `cat ... | node ...`.** Without it,
   a cat-side failure masks as a companion-side `prompt-empty` error.

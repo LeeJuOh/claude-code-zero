@@ -151,6 +151,36 @@ test('file not found returns violation', () => {
   assert.ok(result.violations.some(v => v.rule === 'file-not-found'));
 });
 
+// --- content-only mode (artifact channel) ---
+
+test('content-only mode skips design checks (mermaid density, palette, font-fallback)', () => {
+  let nodes = '';
+  for (let i = 0; i < 12; i++) nodes += `  N${i}\n`;
+  const html = `<html><head><style>.x{color:#8b5cf6;font-family:Geist}</style></head>
+<body><pre class="mermaid">flowchart TD\n${nodes}</pre></body></html>`;
+  withTempHtml(html, (file) => {
+    const result = runArtifactGate(file, { contentOnly: true });
+    assert.strictEqual(result.ok, true);
+  });
+});
+
+test('content-only mode still catches raw markdown, placeholders, and missing alt', () => {
+  const html = `<html><body>
+<div>\n## Markdown heading\n</div>
+<img src="missing.png">
+<p>{{ title }}</p>
+</body></html>`;
+  withTempHtml(html, (file) => {
+    const result = runArtifactGate(file, { contentOnly: true });
+    assert.strictEqual(result.ok, false);
+    const rules = new Set(result.violations.map(v => v.rule));
+    assert.ok(rules.has('raw-markdown'));
+    assert.ok(rules.has('missing-image'));
+    assert.ok(rules.has('image-alt'));
+    assert.ok(rules.has('placeholder'));
+  });
+});
+
 test('multiple violations from different checks', () => {
   let nodes = '';
   for (let i = 0; i < 12; i++) nodes += `  N${i}\n`;

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * List vision-powers reports with structured metadata.
+ * Covers every persisted output: .html, .artifact.html, .md, .artifact.md.
  *
  * Usage:
  *   node list-reports.js [--limit N]
@@ -74,11 +75,11 @@ function main() {
   }
 
   const files = fs.readdirSync(reportsDir)
-    .filter(f => f.endsWith(".html"))
+    .filter(f => f.endsWith(".html") || f.endsWith(".md"))
     .map(f => {
       const fullPath = path.join(reportsDir, f);
       const stat = fs.statSync(fullPath);
-      return {
+      const entry = {
         filename: f,
         path: fullPath,
         type: detectType(f),
@@ -87,6 +88,14 @@ function main() {
         mtime: stat.mtime.getTime(),
         date: formatDate(stat.mtime),
       };
+      const sidecarPath = `${fullPath}.artifact.json`;
+      try {
+        const sidecar = JSON.parse(fs.readFileSync(sidecarPath, "utf-8"));
+        if (sidecar.url) entry.artifact_url = sidecar.url;
+      } catch {
+        // No sidecar or invalid JSON — report has no artifact_url
+      }
+      return entry;
     })
     .sort((a, b) => b.mtime - a.mtime)
     .slice(0, limit);

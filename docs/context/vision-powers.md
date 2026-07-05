@@ -38,6 +38,15 @@ md uses what it supports (mermaid, tables, blockquote callouts, headings, images
 **not** a thin passthrough of the input — passing the source through unre-structured is a failure.
 _Avoid_: report, summary (a summary compresses; an artifact re-structures without losing substance).
 
+**Artifact channel**:
+Opt-in delivery of a **visual artifact** as a published claude.ai page through Claude Code's
+official Artifacts feature. On this channel the **design brief** lever is delegated to the
+harness's built-in artifact-design skill (native to the page's CSP sandbox); **source
+passthrough**, **build-time grounding**, and the **Gate**'s content checks remain the skill's.
+Disambiguation: unqualified "artifact" in this repo means the **Visual artifact** deliverable
+(the usage throughout [[0002]]/[[0005]]); the official feature is always qualified — "Artifact
+channel", "Artifact publish", "claude.ai page". See [[0007]].
+
 **Linear dump**:
 Verbose prose or markdown read top-to-bottom with no structure — the failure mode the
 artifact exists to fix. From the HTML-effectiveness thesis: markdown "flattens" what HTML preserves.

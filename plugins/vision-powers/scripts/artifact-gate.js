@@ -372,25 +372,38 @@ function checkFontFallback(html) {
 
 // --- Main ---
 
-function runArtifactGate(htmlPath) {
+// Artifact-channel pages delegate the design layer to the harness's built-in
+// artifact-design skill (ADR 0007) — density, palette, classDef, and font-chain
+// are its concerns, not this skill's. --content-only runs just the checks that
+// verify the *content* survived intact regardless of who designed the page.
+function runArtifactGate(htmlPath, opts = {}) {
+  const { contentOnly = false } = opts;
   if (!fs.existsSync(htmlPath)) {
     return { ok: false, violations: [{ rule: 'file-not-found', hint: `File not found: ${htmlPath}` }] };
   }
   const html = fs.readFileSync(htmlPath, 'utf-8');
   const htmlDir = path.dirname(htmlPath);
 
-  const violations = [
-    ...checkMissingImages(html, htmlDir),
-    ...checkRawMarkdown(html),
-    ...checkMermaidDensity(html),
-    ...checkMermaidClassDef(html),
-    ...checkForbiddenColors(html),
-    ...checkAnchorHrefs(html),
-    ...checkImageAlt(html),
-    ...checkPlaceholders(html),
-    ...checkGradientText(html),
-    ...checkFontFallback(html),
-  ];
+  const violations = contentOnly
+    ? [
+        ...checkMissingImages(html, htmlDir),
+        ...checkRawMarkdown(html),
+        ...checkAnchorHrefs(html),
+        ...checkImageAlt(html),
+        ...checkPlaceholders(html),
+      ]
+    : [
+        ...checkMissingImages(html, htmlDir),
+        ...checkRawMarkdown(html),
+        ...checkMermaidDensity(html),
+        ...checkMermaidClassDef(html),
+        ...checkForbiddenColors(html),
+        ...checkAnchorHrefs(html),
+        ...checkImageAlt(html),
+        ...checkPlaceholders(html),
+        ...checkGradientText(html),
+        ...checkFontFallback(html),
+      ];
 
   return { ok: violations.length === 0, violations };
 }
@@ -411,12 +424,14 @@ module.exports = {
 };
 
 if (require.main === module) {
-  const htmlPath = process.argv[2];
+  const args = process.argv.slice(2);
+  const contentOnly = args.includes('--content-only');
+  const htmlPath = args.find((a) => !a.startsWith('--'));
   if (!htmlPath) {
-    console.error('Usage: artifact-gate.js <html-file-path>');
+    console.error('Usage: artifact-gate.js <html-file-path> [--content-only]');
     process.exit(2);
   }
-  const result = runArtifactGate(htmlPath);
+  const result = runArtifactGate(htmlPath, { contentOnly });
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
   process.exit(result.ok ? 0 : 1);
 }

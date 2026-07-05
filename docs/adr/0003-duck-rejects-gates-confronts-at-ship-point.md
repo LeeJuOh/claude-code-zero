@@ -55,3 +55,11 @@ forcing function을 가져오지 않음.
 - **shared ship budget** — `{git push, gh pr create, glab mr create}`는 세션당 최대 한 번 발사,
   먼저가 이김 — 플랫폼·도구 간 중복 confrontation을 방지.
 - duck은 절대 안 막음. 하드 강제를 원하는 유저는 duck을 gate로 만들기보다 duck + no-numb을 조합.
+- **`ducking` 엔진은 스킬이 아님 (2026-07-05 확정).** S4에서 엔진을 "rubber-stamping 감지 시 모델이
+  스스로 발동"하는 스킬로 승격했으나, trigger eval 실측 2/8 — 단일턴 도구의 구조적 한계이자 스킬
+  일반의 undertriggering 성향. 자발적 모델 발동에 원칙 A의 하중을 얹으면 25% 안전망이 *가짜 안심*을
+  만듦. 위 "ship-point 훅이 원칙 A의 하중을 짊어짐"과 레포 원칙(deterministic-over-clever)에 따라
+  엔진은 참조 문서(`skills/ducking/engine.md`)로 존치 — 호출 대상이 아니라 모드 스킬이 읽어 들이는
+  공유 콘텐츠이고, 자동 confront는 전적으로 훅이 담당. 대화 중간 "lgtm" 순간(훅 미커버)은 의도적으로
+  비대상으로 둠; 필요해지면 결정론적 훅(프롬프트 키워드 스캔)으로 별도 처리, 모델 재량 발동으로
+  되돌리지 않음.

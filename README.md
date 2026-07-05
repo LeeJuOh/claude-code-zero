@@ -35,7 +35,7 @@ claude plugin add <plugin-name>@claude-code-zero
 
 ### Option B — npx skills (skills only)
 
-Installs SKILL.md files via the [skills CLI](https://github.com/vercel-labs/skills). Quick, no marketplace registration needed — but **hooks, agents, MCP servers, and scripts are not included**. Plugins that depend on hooks (worktree-plus, rubber-duck-tutor, claw-mo) or agents (vision-powers, codex-advisor) will have reduced functionality.
+Installs SKILL.md files via the [skills CLI](https://github.com/vercel-labs/skills). Quick, no marketplace registration needed — but **hooks, agents, MCP servers, and scripts are not included**. Plugins that depend on hooks (worktree-plus, rubber-duck-tutor, claw-mo, codex-advisor) or agents (vision-powers, codex-advisor) will have reduced functionality.
 
 ```shell
 npx skills add LeeJuOh/claude-code-zero
@@ -53,7 +53,7 @@ Run `/plugin` and check the **Installed** tab.
 
 **Solution:** Claude independently re-verifies every Codex response — without seeing source code until after Codex returns. Five-way classification (Agreed / Disputed / Nuanced / False Positive / Uncited) so you know exactly what to trust.
 
-`codex-review` · `codex-adversarial` · `codex-rescue` · `codex-verify` · `codex-research` · `codex-status` · `codex-result` · `codex-cancel` · `codex-setup`
+`codex-review` · `codex-adversarial` · `codex-rescue` · `codex-verify` · `codex-research` · `codex-transfer` · `codex-status` · `codex-result` · `codex-cancel` · `codex-setup`
 
 ---
 
@@ -61,7 +61,7 @@ Run `/plugin` and check the **Installed** tab.
 
 **Problem:** Complex analysis buried in terminal text — architecture, security issues, git diffs all lose structure. Impossible to share with teammates.
 
-**Solution:** Turns the analysis into a shareable report — your pick of a self-contained interactive HTML file (Mermaid diagrams + Chart.js dashboards) or portable Markdown for PRs and chat. Audits plugins (local, installed, or GitHub), git diffs, and markdown docs. Before delivering, Claude renders the report and reads it back as an image to catch diagrams that broke in layout.
+**Solution:** Turns the analysis into a shareable report — your pick of a self-contained interactive HTML file (Mermaid diagrams + Chart.js dashboards), portable Markdown for PRs and chat, or a claude.ai Artifact link via `--artifact`. Audits plugins (local, installed, or GitHub), git diffs, and markdown docs. Before delivering, Claude renders the report and reads it back as an image to catch diagrams that broke in layout.
 
 `plugin-visual` · `diff-visual` · `doc-visual` · `fact-check` · `context-health-visual` · `report-manager`
 
@@ -119,11 +119,11 @@ Run `/plugin` and check the **Installed** tab.
 
 ### [toolbox](plugins/toolbox/README.md)
 
-**Problem:** WebFetch gets blocked by bot detection. Session context vanishes between conversations. Secrets end up hardcoded. References drift out of sync.
+**Problem:** Session context vanishes between conversations. Secrets end up hardcoded. References drift out of sync.
 
-**Solution:** Five focused utilities — Gemini fallback (auto-triggers on WebFetch failure), resumption-ordered handoff docs, secret extraction with auto-load hooks, sitemap discovery, and reference sync.
+**Solution:** Four focused utilities — resumption-ordered handoff docs, secret extraction with auto-load hooks, sitemap discovery, and reference sync.
 
-`gemini-fetch` · `handoff` · `secret-setup` · `fetch-sitemap` · `sync-references`
+`handoff` · `secret-setup` · `fetch-sitemap` · `sync-references`
 
 ---
 
@@ -131,9 +131,9 @@ Run `/plugin` and check the **Installed** tab.
 
 **Problem:** Passively accepting AI-generated code leads to 17% worse comprehension. You merge code you don't truly understand.
 
-**Solution:** Rubber duck questioning across 5 development phases — asks you to explain what the code does before you ship it. Hint ladder guides without revealing answers. Auto-suggests review at plan creation, PR, and git push.
+**Solution:** Rubber duck questioning across the whole AI-coding lifecycle. Plan/spec creation suggests a branched review; shipping (git push / PR) confronts you inline — targeting the riskiest change you didn't discuss, retrying an unresolved past gap, or demoting to a non-blocking scoreboard after three ignored confrontations. Hint ladder guides without revealing answers; every fire/answer/ignore is logged.
 
-`duck` · `duck-design` · `duck-plan` · `duck-verify` · `duck-review` · `duck-orient`
+`duck` · `duck-prebuild` · `duck-verify` · `duck-review` · `duck-orient`
 
 ---
 

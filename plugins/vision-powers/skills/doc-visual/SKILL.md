@@ -5,8 +5,8 @@ description: |
   Use when asked to visualize, illustrate, or create a visual report from a document with diagrams. Single md file input.
   Also trigger when: "make this document visual", "add diagrams to this doc", "turn this markdown into a report",
   "visualize this README/ADR/spec", or any request to render a document with embedded diagrams.
-argument-hint: "[md-file-path] [--format html|md] [--lang code]"
-allowed-tools: Read, Bash(node *), Bash(open *), Bash(rm -rf /tmp/doc-visual-*)
+argument-hint: "[md-file-path] [--format html|md] [--lang code] [--artifact (native design + publish)]"
+allowed-tools: Read, Bash(node *), Bash(open *), Bash(rm -rf /tmp/doc-visual-*), Artifact, AskUserQuestion
 ---
 
 # doc-visual
@@ -31,8 +31,28 @@ Argument = single markdown file path. Directories, URLs, stdin not supported.
 |---|---|---|
 | `--format` | `html` / `md` | `html` |
 | `--lang` | ISO code | auto-detected from document |
+| `--artifact` | switch | off |
 
 The report language must match the source document's language.
+
+`--artifact` also triggers on natural-language equivalents — "as an artifact", "publish as a link",
+"share as a URL" — without the literal flag, in whatever language the user is writing in.
+
+**Config precedence.** Before falling back to the defaults in the table, check stored preferences
+once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
+`default_format` value replaces the `html` default; `artifact: true` replaces off, the same as the
+`--artifact` flag. Anything the user actually says this turn — a literal flag or a natural-language
+equivalent — always overrides config; config only fills in when the request is silent on format/channel.
+
+When the target format is `md`, whether you ask before publishing depends on how the request arrived:
+
+- **Both flags typed literally** (`--format md --artifact`, exact tokens): that's a deliberate,
+  informed choice — publish the md file as-is, never ask. See "Markdown format — Artifact channel" below.
+- **Artifact intent expressed in natural language** (no literal `--artifact` token) while the target
+  format is `md`: check the md content for a ` ```mermaid ` fenced block first. None found → publish
+  as-is, same as the explicit path (nothing would be lost either way, so there's nothing to ask
+  about). Found one or more → the natural-language phrasing never committed to losing diagram
+  rendering, so ask once before publishing (see "Markdown format — Artifact channel").
 
 ## Writing the report
 
@@ -46,12 +66,80 @@ A self-contained single file — `<!DOCTYPE html>` to `</html>`:
 - Semantic HTML structure: sections that follow the source document's structure
 - Diagrams embedded as `<pre class="mermaid">` blocks
 
+### HTML format — Artifact channel (`--artifact`)
+
+Same content decisions (modes, section-to-diagram mapping, component menu, anti-slop-tells) as the
+default HTML format — only the page's shape and delivery mechanism change, because the page ships
+inside Claude Code's official Artifacts feature instead of as a local file.
+
+**Before writing anything**, load the built-in `artifact-design` skill (Skill tool, skill name
+`artifact-design`). This is a tool contract MUST, not a suggestion — it's what conditions the model
+for the CSP sandbox this page will run in, and skipping it is how a page ends up broken on publish.
+
+Then write the page as a **fragment**, not a full document:
+- No `<!DOCTYPE>`, `<html>`, `<head>`, or `<body>` tags — content only, starting from your first real
+  element. The Artifact tool wraps the file in that skeleton at publish time.
+- Set a concise `<title>` directly in the content — it names the artifact in the browser tab. Keep
+  it stable across every republish of the same document in this session.
+- **Zero external requests** — the Artifact viewer's CSP blocks all of them. No Mermaid CDN
+  `<script>`, no Google Fonts `<link>`, no hotlinked images. Diagrams that would normally be
+  `<pre class="mermaid">` become inline SVG or HTML+CSS layouts instead (follow the artifact-design
+  skill's guidance on this) — same diagram-type decision from `diagram-type-selection.md`, different
+  rendering technique. `mermaid-patterns.md`'s CDN setup and `classDef` rules don't apply here.
+- Support both themes: `@media (prefers-color-scheme: dark)` as the default signal, plus
+  `:root[data-theme="dark"]` / `:root[data-theme="light"]` overrides — the artifact viewer's theme
+  toggle stamps `data-theme` on the root and it must win in both directions.
+
+Save the fragment to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.artifact.html` — a
+distinct filename from the default channel's output, so the two never collide or overwrite each
+other for the same source document.
+
+Re-running this skill on the same input within the same conversation reuses that same path.
+Publishing to the same `file_path` again redeploys to the same URL instead of minting a new one, so
+keep the `<title>` and `favicon` identical across those republishes (the tool reads a changed
+favicon as a different page). If `${output-path}.artifact.json` already exists from an earlier
+publish this session, read it first and reuse its `title`/`favicon` verbatim rather than choosing
+new ones.
+
 ### Markdown format (`--format md`)
 
-Insert directly into the response body (no file save):
+Insert directly into the response body, and save the same content to
+`${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.md` — the chat text is the delivery, the
+file is the record that lets report-manager list and refine this report later:
 - Mermaid diagrams as fenced ` ```mermaid ` blocks
 - Footer links to the source path
 - No CSS, no `<script>` — pure markdown
+
+### Markdown format — Artifact channel (`--format md --artifact`)
+
+Write the same content as the default markdown path above — same structure, same fenced
+` ```mermaid ` blocks, nothing rewritten for the channel. There's no CSS or script to break under
+the Artifact viewer's CSP, so unlike the HTML channel this variant needs no fragment rewrite, no
+built-in artifact-design skill load, and no content-only gate — the md content is already correct
+by the same standard the default md path holds itself to.
+
+The one channel-specific fact to act on: **claude.ai's markdown renderer does not render Mermaid**
+(confirmed by a direct publish-and-view test, 2026-07-05) — a `mermaid` fence displays as a plain
+monospace code block, not a diagram. Decide what to do about that using the branch from "Format
+detection" above:
+
+- **Explicit** (`--format md --artifact` typed literally): publish as-is, never ask. If the content
+  has any Mermaid blocks, add one line next to the URL noting they'll show as code, with the
+  rendered-diagram alternative — e.g. "Diagrams appear as code on this channel — for rendered
+  diagrams, use `--format html --artifact`" (in whatever language you're already replying in).
+- **Ambiguous** (natural-language artifact intent, target format `md`) **and no Mermaid present**:
+  publish as-is, same as explicit — there's no diagram fidelity at stake, so nothing to ask about.
+- **Ambiguous and Mermaid is present**: ask once with `AskUserQuestion` before publishing anything:
+  1. Regenerate as `--format html --artifact` (diagrams render — recommended)
+  2. Publish the md as-is (diagrams show as code)
+  3. Keep it local (no publish)
+
+  Act on whichever the user picks. Don't ask again in the same conversation once they've answered.
+
+Publish steps: save the md content to
+`${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.artifact.md` (reuse the same path on a
+same-session re-run, same as the HTML variant), then follow "Publish (`--artifact`)" below — the
+Artifact tool call, sidecar write, and fallback behavior are identical regardless of format.
 
 ### Modes
 
@@ -152,6 +240,17 @@ It checks, in this order:
 
 If violations found: fix them inline (re-edit the HTML). Max 2 retry cycles. If still failing after 2 fixes, remove the offending element and log a warning.
 
+**Under `--artifact`**, run the gate in content-only mode instead:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-html-path> --content-only
+```
+
+This runs only checks 1, 2, 6, 7, 8 above (missing images, raw markdown, anchor hrefs, image alt,
+placeholders) — the facts that must survive regardless of who designed the page. Checks 3–5 (density,
+classDef, palette) don't apply: the built-in artifact-design skill owns the design layer on this
+channel (ADR 0007), and there's no Mermaid to check density on in the first place.
+
 ## Visual self-audit (HTML only)
 
 The gate reads the HTML as *text* — it never sees the rendered picture. A diagram can pass the density check and still render as an unreadable tangle; a label can clip at the container edge; hierarchy that reads fine in source can collapse into a flat wall once styled. After the gate passes, **render the report and look at it** before delivering:
@@ -173,10 +272,45 @@ Fix what you see and re-render. **Cap at 2 audit passes** — if something still
 
 Full procedure, limits (fixed-height clipping, downscaling, render cost), and the rationale for *not* mechanizing this with a measurement script live in `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md`.
 
+**Skip this entirely under `--artifact`.** The rendered picture is the built-in artifact-design
+skill's responsibility on this channel, not this skill's — there's no local Chrome render loop to
+run before publishing.
+
 ## Output
 
 - **HTML**: Save to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.html`. Run `open <output-path>` after completion.
-- **MD**: Insert directly into the response body. Footer links to the source path.
+- **MD**: Insert directly into the response body and save a copy to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.md`. Footer links to the source path.
+- **`--artifact`**: see "Publish (`--artifact`)" below.
+
+## Publish (`--artifact`)
+
+For `--format html`, do this after the content-only gate passes. For `--format md`, there's no gate
+to wait on — go straight to publishing once the branch in "Markdown format — Artifact channel" above
+resolved to "publish."
+
+1. Publish with the `Artifact` tool: `file_path` = the file you saved (the html fragment or the md
+   file), `favicon` = one or two emoji fitting the document's topic (reused unchanged if a sidecar
+   from this session already set one — see above), `description` = one sentence on what the page is.
+2. Record the publish so a later refine (even across sessions, once that lands) can find this URL:
+   ```bash
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
+   ```
+3. Report the URL to the user with one line:
+   - **html**: note the design delegation, e.g. "Design delegated to Claude's built-in Artifact
+     renderer — this differs from the local report's look."
+   - **md**: only if the content has Mermaid blocks, note they show as code (see "Markdown format —
+     Artifact channel" above for the exact wording). No diagrams → no extra line needed.
+
+   Phrase whichever applies in whatever language you're already replying in.
+
+**Fallback** — if the `Artifact` tool is unavailable or the publish call fails, don't guess at the
+specific cause and don't ask before falling back:
+- **html**: keep the local fragment you already saved, `open` it as the default HTML channel does,
+  and state the fallback in one generic line (e.g. "Artifact publish unavailable — opened the local
+  file instead.").
+- **md**: deliver the content the normal way instead — insert it directly into the response body (the
+  default `--format md` path above) — and state the fallback in one generic line (e.g. "Artifact
+  publish unavailable — delivered as chat markdown instead.").
 
 ## Error handling
 
@@ -185,6 +319,8 @@ Full procedure, limits (fixed-height clipping, downscaling, render cost), and th
 | File missing/no permission | Abort with message |
 | Empty file | Abort — nothing to visualize |
 | No headings (H1/H2/H3) | Treat as single section |
+| `--artifact` (html): Artifact tool unavailable or publish fails | Fall back to local file + open it + one-line reason, don't ask |
+| `--artifact` (md): Artifact tool unavailable or publish fails | Fall back to chat-inserted markdown + one-line reason, don't ask |
 | Mermaid syntax error after 2 fixes | Remove that diagram, keep section prose |
 
 ## Reference files
