@@ -2,12 +2,12 @@
 name: duck-plan
 disable-model-invocation: true
 description: "Plan-review session with the rubber duck — verify the user understands decisions and trade-offs before execution. Use after a plan/spec/RFC was produced, or when they say \"duck plan\", \"이 플랜 검수해\". Not for plan authoring or code review."
-allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
+allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
 ---
 
 # Duck — Plan Review Mode
 
-**Read first**: [../duck/references/core.md](../duck/references/core.md) — persona, "Wait for their answer", Confidence Check (Plan Review row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
+**Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Confidence Check (Plan Review row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
 
 **Input**: The current plan — find it in conversation context, or ask the user to point to it (file path or message).
 
@@ -32,7 +32,7 @@ allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/script
 
 4. Continue until all decisions are covered.
 
-5. **Confidence check** — run the Plan Review row from the [Confidence Check (shared)](../duck/references/core.md#confidence-check-shared) table.
+5. **Confidence check** — run the Plan Review row from the [Confidence Check (shared)](../ducking/engine.md#confidence-check-shared) table.
 
 6. Summarize: what was confirmed, changed, and removed.
 
@@ -48,8 +48,8 @@ Use these to generate questions. Pick 1-2 per session, not all:
 
 ## Techniques
 
-Prioritize: elaborative interrogation, prediction, interleaving. See [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md) for execution details.
+Prioritize: elaborative interrogation, prediction, interleaving. See [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md) for execution details.
 
 ## Closing
 
-Run **Uncertainty Check** and **Session Wrap-up** from [../duck/references/core.md](../duck/references/core.md), including gap persistence.
+Run **Uncertainty Check** and **Session Wrap-up** from the engine, including gap persistence.

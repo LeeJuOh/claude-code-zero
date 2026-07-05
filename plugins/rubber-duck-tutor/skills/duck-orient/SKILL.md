@@ -3,12 +3,12 @@ name: duck-orient
 disable-model-invocation: true
 description: "Codebase-orientation session with the rubber duck — generate or refresh .claude/orientation.md with interactive exercises. Use when new to a codebase, returning after a break, or says \"duck orient\", \"이 레포 처음이야\"."
 argument-hint: "[refresh]"
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(find *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/recent-gaps.sh *)
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(find *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh *)
 ---
 
 # Duck — Orientation Mode
 
-**Read first**: [../duck/references/core.md](../duck/references/core.md) — persona, "Wait for their answer", Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Hint Ladder, Gotchas. They apply here.
+**Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Hint Ladder, Gotchas. They apply here.
 
 **Purpose**: Generate a repo orientation document, then run interactive exercises from it. For developers new to a codebase or returning after a long break.
 
@@ -19,7 +19,7 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *
 1. **Check for `.claude/orientation.md`**
 
 2. **If not found** (or argument is `refresh`):
-   - Explore the repo following the methodology in [../duck/references/orientation-guide.md](../duck/references/orientation-guide.md)
+   - Explore the repo following the methodology in [../ducking/references/orientation-guide.md](../ducking/references/orientation-guide.md)
    - Generate `.claude/orientation.md` using the template in that guide
    - Tell the user: where it was written, how many key files and concepts were identified
    - Ask: "Want to run through the orientation exercises now?"
@@ -27,7 +27,7 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *
 
 3. **If found** (and not refreshing):
    - Read `.claude/orientation.md`
-   - Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/recent-gaps.sh 3` — surfaces gaps logged in past sessions for this repo
+   - Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh 3` — surfaces gaps logged in past sessions for this repo
    - If output is non-empty: pick the most recent gap and open with a **retrieval check-in** instead of the standard summary: "🦆 꽥 — 지난번에 [gap]에 대한 이해가 약했어. 그 부분 지금 다시 설명할 수 있어?" Wait for answer, then proceed to the exercise sequence.
    - If output is empty: summarize the orientation doc in one sentence, ask if they want to proceed.
    - Run through the **Suggested exercise sequence** section
@@ -37,8 +37,8 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *
 
 ## Techniques
 
-Prioritize: prediction, teach-back, fading scaffolding. See [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md) for execution details.
+Prioritize: prediction, teach-back, fading scaffolding. See [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md) for execution details.
 
 ## Closing
 
-Orientation mode does NOT use the standard Confidence Check (no single artifact to rate — the orientation is open-ended). Skip that step. Run **Uncertainty Check** and **Session Wrap-up** from [../duck/references/core.md](../duck/references/core.md), including gap persistence.
+Orientation mode does NOT use the standard Confidence Check (no single artifact to rate — the orientation is open-ended). Skip that step. Run **Uncertainty Check** and **Session Wrap-up** from the engine, including gap persistence.

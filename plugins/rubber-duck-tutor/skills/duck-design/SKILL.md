@@ -1,12 +1,13 @@
 ---
 name: duck-design
 description: "Pre-coding design sketch with the rubber duck — runs BEFORE implementation. Use when user states implementation intent (\"구현해줘\", \"build me X\") and no code exists yet, or says \"duck design\" / \"sketch first\". Not for code already written — use /duck-verify or /duck-review."
-allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
+disable-model-invocation: true
+allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
 ---
 
 # Duck — Design Mode
 
-**Read first**: [../duck/references/core.md](../duck/references/core.md) — persona, "Wait for their answer", Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
+**Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
 
 **Purpose**: Intercept *before* AI generates the implementation. Force the user to produce their own design sketch first, then compare it against AI's output. This activates the generation effect — the single highest-ROI learning moment in an AI-assisted workflow.
 
@@ -39,7 +40,7 @@ allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/script
 
 > 좋아, 이 정도면 네 머리는 준비됐어. 이제 AI한테 요청해. 결과 받으면 네 스케치랑 다른 부분부터 봐 — 거기가 제일 배울 거 많은 구간이야. 끝나면 `/duck-verify`로 돌아와.
 
-6. **Optional comparison pass** (if user returns with AI output): pivot to `Generation > Comparison` pattern from [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md) — walk through diff between sketch and AI output, ask "뭐가 다르고 왜 그 방향으로 갔을까?"
+6. **Optional comparison pass** (if user returns with AI output): pivot to `Generation > Comparison` pattern from [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md) — walk through diff between sketch and AI output, ask "뭐가 다르고 왜 그 방향으로 갔을까?"
 
 ## When to Skip
 
@@ -55,8 +56,8 @@ allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/script
 
 ## Techniques
 
-Prioritize: prediction, pre-testing, generation-before-instruction. See [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md) for execution details.
+Prioritize: prediction, pre-testing, generation-before-instruction. See [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md) for execution details.
 
 ## Closing
 
-Design mode does NOT use the standard Confidence Check (the user hasn't built anything yet — there's nothing to rate). Skip that step. Run the **Uncertainty Check** and **Session Wrap-up** sections from [../duck/references/core.md](../duck/references/core.md), including gap persistence.
+Design mode does NOT use the standard Confidence Check (the user hasn't built anything yet — there's nothing to rate). Skip that step. Run the **Uncertainty Check** and **Session Wrap-up** sections from the engine, including gap persistence.

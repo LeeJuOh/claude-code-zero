@@ -116,13 +116,20 @@ ship 훅에 두 가지 변경. (1) **Shared ship budget**: `{git push, gh pr cre
 
 ---
 
-## S4 — core.md를 `ducking` 엔진으로 승격
+## S4 — core.md를 `ducking` 엔진으로 승격 ✅ 완료 (2026-07-05, 설계 수정: 엔진은 스킬이 아님)
 
 **Phase:** 2 · **Blocked by:** 없음 — 즉시 시작 가능(단 S5·S6가 이 위에 빌드).
 
+> **2026-07-05 설계 수정 (그릴 세션):** 원안은 "모델 호출 스킬로 승격 + trigger eval 통과"였으나,
+> trigger eval 실측 2/8 — 단일턴 도구가 auto-detect형 스킬에 구조적으로 부적합하고, 25% 안전망은
+> 가짜 안심만 생산. deterministic-over-clever 원칙에 따라 엔진은 **스킬이 아닌 참조 문서**
+> (`skills/ducking/engine.md`)로 확정 — 모드 스킬이 읽어 들이는 공유 콘텐츠. 자동 confront는
+> 전적으로 ship-point 훅 담당. ADR 0003 Consequences에 기록. 이에 따라 원안 기준 1(자동 작동)·
+> 6(trigger eval)은 대체·폐기.
+
 ### What to build
-`core.md`의 공유 규칙을 모델 호출 `ducking` 스킬로 승격 — 에이전트가 rubber-stamping을 감지하면 자동
-작동하는 재사용 이해-규율 엔진. 헬퍼 스크립트(`log-gap.sh`, `recent-gaps.sh`)를 엔진 자체 `scripts/`
+`core.md`의 공유 규칙을 `ducking` 엔진(`skills/ducking/engine.md`)으로 승격 — 모든 모드가 읽는
+재사용 이해-규율 엔진. 헬퍼 스크립트(`log-gap.sh`, `recent-gaps.sh`)를 엔진 자체 `scripts/`
 디렉터리로 옮기고 옛 위치를 참조하던 모든 경로를 재지정. **일곱 줄**이
 `${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/...`를 하드코딩하므로 재지정해야 함: 다섯 모드 SKILL.md
 파일(`duck-design`, `duck-plan`, `duck-verify`, `duck-review`, `duck-orient`)의 `allowed-tools`
@@ -136,19 +143,18 @@ ship 훅에 두 가지 변경. (1) **Shared ship budget**: `{git push, gh pr cre
 산출물 평가에 체계적으로 관대하며, 코드를 쓴 같은 모델이 이해 질문의 채점자까지 겸하므로 물렁해질
 위험이 구조적.
 
-**2026-07-04 보강 — 발동률 검증(trigger eval):** 모델 호출 `ducking`의 자동 작동은 description
-문구가 전부 결정하고, 안 터져도 조용해서 감지 불가("undertriggering" — Anthropic skills 레슨).
-skill-creator-pro의 trigger eval로 rubber-stamping 시나리오에서 실제 발동률을 측정하고 통과해야
-S4 완료.
+~~**2026-07-04 보강 — 발동률 검증(trigger eval)**~~ — 2026-07-05 폐기. 측정은 수행함(2/8);
+결과가 "모델 재량 발동 위에 원칙 A를 얹지 말라"는 설계 신호였고, 엔진의 스킬 지위 자체를 제거하는
+것으로 응답. 상세는 ADR 0003.
 
 ### Acceptance criteria
-- [ ] 모델 호출 `ducking` 스킬이 존재하고 rubber-stamping 감지 시 자동 작동.
-- [ ] 헬퍼 스크립트가 엔진의 새 `scripts/` 경로에서 실행됨.
-- [ ] `grep -rn 'skills/duck/scripts'`가 라이브 참조 없음 반환 — 일곱 재지정 줄 모두 갱신됨. 단 역사
+- [x] `ducking` 엔진 문서가 존재하고(`skills/ducking/engine.md`, 스킬 아님) 모든 모드가 읽어 들임.
+- [x] 헬퍼 스크립트가 엔진의 새 `scripts/` 경로에서 실행됨.
+- [x] `grep -rn 'skills/duck/scripts'`가 라이브 참조 없음 반환 — 일곱 재지정 줄 모두 갱신됨. 단 역사
       문서(`docs/handoff`, `docs/issues` — 이 이슈 자신이 문자열 포함)는 제외.
-- [ ] 어떤 스킬·참조도 옛 `core.md` 경로를 가리키지 않음(grep 깨끗).
-- [ ] 엔진에 관대 채점 금지 규칙 존재 — 모호한 답변을 정답 처리하지 않음.
-- [ ] trigger eval로 rubber-stamping 시나리오 발동률 측정·통과(미발동이 조용히 남지 않음).
+- [x] 어떤 스킬·참조도 옛 `core.md` 경로를 가리키지 않음(grep 깨끗).
+- [x] 엔진에 관대 채점 금지 규칙 존재 — 모호한 답변을 정답 처리하지 않음.
+- [x] ~~trigger eval 발동률 측정·통과~~ → 엔진이 스킬이 아니게 되어 대상 소멸(위 설계 수정 참조).
 
 ### Blocked by
 없음 — 즉시 시작 가능.
@@ -183,7 +189,7 @@ description을 제외한 모든 곳의 리네임을 소유.
       description(S9 소유)과 역사 문서(`docs/handoff`, `docs/issues`, `docs/adr`) 제외.
 
 ### Blocked by
-S5는 S4에 의존(래퍼가 `ducking` 엔진을 호출).
+S5는 S4에 의존(래퍼가 `ducking` 엔진 문서를 읽어 들임).
 
 ---
 
@@ -191,18 +197,20 @@ S5는 S4에 의존(래퍼가 `ducking` 엔진을 호출).
 
 **Phase:** 2 · **Blocked by:** S4, S5.
 
+> **2026-07-05 전제 수정:** 원안은 "정확히 한 스킬만 모델 호출(`ducking`)"이었으나, S4 설계 수정으로
+> `ducking`은 스킬이 아님(참조 문서). 따라서 목표는 **모델 호출 스킬 0개** — 자동 개입 경로는
+> ship-point 훅뿐(ADR 0003). 모델 호출 누수 둘(`duck-design`, `duck` 라우터)의
+> `disable-model-invocation: true` 추가는 2026-07-05 그릴 세션에서 선반영 완료.
+
 ### What to build
-정확히 한 스킬만 모델 호출(`ducking`); 모든 유저 대면 모드(`duck-prebuild`, `duck-verify`,
-`duck-review`, `duck-orient`)와 `duck` 라우터는 유저 호출·**얇게** 됨 — 단계별 프레이밍만 설정하고
-엔진을 호출, 중복 루프 로직 없음. 현재 모델 호출 누수는 하나가 아니라 **둘**: `duck-design`(핸드오프에
-표시됨) **그리고** `duck` 라우터 자체 — 둘 다 `disable-model-invocation: true`가 없음(오늘은
-`duck-plan`/`verify`/`review`/`orient`만 설정). 둘 다 유저 호출로 끝나야 하고, `ducking`이 유일한
-모델 호출 스킬.
+모델 호출 스킬 **0개**; 모든 유저 대면 모드(`duck-prebuild`, `duck-verify`, `duck-review`,
+`duck-orient`)와 `duck` 라우터는 유저 호출·**얇게** 됨 — 단계별 프레이밍만 설정하고 엔진
+(`skills/ducking/engine.md`)을 읽어 들임, 중복 루프 로직 없음.
 
 ### Acceptance criteria
-- [ ] 정확히 한 스킬만 모델 호출 가능(`ducking`); 나머지 전부 `disable-model-invocation: true` 설정.
-- [ ] 어떤 유저 대면 래퍼도 엔진 루프를 중복하지 않음 — 각자 `ducking` 호출.
-- [ ] 이전 `duck-design` 자동 팝 동작이 래퍼에서 더는 발생하지 않음.
+- [x] 모델 호출 가능 스킬 0개 — 전 스킬 `disable-model-invocation: true` (2026-07-05 선반영).
+- [ ] 어떤 유저 대면 래퍼도 엔진 루프를 중복하지 않음 — 각자 엔진 문서를 읽어 들임.
+- [x] 이전 `duck-design` 자동 팝 동작이 래퍼에서 더는 발생하지 않음 (flag 선반영으로 해소).
 
 ### Blocked by
 S6는 S4·S5에 의존.

@@ -6,9 +6,10 @@
 ## Language
 
 **ducking**:
-모델 호출 이해-규율 엔진 — 모든 유저 대면 모드가 호출하는 재사용 루프. 에이전트가 rubber-stamping을
-감지하면 자동 작동.
-_Avoid_: core, core.md, shared rules
+이해-규율 엔진 — 모든 유저 대면 모드가 읽어 들이는 공유 콘텐츠(페르소나·질문법·세션 관리),
+`skills/ducking/engine.md`. 의도적으로 스킬이 아님 — 호출 대상이 아니라 참조 문서. 자동 confront는
+ship-point 훅이 담당(ADR 0003).
+_Avoid_: core, core.md, shared rules, auto-trigger, 감지하면 자동 작동, ducking 스킬
 
 **Rubber-stamping**:
 AI 생성 산출물(코드·계획·설계)을 이해 없이 수용하는 것. 플러그인이 막으려는 실패 모드.

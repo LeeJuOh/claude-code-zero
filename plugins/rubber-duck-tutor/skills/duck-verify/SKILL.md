@@ -2,12 +2,12 @@
 name: duck-verify
 disable-model-invocation: true
 description: "Code-verification session with the rubber duck — user explains code just written, finds edge cases, fixes planted bugs. Use after implementing a feature, or when they say \"duck verify\", \"재확인해줘\". Not for plan review (/duck-plan) or PR review (/duck-review)."
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
 ---
 
 # Duck — Code Verification Mode
 
-**Read first**: [../duck/references/core.md](../duck/references/core.md) — persona, "Wait for their answer", Confidence Check (Code Verification row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Hint Ladder, Gotchas. They apply here.
+**Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Confidence Check (Code Verification row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Hint Ladder, Gotchas. They apply here.
 
 **Input**: Recently changed files — use `git diff` or conversation context.
 
@@ -36,7 +36,7 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/s
    If they miss it → point to the specific location and explain why it's a problem.
    → Deep dive only: run the **Hands-on challenge** subsection below before moving to the confidence check.
 
-6. **Confidence check** (after 2+ questions) — run the Code Verification row from the [Confidence Check (shared)](../duck/references/core.md#confidence-check-shared) table.
+6. **Confidence check** (after 2+ questions) — run the Code Verification row from the [Confidence Check (shared)](../ducking/engine.md#confidence-check-shared) table.
 
 ## Hands-on challenge (opt-in, Deep dive only)
 
@@ -47,7 +47,7 @@ Skip during Quick check / Standard. Offer, don't impose:
 If they accept:
 - Give file path + function name only. No diff, no snippets.
 - They type the fix themselves.
-- If stuck, use the Hint Ladder (see [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md)) — never reveal code.
+- If stuck, use the Hint Ladder (see [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md)) — never reveal code.
 - When done, ask: "왜 이렇게 고쳤어? 다른 접근도 있었을 텐데."
 
 Why this matters: teach-back tests the cognitive stage; typing the fix activates the associative→autonomous stage of procedural memory. Reading AI-generated fixes cannot do this.
@@ -60,8 +60,8 @@ Why this matters: teach-back tests the cognitive stage; typing the fix activates
 
 ## Techniques
 
-Prioritize: debug this, trace the path, error analysis, pair finding. See [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md) for execution details.
+Prioritize: debug this, trace the path, error analysis, pair finding. See [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md) for execution details.
 
 ## Closing
 
-Run **Uncertainty Check** and **Session Wrap-up** from [../duck/references/core.md](../duck/references/core.md), including gap persistence.
+Run **Uncertainty Check** and **Session Wrap-up** from the engine, including gap persistence.

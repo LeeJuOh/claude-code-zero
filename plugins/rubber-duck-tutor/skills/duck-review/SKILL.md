@@ -2,12 +2,12 @@
 name: duck-review
 disable-model-invocation: true
 description: "PR/change-review session with the rubber duck — user justifies every change and predicts consequences. Use before commit/push/PR, or when they say \"duck review\", \"리뷰 전에 점검\". Not for code-level explanation (/duck-verify) or plan review (/duck-plan)."
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/duck/scripts/log-gap.sh *)
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
 ---
 
 # Duck — PR / Change Review Mode
 
-**Read first**: [../duck/references/core.md](../duck/references/core.md) — persona, "Wait for their answer", Confidence Check (PR/Change Review row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
+**Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Confidence Check (PR/Change Review row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
 
 **Input**: Run `git diff` (or `git diff --staged`, or PR diff).
 
@@ -33,7 +33,7 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *
 
    After their answer, compare with the actual implementation. Discuss trade-offs.
 
-5. **Confidence check** — run the PR/Change Review row from the [Confidence Check (shared)](../duck/references/core.md#confidence-check-shared) table.
+5. **Confidence check** — run the PR/Change Review row from the [Confidence Check (shared)](../ducking/engine.md#confidence-check-shared) table.
 
 ## Temporal cost simulation
 
@@ -54,8 +54,8 @@ Follow-ups depending on their answer:
 
 ## Techniques
 
-Prioritize: teach-back, generation then comparison, concrete to abstract. See [../duck/references/exercise-patterns.md](../duck/references/exercise-patterns.md) for execution details.
+Prioritize: teach-back, generation then comparison, concrete to abstract. See [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md) for execution details.
 
 ## Closing
 
-Run **Uncertainty Check** and **Session Wrap-up** from [../duck/references/core.md](../duck/references/core.md), including gap persistence.
+Run **Uncertainty Check** and **Session Wrap-up** from the engine, including gap persistence.

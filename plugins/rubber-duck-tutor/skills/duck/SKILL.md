@@ -1,12 +1,13 @@
 ---
 name: duck
 description: "Rubber duck tutor — auto-detects which review mode to run. Use when the user says \"duck\", \"tutor\", \"quiz me\", \"do I understand this\", or mentions rubber-stamping or learning while coding. For a specific phase use /duck-design, /duck-plan, /duck-verify, /duck-review, or /duck-orient."
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *)
+disable-model-invocation: true
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
 ---
 
 # Duck (auto-detect)
 
-Auto-detects which mode fits the user's current state and routes to the matching mode skill. Read [references/core.md](references/core.md) for shared persona, principles, and session-management rules — they apply to every mode.
+Auto-detects which mode fits the user's current state and routes to the matching mode skill. Read [`../ducking/engine.md`](../ducking/engine.md) for shared persona, principles, and session-management rules — they apply to every mode.
 
 ## Mode Map
 
@@ -46,4 +47,4 @@ If the user wants to keep going inside `/duck` instead of switching to the mode-
 
 ## Shared Rules
 
-All persona, opening line, "Wait for their answer", Confidence Check, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Branch-first workflow + fallback, Session Limits, Facilitation, and Gotchas live in [references/core.md](references/core.md). Read it before running any flow.
+All persona, opening line, "Wait for their answer", Confidence Check, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Branch-first workflow + fallback, Session Limits, Facilitation, and Gotchas live in [`../ducking/engine.md`](../ducking/engine.md). Read it before running any flow.
