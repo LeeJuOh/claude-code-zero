@@ -2,7 +2,7 @@
 
 > 상태: 구현 중 — S1~S8·S10~S12·S14 완료(2026-07-06 세션 — S6 잔여 검증 + S7 config 다이얼 + S8
 > session-scoping + S10 confrontation telemetry + S11 blind-spot 정조준 + S12 ignore streak→scoreboard
-> 강등 구현·수동 테스트 완료; S8·S10·S11은 이번 세션 시작 시 이미 커밋됨, S12는 아직 미커밋),
+> 강등 구현·수동 테스트 완료; S8·S10·S11은 이번 세션 시작 시 이미 커밋됨, S12는 커밋 `14f1062`),
 > **S9(정체성 재작성)는 S13 대기 — 다음은 S13부터**(S13 완료 후 S9로 마무리) · 생성: 2026-06-21 · 확장:
 > 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR
 > 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
@@ -22,9 +22,9 @@ S9의 블로커 S5·S10·S11·S12 전부 충족됨).
 
 ### Context
 
-2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10·S11·S12를 순서대로 구현·수동 테스트까지 마쳤다(S12는 이번
-세션에서 구현, 아직 미커밋 — 커밋은 유저 명시 요청 시에만 하는 전역 규칙 때문에 보류 중). 유저 요청대로
-슬라이스 끝나면 멈추고 보고하는 리듬 유지 중 — S12에서 정지.
+2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10·S11·S12를 순서대로 구현·수동 테스트·커밋까지 마쳤다(S12는
+커밋 `14f1062`, git log 참조). 유저 요청대로 슬라이스 끝나면 멈추고 보고하는 리듬 유지 중 — S12에서
+정지.
 
 이어갈 때 참고할 것:
 - **S7 jq footgun**: `.key // default`는 JSON `false`를 삼킨다 — boolean 다이얼(`enabled`)은
@@ -66,7 +66,7 @@ S9의 블로커 S5·S10·S11·S12 전부 충족됨).
 
 ### Current Progress
 
-S1-S8·S10-S12·S14 완료, S9·S13 남음(git log 참조 — S12는 이번 세션 신규, 커밋 전). S12 신규/변경 파일:
+S1-S8·S10-S12·S14 완료, S9·S13 남음(git log 참조 — S12는 커밋 `14f1062`). S12 신규/변경 파일:
 `skills/ducking/scripts/ignore-streak.sh`(신설 — streak 계산 전용), `hooks/post-push.sh`·
 `hooks/post-pr.sh`(rate-limit 통과 후 streak 계산 + question/scoreboard 분기 추가, S10 telemetry
 fire/outcome 로직과 S11 triage 지시는 question 분기 안에 그대로 보존), `skills/ducking/engine.md`(신설
