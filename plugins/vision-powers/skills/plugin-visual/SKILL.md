@@ -4,8 +4,8 @@ description: >
   Analyze agent extensions and generate self-contained HTML wiki reports with security audit
   and architecture diagrams. Use when asked to analyze, audit, or document a plugin.
   Triggers on GitHub plugin URLs or local plugin paths.
-argument-hint: "path-or-url [--format html|md] [--lang code]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Bash(gh repo clone *), Bash(rm -rf /tmp/plugin-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
+argument-hint: "path-or-url [--format html|md] [--lang code] [--artifact (native design + publish)]"
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Artifact, Bash(gh repo clone *), Bash(rm -rf /tmp/plugin-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
 ---
 
 # Agent Extension Visual
@@ -57,6 +57,13 @@ Determine **how** to present the result (independent of analysis mode):
 | HTML **(default)** | Default for `analyze` mode | `analyze` only |
 | Inline markdown | "--format md", "markdown", "md", "inline", "text" | `analyze` only |
 | Inline markdown **(always)** | — | `security`, `overview` (too brief for HTML) |
+| Artifact publish | `--artifact` switch | `analyze` + HTML only — see "Phase 5R — Artifact channel" below |
+
+`--artifact` also triggers on natural-language equivalents — "as an artifact", "publish as a link",
+"share as a URL" — without the literal flag, in whatever language the user is writing in. It's
+scoped to `analyze` mode with HTML format the same way diff-visual scoped its own artifact channel:
+`security` and `overview` modes stay markdown-only (too brief for a full report to begin with), and
+`--format md` combined with `--artifact` has no publish path in this slice.
 
 ### Intent Check
 
@@ -365,6 +372,82 @@ Full procedure, limits (fixed-height clipping, downscaling, render cost), and th
 
 **5. Open and present**:
 Run `open <output-path>`. Tell the user the report is ready and ask if they want changes.
+
+#### Phase 5R — Artifact channel (`--artifact`)
+
+Same content decisions as Phase 5R above (section set, per-component analysis, source links,
+anti-slop-tells) — only the page's shape and delivery mechanism change, because it ships inside
+Claude Code's official Artifacts feature instead of as a local file.
+
+**Before writing anything**, load the built-in `artifact-design` skill (Skill tool, skill name
+`artifact-design`). This is a tool contract MUST, not a suggestion — it conditions you for the CSP
+sandbox this page runs in, and skipping it is how a page ends up broken on publish.
+
+Then write the page as a **fragment**, not a full document:
+- No `<!DOCTYPE>`, `<html>`, `<head>`, or `<body>` tags — content only, starting from your first
+  real element. The Artifact tool wraps the file in that skeleton at publish time.
+- Set a concise `<title>` directly in the content — it names the artifact in the browser tab. Keep
+  it stable across every republish of the same plugin in this session.
+- **Zero external requests** — the Artifact viewer's CSP blocks all of them. No Mermaid CDN
+  `<script>`, no hotlinked images or fonts. The Architecture, Feature Deep Dive, and Environment Fit
+  diagrams become inline SVG or HTML+CSS layouts instead (follow the artifact-design skill's
+  guidance) — same diagram-type decision from `diagram-type-selection.md`, different rendering
+  technique. `mermaid-patterns.md`'s CDN setup and `classDef` rules don't apply here. Source links
+  (`github_url` or `file://`) stay as plain `<a href>` navigation — that's a top-level link click,
+  not a fetched resource, so CSP doesn't touch it.
+- Support both themes: `@media (prefers-color-scheme: dark)` as the default signal, plus
+  `:root[data-theme="dark"]` / `:root[data-theme="light"]` overrides — the artifact viewer's theme
+  toggle stamps `data-theme` on the root and it must win in both directions.
+
+**Watch density here more than on doc-visual or diff-visual's artifact pages.** This report packs
+more concurrent sections — security permission matrix, architecture/component map, feature deep
+dive, environment fit, skill design quality, plugin profile — into the same fragment width. A wide
+permission table or a 15+-component architecture diagram that reads fine in the local channel's
+layout is the most likely place a fragment overflows or wraps awkwardly; this is exactly what the
+S4 local-vs-artifact comparison run is for (see the issue's acceptance criteria), not something to
+assume away here.
+
+Save the fragment to
+`${CLAUDE_PLUGIN_DATA}/reports/{YYYY-MM-DD}-{plugin-name}-report.artifact.html` — a distinct
+filename from the default channel's `...-report.html`, so the two never collide or overwrite each
+other for the same plugin.
+
+Re-running this skill on the same plugin within the same conversation reuses that same path.
+Publishing to the same `file_path` again redeploys to the same URL instead of minting a new one, so
+keep the `<title>` and `favicon` identical across those republishes (the tool reads a changed
+favicon as a different page). If `${output-path}.artifact.json` already exists from an earlier
+publish this session, read it first and reuse its `title`/`favicon` verbatim.
+
+**Validation**: run the gate in content-only mode instead of the full check:
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path> --content-only
+```
+This checks only missing images, raw markdown leakage, anchor hrefs, image alt, and placeholders —
+the facts that must survive regardless of who designed the page. Density/classDef/palette checks
+don't apply: the built-in artifact-design skill owns the design layer on this channel (ADR 0007).
+
+**Skip the visual self-audit (`render-report.js`) entirely on this channel.** The rendered picture
+is the built-in artifact-design skill's responsibility here, not this skill's — there's no local
+Chrome render loop to run before publishing.
+
+**Publish**, once the gate passes:
+1. Publish with the `Artifact` tool: `file_path` = the fragment you saved, `favicon` = one or two
+   emoji fitting the plugin's purpose (reused unchanged if a sidecar from this session already set
+   one — see above), `description` = one sentence on the plugin and what the report covers.
+2. Record the publish so a later refine (even across sessions, once that lands) can find this URL:
+   ```bash
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
+   ```
+3. Report the URL to the user with one line noting the design delegation — e.g. "Design delegated
+   to Claude's built-in Artifact renderer — this differs from the local report's look." (phrase it
+   in whatever language you're already replying in).
+
+**Fallback** — if the `Artifact` tool is unavailable or the publish call fails: keep the local
+fragment you already saved, `open` it as the default HTML channel does, and state the fallback in
+one generic line (e.g. "Artifact publish unavailable — opened the local file instead."). Don't
+guess at the specific cause, and don't ask before falling back.
+
+Continue to Phase 7 (cleanup) as normal once publish (or fallback) completes.
 
 #### Phase 7: Cleanup
 

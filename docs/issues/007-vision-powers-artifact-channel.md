@@ -1,10 +1,27 @@
 # vision-powers Artifact 채널: claude.ai 퍼블리시를 전달 채널로 (공식 Artifacts 위임)
 
-> 상태: 구현 중 (S1·S2·S3 완료, S4 대기 — 아래 참고) · 생성: 2026-07-05
+> 상태: 구현 중 (S1·S2·S3·S4 완료 — S4 브라우저 실렌더링 확인만 다음 세션으로 이월, 아래 참고) · 생성: 2026-07-05
 > 용어집: `docs/context/vision-powers.md` (신규 용어: **Artifact channel**)
 > 결정 근거: `docs/adr/0007-artifact-channel-delegates-visual-design.md` (선행 `0002` 직접작성 · `0005` grounding)
 > 공식 문서: `https://code.claude.com/docs/en/artifacts`
 > 출처: grill-with-docs + domain-modeling 세션 (2026-07-05)
+
+## 핸드오프 (다음 세션 — 2026-07-06 세션 종료 시점)
+
+**첫 액션**: 아래 두 URL을 **실제 로그인된** 브라우저에서 열어 눈으로 확인 (S4 "미완료" 항목) →
+확인 끝나면 S4.5 시작 여부를 사용자에게 확인. S4.5를 바로 시작하지 말 것 — 이번 세션은 "슬라이스
+끝나면 멈추고 보고" 지시로 종료됨.
+
+- plugin-visual (worktree-plus 대상): https://claude.ai/code/artifact/e0d6a95a-d868-4ee7-8d1f-48cedef9c9da
+  — 확인 포인트: 권한 매트릭스가 좁은 폭에서 가로 스크롤로 처리됐는지, 깨지진 않았는지.
+- context-health-visual (이 리포지토리 세션 자체를 스캔): https://claude.ai/code/artifact/63bc8fc0-a7e7-4303-973b-f72be4b75d4b
+  — 확인 포인트: §5 Trigger Collisions 충돌 쌍 문자열이 줄바꿈되는지, KPI 카드 그리드가 자연스럽게 랩되는지.
+
+**막힌 이유**: 이번 세션의 `claude-in-chrome` 확장 탭 그룹이 claude.ai 로그인 세션을 못 읽어 두 URL
+모두 "Sign in" 화면만 나왔음 (사용자가 별도로 로그인했다고 확인했으나 확장 탭 그룹엔 반영 안 됨,
+원인 미상 — 다른 프로필/탭 그룹 격리로 추정). 2회 재시도 후 중단.
+
+**현재 저장소 상태**: `develop` 브랜치, 커밋 안 된 수정 3개뿐 — `docs/issues/007-vision-powers-artifact-channel.md`(이 문서), `plugins/vision-powers/skills/context-health-visual/SKILL.md`, `plugins/vision-powers/skills/plugin-visual/SKILL.md`. S4 세부 내용·근거는 아래 S4 섹션의 "구현 완료 (2026-07-06)" 참고.
 
 ## What to build
 
@@ -163,11 +180,54 @@ validate .` 통과(버전 미지정 경고 11건은 기존과 동일, 신규 경
 
 ### Acceptance criteria
 
-- [ ] `plugin-visual` artifact 분기 (4-에이전트 분석 포함 페이지). **다음 세션 여기부터** — S1/S3 패턴
-  그대로 복제(스킬 로드 MUST → fragment → gate `--content-only` → 퍼블리시 → 사이드카). 고유 리스크:
-  4-에이전트 분석 리포트(보안 표 등)가 artifact 프래그먼트에서 레이아웃이 깨지는지 실제로 봐야 함.
-- [ ] `context-health-visual` artifact 분기.
-- [ ] 각각 로컬 대비 1회 비교 기록 (도메인 레이아웃 표본 — ADR 0007 Plan B 판정 재료).
+- [x] `plugin-visual` artifact 분기 (4-에이전트 분석 포함 페이지). S1/S3 패턴 복제(스킬 로드 MUST →
+  fragment → gate `--content-only` → 퍼블리시 → 사이드카). 고유 리스크(보안 표가 프래그먼트에서
+  깨지는지)는 실제 생성으로 확인 — 아래 "구현 완료" 참고.
+- [x] `context-health-visual` artifact 분기.
+- [x] 각각 로컬 대비 1회 비교 기록 (도메인 레이아웃 표본 — ADR 0007 Plan B 판정 재료).
+
+### 구현 완료 (2026-07-06)
+
+`plugin-visual` SKILL.md: frontmatter(`allowed-tools`에 `Artifact`, `argument-hint`), Output Format
+Detection에 `--artifact` 행 + 자연어 동치(analyze+HTML 전용, security/overview·`--format md` 조합은
+스코프 밖 — diff-visual이 세운 html-only 선례 재사용), 신규 "Phase 5R — Artifact channel" 절(스킬
+로드 MUST·fragment·CDN 이중 금지·테마 대응·밀도 리스크 메모·세션 내 경로 재사용·content-only
+게이트·visual self-audit 스킵·퍼블리시+사이드카+폴백). `context-health-visual` SKILL.md: 동일
+패턴(frontmatter, Input Parsing 행, 신규 "HTML mode — Artifact channel" 절, 프라이버시 가드 "all
+channels"로 재확인). 스크립트 변경 없음(`artifact-gate.js --content-only`·`write-artifact-sidecar.js`
+둘 다 기존 그대로 재사용). `claude plugin validate .` 통과(기존 11건 버전 경고만, 신규 경고 없음).
+
+**검증 (로컬 vs artifact 비교, 각 스킬 1회)**: 이번 세션의 vision-powers 플러그인 캐시
+(`~/.claude/plugins/cache/.../vision-powers/4.5.1`)가 2026-07-01자로 이번 슬라이스보다 오래돼
+`Skill` 도구로 직접 부르면 구 로직이 실행됨 — 대신 서브에이전트 두 개가 리포지토리의 실제 SKILL.md
+소스를 그대로 따라가며 로컬 HTML과 artifact 프래그먼트를 각각 생성·게이트하도록 했다(내장
+`artifact-design` 스킬 로드 포함, 4-에이전트 분석은 실제 `vision-powers:feature-architect`/
+`security-auditor` 서브에이전트로 수행). 이후 두 artifact 프래그먼트는 `Artifact` 툴로 실제 퍼블리시,
+사이드카 기록까지 완료:
+
+- **plugin-visual** (대상: `plugins/worktree-plus`, 실제 7파일 소형 플러그인 — 훅 3개·스킬 1개):
+  로컬 `2026-07-06-worktree-plus-report.html` 풀 게이트+visual self-audit 통과. artifact
+  `2026-07-06-worktree-plus-report.artifact.html` content-only 게이트 통과 → 퍼블리시
+  https://claude.ai/code/artifact/e0d6a95a-d868-4ee7-8d1f-48cedef9c9da (사이드카 확인).
+  **고유 리스크 판정**: 권한 매트릭스(10행×4열, 최장 셀 ~81자)가 로컬에서는 한눈에 보이지만
+  프래그먼트 폭에서는 `overflow-x:auto`+`min-width:640px`로 감싸 가로 스크롤이 필요해짐 — "훑어보기
+  →스크롤"로 실제 체감이 바뀌는 지점(디자인 결함이 아니라 트레이드오프로 처리). 아키텍처 다이어그램
+  (8노드/8엣지)은 Mermaid 대신 세로형 HTML/CSS flow로 재설계돼 저위험으로 판정.
+- **context-health-visual**: 로컬 `2026-07-05-context-health-visual.html` 풀 게이트+visual
+  self-audit 통과. artifact `2026-07-05-context-health-visual.artifact.html` content-only 게이트
+  통과, 프라이버시 가드(raw CLAUDE.md/MEMORY.md 본문 미노출) 확인 → 퍼블리시
+  https://claude.ai/code/artifact/63bc8fc0-a7e7-4303-973b-f72be4b75d4b (사이드카 확인).
+  **고유 리스크 판정**: §5 Trigger Collisions의 충돌 쌍 문자열(최장 79자)이 좁은 프래그먼트 폭에서
+  잘릴 위험이 있어 `overflow-wrap: anywhere`를 artifact 전용 CSS에 추가(로컬 페이지엔 불필요).
+  KPI 카드 그리드(13장, `auto-fit minmax(160px,1fr)`)는 고정 열 수가 아니라서 2-per-row로 자연스럽게
+  줄어들며 orphan 없이 랩됨 — 저위험.
+
+**미완료 — 다음 세션**: 위 두 URL을 실제 브라우저에서 렌더링 확인은 아직 못 함(이번 세션의
+`claude-in-chrome` 확장 탭 그룹이 claude.ai 로그인 세션을 못 읽어 "Sign in" 화면만 노출 — 사용자가
+별도로 로그인했으나 확장 탭 그룹에는 반영 안 됨, 원인 미상). 서브에이전트의 구조적 판정(치수·문자열
+길이·레이아웃 메커니즘 기반)까지만 확보된 상태 — 다음 세션에서 브라우저로 두 URL 열어 실제 렌더링
+(특히 위 두 고유 리스크 지점)을 눈으로 1회 확인 권장. 사이드카 파일 경로:
+`{report}.artifact.html.artifact.json` (두 건 모두 기록 완료, URL 재사용 가능).
 
 ### Blocked by
 
