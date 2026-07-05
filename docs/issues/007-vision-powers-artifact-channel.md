@@ -88,10 +88,11 @@ md 리포트를 **무변형 그대로** 퍼블리시한다 (공식 스펙: `.md`
 
 ### Acceptance criteria
 
-- [ ] **사전 테스트 (5분)**: claude.ai md 렌더러가 Mermaid 블록을 그리는지 확인, 결과를 이 이슈에 기록.
-- [ ] `--format md --artifact`: 생성된 md 파일 그대로 퍼블리시 (재구조화 없음 — 이미 visual artifact).
-- [ ] Mermaid 미렌더 확인 시: md+artifact에선 다이어그램이 코드 블록으로 보인다는 한계 한 줄 (README·SKILL.md).
-- [ ] 폴백: 퍼블리시 불가 = 채팅 md 전달로 강등 + 사유.
+- [x] **사전 테스트 (5분)**: claude.ai md 렌더러가 Mermaid 블록을 그리는지 확인, 결과를 이 이슈에 기록. → **미렌더 확인**(2026-07-05). `mermaid` 코드블록 포함 md 파일을 Artifact로 퍼블리시 후 브라우저 실제 확인: 소스 그대로 monospace 코드블록으로 표시, 다이어그램 미생성. md+artifact 채널은 다이어그램을 코드로만 전달.
+- [ ] **명시 요청** (`--format md --artifact` 직접 입력): 묻지 않고 md 그대로 퍼블리시 (재구조화 없음 — 이미 visual artifact). 다이어그램 포함 시 URL 옆 한 줄: "다이어그램은 코드로 표시 — 렌더는 `--format html --artifact`".
+- [ ] **모호 요청** (자연어 "링크로 공유해줘" 등 + md 리포트에 mermaid 블록 존재): AskUserQuestion 1회 — ① html+artifact로 재생성 (다이어그램 렌더, 추천) ② md 그대로 퍼블리시 (다이어그램 코드) ③ 로컬 유지. 다이어그램 없으면 묻지 않고 md 퍼블리시.
+- [ ] 한계 한 줄 문서화: md+artifact에선 다이어그램이 코드 블록으로 보임 (README·SKILL.md — 사전 테스트로 확정, 2026-07-05).
+- [ ] 폴백: 퍼블리시 불가 = 채팅 md 전달로 강등 + 사유. (폴백은 여전히 묻지 않음 — 질문은 퍼블리시 **전** 형식 선택에만.)
 
 ### Blocked by
 
