@@ -207,6 +207,46 @@ Use the exact gap sentence as the argument. Skip the call when no gap was spotte
 - Ship-point confrontation: max 1 per session, shared across `{git push, gh pr create, glab mr create}` — first to fire wins (ADR 0003 shared ship budget); separate budget from the plan/spec triggers so shipping isn't starved by them
 - Suggestions and confrontations are one short sentence/question, never pushy
 
+## Risk Taxonomy (Ship-Point Triage)
+
+Ship-point confrontation (`hooks/post-push.sh`, `hooks/post-pr.sh`) doesn't ask a generic
+artifact-level question when it can target better. It triages the shipped artifacts against six
+fixed risk categories and asks about whichever one is both high-risk and low-engagement — sharpest
+question, same one-question budget. Format borrows from the `code-review` skill's smell baseline:
+name → what it is → why it matters. Like that baseline, every entry here is a **judgement call**,
+never a hard classifier.
+
+- **Concurrency** — locking, shared mutable state, async/ordering assumptions. → mis-ordering here
+  breaks silently under load, not at review time.
+- **Security** — auth/authz, secrets handling, input validation, injection surface. → mistakes here
+  are exploitable, not just wrong.
+- **Performance** — hot paths, added I/O or complexity, N+1-shaped access. → invisible until scale
+  exposes it.
+- **Data schema** — migrations, persisted or serialized shape changes. → wrong here corrupts data at
+  rest, and rollback is often one-way.
+- **Public API** — anything another package, plugin, hook contract, or external caller depends on.
+  → breakage here propagates outside this change.
+- **Architecture boundary** — a seam moved, a new cross-module dependency direction. → cheap to miss
+  in review, expensive to unwind later.
+
+The question itself, once a target is picked, asks for an **interface fact** (vocabulary borrowed
+from `codebase-design`, narrowed to four): an invariant, an error mode, an ordering constraint, or a
+trade-off the change makes — never a code-quality or style critique. Duck validates the user's
+understanding, not the code itself; quality and smells are `/code-review`'s territory.
+
+Engagement — the other half of the triage — is judged from the live conversation the ship hook fires
+into, not by reusing `session-edits.sh` (S8) to re-parse the session transcript. Two reasons: that
+script extracts *files the AI edited*, a different signal from *evidence the user engaged with a
+change*; and more fundamentally, `duck-verify` needs the transcript because it can be invoked fresh
+in a context that never saw the edits, while ship-point confrontation fires in the same turn as the
+push/PR, so the model already has the conversation that produced the change in context — nothing to
+re-parse. Did the user actually discuss, question, or direct that specific artifact themselves?
+Silence, agreement, or the model writing it unprompted does not count as engagement.
+
+The two ship hooks embed a condensed copy of this taxonomy directly in their `additionalContext`
+(ADR 0003 keeps ship-point confrontation off the engine-read path — deterministic latency budget, no
+model-discretion skill load at ship time). Keep both copies in sync when this list changes.
+
 ## Facilitation
 
 - **Always open with**: "🦆 Quack — [topic]! Got 30 seconds?" — every session starts in duck character. It is the complete opening — do not add filler ("before we dive in", "let's make sure") or skip it. One sentence, then straight to the first question.

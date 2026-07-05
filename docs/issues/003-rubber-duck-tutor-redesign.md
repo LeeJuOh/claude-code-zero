@@ -1,9 +1,9 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 중 — S1~S8·S10·S14 완료(2026-07-06 세션 — S6 잔여 검증 + S7 config 다이얼 + S8
-> session-scoping + S10 confrontation telemetry 구현·수동 테스트 완료; S8은 이번 세션 시작 시 이미
-> 커밋 `140527a`로 확인됨), **S9(정체성 재작성)는 S11·S12 대기 — 다음은 S11부터**(S10이 S12의 전제라
-> 순서대로 먼저 잡음) · 생성: 2026-06-21 · 확장:
+> 상태: 구현 중 — S1~S8·S10·S11·S14 완료(2026-07-06 세션 — S6 잔여 검증 + S7 config 다이얼 + S8
+> session-scoping + S10 confrontation telemetry + S11 blind-spot 정조준 구현·수동 테스트 완료; S8·S10은
+> 이번 세션 시작 시 이미 커밋됨), **S9(정체성 재작성)는 S12 대기 — 다음은 S12부터**(S10·S11이 S12의
+> 전제라 순서대로 먼저 잡음) · 생성: 2026-06-21 · 확장:
 > 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR
 > 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
@@ -17,36 +17,46 @@ confrontation, artifact-level vs code-level comprehension, shared ship budget).
 
 ### First Action
 
-S11(Blind-spot 정조준)부터 시작 — 블로커 S3·S4 완료, 즉시 착수 가능. 이후 S12 → S13 → S9 순.
+S12(Ignore streak → scoreboard 강등)부터 시작 — 블로커 S10·S11 완료, 즉시 착수 가능. 이후 S13 → S9 순.
 
 ### Context
 
-2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10을 순서대로 구현·수동 테스트·커밋까지 마쳤다(git log 참조).
-유저 요청대로 슬라이스 끝나면 멈추고 보고하는 리듬 유지 중 — S10에서 정지.
+2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10·S11을 순서대로 구현·수동 테스트·커밋까지 마쳤다(git log 참조).
+유저 요청대로 슬라이스 끝나면 멈추고 보고하는 리듬 유지 중 — S11에서 정지.
 
 이어갈 때 참고할 것:
 - **S7 jq footgun**: `.key // default`는 JSON `false`를 삼킨다 — boolean 다이얼(`enabled`)은
   raw-value 비교로 처리(`hooks/lib.sh`의 `duck__is_enabled` 참조). 새 config 키 추가 시 재확인.
-- **S8↔S11 파서 공유**: `session-edits.sh`(트랜스크립트를 한 줄씩 raw 파싱 — 깨진 줄 하나가 전체를
-  안 죽임)를 S11의 engagement 판정이 재사용할 수 있는지 착수 시 먼저 확인.
+- **S8↔S11 파서 공유 — 해소됨**: 재사용 안 하기로 결정. `session-edits.sh`는 *AI가 편집한 파일*을
+  뽑는 스크립트라 S11이 필요로 하는 *유저의 논의/열람 흔적*과는 다른 신호이고, 결정적으로 ship-point
+  confrontation은 push/PR을 만든 바로 그 대화 턴에서 발사되므로(컴팩션 없는 한) 모델이 이미 대화
+  전체를 컨텍스트로 갖고 있어 재파싱이 불필요 — `duck-verify`(S8)는 편집을 못 본 새 컨텍스트에서
+  호출될 수 있다는 게 다른 점. 근거는 `engine.md`의 "Risk Taxonomy" 섹션 후반부에 기록.
 - **S10에서 잡은 버그**: ship 훅에서 `set -u` 아래 `${CLAUDE_PLUGIN_ROOT}`를 무가드로 참조하면 훅
   전체가 죽어 confrontation이 안 나갈 수 있었음 — `[[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]` 가드로 고침
-  (`session-start.sh`의 `${CLAUDE_ENV_FILE:-}` 선례 재사용). S11·S12도 훅에 새 Bash 호출 추가 시 이
+  (`session-start.sh`의 `${CLAUDE_ENV_FILE:-}` 선례 재사용). S12도 훅에 새 Bash 호출 추가 시 이
   가드 패턴 따를 것.
-- **S10 설계 판단**: ship confrontation은 `engine.md`를 안 읽는 경로다(ADR 0003·S4 — 훅의
-  `additionalContext`가 자기완결적 지시문). 그래서 outcome 로깅 지시도 훅 안에 직접 넣었고
-  `engine.md`는 안 건드렸다. S11·S12도 같은 패턴을 따를지는 열린 질문.
+- **S10·S11 설계 판단(확정 패턴)**: ship confrontation은 `engine.md`를 안 읽는 경로다(ADR 0003·S4 —
+  훅의 `additionalContext`가 자기완결적 지시문). S10의 outcome 로깅 지시, S11의 risk taxonomy 요약
+  모두 훅 안에 직접 넣었고 `engine.md`에는 사람이 읽는 canonical 사본만 남겼다("keep both copies in
+  sync" 주석 첨부). **S12도 이 패턴을 따를 것** — 더는 열린 질문 아님: ignore-streak 계산과
+  scoreboard 지시 전부 훅 스크립트(`post-push.sh`/`post-pr.sh`) 안에서 결정론적으로 처리.
+- **S11 구현 요지**: 두 ship 훅의 `additionalContext`를 "artifact 나열 → 6종 risk 판정(judgement
+  call) → 대화 맥락 기반 engagement 판정 → 고위험×미관여 1건에 interface-facts 질문, 없으면 기존
+  artifact-level 질문 폴백" 5단계 지시로 교체. risk taxonomy 6종 고정 목록은 `engine.md`에 canonical
+  사본으로 문서화(`code-review` smell-baseline 형식 차용). 새 스크립트·새 Bash 권한 추가 없음 — 전부
+  모델 인라인 판단이라 `duck-verify` 계열과 달리 `allowed-tools`에 손댈 필요가 없었음.
 
 무관한 변경(손대지 말 것): `plugins/vision-powers/skills/plugin-visual/SKILL.md`,
 `plugins/vision-powers/skills/context-health-visual/SKILL.md` — vision-powers 계열 작업, rubber-duck-tutor와 무관.
 
 ### Current Progress
 
-S1-S8·S10·S14 완료, S9·S11·S12·S13 남음(git log 참조). S10 신규/변경 파일:
-`skills/ducking/scripts/log-telemetry.sh`(신규, fire/outcome append),
-`skills/ducking/scripts/telemetry-summary.sh`(신규, 조회),
-`hooks/post-push.sh`·`hooks/post-pr.sh`(fire 기록 + outcome 지시 + `CLAUDE_PLUGIN_ROOT` 가드),
-`skills/duck-orient/SKILL.md`(세션 시작 시 요약 노출) — 전부 `plugins/rubber-duck-tutor/` 아래.
+S1-S8·S10·S11·S14 완료, S9·S12·S13 남음(git log 참조). S11 신규/변경 파일:
+`hooks/post-push.sh`·`hooks/post-pr.sh`(artifact-level 단일 질문 → risk×engagement triage 지시로
+교체, S10의 telemetry fire/outcome 로직·rate-limit·가드는 그대로 보존),
+`skills/ducking/engine.md`(신설 "Risk Taxonomy (Ship-Point Triage)" 섹션 — 6종 고정 목록 + engagement
+판단 근거 기록) — 전부 `plugins/rubber-duck-tutor/` 아래. 새 스크립트 없음.
 
 ### 핵심 파일 포인터
 
@@ -56,6 +66,13 @@ S1-S8·S10·S14 완료, S9·S11·S12·S13 남음(git log 참조). S10 신규/변
   `skills/ducking/scripts/telemetry-summary.sh`; 로그: `${CLAUDE_PLUGIN_DATA}/telemetry.jsonl`. S12의
   ignore streak 계산은 outcome 이벤트의 **순서**(연속 무시 횟수)가 필요 — 이 JSONL의 시간순 append
   특성에 의존하게 될 것.
+- Risk taxonomy(S11) — canonical 문서: `skills/ducking/engine.md`의 "Risk Taxonomy (Ship-Point
+  Triage)" 섹션; 실제 판정 지시는 `hooks/post-push.sh`·`hooks/post-pr.sh`의 `additionalContext`에
+  조건절 요약으로 내장(엔진 비참조 원칙 유지). S12의 scoreboard가 고위험 변경 이름을 나열하려면 이
+  훅들의 triage 결과(어떤 artifact가 고위험으로 판정됐는지)를 참조하게 될 것 — 단, 그 판정은 스크립트
+  값이 아니라 모델의 그 턴 안 판단이라 셸에서 재조회는 불가능함에 유의(S12의 streak 카운트 자체는
+  telemetry.jsonl에서 결정론적으로 셸이 계산하지만, scoreboard 문구의 "고위험 변경 이름"은 모델이
+  그 순간 다시 판단해서 채워야 함).
 
 ---
 
@@ -387,7 +404,7 @@ S10은 S3(ship 훅이 기록 주체)·S4(엔진이 outcome 기록)에 의존.
 
 ---
 
-## S11 — Blind-spot 정조준 (risk × engagement)
+## S11 — Blind-spot 정조준 (risk × engagement) ✅ 완료 (2026-07-06)
 
 **Phase:** 3 · **Blocked by:** S3, S4. · **출처:** 2026-07-04 위키 그릴. 유저 결정: "중요한 것만
 검증 — 개발자는 코더가 아니라 검수자/아키텍트".
@@ -405,10 +422,38 @@ ship confrontation의 질문 생성을 2축 triage로 교체. 축 1 — **risk t
 grain 유지 — 이 슬라이스는 grain을 바꾸는 게 아니라 **표적 선정**을 바꾼다.
 
 ### Acceptance criteria
-- [ ] 고위험+미관여 변경 존재 시 질문이 그 변경을 지명하고 interface-facts를 묻는다.
-- [ ] 전부 저위험/전부 관여면 artifact-level 질문으로 폴백 — 질문은 여전히 세션당 1개.
-- [ ] risk taxonomy 6종이 엔진 문서에 고정 목록으로 존재.
-- [ ] 질문이 코드 품질을 지적하지 않음(스킬 경계 절 준수 — 이해 검증만).
+- [x] 고위험+미관여 변경 존재 시 질문이 그 변경을 지명하고 interface-facts를 묻는다 (`hooks/post-push.sh`·
+      `hooks/post-pr.sh`의 `additionalContext`에 5단계 triage 지시 — artifact 나열 → 6종 risk 판정 →
+      대화 맥락 기반 engagement 판정 → 고위험×미관여 1건 지명해 invariant/에러모드/순서제약/트레이드오프
+      질문 → 동률 시 프로덕션 임팩트 최대 쪽 선택. 서브에이전트 없이 훅 발사 시점 모델 인라인 판정
+      — 훅 레이턴시 예산 준수, 원안 그대로).
+- [x] 전부 저위험/전부 관여면 artifact-level 질문으로 폴백 — 질문은 여전히 세션당 1개 (triage 5단계
+      마지막 분기가 기존 S3 문구("short artifact-level question about the overall change")로 그대로
+      폴백; ship 공유 예산(1/세션)은 S3 로직 변경 없음).
+- [x] risk taxonomy 6종이 엔진 문서에 고정 목록으로 존재 (`skills/ducking/engine.md`의 신설
+      "Risk Taxonomy (Ship-Point Triage)" 섹션 — concurrency/security/performance/data schema/
+      public API/architecture boundary, `code-review` 스킬 smell-baseline 형식(name → what → why)
+      차용, "judgement call, never a hard classifier" 명시). 두 훅의 `additionalContext`는 ADR
+      0003(엔진 비참조 경로) 준수를 위해 이 목록을 조건절 요약으로 별도 내장 — engine.md 말미에
+      "keep both copies in sync" 주석으로 동기화 의무 명시.
+- [x] 질문이 코드 품질을 지적하지 않음(스킬 경계 절 준수 — 이해 검증만) (훅 지시문에 "never code
+      quality or style (that's /code-review's job, not duck's)" 명시; engine.md 신설 섹션에도 동일
+      경계 재확인).
+
+수동 테스트(가짜 stdin JSON): 정상 발사 시 `jq` 파싱 가능한 유효 JSON 출력 확인, 두 번째 ship
+액션은 기존 rate-limit대로 침묵, subagent 컨텍스트(`agent_type` 존재)·`enabled:false` 컨텍스트
+모두 기존대로 침묵, `CLAUDE_PLUGIN_ROOT` 미설정 가드(S10에서 잡은 버그)도 여전히 유효, S10 텔레메트리
+`fire` 이벤트 로깅 회귀 없음, `bash -n` 문법 체크 통과, `grep -rlP '[\x{AC00}-\x{D7A3}]'` 결과 없음
+(S14 회귀 없음).
+
+**S8↔S11 파서 공유 질문 해소 (핸드오프 기록 참조):** `session-edits.sh`를 재사용하지 않기로 결정.
+그 스크립트는 트랜스크립트에서 *AI가 편집한 파일*을 뽑는 것이고, S11의 engagement 축이 필요한 건
+*유저가 논의/열람한 흔적*으로 서로 다른 신호다. 더 결정적으로, `duck-verify`(S8)는 편집을 못 본
+새 컨텍스트에서 호출될 수 있어 트랜스크립트 재파싱이 꼭 필요하지만, ship-point confrontation은
+push/PR을 만든 바로 그 대화 턴에서 발사되므로 모델이 이미 전체 대화를 컨텍스트로 갖고 있다 — 재파싱
+없이 판단 가능(engine.md 신설 섹션에 이유 기록). 트랜스크립트 재파싱 폴백은 이번 슬라이스 범위 밖으로
+남김(컴팩션으로 대화 맥락이 유실된 극단 상황 커버 안 함) — 오버엔지니어링 방지, 필요성이 실증되면
+후속 슬라이스에서.
 
 ### Blocked by
 S11은 S3(confrontation 주입점)·S4(엔진이 triage 수행)에 의존.
