@@ -205,6 +205,7 @@ Use the exact gap sentence as the argument. Skip the call when no gap was spotte
 - User declines → no more offers this session
 - Plan/spec-doc triggers (`/duck-prebuild` suggestions): max 2 unsolicited offers per session (auto-hook only)
 - Ship-point confrontation: max 1 per session, shared across `{git push, gh pr create, glab mr create}` — first to fire wins (ADR 0003 shared ship budget); separate budget from the plan/spec triggers so shipping isn't starved by them
+- 3+ consecutive ignored ship-point confrontations (tracked across sessions) demote the next one from a question to a non-blocking scoreboard — see Ignore Streak → Scoreboard Demotion below
 - Suggestions and confrontations are one short sentence/question, never pushy
 
 ## Risk Taxonomy (Ship-Point Triage)
@@ -246,6 +247,41 @@ Silence, agreement, or the model writing it unprompted does not count as engagem
 The two ship hooks embed a condensed copy of this taxonomy directly in their `additionalContext`
 (ADR 0003 keeps ship-point confrontation off the engine-read path — deterministic latency budget, no
 model-discretion skill load at ship time). Keep both copies in sync when this list changes.
+
+## Ignore Streak → Scoreboard Demotion (Ship-Point)
+
+A question asked into silence, repeatedly, stops being a learning prompt and becomes noise the user
+tunes out — worse than asking nothing, because habituation to duck's voice bleeds into habituation to
+real risk signals too. When the last three ship-point confrontations in a row went unanswered, the
+next one demotes from a question to a **scoreboard**: a flat statement naming every high-risk artifact
+this ship touches and how many of them the user actually engaged with — no question mark, nothing to
+wait for. Still fires, still non-blocking (ADR 0003) — it just stops asking once asking has
+demonstrably stopped working, and gets out of the way instead of nagging.
+
+The **streak itself is computed deterministically in shell**, not judged by the model:
+`skills/ducking/scripts/ignore-streak.sh` walks `telemetry.jsonl`'s `outcome` events backwards from
+the most recent and counts consecutive `ignored` entries until it hits an `answered` (or runs out of
+log). This is a *cross-session* counter by design — the shared ship budget (one confrontation per
+session, ADR 0003) means "3 in a row" necessarily spans the last 3 sessions where one fired, which is
+exactly the habituation signal worth catching. Missing/unreadable telemetry or no `jq` → `0`, which
+keeps the caller in question mode: the safer default when the counter can't be trusted, since it
+degrades toward "ask like normal" rather than toward "assume fatigue that isn't there."
+
+What stays a model judgement, same as the Risk Taxonomy triage above: **which artifacts are
+high-risk** and **which of those the user engaged with** are both live calls made at ship time, not
+values stored in telemetry — the shell only knows the streak count, never which changes were risky.
+The scoreboard sentence must name artifacts, never collapse into a bare percentage (a vague "you
+engaged with some of it" carries no information the user can act on).
+
+Breaking the streak: if the user engages with the scoreboard on their own — pushes back, comments,
+asks about one of the named changes — the hook's `additionalContext` still instructs logging an
+`outcome ... answered` event (same mechanism as question mode, S10), which resets the streak and
+returns the next ship-point confrontation to question mode. Moving on without engaging logs `ignored`
+and the streak continues.
+
+The two ship hooks embed their own condensed scoreboard-mode instructions directly in
+`additionalContext` (same ADR 0003 rationale as the Risk Taxonomy section — no engine read at ship
+time). Keep those copies in sync with this section when the mechanism changes.
 
 ## Facilitation
 

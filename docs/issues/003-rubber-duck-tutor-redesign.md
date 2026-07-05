@@ -1,9 +1,9 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 중 — S1~S8·S10·S11·S14 완료(2026-07-06 세션 — S6 잔여 검증 + S7 config 다이얼 + S8
-> session-scoping + S10 confrontation telemetry + S11 blind-spot 정조준 구현·수동 테스트 완료; S8·S10은
-> 이번 세션 시작 시 이미 커밋됨), **S9(정체성 재작성)는 S12 대기 — 다음은 S12부터**(S10·S11이 S12의
-> 전제라 순서대로 먼저 잡음) · 생성: 2026-06-21 · 확장:
+> 상태: 구현 중 — S1~S8·S10~S12·S14 완료(2026-07-06 세션 — S6 잔여 검증 + S7 config 다이얼 + S8
+> session-scoping + S10 confrontation telemetry + S11 blind-spot 정조준 + S12 ignore streak→scoreboard
+> 강등 구현·수동 테스트 완료; S8·S10·S11은 이번 세션 시작 시 이미 커밋됨, S12는 아직 미커밋),
+> **S9(정체성 재작성)는 S13 대기 — 다음은 S13부터**(S13 완료 후 S9로 마무리) · 생성: 2026-06-21 · 확장:
 > 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR
 > 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
@@ -17,12 +17,14 @@ confrontation, artifact-level vs code-level comprehension, shared ship budget).
 
 ### First Action
 
-S12(Ignore streak → scoreboard 강등)부터 시작 — 블로커 S10·S11 완료, 즉시 착수 가능. 이후 S13 → S9 순.
+S13(Retrieval confrontation)부터 시작 — 블로커 S11 완료, 즉시 착수 가능. 이후 S9로 마무리(3.0.0 범프,
+S9의 블로커 S5·S10·S11·S12 전부 충족됨).
 
 ### Context
 
-2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10·S11을 순서대로 구현·수동 테스트·커밋까지 마쳤다(git log 참조).
-유저 요청대로 슬라이스 끝나면 멈추고 보고하는 리듬 유지 중 — S11에서 정지.
+2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10·S11·S12를 순서대로 구현·수동 테스트까지 마쳤다(S12는 이번
+세션에서 구현, 아직 미커밋 — 커밋은 유저 명시 요청 시에만 하는 전역 규칙 때문에 보류 중). 유저 요청대로
+슬라이스 끝나면 멈추고 보고하는 리듬 유지 중 — S12에서 정지.
 
 이어갈 때 참고할 것:
 - **S7 jq footgun**: `.key // default`는 JSON `false`를 삼킨다 — boolean 다이얼(`enabled`)은
@@ -34,45 +36,57 @@ S12(Ignore streak → scoreboard 강등)부터 시작 — 블로커 S10·S11 완
   호출될 수 있다는 게 다른 점. 근거는 `engine.md`의 "Risk Taxonomy" 섹션 후반부에 기록.
 - **S10에서 잡은 버그**: ship 훅에서 `set -u` 아래 `${CLAUDE_PLUGIN_ROOT}`를 무가드로 참조하면 훅
   전체가 죽어 confrontation이 안 나갈 수 있었음 — `[[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]` 가드로 고침
-  (`session-start.sh`의 `${CLAUDE_ENV_FILE:-}` 선례 재사용). S12도 훅에 새 Bash 호출 추가 시 이
-  가드 패턴 따를 것.
-- **S10·S11 설계 판단(확정 패턴)**: ship confrontation은 `engine.md`를 안 읽는 경로다(ADR 0003·S4 —
-  훅의 `additionalContext`가 자기완결적 지시문). S10의 outcome 로깅 지시, S11의 risk taxonomy 요약
-  모두 훅 안에 직접 넣었고 `engine.md`에는 사람이 읽는 canonical 사본만 남겼다("keep both copies in
-  sync" 주석 첨부). **S12도 이 패턴을 따를 것** — 더는 열린 질문 아님: ignore-streak 계산과
-  scoreboard 지시 전부 훅 스크립트(`post-push.sh`/`post-pr.sh`) 안에서 결정론적으로 처리.
+  (`session-start.sh`의 `${CLAUDE_ENV_FILE:-}` 선례 재사용). S12에서 새 Bash 호출(`ignore-streak.sh`)을
+  추가하면서 이 가드 패턴을 그대로 따랐고, `CLAUDE_PLUGIN_ROOT` 미설정 시나리오로 회귀 테스트도 통과.
+- **S10·S11·S12 설계 판단(확정 패턴)**: ship confrontation은 `engine.md`를 안 읽는 경로다(ADR 0003·S4 —
+  훅의 `additionalContext`가 자기완결적 지시문). S10의 outcome 로깅 지시, S11의 risk taxonomy 요약,
+  S12의 scoreboard 지시 모두 훅 안에 직접 넣었고 `engine.md`에는 사람이 읽는 canonical 사본만 남겼다
+  ("keep both copies in sync" 주석 첨부).
 - **S11 구현 요지**: 두 ship 훅의 `additionalContext`를 "artifact 나열 → 6종 risk 판정(judgement
   call) → 대화 맥락 기반 engagement 판정 → 고위험×미관여 1건에 interface-facts 질문, 없으면 기존
   artifact-level 질문 폴백" 5단계 지시로 교체. risk taxonomy 6종 고정 목록은 `engine.md`에 canonical
   사본으로 문서화(`code-review` smell-baseline 형식 차용). 새 스크립트·새 Bash 권한 추가 없음 — 전부
   모델 인라인 판단이라 `duck-verify` 계열과 달리 `allowed-tools`에 손댈 필요가 없었음.
+- **S12 구현 요지**: 두 ship 훅에 rate-limit 통과 직후 신설 `ignore-streak.sh` 호출을 추가 —
+  `telemetry.jsonl`의 `outcome` 이벤트를 최신순으로 훑어 `ignored`가 연속되는 개수를 센다("answered"를
+  만나면 정지, 결정론적 셸 계산, 모델·트랜스크립트 불개입). streak ≥ 3이면 `MODE=scoreboard`로 분기해
+  `additionalContext`를 질문 대신 스코어보드 문구(고위험 artifact 이름 나열 + 관여 건수, 물음표 없음)로
+  교체하고, fire 텔레메트리도 실제 mode(`question`|`scoreboard`)로 기록. 유저가 스코어보드에 스스로
+  반응하면 **기존 S10 outcome 로깅 지시(`answered`)를 그대로 재사용**해 streak를 끊는다 — 새 분기 로직
+  없이 기존 메커니즘에 편승. 어떤 artifact가 고위험인지/관여했는지는 여전히 모델의 그 턴 인라인 판단
+  (S11과 동일 원칙) — 셸은 streak 정수 하나만 결정론적으로 안다.
+- **S12↔S13 상호작용 주의**: S13(retrieval confrontation)은 S11의 fallback 사다리("고위험 없음/전부
+  관여 시 artifact-level 질문")에 gap retrieval 단계를 끼워 넣을 예정인데, 이 사다리는 두 훅의 **질문
+  모드**(`else`) 분기에만 존재한다. S12가 만든 **스코어보드 모드**(`if [[ "$MODE" == "scoreboard" ]]`)
+  분기는 애초에 질문을 안 하므로 이 사다리를 타지 않음 — S13은 질문 모드 텍스트만 수정하면 되고,
+  스코어보드 쪽에 retrieval을 끼워 넣을 필요 없음.
 
 무관한 변경(손대지 말 것): `plugins/vision-powers/skills/plugin-visual/SKILL.md`,
 `plugins/vision-powers/skills/context-health-visual/SKILL.md` — vision-powers 계열 작업, rubber-duck-tutor와 무관.
 
 ### Current Progress
 
-S1-S8·S10·S11·S14 완료, S9·S12·S13 남음(git log 참조). S11 신규/변경 파일:
-`hooks/post-push.sh`·`hooks/post-pr.sh`(artifact-level 단일 질문 → risk×engagement triage 지시로
-교체, S10의 telemetry fire/outcome 로직·rate-limit·가드는 그대로 보존),
-`skills/ducking/engine.md`(신설 "Risk Taxonomy (Ship-Point Triage)" 섹션 — 6종 고정 목록 + engagement
-판단 근거 기록) — 전부 `plugins/rubber-duck-tutor/` 아래. 새 스크립트 없음.
+S1-S8·S10-S12·S14 완료, S9·S13 남음(git log 참조 — S12는 이번 세션 신규, 커밋 전). S12 신규/변경 파일:
+`skills/ducking/scripts/ignore-streak.sh`(신설 — streak 계산 전용), `hooks/post-push.sh`·
+`hooks/post-pr.sh`(rate-limit 통과 후 streak 계산 + question/scoreboard 분기 추가, S10 telemetry
+fire/outcome 로직과 S11 triage 지시는 question 분기 안에 그대로 보존), `skills/ducking/engine.md`(신설
+"Ignore Streak → Scoreboard Demotion" 섹션 + Session Limits에 한 줄 추가) — 전부
+`plugins/rubber-duck-tutor/` 아래.
 
 ### 핵심 파일 포인터
 
 - config — 훅: `hooks/lib.sh`의 `duck__config_get`/`duck__is_enabled`; 스킬: `skills/ducking/scripts/read-config.sh`
 - 트랜스크립트 경로 — 심기(훅): `hooks/session-start.sh`; 소비(스킬): `skills/ducking/scripts/session-edits.sh`
 - Confrontation telemetry(S10) — 기록: `skills/ducking/scripts/log-telemetry.sh`; 조회:
-  `skills/ducking/scripts/telemetry-summary.sh`; 로그: `${CLAUDE_PLUGIN_DATA}/telemetry.jsonl`. S12의
-  ignore streak 계산은 outcome 이벤트의 **순서**(연속 무시 횟수)가 필요 — 이 JSONL의 시간순 append
-  특성에 의존하게 될 것.
+  `skills/ducking/scripts/telemetry-summary.sh`; 로그: `${CLAUDE_PLUGIN_DATA}/telemetry.jsonl`.
 - Risk taxonomy(S11) — canonical 문서: `skills/ducking/engine.md`의 "Risk Taxonomy (Ship-Point
   Triage)" 섹션; 실제 판정 지시는 `hooks/post-push.sh`·`hooks/post-pr.sh`의 `additionalContext`에
-  조건절 요약으로 내장(엔진 비참조 원칙 유지). S12의 scoreboard가 고위험 변경 이름을 나열하려면 이
-  훅들의 triage 결과(어떤 artifact가 고위험으로 판정됐는지)를 참조하게 될 것 — 단, 그 판정은 스크립트
-  값이 아니라 모델의 그 턴 안 판단이라 셸에서 재조회는 불가능함에 유의(S12의 streak 카운트 자체는
-  telemetry.jsonl에서 결정론적으로 셸이 계산하지만, scoreboard 문구의 "고위험 변경 이름"은 모델이
-  그 순간 다시 판단해서 채워야 함).
+  조건절 요약으로 내장(엔진 비참조 원칙 유지).
+- Ignore streak(S12) — 계산: `skills/ducking/scripts/ignore-streak.sh`(telemetry.jsonl의 outcome
+  이벤트를 역순으로 훑어 연속 ignored 카운트); canonical 문서: `skills/ducking/engine.md`의 "Ignore
+  Streak → Scoreboard Demotion" 섹션; 실제 분기·스코어보드 문구는 두 ship 훅의 `MODE` 변수 +
+  `additionalContext` if/else에 내장. S13이 gap retrieval 사다리를 끼워 넣을 지점은 이 if/else의
+  **question 분기(`else`) 안**, S11이 만든 5단계 폴백 문구 중 마지막 단계.
 
 ---
 
@@ -460,7 +474,7 @@ S11은 S3(confrontation 주입점)·S4(엔진이 triage 수행)에 의존.
 
 ---
 
-## S12 — Ignore streak → scoreboard 강등
+## S12 — Ignore streak → scoreboard 강등 ✅ 완료 (2026-07-06)
 
 **Phase:** 3 · **Blocked by:** S10, S11. · **출처:** 2026-07-04 위키 그릴 (습관화 대책).
 
@@ -472,10 +486,30 @@ deterministic-over-clever). streak ≥ 3이면 질문 모드 대신 scoreboard �
 모드 복귀. scoreboard도 비차단 — gate 아님, ADR 0003 준수.
 
 ### Acceptance criteria
-- [ ] 연속 무시 3회 후 다음 ship은 질문 대신 scoreboard.
-- [ ] streak 판정이 훅 스크립트(셸)에서 이뤄짐 — 트랜스크립트·모델 판단 불개입.
-- [ ] answered 기록 후 질문 모드 복귀.
-- [ ] scoreboard가 고위험 변경 이름을 나열(막연한 퍼센트 금지).
+- [x] 연속 무시 3회 후 다음 ship은 질문 대신 scoreboard (`post-push.sh`·`post-pr.sh`가 rate-limit
+      통과 직후 `ignore-streak.sh`를 호출해 streak를 받고, `STREAK -ge 3`이면 `MODE=scoreboard`로
+      분기해 `additionalContext`를 스코어보드 문구로 교체. 가짜 stdin JSON으로 수동 검증: telemetry에
+      `ignored` 3연속을 시딩한 뒤 새 세션으로 훅 실행 → `additionalContext`에 "scoreboard mode" 문구
+      확인).
+- [x] streak 판정이 훅 스크립트(셸)에서 이뤄짐 — 트랜스크립트·모델 판단 불개입 (신설
+      `skills/ducking/scripts/ignore-streak.sh` — `telemetry.jsonl`의 `outcome` 이벤트만 걸러
+      최신순으로 훑어 `ignored`가 연속되는 개수를 `awk`로 계산, `answered`를 만나면 정지. 파일 부재·
+      jq 부재·빈 파일·깨진 줄 섞임 모두 수동 테스트로 확인 — 전부 크래시 없이 정수 반환, 대부분 안전
+      기본값 0. 훅 쪽은 `[[ "$STREAK" =~ ^[0-9]+$ ]] || STREAK=0`로 비정수 출력을 한 번 더 방어).
+- [x] answered 기록 후 질문 모드 복귀 (S10이 이미 만들어둔 outcome 로깅 지시를 스코어보드 모드에도
+      그대로 재사용 — 유저가 스코어보드에 스스로 반응하면 `outcome push/pr answered`가 기록되고, 이
+      이벤트가 `ignore-streak.sh`의 역순 스캔에서 정지 지점이 되어 streak가 0으로 끊긴다. 수동 테스트:
+      `ignored` 3연속 뒤 `answered` 1건 추가 → 다음 세션 실행 시 다시 질문 모드로 복귀 확인).
+- [x] scoreboard가 고위험 변경 이름을 나열(막연한 퍼센트 금지) (두 훅의 scoreboard 분기
+      `additionalContext`에 "name every high-risk artifact... never collapse this into a bare
+      percentage or vague count" 명시 — 고위험 0건이면 "No high-risk changes"로 명시적으로 말하도록
+      해 침묵이나 애매한 수치로 얼버무리지 않게 함).
+
+수동 테스트(가짜 stdin JSON, `CLAUDE_PLUGIN_DATA`를 임시 디렉터리로 오버라이드): telemetry 없음 →
+question 모드, `ignored` 3연속 시딩 후 새 세션 → scoreboard 모드 + fire 이벤트 mode가
+`"scoreboard"`로 기록, 그 뒤 `answered` 추가 후 또 새 세션 → question 모드로 복귀, subagent 컨텍스트
+(`agent_type` 존재)·`enabled:false`·`CLAUDE_PLUGIN_ROOT` 미설정(S10 가드 회귀 체크) 모두 기존대로
+침묵/안전 동작, `bash -n` 문법 체크 통과, `grep -rlP '[\x{AC00}-\x{D7A3}]'` 결과 없음(S14 회귀 없음).
 
 ### Blocked by
 S12는 S10(telemetry가 streak의 원천)·S11(고위험 분류가 scoreboard 내용)에 의존.
