@@ -174,7 +174,7 @@ md 리포트를 **무변형 그대로** 퍼블리시한다 (공식 스펙: `.md`
 ### Acceptance criteria
 
 - [ ] `scripts/config.js`에 `default_format` / `artifact` 키 (기존 키가 snake_case — `default_language`·`auto_open`·`reports_dir` — 이므로 통일; 언어는 기존 `default_language` 재사용, 신규 `lang` 키 금지). 스킬 시작 시 참조, 플래그·자연어 = 일회성 override. config.js 헤더 "Supported keys" 주석 갱신.
-- [ ] README: `--artifact` 스위치 + 2×2 표 + 위임 고지 한 줄. 구현-디테일 섹션 금지 (README 스타일 규칙).
+- [ ] README: `--artifact` 스위치 + 2×2 표 + 위임 고지 한 줄 + 공유 범위 한 줄 ("공유는 Team/Enterprise 조직 내부 한정 — Pro/Max는 본인 열람용 URL, 외부 공유는 로컬 html 파일로"). 구현-디테일 섹션 금지 (README 스타일 규칙).
 - [ ] `plugin.json` + `marketplace.json` description 갱신 (채널 추가 반영).
 - [ ] `marketplace.json` 버전 **minor 범프** (기능 추가).
 
