@@ -38,6 +38,12 @@ The report language must match the source document's language.
 `--artifact` also triggers on natural-language equivalents — "as an artifact", "publish as a link",
 "share as a URL" — without the literal flag, in whatever language the user is writing in.
 
+**Config precedence.** Before falling back to the defaults in the table, check stored preferences
+once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
+`default_format` value replaces the `html` default; `artifact: true` replaces off, the same as the
+`--artifact` flag. Anything the user actually says this turn — a literal flag or a natural-language
+equivalent — always overrides config; config only fills in when the request is silent on format/channel.
+
 When the target format is `md`, whether you ask before publishing depends on how the request arrived:
 
 - **Both flags typed literally** (`--format md --artifact`, exact tokens): that's a deliberate,

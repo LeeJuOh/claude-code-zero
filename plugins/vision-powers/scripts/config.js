@@ -12,8 +12,10 @@
  *
  * Supported keys:
  *   default_language  — Default output language (e.g., "ko", "en", "ja")
+ *   default_format    — Default report format ("html" or "md") when --format isn't given
  *   aesthetic         — Preferred aesthetic (Blueprint, Editorial, Paper-ink, Monochrome)
  *   auto_open         — Auto-open report in browser after generation (true/false)
+ *   artifact          — Publish via the claude.ai Artifact channel by default (true/false)
  *   reports_dir       — Custom reports output directory
  *
  * Exit codes:

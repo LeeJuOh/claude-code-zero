@@ -65,6 +65,14 @@ scoped to `analyze` mode with HTML format the same way diff-visual scoped its ow
 `security` and `overview` modes stay markdown-only (too brief for a full report to begin with), and
 `--format md` combined with `--artifact` has no publish path in this slice.
 
+**Config precedence.** Before falling back to the defaults above, check stored preferences once:
+`node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
+`default_format` value replaces the HTML default and `artifact: true` replaces off, the same as the
+`--artifact` flag — but only within the `analyze`+HTML scope above; config can't force artifact
+publishing onto `security`/`overview` modes any more than the flag can. Anything the user actually
+says this turn — a literal flag or a natural-language equivalent — always overrides config; config
+only fills in when the request is silent on format/channel.
+
 ### Intent Check
 
 *Why: An analysis for potential users focuses on capabilities and compatibility; an analysis for security reviewers focuses on permissions and risk. The audience shapes emphasis across all report sections.*

@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.6.0 — 2026-07-06
+
+### Added
+
+- **Artifact channel** — `doc-visual`, `diff-visual`, `plugin-visual` (`analyze` mode), and `context-health-visual` can now publish reports as claude.ai Artifacts via `--artifact` (or a natural-language equivalent like "publish as a link"), delegating visual design to Claude's built-in Artifact renderer instead of the plugin's own CSS/Mermaid pipeline. `--format html --artifact` writes a CSP-safe fragment (no CDN — inline SVG diagrams, no-CDN syntax highlighting); `--format md --artifact` publishes the generated markdown as-is (diagrams stay as fenced code — claude.ai's markdown renderer doesn't run Mermaid).
+  - **`scripts/write-artifact-sidecar.js`** (new) — records the published URL/title/favicon/timestamp next to the report so a same-session republish reuses the same link.
+  - **`scripts/artifact-gate.js --content-only`** (new flag) — content-only validation subset (raw-md leakage, placeholders, links, alt text) for the artifact variant; design-layer checks (density, palette, font chain, Mermaid classDef) and PNG self-audit are skipped, since the built-in renderer owns those.
+  - **`report-manager` `refine`** — republishes to the same claude.ai URL across sessions when a sidecar exists (falls back to a fresh URL + one-line notice if the sidecar is missing or the old link died); `list`/`open` now surface the stored `artifact_url`, and `delete` removes the sidecar with it.
+  - **`scripts/config.js`** — new `default_format`/`artifact` keys let a stored preference replace the `html`/off defaults; a flag or natural-language request for a given run still overrides the stored default.
+  - Falls back to a local file plus a one-line reason whenever the Artifact tool is unavailable (plan tier, non-`/login` auth, unsupported provider, org policy, disabled surface, or a publish error) — never blocks on asking.
+
 ## 4.5.1 — 2026-06-27
 
 ### Fixed

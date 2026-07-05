@@ -1,58 +1,52 @@
 # vision-powers Artifact 채널: claude.ai 퍼블리시를 전달 채널로 (공식 Artifacts 위임)
 
-> 상태: 구현 중 (S1·S2·S3·S4·S4.5 완료 — S4.5는 report-manager refine 라이브 검증 미실시, 남은 슬라이스는 S5뿐) · 생성: 2026-07-05
+> 상태: **완료** (S1~S5 전 슬라이스 구현·검증 완료, 이슈 종료) · 생성: 2026-07-05
 > 용어집: `docs/context/vision-powers.md` (신규 용어: **Artifact channel**)
 > 결정 근거: `docs/adr/0007-artifact-channel-delegates-visual-design.md` (선행 `0002` 직접작성 · `0005` grounding)
 > 공식 문서: `https://code.claude.com/docs/en/artifacts`
 > 출처: grill-with-docs + domain-modeling 세션 (2026-07-05)
 
-## 핸드오프 (다음 세션 — 2026-07-06 세션 종료 시점, S4.5 구현 회차)
+## 종료 요약 (2026-07-06 세션 — S5 구현 완료로 이슈 007 전체 종료)
 
-**목표**: 이 이슈(vision-powers Artifact 채널) 구현을 슬라이스 단위로 이어간다. 이번 세션 시작 시점엔
-S1~S4가 완료 상태였고, 이번 세션은 S4.5(URL 영속화 + 크로스세션 refine)를 구현했다. 사용자 지시("슬라이스
-끝나면 멈추고 보고, 다음 슬라이스 들어가지 말 것")에 따라 S4.5에서 멈추고 보고한다 — S5는 시작하지 않음.
+**최종 결과**: S1~S5 전 슬라이스 acceptance criteria `[x]`. vision-powers는 4개 리포트 스킬
+(`doc-visual`·`diff-visual`·`plugin-visual`·`context-health-visual`)에서 `--artifact` 플래그(또는
+자연어 동치)로 claude.ai Artifact 채널에 퍼블리시할 수 있고, `report-manager`가 세션을 넘어 같은 URL에
+재퍼블리시하며, `config.json`의 `default_format`/`artifact` 키로 플래그 없이도 기본값을 고정할 수 있다.
+marketplace 버전 `4.6.0`(minor 범프), `CHANGELOG.md`에 `4.6.0` 항목 추가. 자세한 항목별 구현 내용은
+각 슬라이스 절의 "구현 완료" 하위 섹션 참고.
 
-**이번 세션에서 한 일**: S4.5 5개 acceptance criteria 전부 구현.
-- `list-reports.js`: 사이드카(`<report>.artifact.json`) 탐지해 `artifact_url` 필드 채움. 신규
-  `list-reports.test.js`(3케이스) 추가 — 스위트 54→57건.
-- `report-manager` SKILL.md: frontmatter `allowed-tools`에 `Artifact` 추가. `list`/`open` 절에 URL
-  노출. `delete`에 사이드카 동반 삭제. `refine`을 전면 개편 — 1단계에서 사이드카로 로컬/Artifact-채널
-  프래그먼트 판정 → 6단계 gate `--content-only` 분기 → 7단계 visual self-audit 프래그먼트는 스킵 →
-  신규 8단계로 사이드카 URL 재사용 재퍼블리시(+ 사이드카 없음/재퍼블리시 실패 시 새 URL 발행 분기).
-- 자세한 내용·판단 근거는 이슈 문서 본문의 S4.5 "구현 완료 (2026-07-06)" 절 참고.
+**이번 세션(S5) 작업**: `scripts/config.js` 헤더에 `default_format`/`artifact` 키 문서화 + 4개 스킬
+SKILL.md에 "Config precedence" 문단 추가(스킬 시작 시 config 1회 조회, 이번 요청의 명시적 신호가 항상
+config보다 우선) · README를 `doc-visual` 전용에서 4개 스킬 공통 2×2 표 + 공유 범위 고지로 확장 ·
+`plugin.json`/`marketplace.json` description 갱신 · 버전 범프. 코드 로직 변경 없음(문서·설정 주석·
+frontmatter 산문만) — `claude plugin validate .`(기존 11건 버전-미지정 경고만, 신규 없음) ·
+`node --test scripts/*.test.js`(57건 전부 통과)로 회귀 없음 확인. 라이브 트리거 검증(실제로 config에
+값을 심고 자연어 요청만으로 퍼블리시되는지)은 이번 세션에 실행하지 않음 — S1·S4.5처럼 별도 세션의
+서브에이전트 검증을 권장.
 
-**범위 밖으로 명시적으로 남긴 것**: doc-visual/diff-visual/plugin-visual/context-health-visual 4개
-생성 스킬의 퍼블리시 절 자체는 여전히 `url` 인자를 넘기지 않는다 — 이슈 문서가 S4.5를 "report-manager
-refine의 크로스세션 유지"로 명시적으로 한정하고 있어 건드리지 않았다. 4개 스킬을 새 세션에서 같은
-입력으로 재실행했을 때도 같은 URL을 유지하고 싶다면 그건 별도 슬라이스(범위 확장) 필요 — 사용자 확인
-후 처리.
+**직전 세션(S4.5 라이브 검증, 2026-07-06) 기록** — report-manager `refine`의 "사이드카 URL 재사용
+재퍼블리시"를 실제로 실행해 세 레벨(파일/툴 호출, 브라우저 렌더링, 권한 범위) 모두 PASS 확인:
+1. 이 환경의 vision-powers 플러그인 캐시(4.5.1)가 리포 소스보다 오래돼(`Artifact`가 `allowed-tools`에
+   없음) `Skill` 툴로 직접 부르면 구버전이 실행됨을 먼저 확인 — 리포 소스를 직접 따르는 경로가 필요했다.
+2. `claude --plugin-dir ... -p "..."` CLI 서브프로세스 시도는 자동 권한 분류기가 두 번 다 차단
+   ("Create Unsafe Agents") — 우회하지 않고 일반 서브에이전트(Agent 툴)로 전환.
+3. 서브에이전트가 리포 소스의 실제 `report-manager` SKILL.md `refine` 절을 그대로 따라, S4에서 이미
+   퍼블리시된 `2026-07-06-worktree-plus-report.artifact.html`(사이드카 URL
+   `https://claude.ai/code/artifact/e0d6a95a-d868-4ee7-8d1f-48cedef9c9da`)에 footer 문장을 추가 →
+   content-only 게이트 통과 → `url` 인자로 사이드카 URL 전달 → republish 결과 URL 동일 → 사이드카
+   재작성. 디스크 직접 대조로 서브에이전트 보고와 실제 상태 일치 확인.
+4. `claude-in-chrome`으로 같은 URL 재방문 — 첫 로드는 지연 페인트로 검은 화면이었으나 클릭 한 번으로
+   정상 렌더링, "Version history" 드롭다운에서 Version 2/Version 1 확인, footer 문장도 확인.
 
-**현재 진행 상황** (`git status`/`git log` 기준, 2026-07-06 확인):
-- 브랜치: `develop`.
-- 이번 세션이 건드린 파일(전부 커밋 전): `docs/issues/007-vision-powers-artifact-channel.md`,
-  `plugins/vision-powers/scripts/list-reports.js`, `plugins/vision-powers/skills/report-manager/SKILL.md`
-  (수정), `plugins/vision-powers/scripts/list-reports.test.js`(신규).
-- 이 세션과 무관한 uncommitted 변경도 저장소에 있음(`docs/issues/003-rubber-duck-tutor-redesign.md`,
-  `plugins/rubber-duck-tutor/hooks/post-pr.sh`·`post-push.sh`, `plugins/rubber-duck-tutor/skills/ducking/engine.md`,
-  신규 `plugins/rubber-duck-tutor/skills/ducking/scripts/ignore-streak.sh`) — 이번 세션 시작 전부터
-  있던 다른 작업 흐름으로 보이며, 이번 세션은 손대지 않았다. 커밋 시 vision-powers 파일만 골라 스테이징할 것.
-- S1·S2·S3·S4·S4.5 acceptance criteria 전부 체크(`[x]`) 완료 상태. 남은 슬라이스는 S5뿐.
+**교훈**: 자동 권한 분류기가 넓은 사전허용을 요구하는 경로를 막으면 우회 대신 더 안전한 대안(서브에이전트)
+으로 전환할 것. 브라우저 확인에서 첫 스크린샷이 비정상(검은 화면)이어도 클릭 등 상호작용을 한 번 더
+시도한 뒤 판정할 것 — 지연 페인트를 결함으로 오판할 수 있다.
 
-**막힌 것**: 없음 — S4.5 acceptance criteria 5개 전부 구현·문서화 완료.
-
-**미검증 (남겨둔 리스크)**: `claude plugin validate .` 통과, `node --test scripts/*.test.js` 57건 통과
-확인함. 하지만 report-manager `refine`을 사이드카 있는 실제 아티팩트 프래그먼트에 대해 라이브로 실행해
-`Artifact` 툴에 `url` 인자가 실제로 전달되고 같은 claude.ai 페이지가 새 버전으로 갱신되는지는 이번
-세션엔 실행 안 함 — SKILL.md 산문 변경이라 스크립트 테스트로는 검증 불가. 다음 세션에서
-`claude --plugin-dir ./plugins/vision-powers`로 별도 세션 열어 실 refine 1회 검증 권장(S1의
-"로컬 vs artifact 비교"에 준하는 절차).
-
-**다음 단계**:
-1. 이번 세션 변경사항(`docs/issues/007-...md` + `plugins/vision-powers/{scripts/list-reports.js,
-   scripts/list-reports.test.js, skills/report-manager/SKILL.md}`) 커밋할지 사용자 확인.
-2. 사용자가 원하면 위 "미검증" 항목(실 refine 라이브 검증)을 먼저 처리.
-3. 그 다음 S5(config.json 키 + README 2×2 표 + `plugin.json`/`marketplace.json` description +
-   marketplace 버전 minor 범프) 시작 여부 확인 — S3·S4·S4.5 완료로 S5가 마지막 남은 슬라이스.
+**남은 것**: 이슈 007 자체는 종료. 잔여 팔로업(이슈 스코프 밖, 전부 선택 사항):
+- S5 config 라이브 트리거 1회 검증(위 참고).
+- 사이드카 없음·URL 죽음 두 분기 라이브 검증(S4.5에서 미뤄둔 항목).
+- "열린 질문"란의 "디자인 층 최종 소유권" 판정 — S1·S3·S4 비교 기록은 모두 내장 디자인이 도메인
+  레이아웃에서 구조적으로 버틴다는 쪽으로 수렴했으나, 최종 판정(Plan B 필요 여부)은 사용자 그릴로 남겨 둠.
 
 ## What to build
 
@@ -301,7 +295,39 @@ channels"로 재확인). 스크립트 변경 없음(`artifact-gate.js --content-
 - **AC3·AC4**: `report-manager` frontmatter `allowed-tools`에 `Artifact` 추가. `refine` 절 전면 개편 — 1단계에서 사이드카 유무로 "로컬 리포트 vs Artifact-channel 프래그먼트"를 먼저 판정, 6단계(gate)는 프래그먼트면 `--content-only`, 7단계(visual self-audit)는 프래그먼트면 스킵(로컬 렌더가 claude.ai가 씌우는 `<head>`/테마 래퍼를 반영 못 하므로), 신규 8단계로 "사이드카 있으면 `url` 인자로 같은 링크에 재퍼블리시 + 사이드카 재기록" · "사이드카 없지만 `.artifact.html`이면 최초 퍼블리시" · "재퍼블리시 실패(죽은 링크)면 새 URL + 한 줄 고지"의 3분기를 명문화. 9단계(구 8단계)는 채널별 출력(file:// vs claude.ai URL)으로 갱신.
 - **AC5**: `delete` 4단계에 사이드카 동반 삭제 문구 추가(고아 사이드카가 남으면 다음 `list`가 이미 없는 리포트의 공유 링크를 주장하게 되는 문제 방지).
 - **범위 밖으로 남긴 것**: doc-visual/diff-visual/plugin-visual/context-health-visual 4개 생성 스킬 자체의 퍼블리시 절은 여전히 `url` 인자를 넘기지 않는다(세션 내 재퍼블리시는 `file_path` 동일 재사용으로 이미 동작, 세션 간은 애초에 그 스킬들의 스코프가 아님). 이슈 문서가 S4.5를 "report-manager refine이 세션 넘어 같은 URL 유지"로 명시적으로 한정하고 있어 4개 스킬의 재실행 시나리오는 건드리지 않음 — 필요해지면 별도 슬라이스.
-- **검증**: `claude plugin validate .` 통과(기존 11건 버전 경고만, 신규 경고 없음). `node --test scripts/*.test.js` 57건 전부 통과. **미검증**: 실제 report-manager `refine`을 사이드카 있는 아티팩트 프래그먼트에 대해 라이브로 실행해 `Artifact` 툴에 `url` 인자가 실제로 전달되고 같은 페이지가 버전업되는지는 이번 세션엔 실행하지 않음(SKILL.md 산문 변경이라 스크립트 테스트로는 못 잡음) — S1처럼 별도 세션에서 `claude --plugin-dir ./plugins/vision-powers`로 실 refine 1회 검증 권장.
+- **검증**: `claude plugin validate .` 통과(기존 11건 버전 경고만, 신규 경고 없음). `node --test scripts/*.test.js` 57건 전부 통과.
+
+**라이브 검증 (2026-07-06, 이어지는 세션)**: report-manager `refine`의 사이드카 URL 재사용 재퍼블리시를
+실제로 실행해 확인했다.
+
+- **시도한 경로와 막힌 것**: 처음엔 핸드오프가 제안한 대로 `claude --plugin-dir ./plugins/vision-powers -p
+  "..."`로 별도 CLI 서브프로세스를 띄우려 했으나, 자동 권한 분류기가 두 번 모두 막았다("Create Unsafe
+  Agents" — `--permission-mode acceptEdits` + `Bash(rm *)` 사전허용 조합, 그리고 `--add-dir` +
+  `Edit`/`Bash(node *)` 사전허용 조합 각각을 "감독 없는 자율 에이전트"로 판정). 사용자의 "라이브 검증
+  먼저"라는 승인이 이 정도로 넓은 사전허용까지 포함한다고 보기 어려워 우회하지 않고, 대신 일반
+  서브에이전트(Agent 툴)로 전환 — 서브에이전트의 툴 호출은 이 세션의 정상 권한 체계를 그대로 타므로
+  사전허용 우회 문제가 없다.
+- **실행 방식**: 서브에이전트에게 캐시된(구버전 4.5.1, S4.5 로직 없음) 설치본 대신 **리포지토리의 실제
+  `report-manager` SKILL.md 소스**를 직접 읽고 그 `refine` 절 지시를 문자 그대로 따르도록 지시. 대상은
+  S4의 검증에서 이미 실퍼블리시된 `2026-07-06-worktree-plus-report.artifact.html` + 사이드카(URL
+  `https://claude.ai/code/artifact/e0d6a95a-d868-4ee7-8d1f-48cedef9c9da`).
+- **결과 — PASS**: footer에 한 문장 추가 → `artifact-gate.js --content-only` 통과 → (fragment이므로
+  visual self-audit 스킵) → `Artifact` 툴 호출 시 `url` 인자에 사이드카의 URL을 그대로 전달(누락하지
+  않음) → 퍼블리시 결과 URL이 사이드카 URL과 **동일** → `write-artifact-sidecar.js`로 사이드카 재작성,
+  `published_at` 갱신·`url`/`title`/`favicon`은 그대로. 디스크에서 직접 확인(`cat` 사이드카, `grep`으로
+  추가 문장 확인)까지 완료 — 서브에이전트 보고와 실제 파일 상태가 일치.
+- **브라우저 재렌더링 확인 — 완료, PASS**: 위 URL을 `claude-in-chrome`으로 재방문. 첫 로드 시 콘텐츠
+  영역이 검은 화면으로 나왔으나(콘솔 에러 0건, 네트워크상 `GET .../api/frame/versions/...`는 200으로
+  정상 응답 — 지연 페인트로 추정), 페이지 내 드롭다운을 한 번 클릭하는 상호작용을 거치자 정상
+  렌더링됨. 클릭한 "Version history" 드롭다운 자체가 결정적 증거 제공: **Version 2(8분 전, by you,
+  Current)** · **Version 1(56분 전, by you)** — 같은 아티팩트에 새 버전이 쌓였음을 claude.ai UI가
+  직접 보여줌. "Recommendations" 섹션으로 이동해 footer를 확인하니 테스트 문장("Live refine
+  verification note — issue 007 S4.5 test edit.")이 실제로 노출됨. 사이드카 URL 재사용 → 같은 페이지
+  새 버전, 이라는 S4.5의 핵심 주장을 파일·툴 호출·실제 브라우저 렌더링 세 레벨 모두에서 확정 검증.
+- **부가 발견**: 이 환경에 설치된 vision-powers 플러그인 캐시(4.5.1)가 리포 소스보다 오래돼, `Skill`
+  툴로 `report-manager`를 직접 부르면 `Artifact`가 `allowed-tools`에 없는 구 로직이 실행된다 — 리포
+  소스를 직접 따르는 방식(서브에이전트/별도 세션)으로만 우회 가능. S5나 이후 세션에서 재현될 수 있는
+  환경 특성이라 참고용으로 남겨둔다.
 
 ### Blocked by
 
@@ -317,10 +343,20 @@ channels"로 재확인). 스크립트 변경 없음(`artifact-gate.js --content-
 
 ### Acceptance criteria
 
-- [ ] `scripts/config.js`에 `default_format` / `artifact` 키 (기존 키가 snake_case — `default_language`·`auto_open`·`reports_dir` — 이므로 통일; 언어는 기존 `default_language` 재사용, 신규 `lang` 키 금지). 스킬 시작 시 참조, 플래그·자연어 = 일회성 override. config.js 헤더 "Supported keys" 주석 갱신.
-- [ ] README: `--artifact` 스위치 + 2×2 표 + 위임 고지 한 줄 + 공유 범위 한 줄 ("공유는 Team/Enterprise 조직 내부 한정 — Pro/Max는 본인 열람용 URL, 외부 공유는 로컬 html 파일로"). 구현-디테일 섹션 금지 (README 스타일 규칙).
-- [ ] `plugin.json` + `marketplace.json` description 갱신 (채널 추가 반영).
-- [ ] `marketplace.json` 버전 **minor 범프** (기능 추가).
+- [x] `scripts/config.js`에 `default_format` / `artifact` 키 (기존 키가 snake_case — `default_language`·`auto_open`·`reports_dir` — 이므로 통일; 언어는 기존 `default_language` 재사용, 신규 `lang` 키 금지). 스킬 시작 시 참조, 플래그·자연어 = 일회성 override. config.js 헤더 "Supported keys" 주석 갱신.
+- [x] README: `--artifact` 스위치 + 2×2 표 + 위임 고지 한 줄 + 공유 범위 한 줄 ("공유는 Team/Enterprise 조직 내부 한정 — Pro/Max는 본인 열람용 URL, 외부 공유는 로컬 html 파일로"). 구현-디테일 섹션 금지 (README 스타일 규칙).
+- [x] `plugin.json` + `marketplace.json` description 갱신 (채널 추가 반영).
+- [x] `marketplace.json` 버전 **minor 범프** (기능 추가).
+
+### 구현 완료 (2026-07-06)
+
+- **AC1**: `config.js` 헤더 "Supported keys"에 `default_format`(html/md)·`artifact`(true/false) 두 키 추가, 기존 정렬 스타일 유지. `config.js` 자체는 범용 get/set/path CLI라 로직 변경 없음 — 신규 키도 기존 코드로 그대로 읽고 쓴다. 4개 생성 스킬(`doc-visual`·`diff-visual`·`plugin-visual`·`context-health-visual`) 각각의 Format/Input Parsing 절에 "Config precedence" 문단 추가: 스킬 시작 시 `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` 1회 호출로 저장된 설정을 읽고, `default_format`/`artifact`가 있으면 하드코딩된 기본값(`html`/off)을 대체하되, 이번 요청에서 사용자가 실제로 말한 것(리터럴 플래그 또는 자연어 동치)은 항상 config보다 우선한다고 명문화. plugin-visual은 이 규칙이 기존에 이미 스코프된 `analyze`+HTML 조합에만 적용됨을 재확인(config로도 security/overview 모드에 퍼블리시를 강제할 수 없음).
+- **AC2**: README의 `doc-visual` 전용 "Artifact publishing" 문단을 4개 스킬 공통으로 일반화, 이슈 문서의 인터페이스 표(2×2: format × `--artifact`)를 그대로 옮겨 옴, 위임 고지 문장 유지, 공유 범위 문장 신규 추가(공식 문서 `https://code.claude.com/docs/en/artifacts`의 Availability/Share 섹션으로 재확인 — "Sharing stops at your organization... On Pro and Max plans, artifacts stay private to you"). config 기본값 설정 방법도 한 문장으로 자연어 수준에서 안내(구현 디테일 섹션 신설 없이 기존 문단에 이어 붙임).
+- **AC3**: `plugin.json`·`marketplace.json` description에 아티팩트 채널 한 줄 반영(대상 4개 스킬 명시 + config.json 기본값 언급). `marketplace.json`의 `report-manager` 설명에 "surfacing stored Artifact URLs and republishing to the same link" 추가(S4.5 반영 — 이전까지 미반영 상태였음).
+- **AC4**: `marketplace.json` vision-powers 버전 `4.5.1` → `4.6.0`(minor). 부수적으로 `CHANGELOG.md`에 `4.6.0` 항목 신규 추가 — 이 리포의 기존 관례(모든 버전 범프가 CHANGELOG 항목을 동반)를 따라 S1~S4.5 전체(아티팩트 채널·사이드카·게이트 content-only·config 키)를 하나의 "Added" 묶음으로 요약. AC로 명시되진 않았으나 버전 범프에 직결되는 문서 정합성이라 판단해 포함.
+- **검증**: `claude plugin validate .` — 기존 11건 버전-미지정 경고만, 신규 경고 없음. `node --test scripts/*.test.js` — 57건 전부 통과(config.js 변경은 주석뿐이라 회귀 없음, 기존 스위트 그대로 재사용).
+
+**이슈 007 전체 슬라이스(S1~S5) 완료** — 남은 미검증 항목은 "S5 자체의 라이브 트리거 확인"(config.json에 `artifact: true`를 실제로 심어두고 플래그 없이 자연어 요청만으로 퍼블리시되는지, 4개 스킬 각각에 대해)이며, 이번 세션에선 문서/설정 변경만 하고 실행하지 않았다 — S1·S4.5처럼 별도 세션에서 서브에이전트로 1회 확인하는 절차를 권장. "열린 질문"란의 "디자인 층 최종 소유권" 판정은 S5 스코프 밖으로, 사용자 판단을 위해 그대로 남겨 둠(S1·S3·S4 비교 기록은 모두 "내장 디자인이 구조적으로 버틴다" 쪽으로 수렴했다는 점만 참고로 덧붙인다).
 
 ### Blocked by
 

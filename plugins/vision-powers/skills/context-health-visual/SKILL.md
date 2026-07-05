@@ -31,6 +31,13 @@ Parse these arguments:
 | `--use-instructions-loaded-hook` | (flag) | off | Guide the user through temporarily enabling the `InstructionsLoaded` hook for file-level ground-truth data, then offer to revert it |
 | `--artifact` | (flag) | off | Publish the `html` dashboard as a claude.ai Artifact instead of a local file — see "HTML mode — Artifact channel" below. Also triggers on natural-language equivalents ("as an artifact", "publish as a link", "share as a URL") in whatever language the user is writing in. Applies to `--format html` only — combined with `--format md` it's ignored and the normal markdown path runs (same html-only scope doc-visual and diff-visual established for their artifact channels) |
 
+**Config precedence.** Before falling back to the defaults above, check stored preferences once:
+`node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
+`default_format` value replaces the `html` default, and `artifact: true` replaces off, the same as
+the `--artifact` flag. Anything the user actually says this turn — a literal flag or a
+natural-language equivalent — always overrides config; config only fills in when the request is
+silent on format/channel.
+
 ### Phase 1 — Data Collection
 
 **Determine the context window size.** The scan subprocess cannot detect the active

@@ -31,6 +31,12 @@ markdown response path below — publishing a diff-visual md report as-is is out
 slice (doc-visual's simpler single-file input validated that combination first; diff-visual's diff
 scope makes it a separate follow-up, not a S3 requirement).
 
+**Config precedence.** Before falling back to the defaults in the table, check stored preferences
+once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
+`default_format` value replaces the `html` default; `artifact: true` replaces off, the same as the
+`--artifact` flag. Anything the user actually says this turn — a literal flag or a natural-language
+equivalent — always overrides config; config only fills in when the request is silent on format/channel.
+
 ### Scope Detection
 
 Parse the user's argument to determine the diff scope:

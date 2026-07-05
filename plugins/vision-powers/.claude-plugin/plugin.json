@@ -1,6 +1,6 @@
 {
   "name": "vision-powers",
-  "description": "Analyze Claude Code plugins and visualize text artifacts (markdown docs, git diffs, plugins) as interactive HTML or diagram-enhanced markdown reports. Skills: doc-visual, diff-visual, plugin-visual, context-health-visual, fact-check, report-manager. diff-visual now shows the actual changed code as side-by-side split-diff (build-time grounded, syntax-highlighted) plus File Map change-flags. context-health-visual includes skill security scan (6 pattern categories) and hook schema validation.",
+  "description": "Analyze Claude Code plugins and visualize text artifacts (markdown docs, git diffs, plugins) as interactive HTML or diagram-enhanced markdown reports — or publish them as claude.ai Artifacts with --artifact (doc-visual, diff-visual, plugin-visual, context-health-visual), with config.json defaults so the flag isn't needed every time. Skills: doc-visual, diff-visual, plugin-visual, context-health-visual, fact-check, report-manager. diff-visual now shows the actual changed code as side-by-side split-diff (build-time grounded, syntax-highlighted) plus File Map change-flags. context-health-visual includes skill security scan (6 pattern categories) and hook schema validation.",
   "author": {
     "name": "LeeJuOh",
     "email": "xop4p@naver.com"
