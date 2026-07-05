@@ -1,6 +1,6 @@
 # vision-powers Artifact 채널: claude.ai 퍼블리시를 전달 채널로 (공식 Artifacts 위임)
 
-> 상태: 구현 중 (S1·S2·S3·S4 완료 — S4 브라우저 실렌더링 확인만 다음 세션으로 이월, 아래 참고) · 생성: 2026-07-05
+> 상태: 구현 중 (S1·S2·S3·S4 완료, 브라우저 실렌더링 검증까지 완료 — 아래 S4 "브라우저 검증" 참고) · 생성: 2026-07-05
 > 용어집: `docs/context/vision-powers.md` (신규 용어: **Artifact channel**)
 > 결정 근거: `docs/adr/0007-artifact-channel-delegates-visual-design.md` (선행 `0002` 직접작성 · `0005` grounding)
 > 공식 문서: `https://code.claude.com/docs/en/artifacts`
@@ -8,20 +8,42 @@
 
 ## 핸드오프 (다음 세션 — 2026-07-06 세션 종료 시점)
 
-**첫 액션**: 아래 두 URL을 **실제 로그인된** 브라우저에서 열어 눈으로 확인 (S4 "미완료" 항목) →
-확인 끝나면 S4.5 시작 여부를 사용자에게 확인. S4.5를 바로 시작하지 말 것 — 이번 세션은 "슬라이스
-끝나면 멈추고 보고" 지시로 종료됨.
+**목표**: 이 이슈(vision-powers Artifact 채널) 구현을 슬라이스 단위로 이어간다. S1~S4는 이미 구현
+완료 상태로 이번 세션을 시작했고, 유일하게 남아있던 미완료 항목(S4 브라우저 실렌더링 확인)만 처리하는
+것이 이번 세션의 범위였다.
 
-- plugin-visual (worktree-plus 대상): https://claude.ai/code/artifact/e0d6a95a-d868-4ee7-8d1f-48cedef9c9da
-  — 확인 포인트: 권한 매트릭스가 좁은 폭에서 가로 스크롤로 처리됐는지, 깨지진 않았는지.
-- context-health-visual (이 리포지토리 세션 자체를 스캔): https://claude.ai/code/artifact/63bc8fc0-a7e7-4303-973b-f72be4b75d4b
-  — 확인 포인트: §5 Trigger Collisions 충돌 쌍 문자열이 줄바꿈되는지, KPI 카드 그리드가 자연스럽게 랩되는지.
+**첫 액션**: 다음 세션 시작 시 **S4.5(URL 영속화 + 크로스세션 refine) 시작 여부를 사용자에게 먼저
+확인** — 바로 구현에 들어가지 말 것. 이번 세션은 사용자의 "슬라이스 끝나면 멈추고 보고, 다음 슬라이스
+들어가지 말 것" 지시로 종료됐고, S4.5 시작 여부를 묻는 질문 자체가 사용자에 의해 중단된 상태로
+끝났다 — 아직 답을 못 받았다.
 
-**막힌 이유**: 이번 세션의 `claude-in-chrome` 확장 탭 그룹이 claude.ai 로그인 세션을 못 읽어 두 URL
-모두 "Sign in" 화면만 나왔음 (사용자가 별도로 로그인했다고 확인했으나 확장 탭 그룹엔 반영 안 됨,
-원인 미상 — 다른 프로필/탭 그룹 격리로 추정). 2회 재시도 후 중단.
+**맥락**: 이전 세션은 두 아티팩트 URL(plugin-visual/worktree-plus, context-health-visual)을
+`claude-in-chrome`으로 열었을 때 로그인 세션을 못 읽어 "Sign in" 화면만 봤고 그 상태로 종료됐다.
+이번 세션에서 동일한 두 URL을 다시 열어보니 로그인 문제가 재현되지 않아 실제 콘텐츠를 확인할 수
+있었다. 브라우저 창을 ~420px 폭까지 줄여 이전 세션이 구조적으로만 판정해뒀던 두 리스크 지점 —
+plugin-visual의 권한 매트릭스 가로 스크롤, context-health-visual §5 Trigger Collisions의 충돌 쌍
+문자열 줄바꿈 — 을 눈으로 직접 확인했고, 둘 다 설계대로 깨지지 않고 동작함을 확인했다. 이슈 문서의
+상태 줄과 S4 섹션을 이 결과로 갱신했다(아래 "구현 완료" 밑 "브라우저 검증" 문단 참고). 코드 변경은
+없음 — 이번 세션은 검증 + 문서 갱신만.
 
-**현재 저장소 상태**: `develop` 브랜치, 커밋 안 된 수정 3개뿐 — `docs/issues/007-vision-powers-artifact-channel.md`(이 문서), `plugins/vision-powers/skills/context-health-visual/SKILL.md`, `plugins/vision-powers/skills/plugin-visual/SKILL.md`. S4 세부 내용·근거는 아래 S4 섹션의 "구현 완료 (2026-07-06)" 참고.
+**현재 진행 상황** (`repo_facts.sh` 기준, 2026-07-06 확인):
+- 브랜치: `develop`.
+- 커밋 안 된 변경: `docs/issues/007-vision-powers-artifact-channel.md` 1개뿐(이 문서 자체 — 상태 줄·S4 검증 단락·이 핸드오프 섹션 갱신). 아직 커밋 안 함.
+- 최근 커밋에 S1~S4 구현이 이미 반영돼 있음: `e0f4d42`(S4), `a509f5e`(S2·S3), `c487017`(S1). `plugins/vision-powers/skills/{plugin-visual,context-health-visual}/SKILL.md`는 이미 커밋된 상태 — 핸드오프에 남아있던 "커밋 안 된 수정 3개" 기록은 이번 세션 시작 시점엔 이미 낡은 정보였음(둘 다 `e0f4d42`에 포함).
+- S1·S2·S3·S4 acceptance criteria 전부 체크(`[x]`) 완료 상태.
+
+**잘 된 점**: claude.ai 아티팩트 페이지는 `navigate` 직후 바로 스크린샷을 찍으면 완전히 빈 검은 화면이
+찍히는 경우가 있었다(콘솔 에러 없음, DOM엔 iframe 존재 확인) — `wait` 몇 초 또는 스크롤/클릭 같은
+상호작용을 한 번 거치고 나서 스크린샷을 찍으니 정상 렌더링된 콘텐츠가 나왔다. 다음에 이 페이지를 다시
+열 때 "빈 화면 = 깨짐"으로 바로 결론 내리지 말고 한 번 상호작용 후 재확인할 것.
+
+**막힌 것**: 없음 — S4는 이번 세션에서 완전히 닫힘.
+
+**다음 단계**:
+1. 사용자에게 S4.5 시작 여부 확인 (첫 액션 참고).
+2. S4.5 승인되면: 퍼블리시 성공 시 `<report>.artifact.json` 사이드카 기록 규약 확정 → `list-reports.js`에 `artifact_url` 노출 → report-manager refine이 사이드카 URL을 `url` 인자로 재사용하도록 배선 → 사이드카 없음/URL 죽음 시 새 URL + 안내 한 줄 → delete 시 사이드카 동반 삭제. (S1이 사이드카 최소 쓰기는 이미 구현해둠 — `write-artifact-sidecar.js` 재사용.)
+3. S4.5 다음은 S5(config.json 키 + README 2×2 표 + `plugin.json`/`marketplace.json` description + marketplace 버전 minor 범프) — S3·S4·S4.5 완료 후 마지막 슬라이스.
+4. 이번 세션에서 갱신한 `docs/issues/007-vision-powers-artifact-channel.md` 변경사항은 아직 커밋 전 — 다음 세션 시작 전에 커밋할지 사용자 확인 필요.
 
 ## What to build
 
@@ -222,12 +244,21 @@ channels"로 재확인). 스크립트 변경 없음(`artifact-gate.js --content-
   KPI 카드 그리드(13장, `auto-fit minmax(160px,1fr)`)는 고정 열 수가 아니라서 2-per-row로 자연스럽게
   줄어들며 orphan 없이 랩됨 — 저위험.
 
-**미완료 — 다음 세션**: 위 두 URL을 실제 브라우저에서 렌더링 확인은 아직 못 함(이번 세션의
-`claude-in-chrome` 확장 탭 그룹이 claude.ai 로그인 세션을 못 읽어 "Sign in" 화면만 노출 — 사용자가
-별도로 로그인했으나 확장 탭 그룹에는 반영 안 됨, 원인 미상). 서브에이전트의 구조적 판정(치수·문자열
-길이·레이아웃 메커니즘 기반)까지만 확보된 상태 — 다음 세션에서 브라우저로 두 URL 열어 실제 렌더링
-(특히 위 두 고유 리스크 지점)을 눈으로 1회 확인 권장. 사이드카 파일 경로:
-`{report}.artifact.html.artifact.json` (두 건 모두 기록 완료, URL 재사용 가능).
+**브라우저 검증 (2026-07-06, 이어지는 세션)**: 위 두 URL을 `claude-in-chrome`으로 실제 렌더링 확인
+완료 (이전 세션 막힘 사유였던 로그인 세션 문제는 이번엔 재현 안 됨). 두 아티팩트 모두 콘솔 에러 0건,
+정상 렌더링.
+
+- **plugin-visual (worktree-plus)**: Security Audit → Permission matrix 테이블을 브라우저 창
+  ~420px 폭으로 축소해 확인 — "↔ scroll for full table width" 안내 문구대로 실제 가로 스크롤이
+  작동, COMPONENT 열이 스크롤 아웃되고 TOOLS/COMMANDS·HOOK TYPE·RISK 열이 보임. 레이아웃 깨짐 없음
+  — 사전 판정("훑어보기→스크롤" 트레이드오프)과 일치.
+- **context-health-visual**: §5 Trigger Collisions를 같은 좁은 폭에서 확인 — 최장 충돌 쌍 문자열
+  (예: `skill-creator-pro/skill-creator-pro ↔ skill-creator/skill-creator`, `codex-advisor/codex-adversarial ↔ codex/adversarial-review`)이
+  가로 오버플로우나 잘림 없이 하이픈/공백 경계에서 자연스럽게 줄바꿈됨 — `overflow-wrap: anywhere`
+  적용 확인. 상단 배지 그룹(3 healthy/2 attention/1 critical/6 graded)·MCP Overview 2-카드 그리드도
+  좁은 폭에서 정상 랩됨.
+
+두 URL 모두 실제 브라우저 렌더링으로 구조적 판정을 확인 — S4 완료.
 
 ### Blocked by
 
