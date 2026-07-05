@@ -1,9 +1,10 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 중 — S1~S8·S10~S12·S14 완료(2026-07-06 세션 — S6 잔여 검증 + S7 config 다이얼 + S8
+> 상태: 구현 중 — S1~S8·S10~S14 완료(2026-07-06 세션 — S6 잔여 검증 + S7 config 다이얼 + S8
 > session-scoping + S10 confrontation telemetry + S11 blind-spot 정조준 + S12 ignore streak→scoreboard
-> 강등 구현·수동 테스트 완료; S8·S10·S11은 이번 세션 시작 시 이미 커밋됨, S12는 커밋 `14f1062`),
-> **S9(정체성 재작성)는 S13 대기 — 다음은 S13부터**(S13 완료 후 S9로 마무리) · 생성: 2026-06-21 · 확장:
+> 강등 + S13 retrieval confrontation 구현·수동 테스트 완료; S8·S10·S11·S12는 이번 세션 중 이미 커밋됨
+> — S12는 커밋 `14f1062` — S13은 이 세션에서 아직 커밋 전), **S9(정체성 재작성 + 3.0.0 범프)만 남음 —
+> 이슈의 마지막 슬라이스, 블로커 S5·S10·S11·S12 전부 충족됨** · 생성: 2026-06-21 · 확장:
 > 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR
 > 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
@@ -17,14 +18,14 @@ confrontation, artifact-level vs code-level comprehension, shared ship budget).
 
 ### First Action
 
-S13(Retrieval confrontation)부터 시작 — 블로커 S11 완료, 즉시 착수 가능. 이후 S9로 마무리(3.0.0 범프,
-S9의 블로커 S5·S10·S11·S12 전부 충족됨).
+S9(정체성 재작성 + 3.0.0 범프)부터 시작 — 이슈의 마지막 남은 슬라이스. 블로커 S5·S10·S11·S12 전부
+충족됨(S13도 이번 세션에 완료돼 README가 기술할 기능 집합이 전부 갖춰짐).
 
 ### Context
 
-2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10·S11·S12를 순서대로 구현·수동 테스트·커밋까지 마쳤다(S12는
-커밋 `14f1062`, git log 참조). 유저 요청대로 슬라이스 끝나면 멈추고 보고하는 리듬 유지 중 — S12에서
-정지.
+2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10·S11·S12·S13을 순서대로 구현·수동 테스트했다(S12는 커밋
+`14f1062`, git log 참조 — S13은 이 핸드오프 작성 시점 기준 아직 커밋 전, 유저 확인 후 커밋 예정).
+유저 요청대로 슬라이스 끝나면 멈추고 보고하는 리듬 유지 중 — S13에서 정지.
 
 이어갈 때 참고할 것:
 - **S7 jq footgun**: `.key // default`는 JSON `false`를 삼킨다 — boolean 다이얼(`enabled`)은
@@ -55,23 +56,35 @@ S9의 블로커 S5·S10·S11·S12 전부 충족됨).
   반응하면 **기존 S10 outcome 로깅 지시(`answered`)를 그대로 재사용**해 streak를 끊는다 — 새 분기 로직
   없이 기존 메커니즘에 편승. 어떤 artifact가 고위험인지/관여했는지는 여전히 모델의 그 턴 인라인 판단
   (S11과 동일 원칙) — 셸은 streak 정수 하나만 결정론적으로 안다.
-- **S12↔S13 상호작용 주의**: S13(retrieval confrontation)은 S11의 fallback 사다리("고위험 없음/전부
-  관여 시 artifact-level 질문")에 gap retrieval 단계를 끼워 넣을 예정인데, 이 사다리는 두 훅의 **질문
-  모드**(`else`) 분기에만 존재한다. S12가 만든 **스코어보드 모드**(`if [[ "$MODE" == "scoreboard" ]]`)
-  분기는 애초에 질문을 안 하므로 이 사다리를 타지 않음 — S13은 질문 모드 텍스트만 수정하면 되고,
-  스코어보드 쪽에 retrieval을 끼워 넣을 필요 없음.
+- **S12↔S13 상호작용 — 해소됨**: S13(retrieval confrontation)은 S11의 fallback 사다리("고위험 없음/전부
+  관여 시 artifact-level 질문")에 gap retrieval 단계를 끼워 넣었다. 예상대로 이 사다리는 두 훅의 **질문
+  모드**(`else`) 분기에만 존재했고, S12가 만든 **스코어보드 모드**(`if [[ "$MODE" == "scoreboard" ]]`)
+  분기는 애초에 질문을 안 하므로 이 사다리를 타지 않아 손대지 않았다 — 질문 모드 텍스트만 수정.
+- **S13 구현 요지**: 두 ship 훅의 질문 모드 5단계 뒤에 사다리 3단(blind-spot 표적 > 미해소 gap
+  retrieval > 범용 artifact 질문)을 완성하는 새 단계를 삽입 — S11 폴백 직전에
+  `recent-gaps.sh 1`을 실행해 미해소 gap이 있으면 그것부터 재출제, 없으면 기존 범용 질문으로 하강.
+  신설 `resolve-gap.sh`가 `gaps.log`에서 repo+gap 텍스트 일치 줄만 `resolved:true`로 rewrite(파싱
+  불가 줄은 원문 보존, `jq` 부재·인자 없음·로그 없음 모두 조용히 no-op). `recent-gaps.sh`는
+  `resolved != true`만 노출하도록 필터 추가(레거시 줄의 `resolved` 필드 부재도 미해소로 처리 —
+  마이그레이션 불필요). `log-gap.sh`는 신규 gap을 `"resolved":false` 명시로 기록. **범위 경계**:
+  `duck-orient`의 기존 retrieval check-in은 `recent-gaps.sh`를 그대로 쓰므로 미해소 필터는 자동 적용
+  받지만, 거기서 유저가 gap을 해소해도 `resolve-gap.sh`를 안 부르므로 그 세션에서 해소된 gap은 여전히
+  ship-point 사다리에서 재출제될 수 있음 — S13 acceptance criteria가 ship-point 사다리만 범위로
+  명시해 이번 슬라이스에서는 안 건드림(회귀 아님, 이전부터 있던 한계, 후속 후보).
 
 무관한 변경(손대지 말 것): `plugins/vision-powers/skills/plugin-visual/SKILL.md`,
 `plugins/vision-powers/skills/context-health-visual/SKILL.md` — vision-powers 계열 작업, rubber-duck-tutor와 무관.
 
 ### Current Progress
 
-S1-S8·S10-S12·S14 완료, S9·S13 남음(git log 참조 — S12는 커밋 `14f1062`). S12 신규/변경 파일:
-`skills/ducking/scripts/ignore-streak.sh`(신설 — streak 계산 전용), `hooks/post-push.sh`·
-`hooks/post-pr.sh`(rate-limit 통과 후 streak 계산 + question/scoreboard 분기 추가, S10 telemetry
-fire/outcome 로직과 S11 triage 지시는 question 분기 안에 그대로 보존), `skills/ducking/engine.md`(신설
-"Ignore Streak → Scoreboard Demotion" 섹션 + Session Limits에 한 줄 추가) — 전부
-`plugins/rubber-duck-tutor/` 아래.
+S1-S8·S10-S14 완료, S9만 남음(git log 참조 — S12는 커밋 `14f1062`, S13은 이 핸드오프 작성 시점 기준
+아직 커밋 전). S13 신규/변경 파일: `skills/ducking/scripts/resolve-gap.sh`(신설 — gap resolved 마킹
+전용), `skills/ducking/scripts/log-gap.sh`(신규 gap에 `"resolved":false` 명시 추가),
+`skills/ducking/scripts/recent-gaps.sh`(미해소 gap만 노출하도록 필터 추가, jq 경로 + non-jq 정규식
+폴백 둘 다), `hooks/post-push.sh`·`hooks/post-pr.sh`(질문 모드 `additionalContext`에 gap retrieval
+사다리 단계 삽입, scoreboard 분기는 미변경), `skills/ducking/engine.md`(신설 "Retrieval Confrontation
+(Ship-Point Fallback)" 섹션 + Session Wrap-up의 gap persistence 절에 resolved 기본값 교차참조 + Session
+Limits에 한 줄 추가) — 전부 `plugins/rubber-duck-tutor/` 아래.
 
 ### 핵심 파일 포인터
 
@@ -85,8 +98,15 @@ fire/outcome 로직과 S11 triage 지시는 question 분기 안에 그대로 보
 - Ignore streak(S12) — 계산: `skills/ducking/scripts/ignore-streak.sh`(telemetry.jsonl의 outcome
   이벤트를 역순으로 훑어 연속 ignored 카운트); canonical 문서: `skills/ducking/engine.md`의 "Ignore
   Streak → Scoreboard Demotion" 섹션; 실제 분기·스코어보드 문구는 두 ship 훅의 `MODE` 변수 +
-  `additionalContext` if/else에 내장. S13이 gap retrieval 사다리를 끼워 넣을 지점은 이 if/else의
-  **question 분기(`else`) 안**, S11이 만든 5단계 폴백 문구 중 마지막 단계.
+  `additionalContext` if/else에 내장.
+- Retrieval confrontation(S13) — gap 로그: `${CLAUDE_PLUGIN_DATA}/gaps.log`(repo별 JSONL, 필드
+  `ts`/`repo`/`gap`/`resolved`); 기록: `skills/ducking/scripts/log-gap.sh`; 미해소만 조회:
+  `skills/ducking/scripts/recent-gaps.sh`; 해소 마킹: `skills/ducking/scripts/resolve-gap.sh`;
+  canonical 문서: `skills/ducking/engine.md`의 "Retrieval Confrontation (Ship-Point Fallback)" 섹션;
+  실제 사다리는 두 ship 훅의 `additionalContext` **question 분기(`else`) 안**, S11 5단계 뒤에 내장
+  (scoreboard 분기는 미변경).
+- **S9 다음 세션 참고**: README 재작성 시 S10~S13 전체(telemetry, blind-spot 정조준, scoreboard 강등,
+  retrieval confrontation)를 반영해야 함 — 위 4개 canonical 섹션이 그 근거 소스.
 
 ---
 
@@ -516,7 +536,7 @@ S12는 S10(telemetry가 streak의 원천)·S11(고위험 분류가 scoreboard �
 
 ---
 
-## S13 — Retrieval confrontation (과거 gap 재출제)
+## S13 — Retrieval confrontation (과거 gap 재출제) ✅ 완료 (2026-07-06)
 
 **Phase:** 3 · **Blocked by:** S11. · **출처:** 2026-07-04 위키 그릴 (learning-science spacing
 effect — "기록만 하고 재노출 안 하는" gap 로그의 미활용 해소).
@@ -528,9 +548,39 @@ S11 triage가 표적 없음(폴백 상황)일 때, gap 로그에 미해소 gap�
 **blind-spot 표적 > 미해소 gap retrieval > 범용 artifact 질문** — 어떤 경우에도 질문은 1개.
 
 ### Acceptance criteria
-- [ ] blind-spot 표적 없음 + 미해소 gap 존재 시 retrieval 질문 발사.
-- [ ] 유저가 해소하면 resolved 마킹, 이후 재출제 안 됨.
-- [ ] gap 로그 비었으면 기존 artifact-level 질문 — 사다리 최하단.
+- [x] blind-spot 표적 없음 + 미해소 gap 존재 시 retrieval 질문 발사 (`hooks/post-push.sh`·
+      `hooks/post-pr.sh`의 질문 모드 `additionalContext` 5단계 뒤에 새 3단계 사다리 삽입 — S11 폴백
+      직전에 `recent-gaps.sh 1`을 실행해 미해소 gap이 있으면 그것부터 재출제, 없을 때만 기존 범용
+      질문으로 하강. 가짜 stdin JSON으로 수동 검증: `additionalContext`에 `recent-gaps.sh 1`·
+      `resolve-gap.sh` 참조 존재 확인, `jq` 파싱 가능한 유효 JSON 유지).
+- [x] 유저가 해소하면 resolved 마킹, 이후 재출제 안 됨 (신설 `skills/ducking/scripts/resolve-gap.sh` —
+      `gaps.log`에서 현재 repo + 정확한 gap 텍스트가 일치하는 줄만 `resolved:true`로 rewrite, 나머지
+      줄·파싱 불가 줄은 원문 그대로 보존. `recent-gaps.sh`는 `resolved != true`만 노출하도록 필터
+      추가(jq 경로 + non-jq 정규식 폴백 둘 다). 수동 테스트: resolve 전후 `recent-gaps.sh` 출력 변화
+      확인, 존재하지 않는 gap 텍스트로 resolve 시도 시 로그 불변, 같은 gap 두 번 resolve해도 안전
+      (idempotent), 인자 없음·로그 파일 없음·`jq` 부재 세 경우 모두 크래시 없이 exit 0).
+- [x] gap 로그 비었으면 기존 artifact-level 질문 — 사다리 최하단 (`recent-gaps.sh`가 빈 출력을 반환하면
+      두 훅의 지시문이 그대로 기존 "short artifact-level question about the overall change"로
+      하강 — 텍스트 변경 없이 그 문구를 사다리 마지막 rung으로 재배치).
+
+`log-gap.sh`는 신규 gap을 `"resolved":false` 명시로 기록(기존 파일에 필드 부재한 레거시 줄은
+`recent-gaps.sh`가 `!= true`로 처리해 동일하게 미해소 취급 — 마이그레이션 없이 하위 호환). 스코어보드
+모드(`if` 분기)는 질문을 안 하므로 이 사다리를 안 타며 손대지 않음(핸드오프 기록대로). `engine.md`에
+신설 "Retrieval Confrontation (Ship-Point Fallback)" 섹션 — 사다리 3단 전체 문서화 + Session Wrap-up의
+gap persistence 절에 resolved 기본값 교차참조 추가. 두 훅의 `additionalContext`는 이 섹션의 조건절
+요약을 내장(엔진 비참조 원칙 유지, "keep both copy in sync" 패턴 재사용).
+
+**범위 경계(의도적으로 안 건드림):** `duck-orient`의 기존 retrieval check-in(스텝 4, S13 이전부터 존재)은
+`recent-gaps.sh`를 그대로 호출하므로 이제 미해소 gap만 보게 되는 효과는 자동으로 받지만, 그 세션에서
+유저가 gap을 해소해도 `resolve-gap.sh`를 호출하지 않음 — S13 acceptance criteria가 ship-point 사다리만
+범위로 명시하고 `duck-orient`는 언급하지 않아 이번 슬라이스에서는 손대지 않았음. 즉 `duck-orient`
+세션에서 설명한 gap은 여전히 미해소로 남아 다음 ship confrontation에서 재출제될 수 있음 — 후속
+슬라이스 후보(회귀 아님, 이번 슬라이스 이전부터 있던 한계).
+
+수동 테스트(가짜 stdin JSON): 질문 모드 정상 발사 시 `additionalContext`에 `recent-gaps.sh 1`·
+`resolve-gap.sh` 참조 확인, 두 훅 모두 유효 JSON(`jq` 파싱 통과), scoreboard 모드(연속 무시 3회 시딩)는
+여전히 유효 JSON·기존 문구 유지(회귀 없음), `bash -n` 문법 체크 5개 파일 전부 통과,
+`grep -rlP '[\x{AC00}-\x{D7A3}]'` 결과 없음(S14 회귀 없음).
 
 ### Blocked by
 S13은 S11(폴백 사다리가 triage 결과에서 시작)에 의존.

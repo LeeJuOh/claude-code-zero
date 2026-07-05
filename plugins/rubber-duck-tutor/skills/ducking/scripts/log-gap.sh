@@ -4,7 +4,10 @@
 # Usage: log-gap.sh "<gap text>"
 #
 # Writes one JSON line per gap to ${CLAUDE_PLUGIN_DATA}/gaps.log keyed by
-# repo path so /duck orient can pull recent gaps for spaced retrieval.
+# repo path so /duck orient and ship-point confrontation can pull unresolved
+# gaps for spaced retrieval (S13). Every new line is written with
+# "resolved":false explicitly -- see resolve-gap.sh for how a gap flips to
+# true once the user re-explains it.
 # Silent on success, prints to stderr on failure.
 
 set -uo pipefail
@@ -36,4 +39,4 @@ escape_json() {
 REPO_ESC=$(escape_json "$REPO")
 GAP_ESC=$(escape_json "$GAP")
 
-printf '{"ts":"%s","repo":"%s","gap":"%s"}\n' "$TS" "$REPO_ESC" "$GAP_ESC" >> "$LOG_FILE"
+printf '{"ts":"%s","repo":"%s","gap":"%s","resolved":false}\n' "$TS" "$REPO_ESC" "$GAP_ESC" >> "$LOG_FILE"

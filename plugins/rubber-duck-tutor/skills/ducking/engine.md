@@ -198,7 +198,11 @@ Right after printing the gap line, persist it so future `/duck-orient` sessions 
 bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh "<the same gap text>"
 ```
 
-Use the exact gap sentence as the argument. Skip the call when no gap was spotted. The script is silent on success — no need to mention it to the user.
+Use the exact gap sentence as the argument. Skip the call when no gap was spotted. The script is
+silent on success — no need to mention it to the user. Every gap starts out unresolved
+(`"resolved":false`) and stays that way until a later confrontation retrieves it and the user
+demonstrates they've closed it — see Retrieval Confrontation below for how it gets re-surfaced and
+marked resolved.
 
 ## Session Limits
 
@@ -206,6 +210,7 @@ Use the exact gap sentence as the argument. Skip the call when no gap was spotte
 - Plan/spec-doc triggers (`/duck-prebuild` suggestions): max 2 unsolicited offers per session (auto-hook only)
 - Ship-point confrontation: max 1 per session, shared across `{git push, gh pr create, glab mr create}` — first to fire wins (ADR 0003 shared ship budget); separate budget from the plan/spec triggers so shipping isn't starved by them
 - 3+ consecutive ignored ship-point confrontations (tracked across sessions) demote the next one from a question to a non-blocking scoreboard — see Ignore Streak → Scoreboard Demotion below
+- When question mode's risk triage lands on no target, the fallback isn't immediately generic — it retrieves an unresolved past gap first if one exists; see Retrieval Confrontation below
 - Suggestions and confrontations are one short sentence/question, never pushy
 
 ## Risk Taxonomy (Ship-Point Triage)
@@ -247,6 +252,50 @@ Silence, agreement, or the model writing it unprompted does not count as engagem
 The two ship hooks embed a condensed copy of this taxonomy directly in their `additionalContext`
 (ADR 0003 keeps ship-point confrontation off the engine-read path — deterministic latency budget, no
 model-discretion skill load at ship time). Keep both copies in sync when this list changes.
+
+## Retrieval Confrontation (Ship-Point Fallback)
+
+The Risk Taxonomy triage above sometimes lands on no target — nothing shipped is high-risk, or every
+high-risk artifact was already engaged with in conversation. Before this slice, that fallback dropped
+straight to a generic artifact-level question every time, wasting the one-question budget on the
+weakest possible confrontation when a sharper option might exist: a gap the user already demonstrated
+they didn't understand, in a *previous* session, that was logged and then never revisited (the gap log
+existed since before this feature, written by every mode's Session Wrap-up, but nothing ever read it
+back except `duck-orient`'s own separate retrieval check-in). Re-testing a known weak spot is higher
+signal than probing something never shown to be shaky — this is the learning-science spacing effect
+(retrieval practice on a delay strengthens retention better than the same practice massed together).
+
+The full ship-point priority ladder, in order:
+
+1. **Blind-spot target** (Risk Taxonomy above) — a high-risk, low-engagement artifact from *this*
+   ship, if one stands out.
+2. **Unresolved gap retrieval** (this section) — only reached if (1) found nothing. Run
+   `skills/ducking/scripts/recent-gaps.sh 1` to check for one unresolved gap logged in a past session
+   for this repo. If it prints one, ask about that instead of anything from the current ship: "Last
+   time your understanding of [gap] was shaky — can you explain that now?" This is the one place a
+   ship-point question is allowed to be about something other than what just shipped.
+3. **Generic artifact-level question** — only reached if both (1) and (2) found nothing (no unresolved
+   gap has ever been logged for this repo, or every logged gap has since been resolved). Falls back to
+   the pre-S13 "short artifact-level question about the overall change."
+
+Exactly one question fires regardless of which rung answers it — the shared ship budget (one
+confrontation per session, ADR 0003) doesn't change; S13 only changes what fills the slot when the
+sharper Risk Taxonomy target is absent.
+
+**Resolving a gap.** A gap is unresolved until explicitly marked otherwise — `log-gap.sh` (Session
+Wrap-up, above) writes every new line with `"resolved":false`, and `recent-gaps.sh` treats a missing
+`resolved` key (gaps logged before this field existed) the same as `false`, so nothing pre-existing
+silently drops out of rotation. If the user demonstrates during a retrieval confrontation that they
+can now explain the gap, call `skills/ducking/scripts/resolve-gap.sh "<the exact gap text>"` — this
+flips that gap's `resolved` field to `true` in `gaps.log` so it stops resurfacing, in both the
+ship-point ladder and `duck-orient`'s retrieval check-in, which reads the same log. If they still
+can't explain it, don't call the script — leaving it unresolved is correct, it stays eligible for next
+time. Whether the user actually demonstrated understanding is, like the Risk Taxonomy judgments above,
+a live model call at confrontation time — the scripts only read and write the log, never judge it.
+
+The two ship hooks embed this fallback step directly in their `additionalContext` question-mode
+branch only (ADR 0003 engine-read rationale, same as Risk Taxonomy above) — scoreboard mode never asks
+a question, so it has no fallback ladder to extend. Keep that copy in sync with this section.
 
 ## Ignore Streak → Scoreboard Demotion (Ship-Point)
 
