@@ -1,6 +1,6 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 중 — S1·S2·S3 완료(2026-07-05), S4부터 이어서 · 생성: 2026-06-21 · 확장: 2026-07-04 (위키 그릴 세션 — S10~S13 추가, S4 보강)
+> 상태: 구현 중 — S1~S4 완료 + S6 flag 선반영(2026-07-05), **S5부터 이어서** · 생성: 2026-06-21 · 확장: 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR 0003 참조)
 > 지시서: `docs/handoff/2026-06-21-rubber-duck-tutor-redesign.md`
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
 > 용어집: `docs/context/rubber-duck-tutor.md`
@@ -176,7 +176,7 @@ ship 훅에 두 가지 변경. (1) **Shared ship budget**: `{git push, gh pr cre
 - plan/doc 훅 — `post-plan.sh`, `post-write-plan.sh`(이들의 `additionalContext`가 `/duck-plan` 언급)
 - 플러그인 `README.md` — 명령 표, Quick Start, hooks 문단
 - **레포 루트 `README.md`·`README.ko.md`** — 마켓플레이스 명령 목록(핸드오프 체크리스트가 놓침)
-- 엔진 본문 — `core.md`(S4에서 `ducking`이 됨) line 3의 모드 목록이 `/duck-design`·`/duck-plan` 열거
+- 엔진 본문 — `skills/ducking/engine.md`(S4에서 `core.md`가 이걸로 됨, 스킬 아닌 참조 문서)의 모드 목록이 `/duck-design`·`/duck-plan` 열거
 
 범위 경계: `plugin.json` / `marketplace.json`의 **description** 산문은 S9(정체성 재작성)에서 다시
 씀, 그래서 S5는 그 두 문자열을 **건드리지 않음** — S5/S9 write-write 충돌 회피. S5는 두 매니페스트
