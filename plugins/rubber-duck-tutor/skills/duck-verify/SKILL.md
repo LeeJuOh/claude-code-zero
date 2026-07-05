@@ -2,14 +2,18 @@
 name: duck-verify
 disable-model-invocation: true
 description: "Code-verification session with the rubber duck — user explains code just written, finds edge cases, fixes planted bugs. Use after implementing a feature, or when they say \"duck verify\", \"double check this\". Not for plan review (/duck-prebuild) or PR review (/duck-review)."
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *)
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/session-edits.sh *)
 ---
 
 # Duck — Code Verification Mode
 
 **Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Confidence Check (Code Verification row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Hint Ladder, Gotchas. They apply here.
 
-**Input**: Recently changed files — use `git diff` or conversation context.
+**Input**: Union of two sources, not `git diff` alone — a mid-session commit makes the diff go clean while the edit itself still needs verifying:
+- `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/session-edits.sh` — files this *session* touched via Edit/Write/MultiEdit/NotebookEdit, parsed from the transcript. Catches edits already committed mid-session.
+- `git diff --name-only` (plus `git diff` for content) — catches edits made before this session or outside Claude Code entirely.
+
+Empty `session-edits.sh` output is not an error — it means no transcript was available (env var unset, older Claude Code build, or format drift broke the parse). Fall back to `git diff` / conversation context alone, silently.
 
 ## Flow
 

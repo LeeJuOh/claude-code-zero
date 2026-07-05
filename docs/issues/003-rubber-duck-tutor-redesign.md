@@ -1,9 +1,9 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 중 — S1~S7·S14 완료(2026-07-06 S6 잔여 검증 + S7 config 다이얼 구현·수동 테스트 완료),
-> **S8(duck-verify session-scoping)부터 이어서** · 생성: 2026-06-21 · 확장: 2026-07-04 (위키 그릴 — S10~S13
-> 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR 0003 참조 / S5 구현 중 S14
-> 신설 — 덕 페르소나 대사 전면 영어화)
+> 상태: 구현 중 — S1~S8·S14 완료(2026-07-06 S6 잔여 검증 + S7 config 다이얼 + S8 session-scoping 구현·수동
+> 테스트 완료), **S9(정체성 재작성)는 S10~S12 대기 — 다음은 S10 또는 S11부터** · 생성: 2026-06-21 · 확장:
+> 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR
+> 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
 > 용어집: `docs/context/rubber-duck-tutor.md`
 
@@ -15,63 +15,75 @@ confrontation, artifact-level vs code-level comprehension, shared ship budget).
 
 ### First Action
 
-**S8(duck-verify session-scoping) 착수 전, 트랜스크립트 접근 방식부터 확인.**
-
-S8은 `duck-verify`가 `git diff`를 넘어 "이번 세션에서 만든 편집"까지 잡아야 한다(아래 S8 절 참조).
-그런데 트랜스크립트를 파싱하려면 먼저 **세션 트랜스크립트 파일 경로를 어떻게 얻는지부터 풀어야 한다**:
-
-- 이 저장소에 선례가 있음 — `plugins/codex-advisor/hooks/session-start.mjs:43-44`와
-  `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`. 단, 그건 **훅**(stdin JSON에
-  `.transcript_path` 필드가 직접 주어짐) 컨텍스트다.
-- `duck-verify`는 **유저가 직접 호출하는 스킬**이라 훅과 입력 형태가 다르다. 스킬 실행 컨텍스트에서
-  같은 방식으로 트랜스크립트 경로를 얻을 수 있는지 확인되지 않음 — `https://code.claude.com/docs/en/env-vars.md`를
-  먼저 확인하고, 안 되면 `~/.claude/projects/` 아래 세션 파일을 mtime 기준으로 추정하는 폴백이
-  필요할 수 있음(오탐 가능성 있으므로 신중히 설계).
-- no-numb `gate.sh`가 참고 기법이었으나 `references/no-numb`는 gitignore 대상이라 현재 로컬에 없음 —
-  재조사가 필요하면 다시 clone.
-
-확인되면 아래 S8 절의 acceptance criteria 3개를 그대로 구현 대상으로 삼으면 됨.
+**S9는 아직 착수 불가(S10~S12 대기) — 다음 슬라이스는 S10 또는 S11부터.** 둘 다 블로커는 S3·S4뿐이고
+이미 완료됐으므로 즉시 시작 가능. 유저가 슬라이스 순서를 아직 명시하지 않았다면 시작 전에 확인할 것
+(S10 telemetry가 S12의 전제이므로 S10 먼저가 자연스러운 순서이나, S11 blind-spot triage가 더 무겁고
+독립적이라 먼저 잡아도 무방 — 그래프상 둘 사이 순서 제약 없음).
 
 ### Context
 
 이전 세션 요청: "S6 잔여 검증부터, 이후 S7 → S8 → S9 → S10~13 순서로." 2026-07-06 세션에서 S6 잔여
-acceptance criterion(래퍼가 엔진 루프를 중복하지 않는지)을 5개 SKILL.md 직접 열람으로 검증하고, S7
-(config 다이얼)을 구현·수동 테스트까지 마쳤다. 유저가 "슬라이스 끝나면 멈추고 보고, 다음 슬라이스
-들어가지 말라"고 명시적으로 요청해 S7에서 정지.
+검증, S7(config 다이얼), S8(duck-verify session-scoping)을 순서대로 구현·수동 테스트까지 마쳤다. S8
+착수 전 First Action으로 남겨뒀던 "유저 호출 스킬이 트랜스크립트 경로를 어떻게 얻는가" 질문은
+`docs/adr/0006-codex-advisor-conditional-transcript-hook.md`을 재확인해 답을 확정했다 — **모델은
+자기 세션의 트랜스크립트 경로를 스스로 얻을 수 없다(훅만 stdin JSON으로 받음)**. 그래서 S8은
+codex-advisor의 SessionStart 훅 패턴을 그대로 차용: `hooks/session-start.sh`가 `transcript_path`를
+받아 `$CLAUDE_ENV_FILE`에 `DUCK_TRANSCRIPT_PATH`로 심어두고, `duck-verify`가 Bash로 호출하는
+`skills/ducking/scripts/session-edits.sh`가 그 env var를 읽어 트랜스크립트에서 이번 세션의
+Edit/Write/MultiEdit/NotebookEdit 대상 파일을 뽑는다. 유저가 "슬라이스 끝나면 멈추고 보고"를 이번
+세션에도 재확인해 S8에서 정지.
 
 **S7 작업 중 짚어둔 설계 함정** — S9~S13에서 새 config 키를 추가할 때도 다시 점검할 것: jq의
 `.key // default` 연산자는 JSON `false`를 falsy로 취급한다. `enabled` 같은 boolean 다이얼에 이 패턴을
 그대로 쓰면 유저가 명시적으로 `enabled: false`를 설정해도 "미설정"으로 오인되어 조용히 `true`로
-되돌아간다 — 아래 S7 절이 미리 경고한 "`//`-식 footgun"이 바로 이것. `enabled`는 raw 값을 `"false"`
-문자열과 직접 비교하는 별도 로직으로 처리해야 하고, 문자열 값 다이얼(`defaultIntensity` 등)은 기존
-`// default` 패턴을 그대로 써도 안전하다(빈 문자열은 jq에서 falsy가 아니므로).
+되돌아간다. `enabled`는 raw 값을 `"false"` 문자열과 직접 비교하는 별도 로직으로 처리해야 하고, 문자열
+값 다이얼(`defaultIntensity` 등)은 기존 `// default` 패턴을 그대로 써도 안전하다(빈 문자열은 jq에서
+falsy가 아니므로).
 
-### 미커밋 변경 (2026-07-06 세션, S6 검증 + S7 구현)
+**S8에서 새로 짚어둔 것 — S11이 재사용할 파싱 기법:** `session-edits.sh`는 `jq -R -r 'fromjson? | ...'`
+패턴을 쓴다(파일 전체를 JSON 모드로 파싱하지 않고, 한 줄씩 raw로 읽어 개별 파싱). 트랜스크립트 한 줄이
+깨져도 그 줄만 빈 결과로 스킵되고 나머지 줄은 영향 없음 — 파일 전체를 한 번에 `jq`에 먹이면 한 줄만
+깨져도 전체가 에러난다. S11이 "유저가 이 변경을 열람·논의했는가"를 판정할 때 같은 트랜스크립트를
+다시 파싱해야 하므로(S11 절의 "S8과 파서 공유" 노트), 이 스크립트를 `duck-verify` 전용에서 공용
+lib로 넣지 않은 이유는 아직 두 번째 소비자가 없어서다 — S11 착수 시 **먼저** 이 파일을 다시 열어서
+그대로 재사용 가능한지 확인할 것(이미 `skills/ducking/scripts/`에 있으므로 옮길 필요는 없을 가능성 높음).
 
-- `plugins/rubber-duck-tutor/hooks/lib.sh` — `duck__is_enabled` 추가(footgun-safe, raw 값을
-  `"false"` 문자열과 직접 비교)
-- `plugins/rubber-duck-tutor/hooks/post-push.sh`, `post-pr.sh`, `post-plan.sh`,
-  `post-write-plan.sh` — 각각 `duck__init` 직후 `duck__is_enabled || exit 0` 추가
-- `plugins/rubber-duck-tutor/skills/ducking/engine.md` — "Config Check" 섹션 신설(세션 최초 동작,
-  `enabled` 체크) + Intensity Scaling 섹션이 `defaultIntensity` 읽도록 수정
-- `plugins/rubber-duck-tutor/skills/{duck,duck-prebuild,duck-verify,duck-review,duck-orient}/SKILL.md`
-  — `allowed-tools`에 `read-config.sh` Bash 권한 추가(5개 전부)
-- `plugins/rubber-duck-tutor/skills/ducking/scripts/read-config.sh` — 신규 파일(현재 untracked),
-  실행권한 부여됨, 훅과 별개로 스킬(모델 Bash 호출)이 config를 읽는 스크립트
-- 이 문서(`docs/issues/003-rubber-duck-tutor-redesign.md`) — S6·S7 acceptance criteria 체크, 상태
-  라인 갱신
-- **아직 커밋 안 됨** — 다음 세션 시작 시 커밋할지부터 확인.
-- **무관한 변경(손대지 말 것):** `docs/issues/007-vision-powers-artifact-channel.md`,
-  `plugins/vision-powers/README.md`, `plugins/vision-powers/skills/doc-visual/SKILL.md` — issue 007
-  작업, rubber-duck-tutor와 무관.
+### 미커밋 변경 (2026-07-06 세션, S8 구현)
+
+- `plugins/rubber-duck-tutor/hooks/session-start.sh` — 신규 파일. SessionStart 훅, `transcript_path`를
+  `$CLAUDE_ENV_FILE`에 `DUCK_TRANSCRIPT_PATH`로 심음. `duck__is_enabled`로 게이팅하지 **않음**(경로만
+  심을 뿐 유저 대면 동작이 없고, 게이팅하면 세션 중 `enabled`를 다시 켜도 영영 못 심을 위험).
+- `plugins/rubber-duck-tutor/hooks/hooks.json` — `SessionStart` 훅 등록(matcher 없음 — startup·resume·
+  clear·compact 전부에서 발사, codex-advisor 선례와 동일).
+- `plugins/rubber-duck-tutor/skills/ducking/scripts/session-edits.sh` — 신규 파일, 실행권한 부여됨.
+  트랜스크립트에서 Edit/Write/MultiEdit/NotebookEdit 대상 파일 추출. jq 부재·파일 없음·파싱 실패 모두
+  빈 출력 + exit 0로 저하(수동 테스트: 정상 파싱, 존재하지 않는 파일, 깨진 줄 섞인 JSONL, jq 없는 PATH
+  네 가지 케이스 모두 확인).
+- `plugins/rubber-duck-tutor/skills/duck-verify/SKILL.md` — `allowed-tools`에 `session-edits.sh` Bash
+  권한 추가, Input 절을 `git diff` 단독에서 `session-edits.sh ∪ git diff --name-only`로 갱신(세션 중
+  커밋된 편집은 `git diff`가 놓치므로).
+- 이 문서(`docs/issues/003-rubber-duck-tutor-redesign.md`) — S8 acceptance criteria 체크, 상태 라인
+  갱신, 이 핸드오프 절 갱신.
+- S6·S7 미커밋 변경은 이번 세션 시작 시 별도 커밋으로 분리 완료(커밋 `3eb1340`). **S8은 아직 미커밋** —
+  다음 세션 시작 시 커밋할지부터 확인할 것(이번 세션에서 유저에게 물었으나 답변 전에 `/handoff`로 전환됨).
+- **무관한 변경(손대지 말 것, 2026-07-06 재확인 — 서브에이전트 교차검증 완료):**
+  `plugins/vision-powers/skills/plugin-visual/SKILL.md`,
+  `plugins/vision-powers/skills/context-health-visual/SKILL.md` — 둘 다 vision-powers 계열 작업으로
+  rubber-duck-tutor와 무관(각각 다른 진행 중 작업으로 보임, 한 세션이 아닐 수 있음). 이전에 나열했던
+  `docs/issues/007-...md`·`vision-powers/README.md`·`structured-blocks.md`·`diff-visual/SKILL.md`·
+  `doc-visual/SKILL.md`는 커밋 `a509f5e`로 이미 정리됨 — 목록에서 제외.
 
 ### 핵심 파일 포인터
 
 - config 읽기 — 훅 쪽: `plugins/rubber-duck-tutor/hooks/lib.sh`의
   `duck__config_get`/`duck__is_enabled`; 스킬(모델 Bash 호출) 쪽:
   `plugins/rubber-duck-tutor/skills/ducking/scripts/read-config.sh`
-- 트랜스크립트 파싱 선례(훅 컨텍스트, S8 참고용): `plugins/codex-advisor/hooks/session-start.mjs`,
-  `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`
+- 트랜스크립트 경로 심기(훅) — `plugins/rubber-duck-tutor/hooks/session-start.sh`; 소비(스킬) —
+  `plugins/rubber-duck-tutor/skills/ducking/scripts/session-edits.sh`. 원 선례:
+  `plugins/codex-advisor/hooks/session-start.mjs`, `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`.
+- S10~S13 착수 시 참고 — telemetry 로그 경로 규칙(`${CLAUDE_PLUGIN_DATA}/telemetry.jsonl`)과 gap 로그
+  규칙(`log-gap.sh`/`recent-gaps.sh`, 현재 `skills/ducking/scripts/`)이 이미 확립된 패턴이므로, S10의
+  telemetry append 로직도 같은 디렉터리·같은 "모델 개입 없이 훅이 직접 쓴다" 원칙을 따를 것(S10 절 참조).
 
 ---
 
@@ -327,9 +339,14 @@ no-numb은 마지막 유저 프롬프트 이후만 보지만, 여기는 수락 �
 방어적으로 파싱: 트랜스크립트 포맷 변경 시 크래시 없이 우아하게 저하.
 
 ### Acceptance criteria
-- [ ] 이번 세션 앞서 만든 미커밋 편집을 `duck-verify`가 드러냄.
-- [ ] `git diff`가 깨끗할 때(세션 편집 이미 커밋)도 동작.
-- [ ] 파싱 불가 트랜스크립트는 에러 대신 `git diff` 경로로 저하.
+- [x] 이번 세션 앞서 만든 미커밋 편집을 `duck-verify`가 드러냄 (`session-edits.sh`가 트랜스크립트에서
+      Edit/Write/MultiEdit/NotebookEdit 대상 파일을 뽑아 `git diff` 결과와 합침 — 실 트랜스크립트로
+      수동 검증: 3개 파일 정확히 추출·중복제거).
+- [x] `git diff`가 깨끗할 때(세션 편집 이미 커밋)도 동작 (`session-edits.sh`는 `git diff`와 독립적으로
+      트랜스크립트만 읽으므로 git 상태와 무관하게 세션 편집 목록을 반환).
+- [x] 파싱 불가 트랜스크립트는 에러 대신 `git diff` 경로로 저하 (수동 테스트 4종: 트랜스크립트 없음,
+      존재하지 않는 파일, 깨진 줄 섞인 JSONL, jq 부재 PATH — 전부 빈 출력 + exit 0. `jq -R 'fromjson?'`로
+      줄 단위 파싱해 한 줄이 깨져도 전체 실패로 번지지 않음).
 
 ### Blocked by
 S8은 S6에 의존(`duck-verify` 래퍼 확정됨).
