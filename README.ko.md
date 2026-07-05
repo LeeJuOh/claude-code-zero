@@ -35,7 +35,7 @@ claude plugin add <plugin-name>@claude-code-zero
 
 ### 방법 B — npx skills (스킬만)
 
-[skills CLI](https://github.com/vercel-labs/skills)로 SKILL.md 파일만 설치합니다. 마켓플레이스 등록 없이 빠르게 설치 가능하지만, **훅, 에이전트, MCP 서버, 스크립트는 포함되지 않습니다**. 훅 의존 플러그인(worktree-plus, rubber-duck-tutor, claw-mo)이나 에이전트 의존 플러그인(vision-powers, codex-advisor)은 기능이 제한됩니다.
+[skills CLI](https://github.com/vercel-labs/skills)로 SKILL.md 파일만 설치합니다. 마켓플레이스 등록 없이 빠르게 설치할 수 있지만 **훅, 에이전트, MCP 서버, 스크립트는 포함되지 않습니다**. 훅 의존 플러그인(worktree-plus, rubber-duck-tutor, claw-mo)이나 에이전트 의존 플러그인(vision-powers, codex-advisor)은 기능이 제한됩니다.
 
 ```shell
 npx skills add LeeJuOh/claude-code-zero

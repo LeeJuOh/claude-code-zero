@@ -9,7 +9,8 @@ allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Artifact, Bash(ls *), Ba
 
 # Report Manager
 
-Manage vision-powers HTML reports: list, open, delete, search, and refine sections.
+Manage vision-powers reports — every persisted output (`.html`, `.artifact.html`, `.md`,
+`.artifact.md`): list, open, delete, search, and refine sections.
 
 ## Paths
 
@@ -54,7 +55,7 @@ Format as a numbered table with clickable links. Add an `Artifact` column only w
 
 1. **No argument**: open the most recent report
 2. **Number**: Nth from list output
-3. **Partial name**: glob match `$CLAUDE_PLUGIN_DATA/reports/*{arg}*.html`
+3. **Partial name**: glob match `$CLAUDE_PLUGIN_DATA/reports/*{arg}*.{html,md}`
 
 ```bash
 open <resolved-absolute-path>
@@ -81,8 +82,9 @@ Steps:
 
 ## search
 
-1. **Filename**: Glob `$CLAUDE_PLUGIN_DATA/reports/*{query}*.html`
-2. **Content**: Grep inside HTML for the query — focus on `<title>`, `<h1>`–`<h3>`, text nodes
+1. **Filename**: Glob `$CLAUDE_PLUGIN_DATA/reports/*{query}*.{html,md}`
+2. **Content**: Grep inside the reports for the query — in HTML focus on `<title>`, `<h1>`–`<h3>`,
+   and text nodes; in markdown, headings and body text
 3. Display results with clickable `file://` links
 
 ## refine
@@ -91,7 +93,7 @@ Surgically edit a section of an existing report without full regeneration.
 
 *Why: Full regeneration re-rolls fonts, colors, and all content. Targeted edits preserve what works.*
 
-1. **Resolve target report**: filename, number, partial name, or most recent if none given. **Check for a sidecar**: `<report-path>.artifact.json` — its presence means this file is an Artifact-channel fragment (published to claude.ai), not a plain local report. This changes steps 6–8 below (issue 007 S4.5).
+1. **Resolve target report**: filename, number, partial name, or most recent if none given. **Check for a sidecar**: `<report-path>.artifact.json` — its presence means this file is an Artifact-channel file published to claude.ai (an `.artifact.html` fragment or an `.artifact.md`), not a plain local report. This changes steps 6–8 below (issue 007 S4.5).
 2. **Harvest in-browser feedback (optional, see "Feedback harvesting" below)**: if the user has been leaving notes via the ✎ UI, read them before asking for more
 3. **Identify section**: If feedback (from step 2 or user message) names specific sections, use those. Otherwise parse from message; if still ambiguous, Read the report, list `<section id="...">` headings, and use AskUserQuestion to let the user pick
 4. **Gather context**: If feedback references source code or git data, use Grep/Read to get correct info
@@ -102,7 +104,8 @@ Surgically edit a section of an existing report without full regeneration.
    node ${CLAUDE_SKILL_DIR}/../../scripts/artifact-gate.js <report-path> [--content-only]
    ```
    Pass `--content-only` when step 1 found a sidecar (or the filename ends in `.artifact.html`) — design-layer checks (density, palette, font fallback, Mermaid classDef) don't apply to a page whose design is owned by the built-in `artifact-design` skill, only the local channel's own CSS is checked against those (issue 007, ADR 0007). If violations found, fix inline and re-validate (max 2 retries).
-7. **Visual self-audit (local reports only)**: The gate reads the HTML as *text* — it never sees the rendered picture, so a re-authored section can pass the gate and still render as a tangled diagram, a clipped label, or a flat grey wall. Skip this step entirely for Artifact-channel fragments (step 1's sidecar case) — the fragment on disk is missing the `<head>`/theme wrapper claude.ai adds at publish time, so a local Chrome render of it wouldn't reflect what actually ships; the built-in `artifact-design` skill owns their visual quality, not this audit. For local reports, after the gate passes, render the report and look at it:
+   **Markdown reports (`.md` / `.artifact.md`) skip this script entirely** — `artifact-gate.js` parses HTML only and would false-flag markdown's own `##`/`**` syntax as leakage. Give the edited markdown the generating skills' hand-check instead: no leftover `{{ }}`/`[STUB]`/lorem placeholder tokens, and every link resolves.
+7. **Visual self-audit (local HTML reports only)**: The gate reads the HTML as *text* — it never sees the rendered picture, so a re-authored section can pass the gate and still render as a tangled diagram, a clipped label, or a flat grey wall. Skip this step entirely for markdown reports (nothing to render) and for Artifact-channel fragments (step 1's sidecar case) — the fragment on disk is missing the `<head>`/theme wrapper claude.ai adds at publish time, so a local Chrome render of it wouldn't reflect what actually ships; the built-in `artifact-design` skill owns their visual quality, not this audit. For local HTML reports, after the gate passes, render the report and look at it:
    ```
    node ${CLAUDE_SKILL_DIR}/../../scripts/render-report.js <report-path>
    ```
@@ -113,8 +116,8 @@ Surgically edit a section of an existing report without full regeneration.
    - **Overflow** — does a diagram, table, or label run past its container or off the page?
 
    Fix what you see and re-render — **cap at 2 audit passes**, then ship with a one-line note rather than looping. **If Chrome is absent**, `render-report.js` exits non-zero; skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found — set `CHROME_BIN` or install Chrome"). The visual pass is an enhancement and **never blocks** delivery. Full procedure: `${CLAUDE_SKILL_DIR}/../../references/design-system/visual-self-audit.md`.
-8. **Republish (Artifact-channel fragments only)**: skip this step for local reports — nothing to publish. If step 1 found a sidecar, read it for `url`, `title`, and `favicon`, then call the `Artifact` tool with `file_path=<report-path>`, `url=<sidecar url>`, `favicon=<sidecar favicon>`, and a `description` — passing `url` is what stacks the edit onto the **same** claude.ai link instead of minting a new one; a fresh session has no other way to target an existing artifact (this is exactly the gap a missing `url` arg leaves open). After a successful publish, rewrite the sidecar (`node ${CLAUDE_SKILL_DIR}/../../scripts/write-artifact-sidecar.js --report <report-path> --url <url> --title <title> --favicon <favicon>`) so `published_at` reflects this refine.
-   - **No sidecar, but the filename still ends in `.artifact.html`**: this fragment was never successfully published (an earlier attempt fell back to local-only). Publish fresh — omit `url` — and write the sidecar for the first time.
+8. **Republish (Artifact-channel files only — `.artifact.html` / `.artifact.md`)**: skip this step for local reports — nothing to publish. If step 1 found a sidecar, read it for `url`, `title`, and `favicon`, then call the `Artifact` tool with `file_path=<report-path>`, `url=<sidecar url>`, `favicon=<sidecar favicon>`, and a `description` — passing `url` is what stacks the edit onto the **same** claude.ai link instead of minting a new one; a fresh session has no other way to target an existing artifact (this is exactly the gap a missing `url` arg leaves open). After a successful publish, rewrite the sidecar (`node ${CLAUDE_SKILL_DIR}/../../scripts/write-artifact-sidecar.js --report <report-path> --url <url> --title <title> --favicon <favicon>`) so `published_at` reflects this refine.
+   - **No sidecar, but the filename still ends in `.artifact.html` or `.artifact.md`**: this file was never successfully published (an earlier attempt fell back to local-only). Publish fresh — omit `url` — and write the sidecar for the first time.
    - **Sidecar present but the republish call errors** (the link died, e.g. the artifact was deleted upstream): publish fresh — omit `url` — write a new sidecar over the old one, and tell the user in one line: "New shared link published — any previously shared link now points to a stale version." Don't guess at *why* the old link died.
 9. **Report**: Print the `file://` URL (local reports) or the claude.ai URL (Artifact-channel fragments), summarize what changed
 

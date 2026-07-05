@@ -311,7 +311,9 @@ Once the gate passes, publish — see "Publish (`--artifact`)" below.
 
 #### Markdown mode (`--format md`)
 
-Assemble an inline markdown report and deliver it directly in the response. Do NOT write to disk — markdown mode is intentionally ephemeral. Use this structure:
+Assemble an inline markdown report and deliver it directly in the response, and save the same
+content to `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.md` — the chat text is the delivery,
+the file is the record that lets report-manager list and refine this report later. Use this structure:
 
 ```
 # Diff Visual: <scope description>

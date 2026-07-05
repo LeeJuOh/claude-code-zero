@@ -288,7 +288,11 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 **Before delivering**, give the assembled markdown a quick pass (a guideline, not a script). The md path has no artifact-gate — `artifact-gate.js` is HTML-only — so this hand-check is what catches the scaffolding the gate would otherwise flag: no leftover `{placeholder}` / `{{ }}` / `[STUB]` tokens copied from the template schema, and every link resolves — source links use the full `github_url`/`file://` base from the source context, not a bare relative path that breaks once the report leaves this directory. Fix any you find, then deliver.
 
-Output the report directly to the user (inline markdown).
+Output the report directly to the user (inline markdown), and save the same content to
+`${CLAUDE_PLUGIN_DATA}/reports/{YYYY-MM-DD}-{plugin-name}-report.md` (append `-security` /
+`-overview` to the basename for those modes, so they never collide with an `analyze` report from
+the same day) — the chat text is the delivery, the file is the record that lets report-manager
+list and refine this report later.
 
 #### Phase 5R: HTML Report Generation (analyze mode — default format)
 

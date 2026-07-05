@@ -156,7 +156,10 @@ Mermaid diagrams follow the design system references: semantic-tokens.md (tokens
 
 **Markdown mode (`--format md`):**
 
-Emit an inline markdown report with this structure:
+Emit an inline markdown report, and save the same content to
+`${CLAUDE_PLUGIN_DATA}/reports/<scan_date>-context-health-visual.md` — the chat text is the
+delivery, the file is the record that lets report-manager list and refine this report later.
+Use this structure:
 
 ```
 # Environment Health — <scan_date>

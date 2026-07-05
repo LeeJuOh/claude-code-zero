@@ -103,7 +103,9 @@ new ones.
 
 ### Markdown format (`--format md`)
 
-Insert directly into the response body (no file save):
+Insert directly into the response body, and save the same content to
+`${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.md` — the chat text is the delivery, the
+file is the record that lets report-manager list and refine this report later:
 - Mermaid diagrams as fenced ` ```mermaid ` blocks
 - Footer links to the source path
 - No CSS, no `<script>` — pure markdown
@@ -277,7 +279,7 @@ run before publishing.
 ## Output
 
 - **HTML**: Save to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.html`. Run `open <output-path>` after completion.
-- **MD**: Insert directly into the response body. Footer links to the source path.
+- **MD**: Insert directly into the response body and save a copy to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.md`. Footer links to the source path.
 - **`--artifact`**: see "Publish (`--artifact`)" below.
 
 ## Publish (`--artifact`)

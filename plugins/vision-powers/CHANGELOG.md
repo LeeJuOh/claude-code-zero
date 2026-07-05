@@ -11,6 +11,10 @@
   - **`scripts/config.js`** — new `default_format`/`artifact` keys let a stored preference replace the `html`/off defaults; a flag or natural-language request for a given run still overrides the stored default.
   - Falls back to a local file plus a one-line reason whenever the Artifact tool is unavailable (plan tier, non-`/login` auth, unsupported provider, org policy, disabled surface, or a publish error) — never blocks on asking.
 
+### Changed
+
+- **Every output now persists — markdown included.** `--format md` reports are still delivered inline in the chat, but a copy is now saved to `${CLAUDE_PLUGIN_DATA}/reports/` alongside the HTML reports. `report-manager` covers every persisted output (`.html`, `.artifact.html`, `.md`, `.artifact.md`): md reports appear in `list`/`search`, can be `refine`d (gate and visual audit skip — they're HTML-only), and a refined `.artifact.md` republishes to its stored URL like any other sidecar-backed artifact. Previously md output was chat-only and published `.artifact.md` files were invisible to `list`/`refine`.
+
 ## 4.5.1 — 2026-06-27
 
 ### Fixed
