@@ -1,7 +1,7 @@
 ---
 name: duck-verify
 disable-model-invocation: true
-description: "Code-verification session with the rubber duck — user explains code just written, finds edge cases, fixes planted bugs. Use after implementing a feature, or when they say \"duck verify\", \"재확인해줘\". Not for plan review (/duck-plan) or PR review (/duck-review)."
+description: "Code-verification session with the rubber duck — user explains code just written, finds edge cases, fixes planted bugs. Use after implementing a feature, or when they say \"duck verify\", \"double check this\". Not for plan review (/duck-prebuild) or PR review (/duck-review)."
 allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *)
 ---
 
@@ -42,21 +42,21 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/s
 
 Skip during Quick check / Standard. Offer, don't impose:
 
-> 이 버그, 네가 직접 고쳐볼래? 내가 코드 안 써줄게. 파일 위치만 알려줄 테니까 네 손으로 쳐봐. 막히면 힌트 달라고 하면 돼. (그냥 지나가도 돼.)
+> Want to fix this bug yourself? I won't write the code — I'll just point you to the file, and you type the fix by hand. Ask for a hint if you get stuck. (Totally fine to skip this.)
 
 If they accept:
 - Give file path + function name only. No diff, no snippets.
 - They type the fix themselves.
 - If stuck, use the Hint Ladder (see [../ducking/references/exercise-patterns.md](../ducking/references/exercise-patterns.md)) — never reveal code.
-- When done, ask: "왜 이렇게 고쳤어? 다른 접근도 있었을 텐데."
+- When done, ask: "Why did you fix it this way? There were other approaches."
 
 Why this matters: teach-back tests the cognitive stage; typing the fix activates the associative→autonomous stage of procedural memory. Reading AI-generated fixes cannot do this.
 
 ## Question Frameworks
 
-**Blindspots** — "이 코드가 조용히 실패하는 경우는?" Focus on silent failures, not compile errors. Edge cases, null states, race conditions.
+**Blindspots** — "Where does this code fail silently?" Focus on silent failures, not compile errors. Edge cases, null states, race conditions.
 
-**Not Checked** — "아직 확인 안 한 건 뭐야?" The question itself reveals what they skipped.
+**Not Checked** — "What haven't you checked yet?" The question itself reveals what they skipped.
 
 ## Techniques
 

@@ -1,6 +1,6 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 중 — S1~S4 완료 + S6 flag 선반영(2026-07-05), **S5부터 이어서** · 생성: 2026-06-21 · 확장: 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR 0003 참조)
+> 상태: 구현 중 — S1~S5·S14 완료 + S6 flag 선반영(2026-07-05), **S6 잔여 검증부터 이어서** · 생성: 2026-06-21 · 확장: 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
 > 지시서: `docs/handoff/2026-06-21-rubber-duck-tutor-redesign.md`
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
 > 용어집: `docs/context/rubber-duck-tutor.md`
@@ -183,9 +183,9 @@ ship 훅에 두 가지 변경. (1) **Shared ship budget**: `{git push, gh pr cre
 description을 제외한 모든 곳의 리네임을 소유.
 
 ### Acceptance criteria
-- [ ] `/duck-prebuild`가 두 before-build 흐름을 모두 실행.
-- [ ] `/duck-design`·`/duck-plan` 스킬이 더는 존재하지 않음.
-- [ ] `grep -rn 'duck-design\|duck-plan'`가 라이브 참조 없음 반환 — **단** 두 매니페스트
+- [x] `/duck-prebuild`가 두 before-build 흐름을 모두 실행.
+- [x] `/duck-design`·`/duck-plan` 스킬이 더는 존재하지 않음.
+- [x] `grep -rn 'duck-design\|duck-plan'`가 라이브 참조 없음 반환 — **단** 두 매니페스트
       description(S9 소유)과 역사 문서(`docs/handoff`, `docs/issues`, `docs/adr`) 제외.
 
 ### Blocked by
@@ -376,3 +376,29 @@ S11 triage가 표적 없음(폴백 상황)일 때, gap 로그에 미해소 gap�
 
 ### Blocked by
 S13은 S11(폴백 사다리가 triage 결과에서 시작)에 의존.
+
+---
+
+## S14 — 덕 페르소나 대사 전면 영어화
+
+**Phase:** 2 · **Blocked by:** 없음. · **출처:** 2026-07-05 S5 구현 중 유저 지적.
+
+### What to build
+S5 구현 중 유저가 `duck-prebuild`의 따옴표 안 한글 대사문(quoted dialogue)을 지적 — v2.4.1부터
+있던 관행이나 ADR 0003·용어집(`docs/context/rubber-duck-tutor.md`)·핸드오프 어디에도 근거 없음
+(`grep -i korean` 무결과), README에만 "Korean-native duck persona"로 문서화. AGENTS.md "plugin
+deliverables는 영어(SKILL.md 포함)" 규칙과 충돌. 유저 결정: **영어로 전면 전환**.
+
+대상: `skills/{duck,duck-prebuild,duck-verify,duck-review,duck-orient}/SKILL.md`,
+`skills/ducking/engine.md`, `skills/ducking/references/exercise-patterns.md`, `README.md`(및
+루트 `README.md`·`README.ko.md`의 이 플러그인 소개 문단은 대상 아님 — 이미 영어/한글 이원화된
+마켓플레이스 소개 체계라 별개 정책). 페르소나 톤(curious, benevolent skeptic)·구조(질문 후 침묵,
+Hint Ladder, Confidence Check)는 유지 — 대사 언어만 교체. 오프닝 의성어 "꽥" → "Quack".
+
+### Acceptance criteria
+- [x] `grep -rlP '[\x{AC00}-\x{D7A3}]' plugins/rubber-duck-tutor/` 결과 없음.
+- [x] README가 더는 "한국어 전용 페르소나"를 주장하지 않음 — 해당 bullet 제거.
+- [x] 페르소나 톤·플로우 구조 변경 없음 — 순수 언어 교체.
+
+### Blocked by
+없음 — 즉시 시작 가능.

@@ -14,8 +14,7 @@ This plugin builds that questioning habit into your workflow. The duck asks you 
 
 | Mode | When | What it checks |
 |------|------|----------------|
-| `/duck-design` | *Before* asking AI to implement | Can you sketch the shape yourself first, so you'll spot where the AI answer differs? |
-| `/duck-plan` | After a plan is created | Do you understand the decisions and trade-offs? |
+| `/duck-prebuild` | *Before* asking AI to implement, or after a plan is created | Can you sketch the shape yourself first — or, for a plan, do you understand its decisions and trade-offs? |
 | `/duck-verify` | After implementation | Can you explain the code, find edge cases, and fix a bug with your own hands? |
 | `/duck-review` | Before commit/merge | Can you justify every change — and predict where it'll hurt in 6 months? |
 | `/duck-orient` | New to a codebase | Can you navigate and explain the repo structure? |
@@ -31,7 +30,6 @@ Auto-hooks fire at two kinds of checkpoint, and react differently. **Plan/spec c
 - **Temporal cost simulation** — at least one question per session asks where this decision will hurt in 6 months, to surface hidden maintenance costs.
 - **Intensity scaling** — Quick / Standard / Deep auto-calibrated to the artifact size, so a one-line fix doesn't get a 45-minute interrogation.
 - **Committable orientation artifact** — `/duck orient` produces `.claude/orientation.md` that's team-shareable so new contributors inherit your mental model.
-- **Korean-native duck persona** — the duck speaks and thinks in Korean. If you want English, ask for it; otherwise expect 한국어.
 
 ## Prerequisites
 
@@ -48,8 +46,7 @@ Auto-hooks fire at two kinds of checkpoint, and react differently. **Plan/spec c
 
 ```
 /duck              # auto-detect mode → routes to a /duck-<mode> skill
-/duck-design       # sketch before asking AI to implement
-/duck-plan         # review a plan
+/duck-prebuild     # sketch before asking AI to implement, or review a plan
 /duck-verify       # verify implementation
 /duck-review       # review changes before commit
 /duck-orient       # codebase orientation (pass `refresh` to regenerate)

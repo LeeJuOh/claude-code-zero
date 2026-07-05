@@ -131,9 +131,9 @@ Run `/plugin` and check the **Installed** tab.
 
 **Problem:** Passively accepting AI-generated code leads to 17% worse comprehension. You merge code you don't truly understand.
 
-**Solution:** Rubber duck questioning across 5 development phases — asks you to explain what the code does before you ship it. Hint ladder guides without revealing answers. Auto-suggests review at plan creation, PR, and git push.
+**Solution:** Rubber duck questioning across 4 development phases — asks you to explain what the code does before you ship it. Hint ladder guides without revealing answers. Auto-suggests review at plan creation, PR, and git push.
 
-`duck` · `duck-design` · `duck-plan` · `duck-verify` · `duck-review` · `duck-orient`
+`duck` · `duck-prebuild` · `duck-verify` · `duck-review` · `duck-orient`
 
 ---
 

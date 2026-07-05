@@ -131,9 +131,9 @@ npx skills add LeeJuOh/claude-code-zero
 
 **문제:** AI 생성 코드를 수동적으로 수락하면 이해도가 17% 떨어집니다. 제대로 이해하지 못한 코드를 머지하게 됩니다.
 
-**해결:** 5가지 개발 단계에 걸친 러버덕 질문법 — 코드를 배포하기 전에 무엇을 하는지 설명하도록 물어봅니다. 힌트 사다리가 답을 드러내지 않고 안내합니다. 플랜 생성, PR, git push 시 자동으로 리뷰를 제안합니다.
+**해결:** 4가지 개발 단계에 걸친 러버덕 질문법 — 코드를 배포하기 전에 무엇을 하는지 설명하도록 물어봅니다. 힌트 사다리가 답을 드러내지 않고 안내합니다. 플랜 생성, PR, git push 시 자동으로 리뷰를 제안합니다.
 
-`duck` · `duck-design` · `duck-plan` · `duck-verify` · `duck-review` · `duck-orient`
+`duck` · `duck-prebuild` · `duck-verify` · `duck-review` · `duck-orient`
 
 ---
 
