@@ -35,7 +35,7 @@ claude plugin add <plugin-name>@claude-code-zero
 
 ### Option B — npx skills (skills only)
 
-Installs SKILL.md files via the [skills CLI](https://github.com/vercel-labs/skills). Quick, no marketplace registration needed — but **hooks, agents, MCP servers, and scripts are not included**. Plugins that depend on hooks (worktree-plus, rubber-duck-tutor, claw-mo) or agents (vision-powers, codex-advisor) will have reduced functionality.
+Installs SKILL.md files via the [skills CLI](https://github.com/vercel-labs/skills). Quick, no marketplace registration needed — but **hooks, agents, MCP servers, and scripts are not included**. Plugins that depend on hooks (worktree-plus, rubber-duck-tutor, claw-mo, codex-advisor) or agents (vision-powers, codex-advisor) will have reduced functionality.
 
 ```shell
 npx skills add LeeJuOh/claude-code-zero
@@ -53,7 +53,7 @@ Run `/plugin` and check the **Installed** tab.
 
 **Solution:** Claude independently re-verifies every Codex response — without seeing source code until after Codex returns. Five-way classification (Agreed / Disputed / Nuanced / False Positive / Uncited) so you know exactly what to trust.
 
-`codex-review` · `codex-adversarial` · `codex-rescue` · `codex-verify` · `codex-research` · `codex-status` · `codex-result` · `codex-cancel` · `codex-setup`
+`codex-review` · `codex-adversarial` · `codex-rescue` · `codex-verify` · `codex-research` · `codex-transfer` · `codex-status` · `codex-result` · `codex-cancel` · `codex-setup`
 
 ---
 

@@ -98,7 +98,7 @@ Easy to conflate — they're opposites. **Rescue** is a subcontractor: Codex doe
 
 ## Model & effort
 
-**Every skill accepts `--model <slug>` and `--effort <level>`.** They route through `scripts/apply-codex-config.py` and update `~/.codex/config.toml` before the Codex CLI runs. Two reasons:
+**Every skill that sends Codex a prompt accepts `--model <slug>` and `--effort <level>`** (review, adversarial, rescue, verify, research; setup sets the persistent defaults). Job-management skills (status, result, cancel) and transfer have no model turn to steer. The flags route through `scripts/apply-codex-config.py` and update `~/.codex/config.toml` before the Codex CLI runs. Two reasons:
 
 1. **`--effort` is not a registered review/adversarial flag.** The companion's `handleReviewCommand` accepts `--base`, `--scope`, `--model`, `--cwd` only (`codex-companion.mjs:714`). Passing `--effort` directly would become silent prompt corruption. Only the `model_reasoning_effort` key in `config.toml` reaches the review code path.
 2. **Consistency + persistence.** `--model` IS honored as a flag in companion 1.0.4+ (`lib/codex.mjs:1010-1015`), but routing it through `config.toml` keeps every codex-advisor skill identical and lets the value carry into the next session without re-typing.

@@ -1,6 +1,6 @@
 # codex-advisor 1.0.5 대응: 인용 재검증 + transfer 래핑 (스킬 + 조건부 hook)
 
-> 상태: S1 완료(79d9a38, 4.5.2) · S2 완료(a35c1b0, 4.6.0) · S3 구현 완료(4.6.1, 커밋 대기 — hook 단위 검증 5종 통과, 실 Codex CLI 없어 완전 E2E는 사용자 검증 필요) · 전체 검증 절차 1·2번 잔여 — 2026-07-04 · 생성: 2026-07-04
+> 상태: S1 완료(79d9a38, 4.5.2) · S2 완료(a35c1b0, 4.6.0) · S3 완료(d492615, 4.6.1) · 검수 통과 — 결함 0, 문서 3건 교정(4.6.2): /clear-stale 우려는 CLI 2.1.201 실측으로 반증(ADR 0006 기록), model/effort 문구 교정, 본 상태줄 갱신 · 전체 검증 절차 1·2번 잔여(사용자 실E2E) — 2026-07-05 · 생성: 2026-07-04
 > 용어집: `docs/context/codex-advisor.md` (신규 용어: **Transfer**, **Transcript env contract**)
 > 결정 근거: `docs/adr/0006-codex-advisor-conditional-transcript-hook.md`
 > 대조 레퍼런스: `references/codex-plugin-cc` (1.0.5로 이미 갱신됨) + `~/.claude/plugins/cache/openai-codex/codex/{1.0.4,1.0.5}` diff

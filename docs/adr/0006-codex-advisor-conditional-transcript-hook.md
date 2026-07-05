@@ -71,3 +71,11 @@ same value, last export wins when the file is sourced.
   drift) is the tripwire.
 - Skill stays trivial (`transfer --json`), keeping all transcript-resolution logic out of
   LLM-executed instructions.
+- Verified against CLI 2.1.201 (bundle + on-disk inspection): the env file lives at
+  `~/.claude/session-env/<session-id>/<event>-hook-<n>.sh`, so `/clear` (which rotates the
+  session id) always yields a fresh empty file — a stale pre-clear transcript path can never
+  survive into guard 2.
+- Same inspection: the env file appears to be per-hook (`-hook-<n>` suffix), so guard 2 may
+  never actually see the Official hook's export; its real effect is preventing re-writes on
+  same-session re-fires (e.g. compact). Either topology is safe — both hooks write the same
+  value.
