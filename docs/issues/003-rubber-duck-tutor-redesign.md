@@ -1,10 +1,9 @@
 # rubber-duck-tutor 재설계: gate 거부 → ship-point confrontation (v3.0.0)
 
-> 상태: 구현 중 — S1~S8·S10~S14 완료(2026-07-06 세션 — S6 잔여 검증 + S7 config 다이얼 + S8
-> session-scoping + S10 confrontation telemetry + S11 blind-spot 정조준 + S12 ignore streak→scoreboard
-> 강등 + S13 retrieval confrontation 구현·수동 테스트·커밋 완료; S8·S10·S11·S12·S13 전부 이번 세션 중
-> 커밋됨 — S12는 커밋 `14f1062`, S13은 커밋 `39763b0`), **S9(정체성 재작성 + 3.0.0 범프)만 남음 —
-> 이슈의 마지막 슬라이스, 블로커 S5·S10·S11·S12 전부 충족됨** · 생성: 2026-06-21 · 확장:
+> 상태: **전체 슬라이스(S1~S14) 완료** — 2026-07-06 세션에서 S6 잔여 검증·S7·S8·S9·S10·S11·S12·S13을
+> 순서대로 구현·수동 테스트·커밋까지 마침(S12는 커밋 `14f1062`, S13은 커밋 `39763b0`, S9는 이번 커밋).
+> S9(정체성 재작성 + 3.0.0 범프)로 이슈의 마지막 슬라이스 종료 — 남은 작업은 슬라이스가 아니라
+> `docs/release-workflow.md`의 릴리즈 프로세스(태깅·머지)뿐 · 생성: 2026-06-21 · 확장:
 > 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR
 > 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
@@ -18,14 +17,15 @@ confrontation, artifact-level vs code-level comprehension, shared ship budget).
 
 ### First Action
 
-S9(정체성 재작성 + 3.0.0 범프)부터 시작 — 이슈의 마지막 남은 슬라이스. 블로커 S5·S10·S11·S12 전부
-충족됨(S13도 이번 세션에 완료돼 README가 기술할 기능 집합이 전부 갖춰짐).
+이슈 자체는 슬라이스가 더 없다 — S9 완료로 S1~S14 전부 끝남. 다음 세션에서 할 일은 새 슬라이스가
+아니라 **릴리즈**: `docs/release-workflow.md`의 8단계 프로세스를 따라 `develop`→`main` 병합·
+`marketplace.json` 3.0.0 확인·태깅. (유저가 새 기능/버그를 더 요청하면 그건 새 이슈로 취급.)
 
 ### Context
 
-2026-07-06 세션에서 S6 잔여 검증·S7·S8·S10·S11·S12·S13을 순서대로 구현·수동 테스트·커밋까지 마쳤다
-(S12는 커밋 `14f1062`, S13은 커밋 `39763b0`, git log 참조). 유저 요청대로 슬라이스 끝나면 멈추고
-보고하는 리듬 유지 중 — S13에서 정지.
+2026-07-06 세션에서 S6 잔여 검증·S7·S8·S9·S10·S11·S12·S13을 순서대로 구현·수동 테스트·커밋까지
+마쳤다(S12는 커밋 `14f1062`, S13은 커밋 `39763b0`, S9는 이번 커밋, git log 참조). 유저 요청대로 슬라이스
+끝나면 멈추고 보고하는 리듬 유지 — S9에서 이슈 전체 완료.
 
 이어갈 때 참고할 것:
 - **S7 jq footgun**: `.key // default`는 JSON `false`를 삼킨다 — boolean 다이얼(`enabled`)은
@@ -77,14 +77,14 @@ S9(정체성 재작성 + 3.0.0 범프)부터 시작 — 이슈의 마지막 남�
 
 ### Current Progress
 
-S1-S8·S10-S14 완료, S9만 남음(git log 참조 — S12는 커밋 `14f1062`, S13은 커밋 `39763b0`). S13
-신규/변경 파일: `skills/ducking/scripts/resolve-gap.sh`(신설 — gap resolved 마킹
-전용), `skills/ducking/scripts/log-gap.sh`(신규 gap에 `"resolved":false` 명시 추가),
-`skills/ducking/scripts/recent-gaps.sh`(미해소 gap만 노출하도록 필터 추가, jq 경로 + non-jq 정규식
-폴백 둘 다), `hooks/post-push.sh`·`hooks/post-pr.sh`(질문 모드 `additionalContext`에 gap retrieval
-사다리 단계 삽입, scoreboard 분기는 미변경), `skills/ducking/engine.md`(신설 "Retrieval Confrontation
-(Ship-Point Fallback)" 섹션 + Session Wrap-up의 gap persistence 절에 resolved 기본값 교차참조 + Session
-Limits에 한 줄 추가) — 전부 `plugins/rubber-duck-tutor/` 아래.
+**S1-S14 전부 완료** (git log 참조 — S12는 커밋 `14f1062`, S13은 커밋 `39763b0`, S9는 이번 커밋). S9
+변경 파일: `plugins/rubber-duck-tutor/.claude-plugin/plugin.json`(description 재작성 — 라이프사이클
+전반 정체성 + 현재 명령만 나열), `.claude-plugin/marketplace.json`(같은 재작성 + 버전 `2.4.1`→`3.0.0`),
+`plugins/rubber-duck-tutor/README.md`("Why" 문단에 라이프사이클 프레이밍 추가, auto-hooks 문단을
+S10~S13 기능 — 6종 risk triage, retrieval fallback, scoreboard 강등, telemetry 조회 — 반영해 재작성,
+신설 "Scope" 절로 스킬 경계 한 줄 추가). 세 파일 모두 `plugins/rubber-duck-tutor/`(+ 레포 루트
+`.claude-plugin/`) 범위 — S5가 의도적으로 안 건드린 두 매니페스트 description을 S9가 유일하게 소유해
+채움.
 
 ### 핵심 파일 포인터
 
@@ -105,8 +105,9 @@ Limits에 한 줄 추가) — 전부 `plugins/rubber-duck-tutor/` 아래.
   canonical 문서: `skills/ducking/engine.md`의 "Retrieval Confrontation (Ship-Point Fallback)" 섹션;
   실제 사다리는 두 ship 훅의 `additionalContext` **question 분기(`else`) 안**, S11 5단계 뒤에 내장
   (scoreboard 분기는 미변경).
-- **S9 다음 세션 참고**: README 재작성 시 S10~S13 전체(telemetry, blind-spot 정조준, scoreboard 강등,
-  retrieval confrontation)를 반영해야 함 — 위 4개 canonical 섹션이 그 근거 소스.
+- **S9(완료)**: README·두 매니페스트 description 재작성이 위 4개 canonical 섹션(telemetry, blind-spot
+  정조준, scoreboard 강등, retrieval confrontation)을 근거 소스로 삼아 완료됨. 이슈에 남은 슬라이스
+  없음 — 다음은 릴리즈 프로세스(위 First Action 참조).
 
 ---
 
@@ -392,9 +393,16 @@ after-build 전용으로 좁히지 않음. S9는 `plugin.json`·`marketplace.jso
 scoreboard)도 반영. 스킬 경계 절(코드 리뷰·계획 그릴 불침범)도 README에 한 줄로.
 
 ### Acceptance criteria
-- [ ] README와 두 매니페스트가 라이프사이클 전반 정체성을 기술; after-build 전용 프레이밍 없음.
-- [ ] description은 현재 명령만 나열(제거된 `/duck-design`, `/duck-plan` 없음).
-- [ ] `marketplace.json` 버전이 `3.0.0`.
+- [x] README와 두 매니페스트가 라이프사이클 전반 정체성을 기술; after-build 전용 프레이밍 없음
+      (README "Why" 문단이 "across the whole AI-coding lifecycle" 명시; 플러그인/마켓플레이스
+      description 둘 다 4개 라이프사이클 시점(prebuild/verify+review/orient) 나열).
+- [x] description은 현재 명령만 나열(제거된 `/duck-design`, `/duck-plan` 없음) — `grep -rn
+      'duck-design\|duck-plan'`가 `docs/handoff`·`docs/issues`·`docs/adr` 제외 라이브 참조 없음 반환.
+- [x] `marketplace.json` 버전이 `3.0.0`.
+
+README에도 S10~S13 기능(triage 6종 risk, retrieval fallback, scoreboard 강등, telemetry 조회)을
+auto-hooks 문단에 반영하고, 신설 "Scope" 절로 스킬 경계(코드 품질은 `/code-review`, 계획 그릴은
+`/grilling`) 한 줄을 추가했다(2026-07-04 노트 이행).
 
 ### Blocked by
 S9는 S5에 의존(명령이 거기서 리네임됨). 2026-07-04 노트가 README에 S10~S12 기능 반영을 요구하므로

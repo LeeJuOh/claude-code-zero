@@ -53,8 +53,8 @@
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "2.4.1",
-      "description": "Rubber duck tutor that combats rubber-stamping in AI-assisted workflows. Dedicated commands per phase (/duck-design, /duck-plan, /duck-verify, /duck-review, /duck-orient) plus /duck for auto-detect. Auto-hooks at plan creation, spec documents, PR/MR, and git push."
+      "version": "3.0.0",
+      "description": "Rubber duck tutor that keeps you engaged across the whole AI-coding lifecycle — before you ask AI to build (/duck-prebuild), once code is written and before you ship (/duck-verify, /duck-review), and when orienting to unfamiliar code (/duck-orient), plus /duck for auto-detect. Ship-point hooks triage what you just pushed against six risk categories and target the riskiest change you didn't actually discuss, fall back to retrieving an unresolved gap from a past session, or demote to a non-blocking scoreboard after three ignored confrontations in a row. Confrontation telemetry (fired/answered/ignored) is queryable from /duck-orient. Doesn't overlap /code-review or /grilling — duck only checks whether you understand, never whether the code or plan is good."
     },
     {
       "name": "e2e-test-runner",
