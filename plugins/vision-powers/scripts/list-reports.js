@@ -78,7 +78,7 @@ function main() {
     .map(f => {
       const fullPath = path.join(reportsDir, f);
       const stat = fs.statSync(fullPath);
-      return {
+      const entry = {
         filename: f,
         path: fullPath,
         type: detectType(f),
@@ -87,6 +87,14 @@ function main() {
         mtime: stat.mtime.getTime(),
         date: formatDate(stat.mtime),
       };
+      const sidecarPath = `${fullPath}.artifact.json`;
+      try {
+        const sidecar = JSON.parse(fs.readFileSync(sidecarPath, "utf-8"));
+        if (sidecar.url) entry.artifact_url = sidecar.url;
+      } catch {
+        // No sidecar or invalid JSON — report has no artifact_url
+      }
+      return entry;
     })
     .sort((a, b) => b.mtime - a.mtime)
     .slice(0, limit);

@@ -1,49 +1,58 @@
 # vision-powers Artifact 채널: claude.ai 퍼블리시를 전달 채널로 (공식 Artifacts 위임)
 
-> 상태: 구현 중 (S1·S2·S3·S4 완료, 브라우저 실렌더링 검증까지 완료 — 아래 S4 "브라우저 검증" 참고) · 생성: 2026-07-05
+> 상태: 구현 중 (S1·S2·S3·S4·S4.5 완료 — S4.5는 report-manager refine 라이브 검증 미실시, 남은 슬라이스는 S5뿐) · 생성: 2026-07-05
 > 용어집: `docs/context/vision-powers.md` (신규 용어: **Artifact channel**)
 > 결정 근거: `docs/adr/0007-artifact-channel-delegates-visual-design.md` (선행 `0002` 직접작성 · `0005` grounding)
 > 공식 문서: `https://code.claude.com/docs/en/artifacts`
 > 출처: grill-with-docs + domain-modeling 세션 (2026-07-05)
 
-## 핸드오프 (다음 세션 — 2026-07-06 세션 종료 시점)
+## 핸드오프 (다음 세션 — 2026-07-06 세션 종료 시점, S4.5 구현 회차)
 
-**목표**: 이 이슈(vision-powers Artifact 채널) 구현을 슬라이스 단위로 이어간다. S1~S4는 이미 구현
-완료 상태로 이번 세션을 시작했고, 유일하게 남아있던 미완료 항목(S4 브라우저 실렌더링 확인)만 처리하는
-것이 이번 세션의 범위였다.
+**목표**: 이 이슈(vision-powers Artifact 채널) 구현을 슬라이스 단위로 이어간다. 이번 세션 시작 시점엔
+S1~S4가 완료 상태였고, 이번 세션은 S4.5(URL 영속화 + 크로스세션 refine)를 구현했다. 사용자 지시("슬라이스
+끝나면 멈추고 보고, 다음 슬라이스 들어가지 말 것")에 따라 S4.5에서 멈추고 보고한다 — S5는 시작하지 않음.
 
-**첫 액션**: 다음 세션 시작 시 **S4.5(URL 영속화 + 크로스세션 refine) 시작 여부를 사용자에게 먼저
-확인** — 바로 구현에 들어가지 말 것. 이번 세션은 사용자의 "슬라이스 끝나면 멈추고 보고, 다음 슬라이스
-들어가지 말 것" 지시로 종료됐고, S4.5 시작 여부를 묻는 질문 자체가 사용자에 의해 중단된 상태로
-끝났다 — 아직 답을 못 받았다.
+**이번 세션에서 한 일**: S4.5 5개 acceptance criteria 전부 구현.
+- `list-reports.js`: 사이드카(`<report>.artifact.json`) 탐지해 `artifact_url` 필드 채움. 신규
+  `list-reports.test.js`(3케이스) 추가 — 스위트 54→57건.
+- `report-manager` SKILL.md: frontmatter `allowed-tools`에 `Artifact` 추가. `list`/`open` 절에 URL
+  노출. `delete`에 사이드카 동반 삭제. `refine`을 전면 개편 — 1단계에서 사이드카로 로컬/Artifact-채널
+  프래그먼트 판정 → 6단계 gate `--content-only` 분기 → 7단계 visual self-audit 프래그먼트는 스킵 →
+  신규 8단계로 사이드카 URL 재사용 재퍼블리시(+ 사이드카 없음/재퍼블리시 실패 시 새 URL 발행 분기).
+- 자세한 내용·판단 근거는 이슈 문서 본문의 S4.5 "구현 완료 (2026-07-06)" 절 참고.
 
-**맥락**: 이전 세션은 두 아티팩트 URL(plugin-visual/worktree-plus, context-health-visual)을
-`claude-in-chrome`으로 열었을 때 로그인 세션을 못 읽어 "Sign in" 화면만 봤고 그 상태로 종료됐다.
-이번 세션에서 동일한 두 URL을 다시 열어보니 로그인 문제가 재현되지 않아 실제 콘텐츠를 확인할 수
-있었다. 브라우저 창을 ~420px 폭까지 줄여 이전 세션이 구조적으로만 판정해뒀던 두 리스크 지점 —
-plugin-visual의 권한 매트릭스 가로 스크롤, context-health-visual §5 Trigger Collisions의 충돌 쌍
-문자열 줄바꿈 — 을 눈으로 직접 확인했고, 둘 다 설계대로 깨지지 않고 동작함을 확인했다. 이슈 문서의
-상태 줄과 S4 섹션을 이 결과로 갱신했다(아래 "구현 완료" 밑 "브라우저 검증" 문단 참고). 코드 변경은
-없음 — 이번 세션은 검증 + 문서 갱신만.
+**범위 밖으로 명시적으로 남긴 것**: doc-visual/diff-visual/plugin-visual/context-health-visual 4개
+생성 스킬의 퍼블리시 절 자체는 여전히 `url` 인자를 넘기지 않는다 — 이슈 문서가 S4.5를 "report-manager
+refine의 크로스세션 유지"로 명시적으로 한정하고 있어 건드리지 않았다. 4개 스킬을 새 세션에서 같은
+입력으로 재실행했을 때도 같은 URL을 유지하고 싶다면 그건 별도 슬라이스(범위 확장) 필요 — 사용자 확인
+후 처리.
 
-**현재 진행 상황** (`repo_facts.sh` 기준, 2026-07-06 확인):
+**현재 진행 상황** (`git status`/`git log` 기준, 2026-07-06 확인):
 - 브랜치: `develop`.
-- 커밋 안 된 변경: `docs/issues/007-vision-powers-artifact-channel.md` 1개뿐(이 문서 자체 — 상태 줄·S4 검증 단락·이 핸드오프 섹션 갱신). 아직 커밋 안 함.
-- 최근 커밋에 S1~S4 구현이 이미 반영돼 있음: `e0f4d42`(S4), `a509f5e`(S2·S3), `c487017`(S1). `plugins/vision-powers/skills/{plugin-visual,context-health-visual}/SKILL.md`는 이미 커밋된 상태 — 핸드오프에 남아있던 "커밋 안 된 수정 3개" 기록은 이번 세션 시작 시점엔 이미 낡은 정보였음(둘 다 `e0f4d42`에 포함).
-- S1·S2·S3·S4 acceptance criteria 전부 체크(`[x]`) 완료 상태.
+- 이번 세션이 건드린 파일(전부 커밋 전): `docs/issues/007-vision-powers-artifact-channel.md`,
+  `plugins/vision-powers/scripts/list-reports.js`, `plugins/vision-powers/skills/report-manager/SKILL.md`
+  (수정), `plugins/vision-powers/scripts/list-reports.test.js`(신규).
+- 이 세션과 무관한 uncommitted 변경도 저장소에 있음(`docs/issues/003-rubber-duck-tutor-redesign.md`,
+  `plugins/rubber-duck-tutor/hooks/post-pr.sh`·`post-push.sh`, `plugins/rubber-duck-tutor/skills/ducking/engine.md`,
+  신규 `plugins/rubber-duck-tutor/skills/ducking/scripts/ignore-streak.sh`) — 이번 세션 시작 전부터
+  있던 다른 작업 흐름으로 보이며, 이번 세션은 손대지 않았다. 커밋 시 vision-powers 파일만 골라 스테이징할 것.
+- S1·S2·S3·S4·S4.5 acceptance criteria 전부 체크(`[x]`) 완료 상태. 남은 슬라이스는 S5뿐.
 
-**잘 된 점**: claude.ai 아티팩트 페이지는 `navigate` 직후 바로 스크린샷을 찍으면 완전히 빈 검은 화면이
-찍히는 경우가 있었다(콘솔 에러 없음, DOM엔 iframe 존재 확인) — `wait` 몇 초 또는 스크롤/클릭 같은
-상호작용을 한 번 거치고 나서 스크린샷을 찍으니 정상 렌더링된 콘텐츠가 나왔다. 다음에 이 페이지를 다시
-열 때 "빈 화면 = 깨짐"으로 바로 결론 내리지 말고 한 번 상호작용 후 재확인할 것.
+**막힌 것**: 없음 — S4.5 acceptance criteria 5개 전부 구현·문서화 완료.
 
-**막힌 것**: 없음 — S4는 이번 세션에서 완전히 닫힘.
+**미검증 (남겨둔 리스크)**: `claude plugin validate .` 통과, `node --test scripts/*.test.js` 57건 통과
+확인함. 하지만 report-manager `refine`을 사이드카 있는 실제 아티팩트 프래그먼트에 대해 라이브로 실행해
+`Artifact` 툴에 `url` 인자가 실제로 전달되고 같은 claude.ai 페이지가 새 버전으로 갱신되는지는 이번
+세션엔 실행 안 함 — SKILL.md 산문 변경이라 스크립트 테스트로는 검증 불가. 다음 세션에서
+`claude --plugin-dir ./plugins/vision-powers`로 별도 세션 열어 실 refine 1회 검증 권장(S1의
+"로컬 vs artifact 비교"에 준하는 절차).
 
 **다음 단계**:
-1. 사용자에게 S4.5 시작 여부 확인 (첫 액션 참고).
-2. S4.5 승인되면: 퍼블리시 성공 시 `<report>.artifact.json` 사이드카 기록 규약 확정 → `list-reports.js`에 `artifact_url` 노출 → report-manager refine이 사이드카 URL을 `url` 인자로 재사용하도록 배선 → 사이드카 없음/URL 죽음 시 새 URL + 안내 한 줄 → delete 시 사이드카 동반 삭제. (S1이 사이드카 최소 쓰기는 이미 구현해둠 — `write-artifact-sidecar.js` 재사용.)
-3. S4.5 다음은 S5(config.json 키 + README 2×2 표 + `plugin.json`/`marketplace.json` description + marketplace 버전 minor 범프) — S3·S4·S4.5 완료 후 마지막 슬라이스.
-4. 이번 세션에서 갱신한 `docs/issues/007-vision-powers-artifact-channel.md` 변경사항은 아직 커밋 전 — 다음 세션 시작 전에 커밋할지 사용자 확인 필요.
+1. 이번 세션 변경사항(`docs/issues/007-...md` + `plugins/vision-powers/{scripts/list-reports.js,
+   scripts/list-reports.test.js, skills/report-manager/SKILL.md}`) 커밋할지 사용자 확인.
+2. 사용자가 원하면 위 "미검증" 항목(실 refine 라이브 검증)을 먼저 처리.
+3. 그 다음 S5(config.json 키 + README 2×2 표 + `plugin.json`/`marketplace.json` description +
+   marketplace 버전 minor 범프) 시작 여부 확인 — S3·S4·S4.5 완료로 S5가 마지막 남은 슬라이스.
 
 ## What to build
 
@@ -279,11 +288,20 @@ channels"로 재확인). 스크립트 변경 없음(`artifact-gate.js --content-
 
 ### Acceptance criteria
 
-- [ ] 퍼블리시 성공 시 `<report>.artifact.json` 사이드카 기록 (URL·title·favicon·마지막 퍼블리시 시각). S1이 쓰기 시작한 최소 형태를 여기서 규약으로 확정.
-- [ ] `list-reports.js`: 사이드카 발견 시 리포트 항목에 `artifact_url` 포함. list/open 출력에 URL 표시.
-- [ ] report-manager refine: 대상 리포트에 사이드카 있으면 재퍼블리시 때 그 URL을 `url` 인자로 전달 — 같은 URL에 버전 스택. favicon·title 사이드카 값 재사용(고정).
-- [ ] 사이드카 없거나 URL 죽음(퍼블리시 에러) 시: 새 URL 발행 + "새 링크 발행됨, 기존 공유 링크는 구버전 유지" 한 줄.
-- [ ] delete 시 사이드카 동반 삭제.
+- [x] 퍼블리시 성공 시 `<report>.artifact.json` 사이드카 기록 (URL·title·favicon·마지막 퍼블리시 시각). S1이 쓰기 시작한 최소 형태를 여기서 규약으로 확정.
+- [x] `list-reports.js`: 사이드카 발견 시 리포트 항목에 `artifact_url` 포함. list/open 출력에 URL 표시.
+- [x] report-manager refine: 대상 리포트에 사이드카 있으면 재퍼블리시 때 그 URL을 `url` 인자로 전달 — 같은 URL에 버전 스택. favicon·title 사이드카 값 재사용(고정).
+- [x] 사이드카 없거나 URL 죽음(퍼블리시 에러) 시: 새 URL 발행 + "새 링크 발행됨, 기존 공유 링크는 구버전 유지" 한 줄.
+- [x] delete 시 사이드카 동반 삭제.
+
+### 구현 완료 (2026-07-06)
+
+- **AC1 (사이드카 규약)**: 코드 변경 없음 — S1의 `write-artifact-sidecar.js`가 이미 `{url, title, favicon, published_at}` 스키마로 쓰고 있었고, 그대로 규약으로 확정. `published_at`은 같은 파일에 재호출 시 덮어써지므로 재퍼블리시 시각 갱신도 공짜로 따라옴.
+- **AC2**: `list-reports.js`에 사이드카 탐지 로직 추가(`<fullPath>.artifact.json` 읽기 시도, `url` 필드가 있으면 `entry.artifact_url`에 채움 — 사이드카 없음/파싱 실패는 조용히 무시). 신규 `list-reports.test.js`(사이드카 있음/없음/깨진 JSON 3케이스) 추가, 전체 스위트 54→57건 통과. `report-manager` SKILL.md의 `list`(Artifact 열 조건부 추가) · `open`(Shared link 한 줄) 절 갱신.
+- **AC3·AC4**: `report-manager` frontmatter `allowed-tools`에 `Artifact` 추가. `refine` 절 전면 개편 — 1단계에서 사이드카 유무로 "로컬 리포트 vs Artifact-channel 프래그먼트"를 먼저 판정, 6단계(gate)는 프래그먼트면 `--content-only`, 7단계(visual self-audit)는 프래그먼트면 스킵(로컬 렌더가 claude.ai가 씌우는 `<head>`/테마 래퍼를 반영 못 하므로), 신규 8단계로 "사이드카 있으면 `url` 인자로 같은 링크에 재퍼블리시 + 사이드카 재기록" · "사이드카 없지만 `.artifact.html`이면 최초 퍼블리시" · "재퍼블리시 실패(죽은 링크)면 새 URL + 한 줄 고지"의 3분기를 명문화. 9단계(구 8단계)는 채널별 출력(file:// vs claude.ai URL)으로 갱신.
+- **AC5**: `delete` 4단계에 사이드카 동반 삭제 문구 추가(고아 사이드카가 남으면 다음 `list`가 이미 없는 리포트의 공유 링크를 주장하게 되는 문제 방지).
+- **범위 밖으로 남긴 것**: doc-visual/diff-visual/plugin-visual/context-health-visual 4개 생성 스킬 자체의 퍼블리시 절은 여전히 `url` 인자를 넘기지 않는다(세션 내 재퍼블리시는 `file_path` 동일 재사용으로 이미 동작, 세션 간은 애초에 그 스킬들의 스코프가 아님). 이슈 문서가 S4.5를 "report-manager refine이 세션 넘어 같은 URL 유지"로 명시적으로 한정하고 있어 4개 스킬의 재실행 시나리오는 건드리지 않음 — 필요해지면 별도 슬라이스.
+- **검증**: `claude plugin validate .` 통과(기존 11건 버전 경고만, 신규 경고 없음). `node --test scripts/*.test.js` 57건 전부 통과. **미검증**: 실제 report-manager `refine`을 사이드카 있는 아티팩트 프래그먼트에 대해 라이브로 실행해 `Artifact` 툴에 `url` 인자가 실제로 전달되고 같은 페이지가 버전업되는지는 이번 세션엔 실행하지 않음(SKILL.md 산문 변경이라 스크립트 테스트로는 못 잡음) — S1처럼 별도 세션에서 `claude --plugin-dir ./plugins/vision-powers`로 실 refine 1회 검증 권장.
 
 ### Blocked by
 
