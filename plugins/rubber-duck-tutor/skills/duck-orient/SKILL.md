@@ -3,7 +3,7 @@ name: duck-orient
 disable-model-invocation: true
 description: "Codebase-orientation session with the rubber duck — generate or refresh .claude/orientation.md with interactive exercises. Use when new to a codebase, returning after a break, or says \"duck orient\", \"I'm new to this repo\"."
 argument-hint: "[refresh]"
-allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(find *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/telemetry-summary.sh *)
+allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *) Bash(find *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/resolve-gap.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/telemetry-summary.sh *)
 ---
 
 # Duck — Orientation Mode
@@ -30,7 +30,7 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *
 4. **If found** (and not refreshing):
    - Read `.claude/orientation.md`
    - Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh 3` — surfaces gaps logged in past sessions for this repo
-   - If output is non-empty: pick the most recent gap and open with a **retrieval check-in** instead of the standard summary: "🦆 Quack — last time your understanding of [gap] was shaky. Can you explain that part now?" Wait for answer, then proceed to the exercise sequence.
+   - If output is non-empty: pick the most recent gap and open with a **retrieval check-in** instead of the standard summary: "🦆 Quack — last time your understanding of [gap] was shaky. Can you explain that part now?" Wait for their answer. If they can now genuinely explain it (a live judgment, same bar as any confrontation — following along or "I get it" doesn't count), call `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/resolve-gap.sh "<gap text>"` so it stops resurfacing here and at ship-point — pass the gap text verbatim minus the leading `date<TAB>` prefix, since resolve-gap matches on an exact string. If they still can't, leave it unresolved and don't call the script. Then proceed to the exercise sequence.
    - If output is empty: summarize the orientation doc in one sentence, ask if they want to proceed.
    - Run through the **Suggested exercise sequence** section
    - Apply all standard duck techniques: one question at a time, wait for answer, fading scaffolding
