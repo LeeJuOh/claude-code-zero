@@ -1,6 +1,6 @@
 # rubber-duck-tutor `/coach`: never-teach 플러그인의 티칭 형제 스킬
 
-> 상태: **구현 완료, 커밋 대기** — S1–S4 전부 완료(2026-07-08 세션, 전부 미커밋) · 생성: 2026-07-08
+> 상태: **구현 완료, 커밋됨** — S1–S4 전부 완료·커밋 `40423bd` (2026-07-08) · 생성: 2026-07-08
 > 용어집: `plugins/rubber-duck-tutor/CONTEXT.md` (신규 용어: **Coach**)
 > 결정 근거: `docs/adr/0008-coach-teaching-skill-inside-never-teach-plugin.md`
 > 공식 문서: `https://code.claude.com/docs/en/skills.md` (S1 세션에서 재확인 완료 — frontmatter 필드
@@ -11,19 +11,15 @@
 
 ### First Action
 
-이슈 009 구현(S1–S4) 자체는 끝났다. 남은 건 커밋뿐. `git status` 기준 미커밋 경로 8개:
-`.claude-plugin/marketplace.json`(수정) · `plugins/rubber-duck-tutor/.claude-plugin/plugin.json`(수정) ·
-`plugins/rubber-duck-tutor/README.md`(수정) · `CONTEXT-MAP.md`(신규) ·
-`docs/adr/0008-coach-teaching-skill-inside-never-teach-plugin.md`(신규) ·
-`docs/issues/009-rubber-duck-tutor-coach-skill.md`(신규, 이 파일) ·
-`plugins/rubber-duck-tutor/CONTEXT.md`(신규) · `plugins/rubber-duck-tutor/skills/coach/`(신규 디렉터리).
-전부 이 이슈 하나의 작업물이므로 한 커밋으로 묶는 게 맞다 — 커밋 메시지에 Co-Authored-By 트레일러는
-넣지 않는다(AGENTS.md 컨벤션).
+이슈 009 구현(S1–S4)은 커밋 `40423bd`(`feat(rubber-duck-tutor): add /coach teaching skill (topic, code
+anatomy, gap modes)`)로 develop 브랜치에 랜딩 완료 — 8개 경로(마켓플레이스·plugin.json·README 수정,
+CONTEXT-MAP.md·ADR 0008·이 이슈 문서·CONTEXT.md·`skills/coach/SKILL.md` 신규) 전부 이 한 커밋에 포함됨.
+이 이슈에서 더 남은 구현 작업은 없다.
 
-이 커밋과는 무관하지만 잊지 말 것: 테스트 도중 `~/.claude/plugins/data/codex-openai-codex/`에
+유일하게 남은 항목은 이 커밋과 무관한 정리 건: 테스트 도중 `~/.claude/plugins/data/codex-openai-codex/`에
 `gaps.log`·`gaps.log.tmp`가 잘못 생성됐고(아래 "부수 발견" 참고) auto-mode classifier가 삭제를
-막았다 — 유저에게 직접 지우거나 삭제 승인을 받아야 한다. 이 리포 밖 홈 디렉터리 파일이라 커밋과는
-별개 정리 항목.
+막았다 — 유저에게 직접 지우거나 삭제 승인을 받아야 한다. 이 리포 밖 홈 디렉터리 파일이라 이 이슈의
+git 이력과는 완전히 별개.
 
 ### Context (2차 세션, S2+S3+S4)
 
