@@ -1,8 +1,16 @@
 ---
 status: accepted
+amended-by: 0009
 ---
 
 # 0007 — the Artifact channel delegates visual design; the CDN rendering pattern is local-only
+
+> **Amended by [[0009]] (2026-07-08).** A dogfooding checkpoint found the built-in artifact
+> design *beat* the local design-system look, inverting this ADR's "if it disappoints → Plan B"
+> hypothetical. [[0009]] makes the Artifact channel the **default** for HTML on capable
+> accounts (not opt-in) and reframes Mermaid as a demoted rendering technique kept only as the
+> non-capable/md fallback. This ADR's core — delegate design on the artifact channel, CDN
+> pattern is local-only — still holds.
 
 ## Context
 
