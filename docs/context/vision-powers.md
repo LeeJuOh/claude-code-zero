@@ -39,13 +39,46 @@ md uses what it supports (mermaid, tables, blockquote callouts, headings, images
 _Avoid_: report, summary (a summary compresses; an artifact re-structures without losing substance).
 
 **Artifact channel**:
-Opt-in delivery of a **visual artifact** as a published claude.ai page through Claude Code's
-official Artifacts feature. On this channel the **design brief** lever is delegated to the
-harness's built-in artifact-design skill (native to the page's CSP sandbox); **source
-passthrough**, **build-time grounding**, and the **Gate**'s content checks remain the skill's.
-Disambiguation: unqualified "artifact" in this repo means the **Visual artifact** deliverable
-(the usage throughout [[0002]]/[[0005]]); the official feature is always qualified — "Artifact
-channel", "Artifact publish", "claude.ai page". See [[0007]].
+Delivery of a **visual artifact** as a published claude.ai page through Claude Code's official
+Artifacts feature. **The default for html output on an artifact-capable account** ([[0009]]) —
+no longer opt-in; a force-local override returns the **Local** channel when the analytical
+charts or zoom/pan only Mermaid provides are needed, and non-capable sessions (API-key / CI /
+`disableArtifact`) auto-degrade to Local. On this channel the **design brief** lever is
+delegated to the harness's built-in artifact-design skill (native to the page's CSP sandbox);
+**source passthrough**, **build-time grounding**, and the **Gate**'s content checks remain the
+skill's. Disambiguation: unqualified "artifact" in this repo means the **Visual artifact**
+deliverable (the usage throughout [[0002]]/[[0005]]); the official feature is always qualified —
+"Artifact channel", "Artifact publish", "claude.ai page". See [[0007]], [[0009]].
+
+**Channel**:
+Where a **visual artifact** is rendered and delivered, and which visual identity it carries. Two
+values — **Local** (design-system look, Mermaid, saved as a file; the fallback on non-capable
+sessions) and **Artifact** (built-in artifact-design look, inline SVG/HTML+CSS, published URL —
+see **Artifact channel**). Orthogonal to **Format**: either format can ride either channel.
+_Avoid_: mode (that is presentation register — see **Mode**), output type, target.
+
+**Diagram-type selection** vs **Rendering technique**:
+Two layers the checkpoint behind [[0009]] pried apart. **Diagram-type selection** is the
+channel-agnostic decision of *which* diagram a section needs — the 13-type menu and the "which
+case → which diagram" mapping; the durable authoring asset. **Rendering technique** is *how* the
+chosen diagram is drawn — **Mermaid** (Local/md only) or **inline SVG / HTML+CSS** (Artifact).
+Mermaid is a rendering technique, not the diagram layer itself.
+_Avoid_: calling Mermaid "the diagrams"; conflating the choice with the drawing.
+
+**Relational diagram** vs **Analytical chart**:
+The line that decides rendering feasibility off the Mermaid runtime. **Relational** — meaning is
+connections (flow, tree, hierarchy, sequence); hand-authored inline SVG renders these well, often
+better than Mermaid. **Analytical chart** — meaning is position or scale on axes (quadrant,
+scatter, xy-chart, timeline); needs coordinate accuracy, is Mermaid-strong, and degrades to a
+table on the Artifact channel ([[0009]]).
+_Avoid_: graph, plot (both overloaded).
+
+**Readability** vs **Visibility**:
+The two axes a report is judged on (the [[0009]] checkpoint kept them distinct). **Readability** —
+how it reads *when you read it*: line length, prose preservation, cell density, diagram-text
+legibility. **Visibility** — how it reads *when you skim it*: hierarchy, whether the eye lands on
+the right element first, whether a diagram lands its point at a glance.
+_Avoid_: collapsing the two; "legibility" for Visibility (legibility is one input to Readability).
 
 **Linear dump**:
 Verbose prose or markdown read top-to-bottom with no structure — the failure mode the

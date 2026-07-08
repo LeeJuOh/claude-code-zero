@@ -6,7 +6,7 @@ description: |
   Also trigger when: "make this document visual", "add diagrams to this doc", "turn this markdown into a report",
   "visualize this README/ADR/spec", or any request to render a document with embedded diagrams.
 argument-hint: "[md-file-path] [--format html|md] [--lang code] [--artifact (native design + publish)]"
-allowed-tools: Read, Bash(node *), Bash(open *), Bash(rm -rf /tmp/doc-visual-*), Artifact, AskUserQuestion
+allowed-tools: Read, Bash(node *), Bash(open *), Bash(rm -rf /tmp/doc-visual-*), Artifact, Skill(artifact-design), AskUserQuestion
 ---
 
 # doc-visual

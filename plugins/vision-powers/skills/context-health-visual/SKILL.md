@@ -6,7 +6,7 @@ description: >
   Use when asked to audit the environment, check context budget, review plugins,
   or scan installed skills for risky patterns.
 argument-hint: "[--format html|md] [--lang <code>] [--paste-context] [--use-instructions-loaded-hook] [--artifact (native design + publish)]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Artifact, Bash(node *), Bash(open *), Bash(rm -rf /tmp/env-health-*)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Artifact, Skill(artifact-design), Bash(node *), Bash(open *), Bash(rm -rf /tmp/env-health-*)
 ---
 
 # Environment Health

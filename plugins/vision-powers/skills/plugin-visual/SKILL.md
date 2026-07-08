@@ -5,7 +5,7 @@ description: >
   and architecture diagrams. Use when asked to analyze, audit, or document a plugin.
   Triggers on GitHub plugin URLs or local plugin paths.
 argument-hint: "path-or-url [--format html|md] [--lang code] [--artifact (native design + publish)]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Artifact, Bash(gh repo clone *), Bash(rm -rf /tmp/plugin-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Artifact, Skill(artifact-design), Bash(gh repo clone *), Bash(rm -rf /tmp/plugin-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
 ---
 
 # Agent Extension Visual
