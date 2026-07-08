@@ -6,7 +6,7 @@ description: >
   summarize a diff, branch, commit, or PR — including seeing the real changed lines, not just a
   summary. Accepts branch names, commit hashes, HEAD, PR numbers, or commit ranges.
 argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>] [--artifact (native design + publish)]"
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Artifact, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Artifact, Skill(artifact-design), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
 
 # Diff Visual
