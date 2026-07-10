@@ -1,6 +1,6 @@
 # vision-powers: artifact-first 기본화 — 다이어그램 선택은 채널무관, Mermaid는 강등된 렌더링 (ADR 0009)
 
-> 상태: **S0+S1 착수 대기** (단계적 확정) · 생성: 2026-07-08 · 결정: 2026-07-10
+> 상태: **전체 S0~S6 구현 대기** (A안 빅뱅 확정) · 생성: 2026-07-08 · 결정: 2026-07-10
 > 용어집: `docs/context/vision-powers.md` (갱신 용어: **Channel**, **Diagram-type selection vs Rendering technique**, **Relational diagram vs Analytical chart**, **Readability vs Visibility**; **Artifact channel** opt-in→기본으로 재정의)
 > 결정 근거: `docs/adr/0009-artifact-first-default-diagram-selection-channel-agnostic.md` (`0007` amend)
 > 출처: grill-with-docs + domain-modeling 세션 (2026-07-08) — 로컬 vs 아티팩트 도그푸딩 체크포인트
@@ -18,24 +18,30 @@
 각 슬라이스는 **행동 + 문서 + 검증**을 관통하는 tracer-bullet 세로 절단이며, 독립적으로 데모·검증
 가능하다. S2~S4는 S1 이후 병렬 가능.
 
-## Decision (2026-07-10) — 단계적 롤아웃 + doc-visual 우선
+## Decision (2026-07-10) — 전체 빅뱅 (A안)
 
-grill-with-docs 세션 결정. ADR 0009는 유효하나 **빅뱅 대신 단계적**으로 실행한다.
+grill-with-docs 세션 결정. **당일 초안(단계적 S0+S1)을 재검토해 전체 빅뱅으로 확정.** ADR 0009대로
+S0~S6 전부 이번 라운드에 구현한다.
 
-- **이번 라운드 = S0 + S1(doc-visual)만.** 나머지 스킬(diff-visual·context-health-visual·
-  plugin-visual)의 기본 뒤집기(S2~S4)와 fact-check 채널 신설(S5)은 **각 스킬을 로컬 vs 아티팩트로
-  1회 도그푸딩한 뒤** 개별 승격한다. 증거가 doc-visual 문서 1건에 국한되기 때문(ADR 0009 §Context).
-- **doc-visual 기본을 artifact-first로 뒤집는다.** 근거: doc-visual 입력은 유저가 직접 고른 md
-  파일이라 "조용한 외부 게시" 민감도가 제일 낮은 스킬(context-health처럼 남의 환경을 스캔하지 않음).
-  여기서 검증하고 시작한다.
-- **이번 라운드는 전역 config를 뒤집지 않는다.** `config.js`/`config.json` 스키마·기본해석은 그대로
-  두고(다른 3스킬 기본 = 로컬 유지), doc-visual **SKILL.md의 Config-precedence 산문에서만** 기본을
-  Artifact로 승격한다. → S0의 "`config.js` 기본값 artifact:true 해석" 항목은 이번 라운드 범위에서
-  **doc-visual 국한**으로 축소(전역 플립은 S2~S5가 각자 켤 때).
-- **완화책 확정(조용한-게시 리스크):** (1) capable 계정 + html에서만 뒤집힘, (2) non-capable
+- **왜 단계적을 버렸나:** 단계적의 근거는 "스킬별 아티팩트 렌더 품질이 미검증(증거=doc-visual 1건)"
+  이었다. 그런데 `--local`(force-local) 오버라이드가 있어 **어느 스킬에서 아티팩트 기본이 별로여도
+  한 플래그로 로컬 복귀 + 언제든 비교 가능** — "나쁜 렌더"가 함정이 아니라 1회 타이핑으로 해결되는
+  가역 상태다. 렌더 리스크가 값싸게 회수되므로 단계적으로 미룰 이유가 약하다. 도그푸딩도 아티팩트
+  렌더 우위를 보였다.
+- **범위 = S0~S6 전부.** S2~S4(diff·context-health·plugin flip)는 S1 패턴의 기계적 복제.
+  **S5(fact-check 채널 신설)도 포함** — 단 이건 flip이 아니라 처음부터 채널을 만드는 것이라
+  `--local` 가역 논리가 적용되지 않고(만들 게 없으면 비교 baseline도 없음) 코드·테스트 lift가 가장
+  크다는 점을 인지하고 진행.
+- **전역 config 뒤집기 채택(S0 원안).** `config.js`가 `artifact` 키 부재를 **artifact-first로 해석**
+  하도록 기본해석을 뒤집고(헤더 주석에 문서화), 4개 flip 스킬의 Config-precedence 산문을 여기에
+  맞춘다. (단계적 초안의 "doc-visual 산문만" 축소는 폐기 — 전체를 뒤집으니 전역이 더 단순.)
+- **완화책(조용한-게시 리스크) 전 스킬 공통:** (1) capable 계정 + html에서만 뒤집힘, (2) non-capable
   (API키/CI/`disableArtifact`)은 자동 로컬 degrade, (3) publish 시점에 "claude.ai에 게시함 — 로컬은
-  `--local`" 1줄 고지, (4) `force-local`로 되돌림.
+  `--local`" 1줄 고지, (4) `force-local`로 되돌림. 특히 **context-health는 환경 스캔이라** 게시 고지를
+  빠뜨리지 말 것(리포트는 counts-only privacy guard 유지).
 - **force-local 플래그 이름 = `--local` 확정** (`--no-artifact` 기각 — 더 김). 자연어 동치 포함.
+- **구현 중 스킬별 렌더 1회 육안 확인**(특히 context-health 10-카드 밀도 — 해당 SKILL.md가 경고).
+  게이트가 아니라 빌드 단계의 눈검사; 깨지면 그 자리서 고치고 진행.
 
 ---
 
