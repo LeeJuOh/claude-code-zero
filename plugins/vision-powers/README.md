@@ -39,7 +39,7 @@ visualize diff HEAD                                       # diff report (HTML)
 visualize diff HEAD --format md                           # inline markdown for PR/chat
 doc-visual ./docs/research/xxx.md                         # HTML report
 doc-visual ./docs/spec.md --format md                     # inline markdown
-diagnose environment --paste-context                      # health report with /context paste
+diagnose environment                                      # health report (offers /context paste for ground truth)
 fact-check the last report                                # verify accuracy
 list reports                                              # manage reports
 refine section 3 of the last report                       # targeted re-render from feedback
