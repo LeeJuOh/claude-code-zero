@@ -1,6 +1,6 @@
 # codex-advisor: rescue 적응적 프롬프트 셰이핑 (B2) + provenance 백필
 
-> 상태: 구현 대기 · 생성: 2026-06-21
+> 상태: 완료 (0911ddd, v1.73.0 — codex-advisor 4.5.0) · 생성: 2026-06-21 · 완료: 2026-06-21
 > 용어집: `docs/context/codex-advisor.md`
 > 결정 근거: `docs/adr/0004-codex-advisor-prompt-ownership.md`
 > 출처: grill-with-docs 세션 (프롬프트 소유권 분석)
