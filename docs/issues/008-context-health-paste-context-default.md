@@ -1,6 +1,6 @@
 # context-health-visual: `--paste-context`를 opt-out 기본 질문으로 승격
 
-> 상태: 구현 대기 (설계 확정) · 생성: 2026-07-05 · 결정: 2026-07-10 A안 확정
+> 상태: **완료** (5676ca4, vision-powers 4.6.2) · 생성: 2026-07-05 · 결정: 2026-07-10 A안 확정 · 완료: 2026-07-10
 > 출처: grill-with-docs 세션 파생 (007 그릴 중 발견 — artifact 채널과 무관한 별건)
 
 ## What to build
@@ -21,14 +21,13 @@ config.js에 paste 키를 추가하지 않는다(A는 저장 안 함).
 
 ## Acceptance criteria
 
-- [ ] Phase 1 데이터 수집 시작 시 opt-out 질문 항상 표시 (붙여넣기 권장 / 스킵).
-- [ ] 붙여넣기: 실측값으로 추정치 교정 + estimate-caveat 제거 (현행 `--paste-context` 로직 이동).
-- [ ] 스킵·무응답·헤드리스: 추정치 + caveat (현행 기본 경로).
-- [ ] `--paste-context` 플래그 제거 — 스팟 4곳(현재 줄번호 기준): arg-hint `SKILL.md:8`,
-      파라미터 표 행 `:30`, gotcha 문구 "via `--paste-context`" `:422`, README 예시 줄
-      `README.md:42`. ⚠️ `:422` gotcha는 기존 체크리스트가 놓치던 지점.
-- [ ] `--use-instructions-loaded-hook`은 현행 opt-in 유지 (설정 파일 수정 + 재시작 요구라 비용이 큼 — 기본 승격 대상 아님).
-- [ ] `marketplace.json` 버전 patch 범프: 4.6.1 → 4.6.2 (007은 4.6.1로 이미 릴리즈됨 — 단독 범프).
+- [x] Phase 1 데이터 수집 시작 시 opt-out 질문 항상 표시 (붙여넣기 권장 / 스킵).
+- [x] 붙여넣기: 실측값으로 추정치 교정 + estimate-caveat 제거 (현행 `--paste-context` 로직 이동).
+- [x] 스킵·무응답·헤드리스: 추정치 + caveat (현행 기본 경로).
+- [x] `--paste-context` 플래그 제거 — arg-hint·파라미터 표 행·gotcha 문구·README 예시 줄 모두 제거
+      (`grep paste-context SKILL.md` = 0건 확인).
+- [x] `--use-instructions-loaded-hook`은 현행 opt-in 유지 (설정 파일 수정 + 재시작 요구라 비용이 큼 — 기본 승격 대상 아님).
+- [x] `marketplace.json` 버전 patch 범프: 4.6.1 → 4.6.2 (007은 4.6.1로 이미 릴리즈됨 — 단독 범프).
 
 ## Blocked by
 
