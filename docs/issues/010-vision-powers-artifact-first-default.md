@@ -1,6 +1,6 @@
 # vision-powers: artifact-first 기본화 — 다이어그램 선택은 채널무관, Mermaid는 강등된 렌더링 (ADR 0009)
 
-> 상태: **열림** (S0~S6 미착수) · 생성: 2026-07-08
+> 상태: **S0+S1 착수 대기** (단계적 확정) · 생성: 2026-07-08 · 결정: 2026-07-10
 > 용어집: `docs/context/vision-powers.md` (갱신 용어: **Channel**, **Diagram-type selection vs Rendering technique**, **Relational diagram vs Analytical chart**, **Readability vs Visibility**; **Artifact channel** opt-in→기본으로 재정의)
 > 결정 근거: `docs/adr/0009-artifact-first-default-diagram-selection-channel-agnostic.md` (`0007` amend)
 > 출처: grill-with-docs + domain-modeling 세션 (2026-07-08) — 로컬 vs 아티팩트 도그푸딩 체크포인트
@@ -17,6 +17,25 @@
 
 각 슬라이스는 **행동 + 문서 + 검증**을 관통하는 tracer-bullet 세로 절단이며, 독립적으로 데모·검증
 가능하다. S2~S4는 S1 이후 병렬 가능.
+
+## Decision (2026-07-10) — 단계적 롤아웃 + doc-visual 우선
+
+grill-with-docs 세션 결정. ADR 0009는 유효하나 **빅뱅 대신 단계적**으로 실행한다.
+
+- **이번 라운드 = S0 + S1(doc-visual)만.** 나머지 스킬(diff-visual·context-health-visual·
+  plugin-visual)의 기본 뒤집기(S2~S4)와 fact-check 채널 신설(S5)은 **각 스킬을 로컬 vs 아티팩트로
+  1회 도그푸딩한 뒤** 개별 승격한다. 증거가 doc-visual 문서 1건에 국한되기 때문(ADR 0009 §Context).
+- **doc-visual 기본을 artifact-first로 뒤집는다.** 근거: doc-visual 입력은 유저가 직접 고른 md
+  파일이라 "조용한 외부 게시" 민감도가 제일 낮은 스킬(context-health처럼 남의 환경을 스캔하지 않음).
+  여기서 검증하고 시작한다.
+- **이번 라운드는 전역 config를 뒤집지 않는다.** `config.js`/`config.json` 스키마·기본해석은 그대로
+  두고(다른 3스킬 기본 = 로컬 유지), doc-visual **SKILL.md의 Config-precedence 산문에서만** 기본을
+  Artifact로 승격한다. → S0의 "`config.js` 기본값 artifact:true 해석" 항목은 이번 라운드 범위에서
+  **doc-visual 국한**으로 축소(전역 플립은 S2~S5가 각자 켤 때).
+- **완화책 확정(조용한-게시 리스크):** (1) capable 계정 + html에서만 뒤집힘, (2) non-capable
+  (API키/CI/`disableArtifact`)은 자동 로컬 degrade, (3) publish 시점에 "claude.ai에 게시함 — 로컬은
+  `--local`" 1줄 고지, (4) `force-local`로 되돌림.
+- **force-local 플래그 이름 = `--local` 확정** (`--no-artifact` 기각 — 더 김). 자연어 동치 포함.
 
 ---
 
@@ -39,8 +58,9 @@ capable 계정에서 로컬을 강제하는 **force-local 오버라이드 플래
 
 ### Acceptance criteria
 
-- [ ] force-local 플래그 **이름 확정** (후보: `--local` / `--no-artifact` — 자연어 동치 포함)
-- [ ] `config.js` 기본값이 `artifact: true`로 해석되고, 헤더 주석에 기본값 변경 문서화
+- [ ] force-local 플래그 이름 = **`--local` 확정** (자연어 동치 포함; `--no-artifact` 기각)
+- [ ] `config.js` 기본값 `artifact: true` 해석 — **이번 라운드는 doc-visual 국한**(위 Decision 참조).
+      전역 config 스키마·기본해석은 이번에 안 건드림; 다른 스킬은 S2~S5에서 개별 적용
 - [ ] 명시적 요청 > config > 기본값 우선순위가 한 곳에 서술됨
 - [ ] non-capable(API키/CI/`disableArtifact`) 세션은 자동으로 Local로 degrade하는 규칙이 계약에 포함
 - [ ] 결정표가 `docs/adr/0009`와 일치 (회귀 시 ADR이 SSOT)
