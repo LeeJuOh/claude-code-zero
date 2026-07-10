@@ -65,8 +65,8 @@ capable 계정에서 로컬을 강제하는 **force-local 오버라이드 플래
 ### Acceptance criteria
 
 - [ ] force-local 플래그 이름 = **`--local` 확정** (자연어 동치 포함; `--no-artifact` 기각)
-- [ ] `config.js` 기본값 `artifact: true` 해석 — **이번 라운드는 doc-visual 국한**(위 Decision 참조).
-      전역 config 스키마·기본해석은 이번에 안 건드림; 다른 스킬은 S2~S5에서 개별 적용
+- [ ] `config.js`가 `artifact` 키 부재를 **artifact-first로 해석**(전역 기본값 뒤집기), 헤더 주석에
+      기본값 변경 문서화. 4개 flip 스킬(S1~S4)의 Config-precedence 산문이 이에 정렬 (A안 = 전역 flip).
 - [ ] 명시적 요청 > config > 기본값 우선순위가 한 곳에 서술됨
 - [ ] non-capable(API키/CI/`disableArtifact`) 세션은 자동으로 Local로 degrade하는 규칙이 계약에 포함
 - [ ] 결정표가 `docs/adr/0009`와 일치 (회귀 시 ADR이 SSOT)
