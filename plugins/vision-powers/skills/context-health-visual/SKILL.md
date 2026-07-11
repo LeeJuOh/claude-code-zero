@@ -5,7 +5,7 @@ description: >
   trigger collisions, hooks, MCP, plugins, CLAUDE.md, memory, and skill-security scan.
   Use when asked to audit the environment, check context budget, review plugins,
   or scan installed skills for risky patterns.
-argument-hint: "[--format html|md] [--lang <code>] [--paste-context] [--use-instructions-loaded-hook] [--artifact (native design + publish)]"
+argument-hint: "[--format html|md] [--lang <code>] [--use-instructions-loaded-hook] [--local (force a local file instead of publishing)]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Artifact, Skill(artifact-design), Bash(node *), Bash(open *), Bash(rm -rf /tmp/env-health-*)
 ---
 
@@ -27,18 +27,46 @@ Parse these arguments:
 |------|--------|---------|---------|
 | `--format` | `html` \| `md` | `html` | Output mode. `html` generates a full interactive dashboard (default — recommended). `md` produces an inline markdown report for non-browser contexts or chat pasting |
 | `--lang` | ISO code (`en`, `ko`, `fr`, etc.) | detected | Report language. Falls back to detecting the user message language, then `en` |
-| `--paste-context` | (flag) | off | Ask the user to paste their `/context` output and use it to correct the estimated startup load |
 | `--use-instructions-loaded-hook` | (flag) | off | Guide the user through temporarily enabling the `InstructionsLoaded` hook for file-level ground-truth data, then offer to revert it |
-| `--artifact` | (flag) | off | Publish the `html` dashboard as a claude.ai Artifact instead of a local file — see "HTML mode — Artifact channel" below. Also triggers on natural-language equivalents ("as an artifact", "publish as a link", "share as a URL") in whatever language the user is writing in. Applies to `--format html` only — combined with `--format md` it's ignored and the normal markdown path runs (same html-only scope doc-visual and diff-visual established for their artifact channels) |
+| `--local` | (flag) | off | Force the local design-system dashboard — capable HTML **publishes to an Artifact by default** |
+| `--artifact` | (flag) | retained no-op alias | Already the default on capable HTML — kept so muscle memory / natural-language triggers don't break |
 
-**Config precedence.** Before falling back to the defaults above, check stored preferences once:
-`node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
-`default_format` value replaces the `html` default, and `artifact: true` replaces off, the same as
-the `--artifact` flag. Anything the user actually says this turn — a literal flag or a
-natural-language equivalent — always overrides config; config only fills in when the request is
-silent on format/channel.
+**Channel is decided by the shared contract**, not re-derived here — read
+`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
+`(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
+The short version: **capable HTML publishes to a claude.ai Artifact by default**; `--local` forces the
+local dashboard; `md` and non-capable sessions stay local. Both flags apply to `--format html` only;
+`--artifact` combined with `--format md` is ignored and the normal markdown path runs. If `--local`
+and `--artifact` are both signalled, `--local` wins. `--local` also triggers on natural-language
+equivalents ("keep it local", "don't publish"); `--artifact` still triggers on "as an artifact",
+"publish as a link", "share as a URL" — in whatever language the user writes.
+
+**Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
+default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the
+config as JSON, or `{}`). A `default_format` value replaces the `html` default. For the channel: an
+**absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
+force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first. Anything
+the user actually says this turn — a literal flag or a natural-language equivalent — always overrides
+config; config only fills in when the request is silent on format/channel.
 
 ### Phase 1 — Data Collection
+
+**Ground-truth prompt (always ask, first thing).** The whole point of this skill is an
+accurate context budget, and `/context` is the only ground truth for startup load — the scan
+can only estimate it. So before collecting anything, use `AskUserQuestion` to offer two paths:
+
+- **Paste `/context` output (recommended)** — you'll parse the reported always-loaded token
+  counts and use them to correct the estimate.
+- **Proceed with the estimate** — the scan's public-formula estimate, carried with a caveat.
+
+Ask this on **every run**. There's no flag and no stored preference gating it: the estimate is a
+fallback, not the default path. Keep the question lean — one question, two options.
+
+- If the user chooses paste: ask them to paste their `/context` output, parse the always-loaded
+  token counts, and override the estimates in the report. Clear the estimate-caveat when you do.
+- If the user skips, doesn't respond, or the session is headless (no interactive
+  `AskUserQuestion`): proceed with the estimate and keep the caveat. This is the current default
+  behavior.
 
 **Determine the context window size.** The scan subprocess cannot detect the active
 session's window from `process.env`. Derive it from the active model ID:
@@ -85,9 +113,8 @@ Save to `/tmp/env-health-<pid>/scan.json`.
 
 **Optional ground truth refinement:**
 
-- If `--paste-context` is set: use `AskUserQuestion` to ask for the `/context` output,
-  parse the reported always-loaded token counts, and override the estimates in the
-  report. Clear the estimate-caveat when doing so.
+- The `/context` paste correction is handled by the always-ask prompt at the top of this
+  phase — not gated by any flag.
 - If `--use-instructions-loaded-hook` is set: walk the user through adding a temporary
   command-type `InstructionsLoaded` hook to `~/.claude/settings.json` that logs to
   `/tmp/env-health-<pid>/instructions-loaded.log`. Instruct them to start a new Claude
@@ -206,7 +233,16 @@ Use this structure:
 
 Cite sources inline where a threshold fires. Keep it under 200 lines.
 
-**HTML mode (default, `--format html`):**
+**HTML channel routing (default = Artifact).** For `--format html` the channel is decided by
+`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account the default
+is the **Artifact channel** — go straight to "HTML mode — Artifact channel" below. Write the **local
+design-system + Mermaid** dashboard (the section directly under this one) only when `--local` is in
+play, or as the **non-capable regenerate fallback** after a publish attempt fails (see "Publish"). `md`
+is unaffected — it stays local either way. `--local` coexists with the always-ask `/context` prompt and
+`--use-instructions-loaded-hook`: those are ground-truth-data controls, orthogonal to the output
+channel, so any combination is valid.
+
+**HTML mode — local design-system channel (`--local` / non-capable fallback):**
 
 Write the entire HTML file yourself — `<!DOCTYPE html>` to `</html>`. A self-contained single file with inline CSS and scripts. No templates, no intermediate JSON, no agent chains.
 
@@ -280,9 +316,9 @@ Full procedure, limits (fixed-height clipping, downscaling, render cost), and th
 
 Then run `open <output-path>`.
 
-**HTML mode — Artifact channel (`--artifact`)**
+**HTML mode — Artifact channel (default on a capable account)**
 
-Same content decisions as the default HTML mode above (10-section dashboard structure,
+Same content decisions as the local design-system channel above (10-section dashboard structure,
 graded/observational split, header tally + top lever, anti-slop-tells) — only the page's shape
 and delivery mechanism change, because it ships inside Claude Code's official Artifacts feature
 instead of as a local file.
@@ -348,14 +384,27 @@ mechanics around it.
    ```bash
    node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
    ```
-3. Report the URL to the user with one line noting the design delegation — e.g. "Design delegated
-   to Claude's built-in Artifact renderer — this differs from the local dashboard's look." (phrase
-   it in whatever language you're already replying in).
+3. Report the URL to the user with one line — and on this skill in particular **never omit it**: the
+   scan reads the user's environment, so disclosing that the result now lives on claude.ai is a
+   privacy-relevant fact, not a nicety. Use the **canonical publish notice** (noun = *dashboard*):
+   `Published to claude.ai — design is delegated to Claude's built-in Artifact renderer, so it differs
+   from the local dashboard's look; run --local for the local design-system + Mermaid version.` This
+   one line does double duty — it discloses the publish (the deliverable is now a URL, not a local
+   file) **and** the design delegation. Phrase it in whatever language you're already replying in; the
+   structure (published · delegated-design · `--local` escape hatch) is what's canonical, not the exact
+   English words. (The report body still emits counts/paths only — the privacy guard below is
+   unchanged; this notice is about disclosing the publish itself.)
 
-**Fallback** — if the `Artifact` tool is unavailable or the publish call fails: keep the local
-fragment you already saved, `open` it as the default HTML channel does, and state the fallback in
-one generic line (e.g. "Artifact publish unavailable — opened the local file instead."). Don't
-guess at the specific cause, and don't ask before falling back.
+**Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
+unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
+and don't ask before falling back. The fragment you published is a Mermaid-less, skeleton-less page
+authored for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
+breaks ADR 0009 §3's promise of design-system + Mermaid on a non-capable session). Instead
+**regenerate the full local design-system + Mermaid dashboard** ("HTML mode — local design-system
+channel" above), run its full gate + visual self-audit (the all-channels privacy guard applies as
+always), save to the `<scan_date>-context-health-visual.html` path, `open` it, and state the fallback
+in one line (e.g. "Artifact publish unavailable — generated the local design-system dashboard
+instead."). Cost = one regeneration, only on a non-capable session.
 
 **Privacy guard (all channels):** strip any raw file content before rendering. The
 report emits counts, sizes, line numbers, and file paths — never CLAUDE.md body text,
@@ -418,8 +467,8 @@ If the user enabled the `InstructionsLoaded` hook, remind them to revert it now.
   `false`. Report deferred items separately so users see both views.
 - **`/context` is ground truth, not the scan's estimate.** The scan uses public
   formulas but Claude Code's actual context accounting can drift per version. The
-  report must say _"Estimated — run `/context` for ground truth"_ and optionally
-  accept pasted `/context` output via `--paste-context`.
+  report must say _"Estimated — run `/context` for ground truth"_. Phase 1 always
+  offers to accept pasted `/context` output to correct the estimate.
 - **`InstructionsLoaded` hook is the file-level ground truth.** For users who want
   exact per-file instruction loading data, recommend temporarily enabling the
   `InstructionsLoaded` hook (hooks.md) to log which CLAUDE.md / rules / skills files

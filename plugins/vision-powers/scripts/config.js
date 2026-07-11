@@ -15,8 +15,16 @@
  *   default_format    — Default report format ("html" or "md") when --format isn't given
  *   aesthetic         — Preferred aesthetic (Blueprint, Editorial, Paper-ink, Monochrome)
  *   auto_open         — Auto-open report in browser after generation (true/false)
- *   artifact          — Publish via the claude.ai Artifact channel by default (true/false)
+ *   artifact          — Channel preference for HTML reports (see below)
  *   reports_dir       — Custom reports output directory
+ *
+ * The `artifact` key (channel default; SSOT = references/design-system/channel-decision.md + ADR 0009):
+ *   absent  → interpret as artifact-first — capable HTML publishes to a claude.ai Artifact by default
+ *             (flipped from pre-0009, where absent meant off). This store has no default logic; the
+ *             "absent = artifact-first" interpretation lives in each skill's Format table, not here.
+ *   false   → persistent force-local (the config twin of the `--local` flag); skills render locally.
+ *   true    → explicitly artifact-first (same as absent).
+ * A this-turn `--local`/`--artifact` signal always overrides this config value.
  *
  * Exit codes:
  *   0 = success

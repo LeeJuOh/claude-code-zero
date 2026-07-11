@@ -5,7 +5,7 @@ description: >
   and side-by-side split-diff of the actual changed code. Use when asked to visualize, review, or
   summarize a diff, branch, commit, or PR — including seeing the real changed lines, not just a
   summary. Accepts branch names, commit hashes, HEAD, PR numbers, or commit ranges.
-argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>] [--artifact (native design + publish)]"
+argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>] [--local (force a local file instead of publishing)]"
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Artifact, Skill(artifact-design), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
 
@@ -22,20 +22,31 @@ Parse `--format` first:
 | Flag | Values | Default | Meaning |
 |------|--------|---------|---------|
 | `--format` | `html` \| `md` | `html` | `html` → full interactive dashboard at `${CLAUDE_PLUGIN_DATA}/reports/`. `md` → inline markdown report, delivered in the response |
-| `--artifact` | switch | off | Publish the `html` dashboard as a claude.ai Artifact instead of a local file — see "HTML format — Artifact channel" below |
+| `--local` | switch | off | Force the local design-system file — capable HTML **publishes to an Artifact by default** |
+| `--artifact` | switch | retained no-op alias | Already the default on capable HTML — kept so muscle memory / natural-language triggers don't break |
 
-`--artifact` also triggers on natural-language equivalents — "as an artifact", "publish as a link",
-"share as a URL" — without the literal flag, in whatever language the user is writing in. It applies
-to `--format html` (the default) only. If combined with `--format md`, ignore it and use the normal
+**Channel is decided by the shared contract**, not re-derived here — read
+`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
+`(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
+The short version: **capable HTML publishes to a claude.ai Artifact by default**; `--local` forces the
+local dashboard; `md` and non-capable sessions stay local.
+
+`--local` forces local (analytical charts, zoom/pan) and triggers on natural-language equivalents —
+"keep it local", "don't publish", "just the local file" — in whatever language the user writes.
+`--artifact` is the retained alias for the now-default behavior and still triggers on "as an artifact",
+"publish as a link", "share as a URL"; if both are signalled, `--local` wins. Both apply to
+`--format html` only. If `--artifact` is combined with `--format md`, ignore it and use the normal
 markdown response path below — publishing a diff-visual md report as-is is out of scope for this
 slice (doc-visual's simpler single-file input validated that combination first; diff-visual's diff
-scope makes it a separate follow-up, not a S3 requirement).
+scope makes it a separate follow-up).
 
-**Config precedence.** Before falling back to the defaults in the table, check stored preferences
-once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
-`default_format` value replaces the `html` default; `artifact: true` replaces off, the same as the
-`--artifact` flag. Anything the user actually says this turn — a literal flag or a natural-language
-equivalent — always overrides config; config only fills in when the request is silent on format/channel.
+**Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
+default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the
+config as JSON, or `{}`). A `default_format` value replaces the `html` default. For the channel: an
+**absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
+force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first. Anything
+the user actually says this turn — a literal flag or a natural-language equivalent — always overrides
+config; config only fills in when the request is silent on format/channel.
 
 ### Scope Detection
 
@@ -135,7 +146,14 @@ Use extended thinking for the analysis above. The depth of analysis directly det
 
 Branch on `--format`:
 
-#### HTML mode (default)
+**HTML channel routing (default = Artifact).** For `--format html` the channel is decided by
+`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account the default
+is the **Artifact channel** — go straight to "HTML mode — Artifact channel" below. Write the **local
+design-system + Mermaid** dashboard (the section directly under this one) only when `--local` is in
+play, or as the **non-capable regenerate fallback** after a publish attempt fails (see "Publish"). `md`
+is unaffected — it stays local either way.
+
+#### HTML mode — local design-system channel (`--local` / non-capable fallback)
 
 Write the entire HTML file yourself — `<!DOCTYPE html>` to `</html>`. A self-contained single file with inline CSS and scripts.
 
@@ -250,9 +268,9 @@ Full procedure, limits (fixed-height clipping, downscaling, render cost), and th
 
 Then run `open <output-path>`.
 
-#### HTML mode — Artifact channel (`--artifact`)
+#### HTML mode — Artifact channel (default on a capable account)
 
-Same content decisions as the default HTML mode above (report structure, section-to-diagram
+Same content decisions as the local design-system channel above (report structure, section-to-diagram
 mapping, split-diff, anti-slop-tells) — only the page's shape and delivery mechanism change,
 because it ships inside Claude Code's official Artifacts feature instead of as a local file.
 
@@ -307,7 +325,7 @@ platform's 16 MiB artifact render ceiling. The ceiling is only reachable by igno
 (e.g. pasting a whole large diff verbatim instead of the load-bearing hunks); no extra size-limiting
 logic is needed as long as the section stays inside it.
 
-Once the gate passes, publish — see "Publish (`--artifact`)" below.
+Once the gate passes, publish — see "Publish (Artifact channel — default for HTML)" below.
 
 #### Markdown mode (`--format md`)
 
@@ -355,7 +373,7 @@ the file is the record that lets report-manager list and refine this report late
 
 **Length cap:** Keep the markdown report under 300 lines. If data exceeds this, truncate with `(+N more)` notes rather than expanding the report.
 
-### Publish (`--artifact`)
+### Publish (Artifact channel — default for HTML)
 
 After the content-only gate passes (see "HTML mode — Artifact channel" above):
 
@@ -366,14 +384,24 @@ After the content-only gate passes (see "HTML mode — Artifact channel" above):
    ```bash
    node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
    ```
-3. Report the URL to the user with one line noting the design delegation — e.g. "Design delegated
-   to Claude's built-in Artifact renderer — this differs from the local report's look." (phrase it
-   in whatever language you're already replying in).
+3. Report the URL to the user with one line. This is the **canonical publish notice** shared across
+   the channel skills (doc-visual owns the reference form; here the noun is *dashboard*), so keep it
+   stable: `Published to claude.ai — design is delegated to Claude's built-in Artifact renderer, so
+   it differs from the local dashboard's look; run --local for the local design-system + Mermaid
+   version.` This one line does double duty — it discloses the publish (the deliverable is now a URL,
+   not a local file) **and** the design delegation. Phrase it in whatever language you're already
+   replying in; the structure (published · delegated-design · `--local` escape hatch) is what's
+   canonical, not the exact English words.
 
-**Fallback** — if the `Artifact` tool is unavailable or the publish call fails: keep the local
-fragment you already saved, `open` it as the default HTML channel does, and state the fallback in
-one generic line (e.g. "Artifact publish unavailable — opened the local file instead."). Don't
-guess at the specific cause, and don't ask before falling back.
+**Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
+unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
+and don't ask before falling back. The fragment you published is a Mermaid-less, skeleton-less page
+authored for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
+breaks ADR 0009 §3's promise of design-system + Mermaid on a non-capable session). Instead
+**regenerate the full local design-system + Mermaid dashboard** ("HTML mode — local design-system
+channel" above), run its full gate + visual self-audit, save to the `{scope}-diff-visual.html` path,
+`open` it, and state the fallback in one line (e.g. "Artifact publish unavailable — generated the
+local design-system dashboard instead."). Cost = one regeneration, only on a non-capable session.
 
 ### Gotchas
 

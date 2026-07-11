@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.7.0 — 2026-07-11
+
+### Changed
+
+- **Artifact-first by default (ADR 0009).** On a capable account, `doc-visual`, `diff-visual`, `plugin-visual` (`analyze`), and `context-health-visual` now publish HTML reports as claude.ai Artifacts **without a flag**. A dogfooding comparison rendered the same source through both channels and found the built-in Artifact renderer beat the local design-system look on design, readability, and visibility (content was parity), so the Artifact channel became the default. Mermaid is retained as the local/md fallback *rendering technique*, not the diagram layer — the durable asset is the channel-agnostic diagram-**type** selection intelligence.
+  - **`--local`** (new force-local flag; natural-language equivalents like "keep it local" count) — keeps the local design-system + Mermaid file on a capable account, for an analytical chart type the Artifact channel degrades to a table, or Mermaid's zoom/pan/PNG export.
+  - **`--artifact`** — kept as a no-op alias on capable HTML so existing muscle memory and natural-language triggers don't break; still *attempts* to publish on a non-capable session; `--local` wins when both are given.
+  - **`config artifact: false`** — persistent force-local, the standing-default twin of `--local`. An absent `artifact` key now reads as artifact-first (flipped from pre-0009's off).
+  - **Non-capable sessions auto-degrade** — when the Artifact tool is unavailable or the publish fails (API-key/Bedrock/CI, `disableArtifact`, org policy, or any publish error), each skill **regenerates a full local design-system + Mermaid report** and opens it, disclosing the fallback in one line — it never just opens the diagram-less fragment.
+  - **`fact-check`** now republishes a corrected report to the **same** claude.ai link when the target is a published Artifact fragment (content-only gate + sidecar-tracked URL), matching `report-manager`'s republish contract. Local and markdown targets are edited in place unchanged.
+  - Why **minor**, not major: the default output location moves from a local file to a claude.ai URL (user-visible), but auto-degrade plus `--local` restore the prior behavior and no flag was removed.
+
+## 4.6.2 — 2026-07-06
+
+### Changed
+
+- **`context-health-visual` asks for `/context` ground truth on every run.** The `--paste-context` flag is gone; the skill now always offers to accept pasted `/context` output to correct the estimated startup load, since `/context` is the only ground truth for always-loaded token counts. No flag, no stored preference gates it — the prompt is part of Phase 1. Reports still label estimates _"Estimated — run `/context` for ground truth"_ when no paste is provided.
+
 ## 4.6.0 — 2026-07-06
 
 ### Added

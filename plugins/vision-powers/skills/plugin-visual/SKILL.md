@@ -4,7 +4,7 @@ description: >
   Analyze agent extensions and generate self-contained HTML wiki reports with security audit
   and architecture diagrams. Use when asked to analyze, audit, or document a plugin.
   Triggers on GitHub plugin URLs or local plugin paths.
-argument-hint: "path-or-url [--format html|md] [--lang code] [--artifact (native design + publish)]"
+argument-hint: "path-or-url [--format html|md] [--lang code] [--local (force a local file instead of publishing)]"
 allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Artifact, Skill(artifact-design), Bash(gh repo clone *), Bash(rm -rf /tmp/plugin-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
 ---
 
@@ -54,24 +54,33 @@ Determine **how** to present the result (independent of analysis mode):
 
 | Format | Trigger | Applies to |
 |--------|---------|------------|
-| HTML **(default)** | Default for `analyze` mode | `analyze` only |
+| HTML **(default → Artifact on capable accounts)** | Default for `analyze` mode | `analyze` only |
 | Inline markdown | "--format md", "markdown", "md", "inline", "text" | `analyze` only |
 | Inline markdown **(always)** | — | `security`, `overview` (too brief for HTML) |
-| Artifact publish | `--artifact` switch | `analyze` + HTML only — see "Phase 5R — Artifact channel" below |
+| Local file | `--local` switch | `analyze` + HTML — forces the local wiki instead of publishing |
 
-`--artifact` also triggers on natural-language equivalents — "as an artifact", "publish as a link",
-"share as a URL" — without the literal flag, in whatever language the user is writing in. It's
-scoped to `analyze` mode with HTML format the same way diff-visual scoped its own artifact channel:
+**Channel is decided by the shared contract**, not re-derived here — read
+`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
+`(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
+The short version: for `analyze`+HTML, **capable accounts publish to a claude.ai Artifact by default**;
+`--local` forces the local wiki; `md`, non-capable sessions, and `security`/`overview` modes stay local.
+
+This channel is scoped to `analyze` mode with HTML format the same way diff-visual scoped its own:
 `security` and `overview` modes stay markdown-only (too brief for a full report to begin with), and
-`--format md` combined with `--artifact` has no publish path in this slice.
+`--format md` has no publish path in this slice. `--local` triggers on natural-language equivalents
+("keep it local", "don't publish"); `--artifact` is the retained alias for the now-default behavior
+and still triggers on "as an artifact", "publish as a link", "share as a URL" — in whatever language
+the user writes. If `--local` and `--artifact` are both signalled, `--local` wins.
 
-**Config precedence.** Before falling back to the defaults above, check stored preferences once:
-`node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
-`default_format` value replaces the HTML default and `artifact: true` replaces off, the same as the
-`--artifact` flag — but only within the `analyze`+HTML scope above; config can't force artifact
-publishing onto `security`/`overview` modes any more than the flag can. Anything the user actually
-says this turn — a literal flag or a natural-language equivalent — always overrides config; config
-only fills in when the request is silent on format/channel.
+**Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
+default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the
+config as JSON, or `{}`). A `default_format` value replaces the HTML default. For the channel: an
+**absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
+force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first — but all
+only within the `analyze`+HTML scope above; config can't force artifact publishing onto
+`security`/`overview` modes any more than the flag can. Anything the user actually says this turn — a
+literal flag or a natural-language equivalent — always overrides config; config only fills in when the
+request is silent on format/channel.
 
 ### Intent Check
 
@@ -294,9 +303,19 @@ Output the report directly to the user (inline markdown), and save the same cont
 the same day) — the chat text is the delivery, the file is the record that lets report-manager
 list and refine this report later.
 
-#### Phase 5R: HTML Report Generation (analyze mode — default format)
+**HTML channel routing (default = Artifact).** For `analyze` mode with HTML format the channel is
+decided by `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account
+the default is the **Artifact channel** — go straight to "Phase 5R — Artifact channel" below. Write the
+**local design-system + Mermaid** wiki (the section directly under this one) only when `--local` is in
+play, or as the **non-capable regenerate fallback** after a publish attempt fails (see "Publish"). The
+`security`/`overview` modes and `--format md` are unaffected — they stay local (Phase 5). **The input
+form doesn't change routing:** local path, installed plugin name, and GitHub URL all resolve to the same
+target directory in Phase 1, so once the format is `analyze`+HTML the channel decision is identical
+regardless of where the plugin came from.
 
-For `analyze` mode with HTML format (the default), write a self-contained HTML file yourself — `<!DOCTYPE html>` to `</html>`. No visual template, no intermediate JSON, no agent chains: the design is yours to author from scratch. (The md mode's `report-template.md` is an information-structure schema for the inline-markdown path, not a visual template — it doesn't apply here.)
+#### Phase 5R: HTML report — local design-system channel (`--local` / non-capable fallback)
+
+Entered for `--local`, or as the non-capable fallback after a failed publish. Write a self-contained HTML file yourself — `<!DOCTYPE html>` to `</html>`. No visual template, no intermediate JSON, no agent chains: the design is yours to author from scratch. (The md mode's `report-template.md` is an information-structure schema for the inline-markdown path, not a visual template — it doesn't apply here.)
 
 **1. Determine output path**:
 
@@ -385,11 +404,11 @@ Full procedure, limits (fixed-height clipping, downscaling, render cost), and th
 **5. Open and present**:
 Run `open <output-path>`. Tell the user the report is ready and ask if they want changes.
 
-#### Phase 5R — Artifact channel (`--artifact`)
+#### Phase 5R — Artifact channel (default on a capable account)
 
-Same content decisions as Phase 5R above (section set, per-component analysis, source links,
-anti-slop-tells) — only the page's shape and delivery mechanism change, because it ships inside
-Claude Code's official Artifacts feature instead of as a local file.
+Same content decisions as the local design-system channel above (section set, per-component analysis,
+source links, anti-slop-tells) — only the page's shape and delivery mechanism change, because it ships
+inside Claude Code's official Artifacts feature instead of as a local file.
 
 **Before writing anything**, load the built-in `artifact-design` skill (Skill tool, skill name
 `artifact-design`). This is a tool contract MUST, not a suggestion — it conditions you for the CSP
@@ -450,14 +469,25 @@ Chrome render loop to run before publishing.
    ```bash
    node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
    ```
-3. Report the URL to the user with one line noting the design delegation — e.g. "Design delegated
-   to Claude's built-in Artifact renderer — this differs from the local report's look." (phrase it
-   in whatever language you're already replying in).
+3. Report the URL to the user with one line. This is the **canonical publish notice** shared across
+   the channel skills (doc-visual owns the reference form; here the noun is *wiki*), so keep it
+   stable: `Published to claude.ai — design is delegated to Claude's built-in Artifact renderer, so
+   it differs from the local wiki's look; run --local for the local design-system + Mermaid version.`
+   This one line does double duty — it discloses the publish (the deliverable is now a URL, not a
+   local file) **and** the design delegation. Phrase it in whatever language you're already replying
+   in; the structure (published · delegated-design · `--local` escape hatch) is what's canonical, not
+   the exact English words.
 
-**Fallback** — if the `Artifact` tool is unavailable or the publish call fails: keep the local
-fragment you already saved, `open` it as the default HTML channel does, and state the fallback in
-one generic line (e.g. "Artifact publish unavailable — opened the local file instead."). Don't
-guess at the specific cause, and don't ask before falling back.
+**Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
+unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
+and don't ask before falling back. The fragment you published is a Mermaid-less, skeleton-less page
+authored for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
+breaks ADR 0009 §3's promise of design-system + Mermaid on a non-capable session). Instead
+**regenerate the full local design-system + Mermaid wiki** ("Phase 5R: HTML report — local
+design-system channel" above), run its full gate + visual self-audit, save to the
+`{YYYY-MM-DD}-{plugin-name}-report.html` path, `open` it, and state the fallback in one line (e.g.
+"Artifact publish unavailable — generated the local design-system wiki instead."). Cost = one
+regeneration, only on a non-capable session.
 
 Continue to Phase 7 (cleanup) as normal once publish (or fallback) completes.
 
