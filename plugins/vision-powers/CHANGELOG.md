@@ -12,6 +12,12 @@
   - **`fact-check`** now republishes a corrected report to the **same** claude.ai link when the target is a published Artifact fragment (content-only gate + sidecar-tracked URL), matching `report-manager`'s republish contract. Local and markdown targets are edited in place unchanged.
   - Why **minor**, not major: the default output location moves from a local file to a claude.ai URL (user-visible), but auto-degrade plus `--local` restore the prior behavior and no flag was removed.
 
+## 4.6.2 — 2026-07-06
+
+### Changed
+
+- **`context-health-visual` asks for `/context` ground truth on every run.** The `--paste-context` flag is gone; the skill now always offers to accept pasted `/context` output to correct the estimated startup load, since `/context` is the only ground truth for always-loaded token counts. No flag, no stored preference gates it — the prompt is part of Phase 1. Reports still label estimates _"Estimated — run `/context` for ground truth"_ when no paste is provided.
+
 ## 4.6.0 — 2026-07-06
 
 ### Added
