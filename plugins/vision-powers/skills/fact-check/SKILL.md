@@ -6,7 +6,7 @@ description: >
   Use when asked to verify, fact-check, or audit claims in a report or document.
   Accepts a file path or auto-detects the most recent HTML report.
 argument-hint: "[file-path] [--format html|md] [--lang <code>]"
-allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(git shortlog *), Bash(wc -l *), Bash(ls -t *), Bash(node *)
+allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion, Artifact, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(git shortlog *), Bash(wc -l *), Bash(ls -t *), Bash(node *)
 ---
 
 # Fact Check
@@ -48,6 +48,10 @@ Determine what to verify from `$1`:
 | plugin-visual report | Contains plugin analysis markers | Verify plugin structure, file paths, feature descriptions |
 | Markdown document | `.md` extension | Verify file references, function/type names, behavior descriptions |
 | Other | Fallback | Extract and verify whatever factual claims about code it contains |
+
+**Artifact-channel detection** — after resolving the target, check whether a `<target-path>.artifact.json` sidecar sits next to it. Its presence means the file is a **published Artifact fragment** (an `.artifact.html` living on claude.ai), not a plain local report. This flips two things downstream: the Phase 4 gate runs `--content-only` (the fragment's design layer is owned by the built-in `artifact-design` skill, not this file's CSS), and Phase 4.5 republishes the corrected fragment to the **same** claude.ai URL. A local file with no sidecar takes neither branch — fact-check edits it in place exactly as it always has.
+
+*Why this isn't a channel decision:* fact-check does not author reports, so S0's `capable × format → channel` table does not apply to it — there is nothing to route. It follows the target's **existing** channel: a local file stays local, a published fragment stays published at its link. See `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (fact-check is explicitly out of that table) and ADR 0009 §Scope.
 
 ### Language Detection
 
@@ -204,8 +208,10 @@ Place the verification section as the last content section, before `</main>` or 
 **Re-check the gate (HTML output only).** After injecting the HTML verification section, re-run the artifact-gate on the final output to confirm the inserted summary didn't break the artifact:
 
 ```
-node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <report-path>
+node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <report-path> [--content-only]
 ```
+
+Pass `--content-only` when the target is a **published Artifact fragment** (the sidecar found during Target File Detection, or a filename ending in `.artifact.html`). The design-layer checks (density, palette, font fallback, Mermaid classDef) belong to the built-in `artifact-design` skill that owns the fragment, not to this file — running the full gate would false-flag it. A plain local HTML report gets the **full** gate (no flag), same as before.
 
 If the gate flags violations, fix them inline (max 2 retries), consistent with how the other skills handle gate output. **Only do this for HTML output** — the artifact-gate is HTML-only. If the summary was appended as Markdown (`.md` file or markdown block), skip the re-check entirely; there is nothing for the gate to validate.
 
@@ -228,6 +234,24 @@ If the gate flags violations, fix them inline (max 2 retries), consistent with h
 - {claim and reason}
 ```
 
+### Phase 4.5: Republish (published Artifact fragments only)
+
+*Why: a correction that only touches the local `.artifact.html` file leaves the live claude.ai page stale — readers still see the unverified numbers. Re-publishing to the same URL keeps the shared link honest without minting a new one.*
+
+Do this **only** when Target File Detection found a sidecar (or the filename ends in `.artifact.html`). Local files and markdown skip this entirely — there is nothing published to update, so fact-check stops after Phase 4. Mirror the `report-manager` republish contract (its refine step 8):
+
+1. Read the sidecar `<target-path>.artifact.json` for `url`, `title`, and `favicon`.
+2. Call the `Artifact` tool with `file_path=<target-path>`, `url=<sidecar url>`, `favicon=<sidecar favicon>`, and a one-sentence `description`. Passing `url` is what stacks the correction onto the **same** claude.ai link instead of creating a new one — a fresh session has no other handle on an existing artifact. You do **not** load `artifact-design` here: the fragment's design is already baked in, and content-only republish needs neither the load nor the grant (see `docs/reference/gotchas.md` carve-out).
+3. Rewrite the sidecar so `published_at` reflects this fact-check:
+   ```bash
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <target-path> --url <url> --title <title> --favicon <favicon>
+   ```
+4. Report the claude.ai URL in the Phase 5 summary instead of the local `file://` path.
+
+**Edge cases** (same as report-manager step 8):
+- **Filename ends in `.artifact.html` but no sidecar**: an earlier publish fell back to local-only. Publish fresh (omit `url`) and write the sidecar for the first time.
+- **Sidecar present but the republish call errors** (the link died upstream): publish fresh (omit `url`), overwrite the old sidecar, and tell the user in one line: "New shared link published — any previously shared link now points to a stale version." Don't guess why the old link died.
+
 ### Gotchas
 
 - **Over-correcting opinions as facts**: "This architecture is well-designed" is a subjective judgment, not a factual claim. Only correct things that can be verified against source — names, numbers, behaviors, paths. When in doubt, skip it.
@@ -242,7 +266,7 @@ If the gate flags violations, fix them inline (max 2 retries), consistent with h
 Output a summary to the user:
 
 ```
-Fact-check complete: {file path}
+Fact-check complete: {file path — or the claude.ai URL when a published fragment was republished}
 
   {total} claims checked
   {confirmed} confirmed

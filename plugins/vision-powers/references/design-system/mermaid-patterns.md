@@ -2,6 +2,8 @@
 
 Mermaid.js configuration, theming, zoom controls, and common gotchas for self-contained HTML reports.
 
+**Scope — local / md channel only (a rendering technique, not the diagram layer).** Since ADR 0009, Mermaid renders diagrams only on the **local design-system channel** and in `--format md` fences. It is **not** used on the Artifact channel (the default for capable HTML), whose built-in `artifact-design` renderer draws diagrams as inline SVG / HTML+CSS — CDN-free and CSP-safe. Reach for this file only when authoring a local report or a non-capable fallback. *Which* diagram type to draw is a channel-agnostic decision that lives in `diagram-type-selection.md`; this file only governs *how* Mermaid draws it locally. See `channel-decision.md` and ADR 0009.
+
 ## CDN Import
 
 ### Standard (dagre layout)

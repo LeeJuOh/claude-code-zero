@@ -5,7 +5,7 @@ description: |
   Use when asked to visualize, illustrate, or create a visual report from a document with diagrams. Single md file input.
   Also trigger when: "make this document visual", "add diagrams to this doc", "turn this markdown into a report",
   "visualize this README/ADR/spec", or any request to render a document with embedded diagrams.
-argument-hint: "[md-file-path] [--format html|md] [--lang code] [--artifact (native design + publish)]"
+argument-hint: "[md-file-path] [--format html|md] [--lang code] [--local (force a local file instead of publishing)]"
 allowed-tools: Read, Bash(node *), Bash(open *), Bash(rm -rf /tmp/doc-visual-*), Artifact, Skill(artifact-design), AskUserQuestion
 ---
 
@@ -31,18 +31,29 @@ Argument = single markdown file path. Directories, URLs, stdin not supported.
 |---|---|---|
 | `--format` | `html` / `md` | `html` |
 | `--lang` | ISO code | auto-detected from document |
-| `--artifact` | switch | off |
+| `--local` | switch | off — capable HTML **publishes to an Artifact by default** |
+| `--artifact` | switch | retained no-op alias (already the default on capable HTML) |
 
 The report language must match the source document's language.
 
-`--artifact` also triggers on natural-language equivalents — "as an artifact", "publish as a link",
-"share as a URL" — without the literal flag, in whatever language the user is writing in.
+**Channel is decided by the shared contract**, not re-derived here — read
+`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
+`(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
+The short version: **capable HTML publishes to a claude.ai Artifact by default**; `--local` forces the
+local design-system + Mermaid file; `md` and non-capable sessions stay local.
 
-**Config precedence.** Before falling back to the defaults in the table, check stored preferences
-once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the config as JSON, or `{}`). A
-`default_format` value replaces the `html` default; `artifact: true` replaces off, the same as the
-`--artifact` flag. Anything the user actually says this turn — a literal flag or a natural-language
-equivalent — always overrides config; config only fills in when the request is silent on format/channel.
+`--local` forces local (analytical charts, zoom/pan) and also triggers on natural-language equivalents
+— "keep it local", "don't publish", "just the local file" — in whatever language the user writes.
+`--artifact` is the retained alias for the now-default behavior and still triggers on "as an artifact",
+"publish as a link", "share as a URL"; if `--local` and `--artifact` are both signalled, `--local` wins.
+
+**Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
+default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the
+config as JSON, or `{}`). A `default_format` value replaces the `html` default. For the channel: an
+**absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
+force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first. Anything
+the user actually says this turn — a literal flag or a natural-language equivalent — always overrides
+config; config only fills in when the request is silent on format/channel.
 
 When the target format is `md`, whether you ask before publishing depends on how the request arrived:
 
@@ -58,7 +69,14 @@ When the target format is `md`, whether you ask before publishing depends on how
 
 You write the output yourself. No template files, no assembly scripts, no intermediate formats.
 
-### HTML format (default)
+**HTML channel routing (default = Artifact).** For `--format html` the channel is decided by
+`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account the
+default is the **Artifact channel** — go straight to "HTML format — Artifact channel" below. Write the
+**local design-system + Mermaid** file (the section directly under this one) only when `--local` is in
+play, or as the **non-capable regenerate fallback** after a publish attempt fails (see "Publish"). `md`
+is unaffected — it stays local either way.
+
+### HTML format — local design-system channel (`--local` / non-capable fallback)
 
 A self-contained single file — `<!DOCTYPE html>` to `</html>`:
 - Inline `<style>` block with all CSS
@@ -66,11 +84,12 @@ A self-contained single file — `<!DOCTYPE html>` to `</html>`:
 - Semantic HTML structure: sections that follow the source document's structure
 - Diagrams embedded as `<pre class="mermaid">` blocks
 
-### HTML format — Artifact channel (`--artifact`)
+### HTML format — Artifact channel (default on a capable account)
 
-Same content decisions (modes, section-to-diagram mapping, component menu, anti-slop-tells) as the
-default HTML format — only the page's shape and delivery mechanism change, because the page ships
-inside Claude Code's official Artifacts feature instead of as a local file.
+This is the **default** for `--format html` (ADR 0009). Same content decisions (modes,
+section-to-diagram mapping, component menu, anti-slop-tells) as the local design-system format above
+— only the page's shape and delivery mechanism change, because the page ships inside Claude Code's
+official Artifacts feature instead of as a local file.
 
 **Before writing anything**, load the built-in `artifact-design` skill (Skill tool, skill name
 `artifact-design`). This is a tool contract MUST, not a suggestion — it's what conditions the model
@@ -138,8 +157,9 @@ detection" above:
 
 Publish steps: save the md content to
 `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.artifact.md` (reuse the same path on a
-same-session re-run, same as the HTML variant), then follow "Publish (`--artifact`)" below — the
-Artifact tool call, sidecar write, and fallback behavior are identical regardless of format.
+same-session re-run, same as the HTML variant), then follow "Publish (Artifact channel — default for
+HTML)" below — the Artifact tool call, sidecar write, and fallback behavior are identical regardless
+of format.
 
 ### Modes
 
@@ -222,7 +242,13 @@ Short documents (<500 chars) get 1 section + 1 hero diagram. Long documents get 
 
 ## Validation (HTML only)
 
-After writing the HTML file, run artifact-gate:
+Which gate you run follows the channel (see "HTML channel routing" above):
+
+- **Artifact channel (the default)** → content-only gate. Jump to "content-only mode" below.
+- **Local design-system channel (`--local` / non-capable fallback)** → the full gate immediately
+  below.
+
+For the local channel, after writing the HTML file run artifact-gate:
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-html-path>
@@ -240,7 +266,7 @@ It checks, in this order:
 
 If violations found: fix them inline (re-edit the HTML). Max 2 retry cycles. If still failing after 2 fixes, remove the offending element and log a warning.
 
-**Under `--artifact`**, run the gate in content-only mode instead:
+**On the Artifact channel (the default)**, run the gate in content-only mode instead:
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-html-path> --content-only
@@ -251,7 +277,12 @@ placeholders) — the facts that must survive regardless of who designed the pag
 classDef, palette) don't apply: the built-in artifact-design skill owns the design layer on this
 channel (ADR 0007), and there's no Mermaid to check density on in the first place.
 
-## Visual self-audit (HTML only)
+## Visual self-audit (local HTML channel only)
+
+Runs only for the **local design-system channel** (`--local` / non-capable fallback) — it's the local
+Chrome render loop. **On the Artifact channel (the default) skip it entirely**: the rendered picture is
+the built-in artifact-design skill's responsibility there, and there's no local file to render before
+publishing.
 
 The gate reads the HTML as *text* — it never sees the rendered picture. A diagram can pass the density check and still render as an unreadable tangle; a label can clip at the container edge; hierarchy that reads fine in source can collapse into a flat wall once styled. After the gate passes, **render the report and look at it** before delivering:
 
@@ -272,17 +303,14 @@ Fix what you see and re-render. **Cap at 2 audit passes** — if something still
 
 Full procedure, limits (fixed-height clipping, downscaling, render cost), and the rationale for *not* mechanizing this with a measurement script live in `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md`.
 
-**Skip this entirely under `--artifact`.** The rendered picture is the built-in artifact-design
-skill's responsibility on this channel, not this skill's — there's no local Chrome render loop to
-run before publishing.
-
 ## Output
 
-- **HTML**: Save to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.html`. Run `open <output-path>` after completion.
+- **HTML (Artifact channel — the default)**: publish the fragment — see "Publish" below.
+- **HTML (local design-system channel — `--local` / non-capable fallback)**: save to
+  `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.html` and run `open <output-path>`.
 - **MD**: Insert directly into the response body and save a copy to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.md`. Footer links to the source path.
-- **`--artifact`**: see "Publish (`--artifact`)" below.
 
-## Publish (`--artifact`)
+## Publish (Artifact channel — default for HTML)
 
 For `--format html`, do this after the content-only gate passes. For `--format md`, there's no gate
 to wait on — go straight to publishing once the branch in "Markdown format — Artifact channel" above
@@ -295,19 +323,27 @@ resolved to "publish."
    ```bash
    node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
    ```
-3. Report the URL to the user with one line:
-   - **html**: note the design delegation, e.g. "Design delegated to Claude's built-in Artifact
-     renderer — this differs from the local report's look."
+3. Report the URL to the user with one line. **This is the canonical publish notice** — S2–S4 reuse
+   the same shape, only swapping the noun (report / dashboard / wiki), so keep it stable:
+   - **html**: `Published to claude.ai — design is delegated to Claude's built-in Artifact renderer,
+     so it differs from the local report's look; run --local for the local design-system + Mermaid
+     version.` This one line does double duty: it discloses the publish (the deliverable is now a URL,
+     not a local file) **and** the design delegation. Phrase it in whatever language you're already
+     replying in — the structure (published · delegated-design · `--local` escape hatch) is what's
+     canonical, not the exact English words.
    - **md**: only if the content has Mermaid blocks, note they show as code (see "Markdown format —
      Artifact channel" above for the exact wording). No diagrams → no extra line needed.
 
-   Phrase whichever applies in whatever language you're already replying in.
-
-**Fallback** — if the `Artifact` tool is unavailable or the publish call fails, don't guess at the
-specific cause and don't ask before falling back:
-- **html**: keep the local fragment you already saved, `open` it as the default HTML channel does,
-  and state the fallback in one generic line (e.g. "Artifact publish unavailable — opened the local
-  file instead.").
+**Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
+unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
+and don't ask before falling back:
+- **html**: the fragment you published is a Mermaid-less, skeleton-less page authored for the Artifact
+  viewer — **do not `open` it** (that serves a broken, diagram-free page and breaks ADR 0009 §3's
+  promise of design-system + Mermaid on a non-capable session). Instead **regenerate the full local
+  design-system + Mermaid report** ("HTML format — local design-system channel" above), run its full
+  gate + visual self-audit, save to the `…-doc-visual.html` path, `open` it, and state the fallback in
+  one line (e.g. "Artifact publish unavailable — generated the local design-system report instead.").
+  Cost = one regeneration, only on a non-capable session.
 - **md**: deliver the content the normal way instead — insert it directly into the response body (the
   default `--format md` path above) — and state the fallback in one generic line (e.g. "Artifact
   publish unavailable — delivered as chat markdown instead.").
@@ -319,8 +355,8 @@ specific cause and don't ask before falling back:
 | File missing/no permission | Abort with message |
 | Empty file | Abort — nothing to visualize |
 | No headings (H1/H2/H3) | Treat as single section |
-| `--artifact` (html): Artifact tool unavailable or publish fails | Fall back to local file + open it + one-line reason, don't ask |
-| `--artifact` (md): Artifact tool unavailable or publish fails | Fall back to chat-inserted markdown + one-line reason, don't ask |
+| html (default Artifact): Artifact tool unavailable or publish fails | Non-capable → **regenerate** the full local design-system + Mermaid report + open it + one-line reason, don't ask (never just open the fragment) |
+| md + artifact intent: Artifact tool unavailable or publish fails | Fall back to chat-inserted markdown + one-line reason, don't ask |
 | Mermaid syntax error after 2 fixes | Remove that diagram, keep section prose |
 
 ## Reference files

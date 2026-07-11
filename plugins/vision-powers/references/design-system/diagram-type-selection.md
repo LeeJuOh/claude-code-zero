@@ -2,6 +2,8 @@
 
 The single source the authoring model **must reference** when mapping section intent → diagram type.
 
+**Channel-agnostic — this is the durable asset.** The section-intent → diagram-**type** mapping below applies on **every** channel; it is the selection intelligence ADR 0009 identifies as the real value. The "Mermaid syntax" column is only *one rendering technique* — it applies to the **local design-system channel** and `--format md` fences (where Mermaid draws). On the **Artifact channel** (the default for capable HTML), the built-in `artifact-design` renderer draws these same diagram *types* as inline SVG / HTML+CSS with no Mermaid at all. Pick the type by section intent first; the channel decides only *how* it's rendered. See `channel-decision.md` and `docs/adr/0009-artifact-first-default-diagram-selection-channel-agnostic.md`.
+
 ## 13-type selection guide
 
 | What the section shows | Type | Mermaid syntax |
