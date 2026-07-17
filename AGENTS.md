@@ -33,7 +33,7 @@ Everything detailed is in `docs/`. Direct entry points:
 | Skill design spec | `docs/reference/skill-building-guide.md` |
 | Skill practical guide | `docs/reference/skill-lessons-from-anthropic.md` |
 | Release process (8 steps) | `docs/release-workflow.md` |
-| Active plans & specs | `docs/superpowers/plans/`, `docs/superpowers/specs/` |
+| Active specs & issues | `docs/specs/` (specs/PRDs), `docs/issues/` (implementation slices) — paired by number |
 | Marketplace schema, hooks, SKILL.md format, env vars | Official docs — see below |
 
 ## Official Claude Code Docs

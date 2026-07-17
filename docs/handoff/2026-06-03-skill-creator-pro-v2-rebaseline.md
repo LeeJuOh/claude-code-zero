@@ -11,7 +11,8 @@ date: 2026-06-03
 
 소스 진실(중복 금지, 경로 참조):
 - 이슈: `.scratch/skill-creator-pro-v2/issues/01-rebaseline.md` (4단계 체크리스트)
-- PRD: `docs/superpowers/plans/2026-06-03-skill-creator-pro-v2-rebaseline.md`
+- PRD: 삭제됨 (2026-07-17, `docs/superpowers/` 트리 폐지) — 필요 시 git 히스토리에서 복구
+  (`git log --diff-filter=D -- docs/superpowers/plans/2026-06-03-skill-creator-pro-v2-rebaseline.md`)
 - ADR: `docs/adr/0001-rebaseline-skill-creator-pro-on-official.md`
 - 용어/락된 결정: `plugins/skill-creator-pro/CONTEXT.md`
 - 공식 spine 원본: `references/claude-plugins-official/plugins/skill-creator/skills/skill-creator/`
