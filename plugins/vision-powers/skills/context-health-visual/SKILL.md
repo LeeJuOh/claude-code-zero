@@ -283,7 +283,7 @@ Key diagram rules:
 - `prefers-color-scheme: dark` via CSS custom properties
 - Korean font stack (CJK font in font-family)
 - KPI cards for graded areas (colored borders: green/yellow/red)
-- `transform: scale()` for Mermaid zoom
+- Mermaid zoom by SVG sizing (mermaid-patterns.md `applyZoom()`), not `transform: scale()` — a transform reserves no layout space and the overflow becomes unreachable
 - `prefers-reduced-motion: reduce`
 - Status indicators: colored dots via CSS, no emoji
 
@@ -397,8 +397,8 @@ mechanics around it.
 
 **Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
 unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
-and don't ask before falling back. The fragment you published is a Mermaid-less, skeleton-less page
-authored for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
+and don't ask before falling back. The fragment you authored is a Mermaid-less, skeleton-less page
+meant for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
 breaks ADR 0009 §3's promise of design-system + Mermaid on a non-capable session). Instead
 **regenerate the full local design-system + Mermaid dashboard** ("HTML mode — local design-system
 channel" above), run its full gate + visual self-audit (the all-channels privacy guard applies as

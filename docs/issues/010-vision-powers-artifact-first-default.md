@@ -1,49 +1,47 @@
 # vision-powers: artifact-first 기본화 — 다이어그램 선택은 채널무관, Mermaid는 강등된 렌더링 (ADR 0009)
 
-> 상태: **S0~S6 전부 구현 완료(미커밋) · 육안 렌더검사만 잔여** (A안 빅뱅 확정) · 생성: 2026-07-08 · 결정: 2026-07-10 · 진척: 2026-07-11
+> 상태: **S0~S6 전부 구현 완료·커밋(`b9d5ddf`, 4.7.0) · 육안 렌더검사만 잔여** (A안 빅뱅 확정) · 생성: 2026-07-08 · 결정: 2026-07-10 · 진척: 2026-07-17
 > 용어집: `docs/context/vision-powers.md` (갱신 용어: **Channel**, **Diagram-type selection vs Rendering technique**, **Relational diagram vs Analytical chart**, **Readability vs Visibility**; **Artifact channel** opt-in→기본으로 재정의)
 > 결정 근거: `docs/adr/0009-artifact-first-default-diagram-selection-channel-agnostic.md` (`0007` amend)
 > 출처: grill-with-docs + domain-modeling 세션 (2026-07-08) — 로컬 vs 아티팩트 도그푸딩 체크포인트
 
-## 핸드오프 — 다음 세션 이어서 (2026-07-11, 미커밋 상태)
+## 핸드오프 — 다음 세션 이어서 (2026-07-17, 커밋 완료)
 
 **Goal:** 이슈 010 전체 S0~S6 구현 (artifact-first 빅뱅). 슬라이스 단위, "한 슬라이스 끝나면 멈추고 보고".
 
-**First Action:** **S0~S6 전부 구현 완료(미커밋).** 남은 건 두 가지뿐:
-1. **육안 렌더검사(S1~S6 전부 미실행)** — 실제 스킬 구동해서 채널별 1회 로컬-vs-아티팩트 비교(특히
-   context-health 10-카드 밀도). 게이트 아님, 착지 후 검증.
-2. **커밋** — 사용자 지시 대기(auto-push 금지). 8+ 파일 working tree에만 존재.
-버전은 4.7.0으로 marketplace.json에 이미 범프됨.
+**First Action:** **S0~S6 전부 구현 완료·커밋 완료.** 남은 건 하나뿐:
+- **육안 렌더검사(S1~S6 전부 미실행)** — 실제 스킬 구동해서 채널별 1회 로컬-vs-아티팩트 비교(특히
+  context-health 10-카드 밀도). 게이트 아님, 착지 후 검증.
 
-**Current Progress (git으로 확인 — `repo_facts.sh`, develop 브랜치, 전부 미커밋):**
-- `git status`: 수정 7개 파일(README·config.js·SKILL.md ×4[doc/diff/context-health/plugin]·이 이슈
-  문서) + untracked 1개(channel-decision.md) = 8 path. `git diff --stat` = 394 insertions / 144
-  deletions.
-- 최신 커밋 = `c96e645`(이슈문서 하드닝, **구현 전**). S0~S4 구현물은 전부 working tree에만 존재 —
-  커밋 없음. 즉 "완료"=working-tree 반영, git 히스토리 반영 아님.
-- **S0 완료 (미커밋):** 신규 `plugins/vision-powers/references/design-system/channel-decision.md`
-  (untracked, SSOT). `scripts/config.js` 헤더 주석만 flip(코드 무변경). 4개 스킬(doc/diff/
+**커밋 상태 (2026-07-17 확인):** `b9d5ddf` "feat(vision-powers): artifact-first default for HTML
+reports (ADR 0009)" — 14파일 587 insertions / 167 deletions, develop 브랜치, 워킹트리 클린. 버전
+4.7.0으로 marketplace.json 범프 포함. 설치 캐시도 4.7.0으로 리포 소스와 동일(`.in_use` 마커만 차이)
+— 007 세션들이 반복해 밟았던 "스테일 캐시가 구 로직 실행" 함정은 이 이슈엔 해당 없음.
+
+**Current Progress (아래 슬라이스별 기록은 구현 당시[2026-07-11] 작성 — 전부 `b9d5ddf`에 포함됨):**
+- **S0 완료:** 신규 `plugins/vision-powers/references/design-system/channel-decision.md`
+  (SSOT). `scripts/config.js` 헤더 주석만 flip(코드 무변경). 4개 스킬(doc/diff/
   context-health/plugin-visual) arg-hint+Format표+Config-precedence 산문 flip, 전부 SSOT 인용. 이슈
   S0 AC 7개 체크됨.
-- **S1 완료 (미커밋):** doc-visual body end-to-end 배선. HTML channel routing, 두 섹션 헤더 재라벨,
+- **S1 완료:** doc-visual body end-to-end 배선. HTML channel routing, 두 섹션 헤더 재라벨,
   Validation(content-only=기본/full=local), visual self-audit=local만, Publish 재작성, non-capable
   Fallback=풀 재생성, Error-handling 표, README 퀵스타트 `--local` 예시. 이슈 S1 AC 7개 체크됨.
   **육안 렌더검사는 미실행**(실제 doc-visual 구동 필요 — SKILL.md 로직 정합만 확인).
-- **S2 완료 (미커밋):** diff-visual body end-to-end 배선(S1 패턴 복제). routing 프리앰블, 두 섹션
+- **S2 완료:** diff-visual body end-to-end 배선(S1 패턴 복제). routing 프리앰블, 두 섹션
   헤더 재라벨, Publish 헤더 rename + 정본 고지(dashboard), Fallback=풀 재생성, README diff 퀵스타트
   3줄. cross-ref 2건 교정. 이슈 S2 AC 3개 체크. **육안 렌더검사 미실행**(SKILL.md 로직 정합만).
-- **S3 완료 (미커밋):** context-health-visual body 배선. routing 프리앰블(+ `--local` 직교성 명시),
+- **S3 완료:** context-health-visual body 배선. routing 프리앰블(+ `--local` 직교성 명시),
   두 섹션 헤더 재라벨, Publish 정본 고지(dashboard + env-scan 게시 고지 필수), Fallback=풀 재생성,
   README diagnose 퀵스타트 2줄. 이슈 S3 AC 3개 체크. **육안 렌더검사 미실행.**
-- **S4 완료 (미커밋):** plugin-visual body 배선 = S1~S3 패턴 복제. routing 프리앰블(+ path-or-url
+- **S4 완료:** plugin-visual body 배선 = S1~S3 패턴 복제. routing 프리앰블(+ path-or-url
   입력이 채널 결정과 직교함 명시), 로컬/Artifact 두 섹션 헤더 재라벨 + 스테일 cross-ref 교정, Publish
   정본 고지(명사=wiki), Fallback=풀 로컬 wiki 재생성(fragment `open` 금지), README analyze 퀵스타트
   artifact-first + `--local` 줄. 이슈 S4 AC 2개 체크. **육안 렌더검사 미실행**(SKILL.md 로직 정합만).
-- **S5 완료 (미커밋):** fact-check republish 배선 = report-manager 8단계 패턴. `allowed-tools`+`Artifact`,
+- **S5 완료:** fact-check republish 배선 = report-manager 8단계 패턴. `allowed-tools`+`Artifact`,
   Artifact-channel 사이드카 감지, Phase 4 게이트 fragment=`--content-only` 분기, Phase 4.5 Republish 신설
   (edge case 2건 포함), Phase 5·README 반영. 이슈 S5 AC 5개 체크. **실제 republish E2E 미실행**(SKILL.md
   로직 정합만).
-- **S6 완료 (미커밋):** 레퍼런스 리프레이밍 + 출시. diagram-type-selection·mermaid-patterns 스코프 주석
+- **S6 완료:** 레퍼런스 리프레이밍 + 출시. diagram-type-selection·mermaid-patterns 스코프 주석
   (Mermaid=Local/md 렌더링 기법), README publishing 블록 artifact-first 3행 매트릭스 반전, plugin.json·
   marketplace.json description 반전, CHANGELOG 4.7.0(minor 근거), marketplace 버전 4.6.2→4.7.0. 이슈 S6
   AC 6개 체크. `plugin validate` 신규 경고 없음.
@@ -65,14 +63,10 @@ plugin-visual=`wiki`(S4). ← 각 스킬 파일의 로컬출력 호칭을 따름
   + post-edit 게이트 `--content-only` 전환. report-manager 8단계 패턴.
 - 버전 범프는 **S6에서만** (minor 4.6.2→4.7.0).
 
-**Next Steps:** (S0~S5 완료) → **S6 레퍼런스 리프레이밍 + 출시**(First Action 참조) — 레퍼런스
-리프레이밍(`diagram-type-selection.md`·`mermaid-patterns.md` 스코프 주석)+README 2×2 반전+README
-"Prefer never typing the flag?"·"Add `--artifact`…" 문단 반전+`plugin.json`/`marketplace.json`
-description 반전+CHANGELOG 항목(minor 근거 1줄)+minor 범프(4.6.2→4.7.0)+`unset CLAUDECODE && claude
-plugin validate .`. 각 슬라이스 후 멈추고 보고. **육안 렌더검사(S1~S4 미실행)**는 실제 스킬 구동 필요 —
-빅뱅 착지 후 채널별 1회 로컬-vs-아티팩트 비교가 남은 검증.
-
-**커밋 여부:** 사용자 지시 대기 — 아직 커밋 안 함(auto-push 금지). 슬라이스 커밋 타이밍은 사용자 확인.
+**Next Steps:** S0~S6 전부 구현·커밋 완료 — 코드 작업 없음. 남은 건 **육안 렌더검사**(실제 스킬 구동,
+채널별 1회 로컬-vs-아티팩트 비교, 특히 context-health 10-카드 밀도)뿐. 게이트가 아니라 착지 후 검증이라
+이슈 종료를 막지는 않으나, ADR 0009의 "아티팩트 렌더가 로컬을 이긴다"는 근거가 doc-visual 1건 표본에
+기대고 있으므로 나머지 3개 스킬에서 표본을 채우는 값이 있다.
 
 ---
 
@@ -176,7 +170,7 @@ Mermaid 로컬 리포트를 재생성**(fragment를 그냥 open하지 않는다 
 > **S0 구현 완료 (2026-07-10).** SSOT 신설 `references/design-system/channel-decision.md`(결정표·
 > 플래그 의미론·persistent force-local·optimistic-try-then-regenerate·precedence). `config.js` 헤더
 > 주석만 갱신(코드 무변경). 4개 스킬 arg-hint+Format 표+Config-precedence 산문 flip, 전부 SSOT 인용.
-> `--local` 도입, `--artifact` 는 no-op alias 유지. `plugin validate` 신규 경고 없음. 미커밋.
+> `--local` 도입, `--artifact` 는 no-op alias 유지. `plugin validate` 신규 경고 없음.
 
 ### Blocked by
 
@@ -232,7 +226,7 @@ S1에서 검증된 패턴을 diff-visual에 복제. 동작·문서·검증 항�
 
 - S1
 
-> **S2 구현 완료 (2026-07-11, 미커밋).** diff-visual body 배선 = S1 doc-visual 패턴 복제.
+> **S2 구현 완료 (2026-07-11, 커밋 b9d5ddf).** diff-visual body 배선 = S1 doc-visual 패턴 복제.
 > (1) "HTML channel routing (default = Artifact)" 프리앰블 신설, (2) 로컬 섹션 헤더 "(`--local` /
 > non-capable fallback)"·Artifact 섹션 헤더 "(default on a capable account)" 재라벨 + 스테일
 > "default HTML mode above" cross-ref 교정, (3) Publish 헤더 "Publish (Artifact channel — default
@@ -266,7 +260,7 @@ always-ask `/context` 프롬프트)와 `--local`이 충돌 없이 공존하는�
 
 - S1
 
-> **S3 구현 완료 (2026-07-11, 미커밋).** context-health-visual body 배선 = S1/S2 패턴 복제.
+> **S3 구현 완료 (2026-07-11, 커밋 b9d5ddf).** context-health-visual body 배선 = S1/S2 패턴 복제.
 > (1) "HTML channel routing (default = Artifact)" 프리앰블 신설 + `--local`×`/context`×
 > `--use-instructions-loaded-hook` 직교성 명시, (2) 로컬/Artifact 섹션 헤더 재라벨 + 스테일 cross-ref
 > 교정, (3) Publish 정본 고지(명사=**dashboard** — 이 파일은 로컬출력을 일관되게 dashboard로 호칭;
@@ -295,7 +289,7 @@ S1 패턴을 plugin-visual에 복제. path-or-url 입력에서도 채널 결정�
 
 - S1
 
-> **S4 구현 완료 (2026-07-11, 미커밋).** plugin-visual body 배선 = S1~S3 패턴 복제.
+> **S4 구현 완료 (2026-07-11, 커밋 b9d5ddf).** plugin-visual body 배선 = S1~S3 패턴 복제.
 > (1) "HTML channel routing (default = Artifact)" 프리앰블 신설 + **path-or-url 입력(로컬경로/설치
 > 플러그인명/GitHub URL)은 Phase 1서 동일 타깃 디렉터리로 수렴하므로 채널 결정 동일** 명시(S4 검증
 > 포인트), (2) 로컬 섹션 헤더 "HTML report — local design-system channel (`--local` / non-capable
@@ -337,7 +331,7 @@ artifact-design 프리로드·`Skill(artifact-design)` 권한 **불필요**. 대
 
 - S0 (사이드카/URL 계약 참조), report-manager 8단계 패턴
 
-> **S5 구현 완료 (2026-07-11, 미커밋).** fact-check body 배선 = report-manager 8단계(republish-content-only)
+> **S5 구현 완료 (2026-07-11, 커밋 b9d5ddf).** fact-check body 배선 = report-manager 8단계(republish-content-only)
 > 패턴 적용. (1) `allowed-tools`에 `Artifact` 추가(`Skill(artifact-design)` 미추가 — gotchas carve-out:
 > content-only republish는 design 로드·권한 불필요), (2) Target File Detection에 "Artifact-channel
 > detection" 신설 — `<target>.artifact.json` 사이드카 존재 = 게시된 fragment, 없으면 로컬 제자리 편집
@@ -378,7 +372,7 @@ description 갱신, `unset CLAUDECODE && claude plugin validate .`로 최종 검
 
 - S1, S2, S3, S4, S5
 
-> **S6 구현 완료 (2026-07-11, 미커밋).** 레퍼런스 리프레이밍 + 출시 배선.
+> **S6 구현 완료 (2026-07-11, 커밋 b9d5ddf).** 레퍼런스 리프레이밍 + 출시 배선.
 > (1) `diagram-type-selection.md`에 "채널무관, Mermaid syntax 열=Local/md 렌더링 기법" 스코프 주석 신설,
 > (2) `mermaid-patterns.md`에 "Local/md 전용 렌더링 기법, Artifact 채널 미사용" 스코프 주석 신설, (3)
 > README "Artifact publishing" 블록을 artifact-first 3행 매트릭스(capable html→Artifact / `--local`·

@@ -363,7 +363,7 @@ The gate also fails on dead links, alt-less images, and leftover scaffolding: gi
 **CSS essentials**: Write your own CSS inline. Must support:
 - `prefers-color-scheme: dark` via CSS custom properties
 - Korean font stack (CJK font in font-family)
-- `transform: scale()` for Mermaid zoom (not `zoom` property)
+- Mermaid zoom by SVG sizing (mermaid-patterns.md `applyZoom()`), not `transform: scale()` (which reserves no layout space and clips) and not the `zoom` property
 - `min-width: 0` on flex/grid children
 - `prefers-reduced-motion: reduce`
 - Status indicators: colored dots via CSS, no emoji
@@ -480,8 +480,8 @@ Chrome render loop to run before publishing.
 
 **Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
 unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
-and don't ask before falling back. The fragment you published is a Mermaid-less, skeleton-less page
-authored for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
+and don't ask before falling back. The fragment you authored is a Mermaid-less, skeleton-less page
+meant for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
 breaks ADR 0009 §3's promise of design-system + Mermaid on a non-capable session). Instead
 **regenerate the full local design-system + Mermaid wiki** ("Phase 5R: HTML report — local
 design-system channel" above), run its full gate + visual self-audit, save to the

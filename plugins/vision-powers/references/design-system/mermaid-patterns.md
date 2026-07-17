@@ -103,8 +103,10 @@ Force node/edge text to follow the page's color scheme. Without these, `classDef
   padding: 32px 24px;
   overflow: auto;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  /* Centering lives on the child as `margin: auto`, not here as justify/align-content.
+     On a scroll container, positional centering pushes an oversized child past the
+     *start* edge, and overflow in that direction is unreachable — you can never
+     scroll left/up to it. Auto margins center only while the child fits. */
   min-height: 400px;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
@@ -114,8 +116,12 @@ Force node/edge text to follow the page's color scheme. Without these, `classDef
 .mermaid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .mermaid-wrap .mermaid {
-  transform: scale(1.4);
-  transform-origin: 0 0;
+  /* Centered while it fits; `margin: auto` collapses to 0 once the diagram outgrows
+     the wrap, which keeps the overflow scrollable (justify/align-content would not). */
+  margin: auto;
+  /* Don't let the flex container squeeze the diagram back down — applyZoom()'s
+     sizing is the authority on how wide it should be. */
+  flex: none;
 }
 
 /* CRITICAL: Force text colors to follow page scheme */
@@ -132,11 +138,15 @@ Three approaches when complex diagrams (10+ nodes) render too small:
 
 | Method | Code | Pros | Cons |
 |---|---|---|---|
-| `transform: scale()` (default) | `.mermaid { transform: scale(1.4); transform-origin: 0 0; }` | Standard CSS, infinite SVG vector quality, integrates with zoom controls | Requires JS to update container scroll area |
+| **SVG sizing** (default) | `applyZoom()` — sets `svg.style.width/height` to `viewBox × level` | Infinite vector sharpness, and the diagram *occupies* the space it draws in, so the scroll container reaches all of it | Needs the viewBox, so it must wait for Mermaid to finish rendering |
+| `transform: scale()` | `.mermaid { transform: scale(1.4); transform-origin: 0 0; }` | Standard CSS, same vector quality | **Reserves no layout space** — paints past the wrap's edge while the wrap still measures the un-scaled box, so the overflow is unreachable. Compensating for this in JS is error-prone: `getBoundingClientRect()` returns the *post*-transform box, so feeding it back compounds the scale |
 | `zoom` | `.mermaid { zoom: 1.4; }` | Simple, container size adjusts automatically | Non-standard CSS, quality degrades at high magnification |
 | `fontSize` | `themeVariables: { fontSize: '20px' }` | Only text grows, natural layout | Node sizes also grow, may widen the entire diagram |
 
-Prefer `transform: scale()` by default. SVG vector graphics maintain sharpness at any scale.
+Prefer **SVG sizing** by default — that's what `applyZoom()` below does. An SVG with a viewBox redraws
+its vectors at whatever width/height you give it, so sharpness matches `transform: scale()` while the
+layout stays honest. `transform` is listed for completeness; it was the previous default and its
+silent clipping is the reason it isn't anymore.
 
 ### Size Variants
 
@@ -157,7 +167,7 @@ Add to every `.mermaid-wrap` container.
     <button onclick="zoomDiagram(this, 1.3)" title="Zoom in">+</button>
     <button onclick="zoomDiagram(this, 1/1.3)" title="Zoom out">&minus;</button>
     <button onclick="resetZoom(this)" title="Reset zoom">&#8634;</button>
-    <span class="zoom-level">140%</span>
+    <span class="zoom-level">100%</span>
     <button onclick="toggleFullscreen(this)" title="Fullscreen">&#x26F6;</button>
   </div>
   <pre class="mermaid">
@@ -220,19 +230,39 @@ Add to every `.mermaid-wrap` container.
 Place before `</body>`, after Mermaid import:
 
 ```javascript
-var INITIAL_ZOOM = 1.4;
+var INITIAL_ZOOM = 1;
+
+// The diagram's natural size, read once from the viewBox and cached.
+// Measuring with getBoundingClientRect() instead is the trap that breaks zoom: it
+// reports the *post*-transform box, so the level is already baked into what you
+// read back, and assigning it to a size compounds the scale on every call.
+// The viewBox is in the SVG's own coordinate space and never moves.
+function naturalSize(target) {
+  if (target._natural) return target._natural;
+  var svg = target.querySelector('svg');
+  var box = svg && svg.viewBox && svg.viewBox.baseVal;
+  if (!box || !box.width) return null;
+  target._natural = { w: box.width, h: box.height };
+  return target._natural;
+}
 
 function applyZoom(wrap, level) {
   var target = wrap.querySelector('.mermaid');
+  var size = naturalSize(target);
   target.dataset.zoom = level;
-  target.style.transform = 'scale(' + level + ')';
-  // Update scroll area to match scaled SVG size
-  var svg = target.querySelector('svg');
-  if (svg) {
-    var rect = svg.getBoundingClientRect();
-    target.style.width = (rect.width / level * level) + 'px';
-    target.style.height = (rect.height / level * level) + 'px';
+
+  // Zoom by sizing the SVG, not by transform: scale(). An SVG with a viewBox redraws
+  // its vectors at whatever width/height you give it — same sharpness as a transform —
+  // but unlike a transform it *occupies* the space it draws in. That difference is the
+  // whole bug this replaced: a transform paints past the wrap's edge while the wrap's
+  // scroll area still measures the un-scaled box, so the overflow is unreachable.
+  if (size) {
+    var svg = target.querySelector('svg');
+    svg.style.width = (size.w * level) + 'px';
+    svg.style.height = (size.h * level) + 'px';
+    svg.style.maxWidth = 'none';  // Mermaid inlines max-width:100%, which would cap the zoom
   }
+
   // Update zoom level indicator
   var indicator = wrap.querySelector('.zoom-level');
   if (indicator) indicator.textContent = Math.round(level * 100) + '%';
@@ -284,15 +314,19 @@ document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
   });
 });
 
-// Initial zoom: apply scroll area sizing after Mermaid renders SVGs
+// Initial zoom: apply scroll area sizing after Mermaid renders SVGs.
+// Wait for a populated viewBox, not merely for <svg> to exist: Mermaid inserts the
+// element first and sets its viewBox afterwards, so "an svg is here" fires while the
+// diagram is still the 300x150 CSS default size. Measuring then caches that default
+// forever. Watching attributes + subtree is what lets the later viewBox write wake us.
 document.querySelectorAll('.mermaid').forEach(function(el) {
   new MutationObserver(function(mutations, obs) {
-    if (el.querySelector('svg')) {
-      var wrap = el.closest('.mermaid-wrap');
-      if (wrap) applyZoom(wrap, INITIAL_ZOOM);
-      obs.disconnect();
-    }
-  }).observe(el, { childList: true });
+    var svg = el.querySelector('svg');
+    if (!svg || !svg.viewBox || !svg.viewBox.baseVal || !svg.viewBox.baseVal.width) return;
+    var wrap = el.closest('.mermaid-wrap');
+    if (wrap) applyZoom(wrap, INITIAL_ZOOM);
+    obs.disconnect();
+  }).observe(el, { childList: true, subtree: true, attributes: true });
 });
 
 // Keyboard zoom: + / - keys when a mermaid-wrap is hovered
