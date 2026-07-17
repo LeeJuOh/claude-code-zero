@@ -83,7 +83,7 @@ Run `/plugin` and check the **Installed** tab.
 
 **Solution:** `.worktreeinclude` copies the small, irreplaceable files (`.env`, local docs) into each worktree; `.worktreelink` symlinks the big, branch-invariant ones (downloaded assets, shared caches) at zero disk cost. Safety guard blocks removal if uncommitted changes or unpushed commits exist. Audit trail in `.worktree.log`.
 
-`worktree-config` · auto-hooks on WorktreeCreate/Remove
+`worktree-setup` · auto-hooks on WorktreeCreate/Remove
 
 ---
 

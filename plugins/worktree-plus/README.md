@@ -29,7 +29,7 @@ worktree-plus fixes all of these, and applies everywhere Claude Code creates wor
 | Re-entry behavior | Fails if directory/branch exists | Reuses existing worktree (idempotent) |
 | Audit trail | None | Per-worktree `.worktree.log` with create/remove events, base branch, include/link outcomes, and BLOCKED reasons |
 | Cleanup protection | None | Blocks removal if uncommitted changes, untracked files, or unpushed commits; only deletes branches with upstream |
-| Conversational config | N/A | Bundled `/worktree-config` skill to view, set, or reset settings |
+| Setup help | N/A | Bundled `/worktree-setup` skill: view/set/reset settings, and scan your gitignored files to build `.worktreeinclude` / `.worktreelink` |
 
 ## Prerequisites
 
@@ -59,6 +59,10 @@ Mid-session, ask Claude to "create a worktree" — it uses `EnterWorktree` which
 When a worktree is removed through the hook, worktree-plus blocks removal if the worktree has staged or unstaged changes, untracked files, or commits not pushed to upstream. Branches without an upstream are preserved on removal — only the worktree directory is cleaned up. If `git worktree remove` fails, the directory is left untouched.
 
 ### Gitignored files
+
+Don't hand-write these from scratch — run `/worktree-setup` and it scans what your repo actually ignores, proposes a copy/link split with the reasoning for each call, and writes the files once you approve. It merges into existing files rather than overwriting them, so your own entries and comments survive.
+
+Both files take one **literal path per line**, relative to the repo root. They look like `.gitignore` but aren't pattern files: `.env*` is read as a filename, not a glob, and `#` only starts a comment at the beginning of a line.
 
 **`.worktreeinclude`** — files to copy (independent per worktree):
 ```
