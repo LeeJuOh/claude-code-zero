@@ -42,13 +42,13 @@ Always start with `https://code.claude.com/docs/llms.txt` — the full index of 
 
 **Mandatory fetch when:**
 - Creating new plugins, components (skills/agents/hooks/MCP), or schema changes
-- Reviewing plans (`docs/superpowers/plans/*.md`) that cite official docs — verify each cited number against source. Plan-internal tables may contain invented or outdated values.
+- Reviewing specs or issues (`docs/specs/*.md`, `docs/issues/*.md`) that cite official docs — verify each cited number against source. Doc-internal tables may contain invented or outdated values.
 
 Skip only for minor text edits or bug fixes inside existing logic.
 
 **Common starting pages (not exhaustive):** `plugins.md`, `plugins-reference.md`, `plugin-marketplaces.md`, `hooks.md`, `hooks-guide.md`, `skills.md`, `sub-agents.md`, `memory.md`, `env-vars.md`, `context-window.md`, `costs.md`, `how-claude-code-works.md`, `settings.md`.
 
-**Other agents' docs:** For Codex (OpenAI): `https://developers.openai.com/llms.txt`.
+**Other agents' docs:** For Codex (OpenAI): `https://learn.chatgpt.com/docs/llms.txt`.
 
 ## Plugin Development
 

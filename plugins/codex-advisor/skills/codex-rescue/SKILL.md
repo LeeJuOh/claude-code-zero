@@ -48,7 +48,7 @@ You are a translator. Use LM intelligence, not regex tables.
 
 **Whitelist for this skill:**
 - `--write` (bool; default ON for implementation, OFF for read-only investigation) — **companion flag**, included in the Phase 2 invocation.
-- `--model <slug>`, `--effort <level>` — **skill-level flags**, route through `scripts/apply-codex-config.py` (see Apply block below) and **never reach the companion**. The alias `spark` auto-expands to `gpt-5.3-codex-spark`. The script validates effort against `{minimal, low, medium, high, xhigh}` (`none` is only valid for `plan_mode_reasoning_effort`) and additionally cross-checks against the requested model's `supported_reasoning_levels` from `~/.codex/models_cache.json` — out-of-set values still save but surface a warning so the user sees it. If the user gives an obviously wrong value (typo), prefer `AskUserQuestion` in Phase 1 over letting it propagate.
+- `--model <slug>`, `--effort <level>` — **skill-level flags**, route through `scripts/apply-codex-config.py` (see Apply block below) and **never reach the companion**. The alias `spark` auto-expands to `gpt-5.3-codex-spark`. Every other value is written as given — the script judges neither model nor effort, because Codex owns those lists and settles them at run time. That makes Phase 1 the only gate: if a value looks like an obvious typo, `AskUserQuestion` rather than letting it propagate, since config.toml is global and nothing downstream will second-guess it.
 - `--resume-last` / `--resume` / `--fresh` — mutually exclusive companion flags. Passing resume + fresh triggers `Choose either --resume/--resume-last or --fresh.` (`:750`). If ANALYZE produces a conflict, `AskUserQuestion`; never forward both.
 - `--no-preview` (bool) — skip Phase 1.5 draft review. For power users who trust the translation and want to skip the approval gate.
 
@@ -374,7 +374,7 @@ rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_
 
 ## Gotchas
 
-- **`--model` / `--effort` go through `apply-codex-config.py`, not the companion.** config.toml becomes the single source of truth; routing keeps every codex-advisor skill identical, lets the value persist for the next session without re-typing, and is the only way to set `effort` for review/adversarial (whose `valueOptions = [base, scope, model, cwd]` does not include effort). `apply-codex-config.py` warns on out-of-set effort and on per-model unsupported levels but still writes — surface the warning to the user rather than swallowing it.
+- **`--model` / `--effort` go through `apply-codex-config.py`, not the companion.** config.toml becomes the single source of truth; routing keeps every codex-advisor skill identical, lets the value persist for the next session without re-typing, and is the only way to set `effort` for review/adversarial (whose `valueOptions = [base, scope, model, cwd]` does not include effort). `apply-codex-config.py` writes whatever it's given without judging it — Codex is the authority on valid models and efforts, so a bad value surfaces there, not here.
 - **Never combine `--resume` / `--resume-last` with `--fresh`.** The companion rejects the combination (`:750`).
 - **Never pass a positional argument with Pattern B's stdin pipe.** `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:619`); a positional silently drops the entire task description.
 - **`--wait` on task is silent prompt corruption.** It becomes part of the task prompt body. ANALYZE must reject it.

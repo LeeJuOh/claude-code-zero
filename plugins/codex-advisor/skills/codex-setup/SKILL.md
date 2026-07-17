@@ -87,19 +87,15 @@ Model: <before> -> <after> | Effort: <before> -> <after>
 
 Relay that line verbatim to the user — it shows before/after so they can confirm.
 
-**Model handling**
+**Model and effort handling**
 
-- Accepts any slug your Codex account supports. Common slugs: `gpt-5.5` (default `xhigh`), `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`.
-- Alias: `spark` → `gpt-5.3-codex-spark` (subscription-gated; saved as-is).
-- Slugs missing from `~/.codex/models_cache.json` trigger an advisory warning to stderr but are saved. The cache reflects *your* account — gated or new models may be absent even when valid.
-- When the slug IS in the cache and effort is left unset, the script prints a note showing that model's `default_reasoning_level` so the user can see what they'll get implicitly.
+The script writes both values as given and judges neither — Codex owns the list of valid models and effort levels, and it decides at run time. Don't add a validity check here or reintroduce one downstream: any list we keep goes stale the moment OpenAI ships a model, and then it calls a working value wrong. The only transformation is the `spark` → `gpt-5.3-codex-spark` alias.
 
-**Effort handling**
+So when a user asks which models or efforts they can use, don't answer from memory — availability is account-scoped and changes. Tell them to run `codex` and open its `/model` picker.
 
-- Standard set for `model_reasoning_effort`: `minimal`, `low`, `medium`, `high`, `xhigh`. (`none` is only valid for `plan_mode_reasoning_effort` — passing it here triggers a warning.)
-- Per-model support varies and is checked against the cache's `supported_reasoning_levels`. As of Codex CLI 0.125, every published model (`gpt-5.5`/`5.4`/`5.4-mini`/`5.3-codex`/`5.2`) supports `[low, medium, high, xhigh]` — `minimal` is currently unsupported on all of them. Out-of-set values warn but still save; Codex CLI will reject at runtime if the combination is unsupported.
+The effort value lands on the `model_reasoning_effort` key (`none` is the exception — it belongs to `plan_mode_reasoning_effort`, which this plugin doesn't set). The script preserves other keys in `config.toml` (e.g. `model_context_window`) and writes atomically via a temp file.
 
-The underlying script preserves other keys in `config.toml` (e.g. `model_context_window`) and writes atomically via a temp file.
+If a value looks like an obvious typo, `AskUserQuestion` beats letting it through — config.toml is global, so a typo follows the user into every later session.
 
 ## Status Report
 
@@ -121,7 +117,7 @@ The underlying script preserves other keys in `config.toml` (e.g. `model_context
 | web_search | <current or "default (not set)"> |
 
 These defaults apply to ALL Codex commands — both Official plugin and direct CLI.
-To change: `/codex-setup --model gpt-5.5 --effort high`
+To change: `/codex-setup --model gpt-5.6-sol --effort high`
 ```
 
 ## Gotchas
