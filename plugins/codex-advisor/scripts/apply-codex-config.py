@@ -4,29 +4,19 @@
 Usage: apply-codex-config.py <model> <effort>
        Empty string for either argument means "no change".
 
-Expands known aliases (spark -> gpt-5.3-codex-spark) before writing.
-Advisory checks against ~/.codex/models_cache.json emit warnings but never
-block — account-gated or newly released models may not be in the local cache.
-
-When the requested model is found in the local cache, the effort value is
-also validated against that model's `supported_reasoning_levels` and the
-model's `default_reasoning_level` is reported when effort is left unset.
+Expands known aliases (spark -> gpt-5.3-codex-spark) before writing. Values are
+otherwise written verbatim: Codex owns the list of valid models and effort
+levels and judges them at runtime, so second-guessing here would only mean
+calling a brand-new model or an account-gated one wrong.
 
 Stdout (one line): Model: <before> -> <after> | Effort: <before> -> <after>
-Stderr: warnings only.
 """
-import json
 import os
 import re
 import sys
 import tempfile
 
 MODEL_ALIASES = {"spark": "gpt-5.3-codex-spark"}
-# Codex `model_reasoning_effort` accepts these per the Responses API
-# (see developers.openai.com/codex/config-reference). `none` is only valid
-# for `plan_mode_reasoning_effort`. Per-model support is narrower — checked
-# below against ~/.codex/models_cache.json.
-STANDARD_EFFORTS = {"minimal", "low", "medium", "high", "xhigh"}
 
 
 def find_line(lines, key):
@@ -68,48 +58,6 @@ def main():
     effort_in = sys.argv[2].strip()
     model = MODEL_ALIASES.get(model_in, model_in) if model_in else ""
 
-    model_entry = None
-    if model:
-        cache_path = os.path.expanduser("~/.codex/models_cache.json")
-        if os.path.isfile(cache_path):
-            try:
-                with open(cache_path) as f:
-                    cache = json.load(f)
-                for entry in cache.get("models", []):
-                    if isinstance(entry, dict) and entry.get("slug") == model:
-                        model_entry = entry
-                        break
-                if model_entry is None:
-                    print(
-                        f"Warning: model '{model}' not in local cache. "
-                        "May be subscription-gated or new — saving anyway.",
-                        file=sys.stderr,
-                    )
-            except (json.JSONDecodeError, OSError):
-                pass
-
-    if effort_in and effort_in not in STANDARD_EFFORTS:
-        print(
-            f"Warning: effort '{effort_in}' outside Codex `model_reasoning_effort` "
-            f"set ({', '.join(sorted(STANDARD_EFFORTS))}) — saving anyway. "
-            "(`none` is only valid for `plan_mode_reasoning_effort`.)",
-            file=sys.stderr,
-        )
-
-    if effort_in and model_entry is not None:
-        supported = {
-            lvl.get("effort")
-            for lvl in model_entry.get("supported_reasoning_levels", [])
-            if isinstance(lvl, dict)
-        }
-        if supported and effort_in not in supported:
-            print(
-                f"Warning: model '{model}' supports effort levels "
-                f"{sorted(s for s in supported if s)}, not '{effort_in}'. "
-                "Codex CLI will reject at runtime if unsupported.",
-                file=sys.stderr,
-            )
-
     config_path = os.path.expanduser("~/.codex/config.toml")
     os.makedirs(os.path.dirname(config_path), exist_ok=True)
     try:
@@ -117,6 +65,16 @@ def main():
             lines = f.readlines()
     except FileNotFoundError:
         lines = []
+    except (UnicodeDecodeError, OSError) as e:
+        # Refuse rather than start from an empty file: the write below would
+        # replace the whole config with two keys, and a config we cannot read
+        # is precisely the one whose contents we have no right to discard.
+        print(
+            f"Error: cannot read {config_path} ({type(e).__name__}). "
+            "Repair or move it, then re-run — leaving it untouched.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     _, before_model = find_line(lines, "model")
     _, before_effort = find_line(lines, "model_reasoning_effort")
@@ -147,16 +105,6 @@ def main():
         f"Model: {fmt(before_model, after_model, bool(model))} | "
         f"Effort: {fmt(before_effort, after_effort, bool(effort_in))}"
     )
-
-    if model and not effort_in and model_entry is not None:
-        default_eff = model_entry.get("default_reasoning_level")
-        if default_eff and default_eff != after_effort:
-            print(
-                f"Note: '{model}' default_reasoning_level is '{default_eff}'. "
-                f"Current `model_reasoning_effort` = '{after_effort or '(unset)'}'. "
-                "Override with --effort if you want a different level.",
-                file=sys.stderr,
-            )
 
 
 if __name__ == "__main__":

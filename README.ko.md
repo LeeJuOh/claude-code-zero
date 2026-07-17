@@ -83,7 +83,7 @@ npx skills add LeeJuOh/claude-code-zero
 
 **해결:** `.worktreeinclude`는 작고 복구 불가한 파일(`.env`, 로컬 문서)을 각 worktree로 복사, `.worktreelink`는 크고 브랜치 안 타는 것(다운로드 자산, 공유 캐시)을 디스크 비용 0으로 심링크. 커밋 안 된 변경·푸시 안 된 커밋 있으면 제거 차단. `.worktree.log` 감사 추적.
 
-`worktree-config` · WorktreeCreate/Remove 자동 훅
+`worktree-setup` · WorktreeCreate/Remove 자동 훅
 
 ---
 

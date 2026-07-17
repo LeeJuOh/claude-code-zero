@@ -193,7 +193,13 @@ These are the building blocks. Mix them as the content demands:
 | **Definition list** | Term → meaning pairs |
 | **Callout box** | Warnings, tips, important notes |
 
-### Diagram rules
+### Diagram rules — local design-system channel
+
+These govern Mermaid, which is a rendering technique rather than the diagram layer itself, so they
+apply when you're writing the local design-system file (`--local`, or a non-capable fallback). On the
+Artifact channel there is no Mermaid at all, and the built-in artifact-design skill owns density,
+palette, and theming — the diagram *type* you chose in "Section-to-diagram mapping" carries over
+unchanged, only the drawing technique differs (ADR 0009).
 
 Read these reference files for implementation details — don't memorize them, read them each time:
 
@@ -201,7 +207,7 @@ Read these reference files for implementation details — don't memorize them, r
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` — Color/font roles and Mermaid themeVariables mapping
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` — Complexity budgets per type
 
-Key rules (always apply, no need to look up):
+Key rules for this channel (no need to look up):
 
 1. **Density**: Max 9 nodes, 12 arrows per diagram. Over budget → split into overview + detail
 2. **Accent**: 1-2 focal elements only. 4+ accents = redesign needed
@@ -211,7 +217,7 @@ Key rules (always apply, no need to look up):
 6. **Palette**: No violet/fuchsia "AI purple" hexes (`#8b5cf6`/`#7c3aed`/`#a78bfa`/`#d946ef`) — the gate fails on these
 7. **Table vs diagram**: If a 3-column table conveys it equally well, use the table
 
-The gate also fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders. It also fails on `background-clip: text` (gradient-clipped text — decorative slop) and on any `font-family` without a generic fallback, so end every stack with a system family (`…, sans-serif`).
+**Either channel's** gate fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders — those are content checks, so `--content-only` runs them too. **This channel's** full gate additionally fails on `background-clip: text` (gradient-clipped text — decorative slop) and on any `font-family` without a generic fallback, so end every stack with a system family (`…, sans-serif`).
 
 ### CSS essentials
 
@@ -219,7 +225,7 @@ You write your own CSS inline. These constraints matter:
 
 - **Font stacks**: Always end every `font-family` with a system fallback chain (e.g. `Geist, system-ui, -apple-system, sans-serif`) — the web fonts aren't bundled, so a bare family name silently drops to a browser default offline. See semantic-tokens.md for the per-role chains. Include a CJK font when the document might be Korean
 - **Dark mode**: Support `prefers-color-scheme: dark` via CSS custom properties. Map semantic roles (paper, ink, muted, accent) to both schemes
-- **Mermaid scaling**: Use `transform: scale()` for zoom — preserves vector quality. Never `zoom` property
+- **Mermaid scaling**: zoom by sizing the SVG to `viewBox × level` (mermaid-patterns.md `applyZoom()`) — same vector sharpness as `transform: scale()`, but the diagram occupies the space it draws in, so the scroll container can reach all of it. Never the `zoom` property
 - **Overflow protection**: `min-width: 0` on flex/grid children
 - **Code blocks**: `white-space: pre; overflow-x: auto`
 - **Status indicators**: Colored dots via CSS, no emoji
@@ -337,7 +343,7 @@ resolved to "publish."
 **Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
 unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
 and don't ask before falling back:
-- **html**: the fragment you published is a Mermaid-less, skeleton-less page authored for the Artifact
+- **html**: the fragment you authored is a Mermaid-less, skeleton-less page meant for the Artifact
   viewer — **do not `open` it** (that serves a broken, diagram-free page and breaks ADR 0009 §3's
   promise of design-system + Mermaid on a non-capable session). Instead **regenerate the full local
   design-system + Mermaid report** ("HTML format — local design-system channel" above), run its full

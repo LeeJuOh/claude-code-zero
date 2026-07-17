@@ -1,6 +1,6 @@
 {
   "name": "worktree-plus",
-  "description": "Replaces Claude Code's built-in worktree — aligns with native git worktree where CC diverges (HEAD base, origin/* auto-tracking) and adds layers native lacks: .worktreeinclude/.worktreelink for gitignored files, upstream-aware removal guard, idempotent re-entry.",
+  "description": "Replaces Claude Code's built-in worktree — aligns with native git worktree where CC diverges (HEAD base, origin/* auto-tracking) and adds layers native lacks: .worktreeinclude/.worktreelink for gitignored files with a /worktree-setup skill that scans and builds them, upstream-aware removal guard, idempotent re-entry.",
   "author": { "name": "LeeJuOh" },
   "license": "MIT",
   "keywords": ["worktree", "git", "hooks"]

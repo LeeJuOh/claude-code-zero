@@ -1,7 +1,8 @@
 # vision-powers 전체 재설계: 파이프라인 폐기 → 모델 직접작성
 
 > 상태: 구현 대기 · 생성: 2026-06-06
-> 플랜: `docs/superpowers/plans/2026-06-03-doc-visual-artifact-redesign.md`
+> 플랜: 삭제됨 (2026-07-17, `docs/superpowers/` 트리 폐지) — 필요 시 git 히스토리에서 복구
+> (`git log --diff-filter=D -- docs/superpowers/plans/2026-06-03-doc-visual-artifact-redesign.md`)
 > ADR: `docs/adr/0002-doc-visual-direct-model-authoring.md`
 > 용어집: `docs/context/vision-powers.md`
 

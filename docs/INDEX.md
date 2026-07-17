@@ -29,11 +29,11 @@ Plans are first-class artifacts — active and completed alike are committed her
 
 | Directory | Description |
 |---|---|
-| `superpowers/plans/` | Plugin implementation plans (date-prefixed, e.g. `2026-04-14-worktree-plus-safe-removal.md`) |
-| `superpowers/specs/` | Design specs and analysis documents |
+| `specs/` | Product specs / PRDs (numbered, paired with `issues/` — e.g. `011-worktree-plus-setup-skill.md`) |
+| `issues/` | Implementation issue docs with vertical slices (numbered `NNN-*.md`) |
 | `enhancement/` | Audits, issue writeups, and improvement notes that do not fit product specs |
 
-Empty placeholder (reserved, currently unused): `plan/`.
+Retired 2026-07-17: `superpowers/plans/` and `superpowers/specs/` (date-prefixed, pre-June-2026). Deleted — recover from git history if a past design rationale is needed.
 
 ## Enhancement & Audits
 

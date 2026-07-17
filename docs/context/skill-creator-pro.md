@@ -48,4 +48,5 @@ Re-baseline `skill-creator-pro` on the **official** Anthropic skill-creator (lea
 ## Recorded in
 
 - ADR: `docs/adr/0001-rebaseline-skill-creator-pro-on-official.md`
-- PRD/plan: `docs/superpowers/plans/2026-06-03-skill-creator-pro-v2-rebaseline.md`
+- PRD/plan: deleted 2026-07-17 with the retired `docs/superpowers/` tree — recover from git history
+  (`git log --diff-filter=D -- docs/superpowers/plans/2026-06-03-skill-creator-pro-v2-rebaseline.md`).

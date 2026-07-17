@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.7.1 — 2026-07-17
+
+### Fixed
+
+- **Mermaid diagrams were silently clipped in local reports.** `applyZoom()` in `mermaid-patterns.md` sized the diagram from `getBoundingClientRect()`, which returns the *post*-transform box — so the level was already baked into what it read back, and the `rect.width / level * level` that fed it forward was arithmetically a no-op. Its MutationObserver also fired on `<svg>` appearing rather than on the viewBox being populated, caching Mermaid's 300×150 default as the diagram's size, and `.mermaid-wrap` centred an oversized child with `justify-content`/`align-items`, which pushes overflow past the *start* edge where scrolling can't reach it. A tall diagram could render with most of its nodes unreachable, and the gate can't see this because it reads HTML as text — only the visual self-audit catches it. Zoom now sizes the SVG to `viewBox × level` (same vector sharpness, but the diagram occupies the space it draws in), reads the viewBox once and caches it, waits for a populated viewBox, and centres via `margin: auto`. `INITIAL_ZOOM` drops from 1.4 to 1 — the old default started every diagram 40% overscale, which is what made the clipping bite immediately. Verified by probing a rendered diagram at three zoom levels: layout box now equals painted extent at each, and the scroll area covers it.
+
+- **Non-capable fallback said "the fragment you published"** in all four report skills, but that branch only runs when the publish *failed* — nothing was published. Now reads "the fragment you authored". The sentence matters because it is the one telling you not to `open` that diagram-less fragment.
+- **`doc-visual`'s Mermaid rules claimed to be universal.** Its "Diagram rules" block sat among the channel-agnostic content sections and opened with "Key rules (always apply)", but six of its seven rules govern Mermaid classDef, theming, density, and palette — all of which either don't exist on the Artifact channel or belong to the built-in artifact-design skill (ADR 0009). Now scoped to the local design-system channel, matching how `diff-visual` and `plugin-visual` already nest the same block inside their local-channel section. The gate paragraph now separates the content checks `--content-only` really runs (dead links, alt text, placeholders) from the full gate's design checks (`background-clip`, font fallbacks).
+
 ## 4.7.0 — 2026-07-11
 
 ### Changed

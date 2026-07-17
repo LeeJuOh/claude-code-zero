@@ -120,13 +120,21 @@ registered review flag (it would become prompt corruption), and config.toml pers
 sessions + keeps every skill identical. The change is **global** — it affects every Codex
 invocation until changed again.
 
+The script **does not judge the values** — no model list, no effort set, no cache lookup. It writes
+what it is given (the one `spark` alias aside) and lets Codex settle validity at run time. This is
+deliberate and was paid for: v4.7.0 deleted a cache-backed validation layer that had started calling
+real, newly-released models invalid, because any list we keep is a copy of someone else's world and
+rots faster than the original. Non-blocking validation was never a defence anyway — it warned and
+saved the value regardless. **Do not reintroduce it.** See spec `012`.
+
 **Provenance debt**:
 Vendored blocks carry no source marker in shipped skills/scripts/README (`grep gpt-5-4-prompting`
 over them finds nothing — only this CONTEXT.md names the origin).
 A maintainer cannot tell they came from the official guide, nor that they should be **re-synced**
-when the Official plugin bumps its prompting guide (the guide targets GPT-5.4; our default model is
-gpt-5.5 — it is already one generation behind). Paying this debt = a provenance note + re-sync
-trigger. See [[0004]].
+when the Official plugin bumps its prompting guide (the guide targets GPT-5.4, and Codex has shipped
+newer generations since). Note the plugin has no "default model" of its own to compare against — what
+sits in a user's config.toml is whatever that user set. Paying this debt = a provenance note +
+re-sync trigger. See [[0004]].
 
 ## Flagged ambiguities
 
