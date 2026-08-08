@@ -49,9 +49,9 @@ Run `/plugin` and check the **Installed** tab.
 
 ### [codex-advisor](plugins/codex-advisor/README.md)
 
-**Problem:** Codex outputs look confident but hallucinate citations and miss edge cases. You won't catch it by reading alone.
+**Problem:** First rule of agents — don't trust an agent's own output. So you get a second opinion. But a second opinion you can't check is just another confident guess, hallucinated citations and all.
 
-**Solution:** Claude independently re-verifies every Codex response — without seeing source code until after Codex returns. Five-way classification (Agreed / Disputed / Nuanced / False Positive / Uncited) so you know exactly what to trust.
+**Solution:** codex-advisor sends your code, plans, and research to Codex — a different model, deeper on code — for an independent second opinion, then fact-checks everything Codex returns: Agreed / Disputed / Nuanced / False Positive / Uncited. You get the cross-model check *and* a guard against Codex's confident hallucinations.
 
 `codex-review` · `codex-adversarial` · `codex-rescue` · `codex-verify` · `codex-research` · `codex-transfer` · `codex-status` · `codex-result` · `codex-cancel` · `codex-setup`
 
