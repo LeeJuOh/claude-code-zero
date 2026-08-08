@@ -1,6 +1,6 @@
 # codex-advisor
 
-> **Get Codex's second opinion on your code, plans, and research — and actually trust it.** Claude independently fact-checks every Codex finding before you act, so hallucinated citations never slip through.
+> **Get Codex's second opinion — and actually trust it.** A different model reviews your code, plans, and research; Claude fact-checks every finding it returns, so hallucinated citations never slip through.
 
 ## Why
 
@@ -29,13 +29,13 @@ prompt and double-check". All four failures were wrapper bugs.
 - Parses the input with LM intelligence first: drops the trailing comma, attempts to obey the meta-instruction ("don't pre-analyze"), and runs a clean `review --base develop`.
 - Launches long-running reviews in the background so Bash's 5-minute timeout never kills them.
 - Uses the official `status --wait` wait mechanism instead of improvised polling.
-- Classifies Codex's findings as Agreed, Disputed, Nuanced, False Positive (hallucinated file/function), or Uncited — without reading your code until Codex returns.
+- Classifies Codex's findings as Agreed, Disputed, Nuanced, False Positive (hallucinated file/function), or Uncited — holding off from reading your code until Codex returns, so the check stays independent.
 
 ## What you get
 
 - **A second opinion you can trust** — Codex reviews your code, verifies your plans, or researches for you; Claude then independently fact-checks what Codex returns. You get the cross-model check *and* a guardrail against Codex's confident hallucinations.
 - **Five-way finding classification** on every review — Agreed, Disputed, Nuanced, False Positive, Uncited. Catches hallucinated file:line citations before you act on them.
-- **Blind-payload independence** — for `codex-review` / `codex-adversarial`, Claude doesn't read the cited files until after Codex returns. For `codex-verify` / `codex-research`, the document is piped to Codex directly and never enters Claude's context.
+- **Independent double-check** — for `codex-verify` / `codex-research` the document is piped straight to Codex and never enters Claude's context (enforced structurally). For `codex-review` / `codex-adversarial` the skill holds Claude back from reading the cited files until Codex returns — a discipline, not a hard gate — so the classification stays independent.
 - **Background-resilient** — long jobs survive Bash's 5-minute timeout via background launch + `status --wait`. `/codex-result <job-id>` fetches the stored output even after the session that started it is gone.
 - **Self-bias guardrail** on `codex-verify` — if Claude authored the document under review, extra honesty constraints are applied.
 - **Every call persists** to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failures save to `<type>-<timestamp>-failed.md` with a categorized error.
@@ -129,7 +129,7 @@ Every skill does the same four things in order:
 4. **Double-check** — once Codex returns, read only the files and lines it cited. Classify each finding (Agreed / Disputed / Nuanced / False Positive / Uncited).
 5. **Report** — present findings with the classification, save to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failed runs are saved to `<type>-<timestamp>-failed.md` with the categorized error.
 
-The key discipline: **Claude never reads your source code before Codex runs.** That's what keeps the double-check independent. For document skills (verify / research), the document itself is streamed into Codex via a file pipe so it never enters Claude's context either.
+The key discipline: **Claude holds off reading your source until Codex returns** — that's what keeps the double-check independent. For document skills (verify / research) it's enforced structurally: the document is streamed into Codex via a file pipe, so it never enters Claude's context at all.
 
 `/codex-transfer` is the one exception to this five-step shape — it stops after Invoke. Once the session hands off to Codex, there's nothing left in Claude's hands to double-check or report on.
 
