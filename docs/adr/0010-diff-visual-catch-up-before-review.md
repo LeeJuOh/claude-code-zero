@@ -29,7 +29,7 @@ pass it — a personal rule, not a mechanical gate.
 2. **Sections are Litt's four**: Background (deep, collapsed + narrow), Intuition (idea + toy-data
    example + before/after flow diagram with example data), Code (literate walkthrough in
    understanding order; dependency change drawn before/after when it changed), Quiz (five,
-   medium, no gotchas, answer options length-matched so form leaks nothing).
+   medium, no gotchas, answer options length-matched (±1 word) so form leaks nothing).
 3. **The review sections are deleted**: Overview, File Map, Architecture Impact, Change
    Classification, Dependency Shift, New Components, Hot Spots. What still serves catch-up is
    absorbed (flow diagram → Intuition; dependency change → Code). Nothing in the report says
