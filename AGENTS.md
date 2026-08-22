@@ -50,6 +50,11 @@ Skip only for minor text edits or bug fixes inside existing logic.
 
 **Other agents' docs:** For Codex (OpenAI): `https://learn.chatgpt.com/docs/llms.txt`.
 
+**Large structured files: download and parse, never WebFetch-summarize.** WebFetch summarizes
+through a model and returns wrong numbers on big JSON/CSV (a 1.5 MB `marketplace.json` came back
+as "287 plugins, eli5 absent" — `curl` + parse gave 2282 and present). Anything over a few hundred
+KB: `curl -sL <url> -o <file>` then `jq`/`python` on the file.
+
 ## Plugin Development
 
 Plugin creation and iteration is handled by the **skill-creator-pro** plugin — invoke `/skill-creator-pro` for all plugin development work.

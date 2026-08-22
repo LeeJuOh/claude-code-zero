@@ -138,6 +138,29 @@ explicitly rejected.
 **Mode**:
 The document's presentation register. Two in v1: **explainer** (teaching/learning prose) and
 **structural** (architecture/structure). Sections follow the document mode; overrides are rare exceptions.
+`diff-visual` is **explainer by default** since [[0010]] — it is a **Catch-up**, not a review dashboard.
+
+**Catch-up**:
+What `diff-visual` delivers: bringing a reader who does *not* know the system up to the point
+where they can judge the change — what was there (Background), what the idea is (Intuition), how
+the code realises it (Literate diff), and whether they actually got it (Quiz). Read *before*
+review; never states whether the change is good. The axis is "does the reader know this system",
+not "who wrote it" — agent-written code is almost always a catch-up case. See [[0010]].
+_Avoid_: review, summary, overview.
+
+**Literate diff**:
+The Code section of a **Catch-up**: the change walked in *understanding order* as prose with
+embedded snippets — not file by file. Snippets are **structured blocks** lifted by extraction
+([[0005]]); the model writes only the prose around them. When the change altered dependencies, a
+before/after dependency picture precedes the walk, stating facts (new, removed, cyclic) without
+verdicts.
+_Avoid_: split-diff (that is one structured-block type, not the section), file map.
+
+**Quiz**:
+Five medium-difficulty questions at the end of a **Catch-up** that the reader must understand the
+change to answer; no gotchas; options length-matched so formatting leaks nothing. A *speed
+regulator* — the reader's own rule is "pass before you push or approve". Never a gate ([[0003]]).
+_Avoid_: test, exam, checkpoint, gate.
 
 ## Flagged ambiguities
 
