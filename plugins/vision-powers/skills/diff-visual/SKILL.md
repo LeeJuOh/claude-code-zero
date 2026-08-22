@@ -1,17 +1,36 @@
 ---
 name: diff-visual
 description: >
-  Visualize git diffs as interactive HTML reports with architecture diagrams, change analysis,
-  and side-by-side split-diff of the actual changed code. Use when asked to visualize, review, or
-  summarize a diff, branch, commit, or PR — including seeing the real changed lines, not just a
-  summary. Accepts branch names, commit hashes, HEAD, PR numbers, or commit ranges.
+  Catch up on a git change before you review it — background on the system it lands in, the idea
+  behind it, a literate diff of the real extracted code, and a five-question quiz. Use whenever the
+  user wants to understand, explain, walk through, or get up to speed on a diff, branch, commit, or
+  PR — including agent-written code they didn't write themselves, or a teammate's PR they're about
+  to review. Also use for "visualize this diff" and "what changed here". Accepts branch names,
+  commit hashes, HEAD, PR numbers, or commit ranges.
 argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>] [--local (force a local file instead of publishing)]"
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Artifact, Skill(artifact-design), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
 
 # Diff Visual
 
-Visualize git diffs as either self-contained interactive HTML reports (default) or inline markdown reports. HTML includes architecture diagrams, file maps, and change analysis. Markdown is the lighter alternative for terminal review or chat sharing. You write the output directly — no templates, no intermediate JSON, no agent chains.
+Catch a reader up on a change **before** they review it. Most code now arrives written by an
+agent, which means the reader has no system already in their head — so the report answers, in
+order: what was here before (**Background**), what the idea is (**Intuition**), how the code
+realises it (**Code**), and whether the reader actually got it (**Quiz**).
+
+**When to run**
+- Your agent finished a task and you're about to push — read it, pass the quiz, then send.
+- A teammate's PR is waiting — read it before you form an opinion.
+
+The quiz is a speed regulator, not a gate. Nothing blocks a push (ADR 0003); "don't send it until
+you can pass" is a rule the reader keeps, not one the tool enforces. And nothing in the report
+says whether the change is *good* — that judgement is `/code-review`'s and the reader's.
+
+**Voice**: write like Martin Kleppmann — clear, flowing, each section handing off to the next.
+Follow every abstract sentence with something concrete.
+
+Output is a self-contained interactive HTML page (default) or an inline markdown report. You
+write it directly — no templates, no intermediate JSON, no agent chains.
 
 ## Instructions
 
@@ -21,7 +40,7 @@ Parse `--format` first:
 
 | Flag | Values | Default | Meaning |
 |------|--------|---------|---------|
-| `--format` | `html` \| `md` | `html` | `html` → full interactive dashboard at `${CLAUDE_PLUGIN_DATA}/reports/`. `md` → inline markdown report, delivered in the response |
+| `--format` | `html` \| `md` | `html` | `html` → full interactive page at `${CLAUDE_PLUGIN_DATA}/reports/`. `md` → inline markdown report, delivered in the response |
 | `--local` | switch | off | Force the local design-system file — capable HTML **publishes to an Artifact by default** |
 | `--artifact` | switch | retained no-op alias | Already the default on capable HTML — kept so muscle memory / natural-language triggers don't break |
 
@@ -29,9 +48,9 @@ Parse `--format` first:
 `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
 `(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
 The short version: **capable HTML publishes to a claude.ai Artifact by default**; `--local` forces the
-local dashboard; `md` and non-capable sessions stay local.
+local page; `md` and non-capable sessions stay local.
 
-`--local` forces local (analytical charts, zoom/pan) and triggers on natural-language equivalents —
+`--local` forces local (Mermaid diagrams, zoom/pan) and triggers on natural-language equivalents —
 "keep it local", "don't publish", "just the local file" — in whatever language the user writes.
 `--artifact` is the retained alias for the now-default behavior and still triggers on "as an artifact",
 "publish as a link", "share as a URL"; if both are signalled, `--local` wins. Both apply to
@@ -79,24 +98,32 @@ Determine the output language:
 
 ### Intent Check
 
-*Why: Understanding the audience and focus area upfront lets the report emphasize what matters most — a code review for a teammate reads differently from an architecture briefing for stakeholders.*
+*Why: how much of this subsystem the reader already knows is the one thing that changes the shape
+of the report — it decides whether the deep Background layer opens or stays folded. And a reader
+who names what they're unsure about gets Intuition and Code aimed there.*
 
-If the user's message already conveys clear intent (specific focus, explicit audience, or detailed request), skip this step and proceed with defaults.
+If the user's message already conveys this (says what they know, or names what they're after),
+skip this step and proceed with defaults.
 
-If the request is ambiguous (e.g., just a branch name with no context), use AskUserQuestion to ask up to 2 questions:
+If the request is bare — a branch name and nothing else — use AskUserQuestion for up to 2 questions:
 
-1. **Audience**: Who will read this? (yourself, your team, stakeholders)
-2. **Focus**: Any specific aspect to emphasize? (architecture impact, migration completeness, general)
+1. **Familiarity**: How well do you know this part of the codebase? (new to it / worked in it before / I wrote most of it)
+2. **Focus**: Anything specific you want to understand about this change?
 
-Defaults (when not specified):
-- Audience: the user themselves
-- Focus: balanced coverage across all sections
+How the answers land: *new to it* → deep Background written and left **open**; *worked in it* or
+*I wrote it* → deep Background still written but **collapsed**, and kept short. A named focus pulls
+weight into that part of Intuition and Code.
+
+Defaults (when not specified): treat the reader as new to the subsystem, deep Background collapsed,
+attention spread evenly across the change.
 
 ### Data Gathering
 
-*Why: Reading actual file contents (not just diff hunks) is essential for accurate architecture diagrams and code review assessments.*
+*Why: the diff tells you what moved. It never tells you what the thing was — and "what the thing
+was" is the whole first half of a catch-up. Half of this step reads the change; the other half
+reads the world the change lands in.*
 
-Collect comprehensive data about the diff. Run git commands in parallel where possible.
+Run git commands in parallel where possible.
 
 **Step 1 — Stats and metadata** (parallel):
 ```
@@ -112,104 +139,137 @@ Where `{scope-log-range}` is:
 - For single commit: `-1 abc1234`
 - For HEAD: `-1 HEAD` (or recent commits if uncommitted)
 
-**Step 2 — Quantitative metrics** (parallel):
-- Total lines added/removed: parse `--stat` summary or use `git diff {scope} --numstat`
-- Files changed count, new files, deleted files (from `--name-status`)
-- New modules/directories introduced
+**Step 2 — Change shape**:
+- Files changed, new files, deleted files (from `--name-status`); lines +/− from `--numstat`
+- These numbers ground your prose; they are no longer a section of their own
 
 **Step 3 — Content analysis**:
-Read the full diff content and changed files to understand:
-- **Architecture changes**: New modules, changed imports/exports, dependency shifts
-- **Feature inventory**: What features were added/modified/removed
-- **API surface changes**: New/changed public functions, types, endpoints
+Read the full diff **and the changed files in full** — a hunk without its file is missing the
+context that makes it mean anything. Establish:
+- What the change does, and which functions/types/endpoints it touches
+- Which imports and call sites appear or disappear — this alone decides whether the dependency
+  picture in Code exists at all (D5: no change, no picture)
 
-Use Glob + Grep to find related files (tests, configs, docs) that provide context.
+**Step 4 — Surrounding-code exploration** (Background's raw material):
+Read *outward* from the changed files until you could describe this subsystem to someone who has
+never opened it. Use Glob + Grep:
+- Callers and callees of every changed function (grep the symbol repo-wide)
+- The module the changed files live in — its entry point, its core data structures, its README
+- Tests exercising the changed behaviour — they state the old contract in executable form
+- Existing similar code, so the idea can be framed as "like X, but …"
 
-**CRITICAL**: Read actual changed file contents — do not rely solely on diff hunks. Understanding the full file context is essential for accurate architecture diagrams and code review.
+Note each finding as `file:line`. Background prose needs sources exactly as much as numbers do.
 
 ### Verification Checkpoint
 
-*Why: Every claim in the report must be traceable to actual git output. This step catches hallucinated metrics before they enter the report.*
+*Why: Background and Intuition are **authored**, not lifted — that is a real step beyond
+re-structuring, and the fact sheet is what keeps it honest.*
 
 Before generating the report, **produce a structured fact sheet** listing every claim you will present:
 
 1. **Quantitative check**: Lines +/−, file counts, module counts — all must match git output exactly
-2. **Name check**: Every function name, type name, file path mentioned must exist in the actual diff
-3. **Behavior check**: Every behavioral description must be traceable to specific code changes
-4. **Source citation**: For each claim in the analysis, identify the source (commit hash, file:line, diff hunk)
+2. **Name check**: Every function name, type name, file path you mention must exist **either in the
+   diff or in a source file you actually read** during Step 4 — cite it as `file:line`. (Background
+   describes code the diff never touches; that prose is grounded by the read, not by the diff.)
+3. **Behavior check**: Every behavioral description must be traceable to specific code
+4. **Source citation**: For each claim, name the source (commit hash, `file:line`, diff hunk)
+5. **Verdict check**: No claim asserts quality. If a sentence contains *should*, *bad*, *better*,
+   *recommended* (or their equivalent in the output language), rewrite it as a fact or drop it
 
-If any claim cannot be sourced, remove it or mark it as uncertain.
+If a claim can't be sourced, remove it or mark it uncertain.
 
 ### Report Generation
 
 Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
 
-Branch on `--format`:
-
 **HTML channel routing (default = Artifact).** For `--format html` the channel is decided by
 `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account the default
-is the **Artifact channel** — go straight to "HTML mode — Artifact channel" below. Write the **local
-design-system + Mermaid** dashboard (the section directly under this one) only when `--local` is in
-play, or as the **non-capable regenerate fallback** after a publish attempt fails (see "Publish"). `md`
-is unaffected — it stays local either way.
+is the **Artifact channel** — go to "HTML mode — Artifact channel" below. Write the **local
+design-system + Mermaid** page only when `--local` is in play, or as the **non-capable regenerate
+fallback** after a publish attempt fails (see "Publish"). `md` is unaffected — it stays local either way.
+
+#### The four sections (all formats, all channels)
+
+Fixed order, no tabs, one page, table of contents at the top. Every format below renders *these*
+sections; only the rendering technique changes.
+
+| # | Section | What it holds |
+|---|---|---|
+| 1 | **Background** | The world before the change. Two layers: deep (the subsystem, collapsed by default) then narrow (the specific code the change touches, always open) |
+| 2 | **Intuition** | The idea in one paragraph + a toy-data example + before/after flow diagrams carrying that example data |
+| 3 | **Code** | The literate diff — the change walked in understanding order, snippets lifted by extraction. Dependency before/after picture first *if* dependencies changed. Full diff as a collapsed appendix at the bottom |
+| 4 | **Quiz** | Five medium multiple-choice questions with click-through feedback |
+
+**1 — Background.** Written from Step 4's exploration, not from the diff.
+- *Deep layer*: the subsystem this change lands in — what it is for, how a request moves through
+  it, which data structures matter. Enough that someone who has never opened this repo can follow
+  what comes next. Collapsed by default (the second PR in the same repo shouldn't re-scroll it);
+  open when Intent Check said "new to it".
+- *Narrow layer*: the specific functions, files, and data the change touches — as they were
+  **before**. Always open. This is the sentence the reader will hold in their head while reading Code.
+- Both layers describe existing code, so every name traces to a `file:line` you read.
+
+**2 — Intuition.** The reader should finish this section able to state the change in their own words.
+- *The idea*, one paragraph: what this change is trying to accomplish. Not how — that's Code.
+- *A toy-data example*: one small concrete input and what happens to it, as a short table or list.
+  Small enough to trace by hand. Abstract descriptions slide off; a single traced example sticks.
+- *Two flow diagrams*, before and after: the path the request/data takes. **They must carry the
+  toy example's actual data as labels** — a picture of unlabelled boxes leaves the reader exactly
+  where they started. Keep to one diagram family and reuse it across the report.
+- No implementation detail here. If you're naming a function signature, you're in Code's territory.
+
+**3 — Code — the literate diff.** Prose that walks the change in **understanding order**, with
+extracted snippets embedded where they're being discussed. Not file-by-file: group the hunks that
+belong to one idea even when they live in different files, and lead with whichever one the rest
+depends on.
+- *Extraction law (ADR 0005)*: every code block is `extract-hunks.js` output pasted verbatim. You
+  write the prose around it and never a line inside it. A reader who doesn't know the code cannot
+  notice when a retyped snippet has drifted — a wrong snippet teaches a wrong system.
+  ```bash
+  node ${CLAUDE_PLUGIN_ROOT}/scripts/extract-hunks.js <scope> <file> [line-range]
+  # PR with no local refs: gh pr diff <N> | node ${CLAUDE_PLUGIN_ROOT}/scripts/extract-hunks.js --stdin <file> [line-range]
+  ```
+- *Budget*: 3–8 snippets, ≤150 lines each (`structured-blocks.md`). These are the pieces the reader
+  must see, not every touched file. Read `structured-blocks.md` before writing the section — layout,
+  highlighting, and degrade rules live there.
+- *before/after vs after-only*: show both sides only where "what became what" is the point.
+  Everywhere else, the after side alone reads faster.
+- *Dependency picture* — the section's **first** block, and only when imports or call sites actually
+  changed: two box-and-arrow pictures, before and after, distinguishing new arrows, removed arrows,
+  and cycles by colour or style. Caption states facts only ("`auth.ts` now calls `session.ts`";
+  a cycle gets a ⚠️ marker and nothing more). No verdict sentence. If dependencies didn't change,
+  the block doesn't exist — don't render an empty one.
+- *Appendix*: the complete diff, once, in a collapsed block at the very bottom. The report must not
+  grow to the length of the diff.
+
+**4 — Quiz.** Five multiple-choice questions, medium difficulty.
+- Answerable only by someone who understood the change — not by re-reading a line number, not by
+  general knowledge. No gotchas, no trick wording.
+- **Options length-matched**: word counts within ±1 across the options of a question, and don't
+  write the correct answer more fully than the others. Form must leak nothing, or the reader passes
+  by shape instead of understanding.
+- Clicking an option reveals right/wrong **plus one sentence per option** saying why it is or isn't
+  the case — the moment right after a wrong guess is when the explanation lands.
+- HTML (both channels): inline `<script>`, zero external requests — this works inside the Artifact
+  viewer's CSP. md: answers and explanations in a collapsed block (see markdown mode).
+- Never a gate, never a hook (ADR 0003).
+
+**No verdicts, anywhere.** *should*, *bad*, *better*, *recommended* and their
+equivalents don't appear in the prose, the captions, or the quiz explanations. Extracted code blocks
+are source, not your prose, and are exempt. Judgement belongs to `/code-review`.
 
 #### HTML mode — local design-system channel (`--local` / non-capable fallback)
 
-Write the entire HTML file yourself — `<!DOCTYPE html>` to `</html>`. A self-contained single file with inline CSS and scripts.
+Write the entire HTML file yourself — `<!DOCTYPE html>` to `</html>`. A self-contained single file
+with inline CSS and scripts, holding the four sections above.
 
-**Report structure** — adapt based on the diff's content, but this is the default section set:
-
-| Section | Content |
-|---|---|
-| **Overview** | Commits, files changed, lines +/−, scope description |
-| **File Map** | Tree/nested diagram of changed files grouped by directory, each file carrying a **change-flag** (added / removed / modified / renamed) |
-| **Key Changes** | Side-by-side **split-diff** of the load-bearing changed files — the actual code, not a summary. See below |
-| **Architecture Impact** | How the change affects system structure — with diagram |
-| **Change Classification** | Feature/refactor/test/docs/config breakdown table |
-| **Dependency Shift** | Before/after imports, packages, connections — with diagram |
-| **New Components** | Architecture diagram focused on new modules |
-| **Hot Spots** | Impact vs frequency — quadrant chart or table |
-
-Skip sections that don't apply to the diff (e.g., no "New Components" if nothing was added). **Key
-Changes is the load-bearing section** for a code review — a reviewer wants the real lines first.
-Place it high (right after File Map) and let it draw the eye; don't bury it under the diagrams.
-
-**Key Changes (split-diff) — show the real code, grounded by extraction.** This is the one
-section whose facts must never pass through your hands. When the diff contains meaningful code
-hunks (most diffs do), render them as before/after split-diff — but the code comes from a script,
-not from you:
-
-1. **Auto-detect, no flag.** Turn the section on by content: if the diff has substantive code
-   changes (not pure renames/deletions/binary/lockfiles), include Key Changes. Skip it for a
-   trivial one-line change that reviews faster as plain text, or a diff that is all
-   generated/vendored files.
-2. **Select the load-bearing files** — 3–8 of them (budget in `structured-blocks.md`). These are
-   the files a reviewer must read, not every touched file.
-3. **Extract, never retype.** For each, get the verbatim escaped code from the bundled script:
-   ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/extract-hunks.js <scope> <file> [line-range]
-   # PR with no local refs: gh pr diff <N> | node ${CLAUDE_PLUGIN_ROOT}/scripts/extract-hunks.js --stdin <file> [line-range]
-   ```
-   Paste its `<pre><code>` BEFORE/AFTER blocks into the split-diff layout **verbatim**. You write
-   only the one-line summary (what the hunk does and why) and a few high-signal annotations —
-   never the code itself. Retyping code drifts and mis-escapes; a confidently-wrong diff is worse
-   than none in a review. (ADR 0005.)
-4. **Layout, CDN, budgets, network-0 degrade** all live in
-   `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md` — read it before writing
-   the section. One `<details>` per file (1–2 load-bearing files `open`, rest collapsed);
-   highlight.js from CDN with the same first-view-needs-network caveat as Mermaid; un-highlighted
-   monospace if offline.
-
-In **markdown mode**, there is no CDN highlighting: render Key Changes as fenced ` ```diff ` blocks
-(or per-file before/after fences) populated from `extract-hunks.js --json`, still extraction-grounded.
-
-**File Map change-flags.** Tag each file in the File Map with its change type — added / removed /
-modified / renamed — derived **mechanically** from `git diff {scope} --name-status` (the `A`/`D`/
-`M`/`R` status letters), never guessed. Colour the flags from the `semantic-tokens.md` palette
-(avoid the forbidden violet/fuchsia) and ensure they read in dark mode; reuse the same
-`--diff-added`/`--diff-removed` convention `structured-blocks.md` defines, with `modified` on
-`muted` and `renamed` on `link`. The flag is the footprint a reviewer scans before expanding
-anything.
+Rendering specifics for this channel:
+- **Flow and dependency diagrams**: Mermaid, per `mermaid-patterns.md`.
+- **Code snippets**: `extract-hunks.js` `<pre><code>` output, highlight.js from CDN with the
+  first-view-needs-network caveat; un-highlighted monospace if offline (`structured-blocks.md`).
+  One `<details>` per snippet, the one or two load-bearing ones `open`.
+- **Background deep layer** and the **full-diff appendix**: `<details>`, collapsed.
+- **Quiz**: inline `<script>`, no CDN.
 
 **Diagrams**: Read these reference files for implementation:
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Mermaid syntax, theming, dark mode, zoom
@@ -234,9 +294,11 @@ The gate also fails on dead links, alt-less images, and leftover scaffolding: gi
 - `min-width: 0` on flex/grid children
 - `prefers-reduced-motion: reduce`
 
-**Content integrity**: Every number, file path, function name, and behavioral claim in the report must trace back to the verified fact sheet. If you're writing "this change affects X" — that must be in your fact sheet. Numbers must match git output exactly.
+**Content integrity**: Every number, file path, function name, and behavioral claim traces back to
+the verified fact sheet. Background prose included — its sources are the files you read, cited by
+`file:line`.
 
-Beyond integrity, seven authoring reflexes pass every mechanical gate and still flatten the output — summary-leak (a one-line gist where the diff's actual changes belong), linear dump (file-by-file with no proportion), forced diagram (a flowchart for a change classification a table conveys better), generic label, uniform density, empty decoration, accent overuse. Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue. They're named defaults to break, not design rules: layout and taste stay yours — the catalogue just flags the habits worth resisting (e.g. let the load-bearing hot spot draw the eye first, don't render the dependency shift and a two-line aside at the same weight).
+Beyond integrity, seven authoring reflexes pass every mechanical gate and still flatten the output — summary-leak (a one-line gist where the real substance belongs), linear dump (file-by-file with no proportion), forced diagram, generic label, uniform density, empty decoration, accent overuse. Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue. They're named defaults to break, not design rules: layout and taste stay yours — the catalogue just flags the habits worth resisting (e.g. let the idea in Intuition land before anything else on the page, don't render a two-line aside at the same weight as the before/after flow).
 
 **Output path**: `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`).
 
@@ -246,7 +308,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
 ```
 If violations found: fix inline, max 2 retries.
 
-**Visual self-audit (HTML only)**: The gate reads the HTML as *text* — it never sees the rendered picture. A file-map tree can pass the density check and still render as an unreadable tangle; a long file path can clip at the container edge; the hot-spots quadrant that reads fine in source can collapse into a flat wall once styled. After the gate passes, **render the report and look at it** before delivering:
+**Visual self-audit (HTML only)**: The gate reads the HTML as *text* — it never sees the rendered picture. A before/after flow pair can pass the density check and render as an unreadable tangle; a long file path can clip at the container edge. After the gate passes, **render the report and look at it** before delivering:
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path>
@@ -254,11 +316,12 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path>
 
 On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
 
-- **Density** — is any section a uniform grey wall, or a file-map / dependency-shift diagram past its budget and unreadable?
-- **Hierarchy** — does the change you judged load-bearing draw the eye first, or is every section the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
-- **Mermaid integrity** — did the file map, dependency-shift subgraphs, or hot-spots quadrant render as raw `<pre>` text or as crossing/overlapping edges?
-- **Overflow** — does a diagram, classification table, or long file path run past its container or off the page?
-- **Split-diff** — do the before/after panes sit side by side and stay within their columns (`min-width:0`), or does a long code line blow out the grid? Is the code highlighted (or cleanly monospace if offline), not a raw unstyled wall? Are only the 1–2 load-bearing files `open`?
+- **Background** — is the deep layer actually collapsed, and the narrow layer visible without a click?
+- **Intuition** — do the before/after flow diagrams sit side by side and stay readable, with their example-data labels legible rather than clipped?
+- **Code** — do the extracted snippets stay inside their container (`min-width: 0`), highlighted or cleanly monospace, with only the load-bearing ones `open`? Is the full-diff appendix collapsed?
+- **Quiz** — do the five questions and their options render as a usable list, options visually equal-weight rather than one obviously longest?
+- **Mermaid integrity** — did any diagram render as raw `<pre>` text, or with crossing/overlapping edges?
+- **Density / hierarchy** — is any section a uniform grey wall? Does the idea land first, or is every block the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
 
 Fix what you see and re-render. **Cap at 2 audit passes** — if something still looks off after the second, ship with a one-line note to the user rather than looping. This catches gross breakage, not pixel-perfection.
 
@@ -270,9 +333,9 @@ Then run `open <output-path>`.
 
 #### HTML mode — Artifact channel (default on a capable account)
 
-Same content decisions as the local design-system channel above (report structure, section-to-diagram
-mapping, split-diff, anti-slop-tells) — only the page's shape and delivery mechanism change,
-because it ships inside Claude Code's official Artifacts feature instead of as a local file.
+Same four sections and the same content decisions as above — only the page's shape and delivery
+mechanism change, because it ships inside Claude Code's official Artifacts feature instead of as a
+local file.
 
 **Before writing anything**, load the built-in `artifact-design` skill (Skill tool, skill name
 `artifact-design`). This is a tool contract MUST, not a suggestion — it conditions you for the CSP
@@ -284,16 +347,18 @@ Then write the page as a **fragment**, not a full document:
 - Set a concise `<title>` directly in the content — it names the artifact in the browser tab. Keep
   it stable across every republish of the same diff in this session.
 - **Zero external requests** — the Artifact viewer's CSP blocks all of them:
-  - **Diagrams**: no Mermaid CDN `<script>`. Architecture Impact, Dependency Shift, New Components,
-    and Hot Spots become inline SVG or HTML+CSS layouts instead (follow the artifact-design skill's
+  - **Diagrams**: no Mermaid CDN `<script>`. The Intuition flow pair and the Code dependency
+    picture become inline SVG or HTML+CSS layouts instead (follow the artifact-design skill's
     guidance) — same diagram-type decision from `diagram-type-selection.md`, different rendering
     technique. `mermaid-patterns.md`'s CDN setup and `classDef` rules don't apply here.
-  - **Key Changes / split-diff**: no highlight.js CDN either — symmetric with the Mermaid ban. Read
+  - **Code snippets**: no highlight.js CDN either — symmetric with the Mermaid ban. Read
     `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md`'s "Artifact channel: no
-    CDN, forced degrade" subsection before writing this section: the code always renders as clean
-    monospace, never coloured, and the fallback CSS must use this page's own colours (not
-    vision-powers' `--paper-2`/`--ink`/`--mono` tokens, which don't exist here). The grounding law
-    doesn't change — `extract-hunks.js` output is still pasted verbatim; only the CSS around it does.
+    CDN, forced degrade" subsection first: the code always renders as clean monospace, never
+    coloured, and the fallback CSS must use this page's own colours (not vision-powers'
+    `--paper-2`/`--ink`/`--mono` tokens, which don't exist here). The extraction law doesn't
+    change — `extract-hunks.js` output is still pasted verbatim; only the CSS around it does.
+  - **Quiz**: inline `<script>` is fine and is the intended technique — it's same-document, not an
+    external request, so click feedback works on the published page.
 - Support both themes: `@media (prefers-color-scheme: dark)` as the default signal, plus
   `:root[data-theme="dark"]` / `:root[data-theme="light"]` overrides — the artifact viewer's theme
   toggle stamps `data-theme` on the root and it must win in both directions.
@@ -319,11 +384,11 @@ the built-in artifact-design skill's responsibility here, not this skill's — t
 Chrome render loop to run before publishing.
 
 **Size headroom**: a large single-file diff (1483 changed lines, extracted 2026-07-06) measured
-~44 bytes/line through `extract-hunks.js`, so a split-diff section that keeps to the budget above
-(3–8 files, ≤150 lines each) lands in the tens-to-low-hundreds of KB — hundreds of times under the
-platform's 16 MiB artifact render ceiling. The ceiling is only reachable by ignoring the budget
-(e.g. pasting a whole large diff verbatim instead of the load-bearing hunks); no extra size-limiting
-logic is needed as long as the section stays inside it.
+~44 bytes/line through `extract-hunks.js`, so a Code section that keeps to the budget above
+(3–8 snippets, ≤150 lines each) plus a collapsed full-diff appendix lands in the tens-to-low-hundreds
+of KB — hundreds of times under the platform's 16 MiB artifact render ceiling. The ceiling is only
+reachable by ignoring the budget (e.g. pasting a whole large diff into the body as well); no extra
+size-limiting logic is needed as long as the section stays inside it.
 
 Once the gate passes, publish — see "Publish (Artifact channel — default for HTML)" below.
 
@@ -331,47 +396,83 @@ Once the gate passes, publish — see "Publish (Artifact channel — default for
 
 Assemble an inline markdown report and deliver it directly in the response, and save the same
 content to `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.md` — the chat text is the delivery,
-the file is the record that lets report-manager list and refine this report later. Use this structure:
+the file is the record that lets report-manager list and refine this report later. Same four
+sections; what changes is that there is no CSS, no inline JS, and no CDN, so folding is `<details>`
+(which renders on GitHub and in most viewers) and diagrams are Mermaid fences.
 
-```
-# Diff Visual: <scope description>
+````
+# <scope description> — Catch-up
 
-**Scope:** `<git ref or range>` · **Audience:** <audience> · **Focus:** <focus>
+**Scope:** `<git ref or range>` · **Familiarity:** <what the reader knows> · **Focus:** <focus>
 
-## Overview
-- **Commits:** N
-- **Files changed:** N (M new · P deleted)
-- **Lines:** +A / −B
+## Background
 
-## File Map
-<tree/nested diagram of changed files grouped by directory, each file tagged
- [A]/[D]/[M]/[R] from --name-status>
+<details><summary>The subsystem this lands in — skip if you already know it</summary>
 
-## Key Changes
-<for the 3-8 load-bearing files: a ```diff fenced block per file populated from
- `extract-hunks.js --json` (extraction-grounded — never retyped), each under a
- one-line summary of what the hunk changes and why>
+<deep layer: what the subsystem is for, how a request moves through it, the data structures
+ that matter. Grounded in the files read during Step 4.>
 
-## Architecture Impact
-<1-2 paragraphs + architecture diagram>
+</details>
 
-## Change Classification
-| Category | % | Files |
+**What the change touches** — <narrow layer: the specific functions/files/data as they were
+before the change. Always visible, never folded.>
+
+## Intuition
+
+<the idea in one paragraph — what this change is trying to accomplish, not how>
+
+**Worked example** — <one small concrete input, traced by hand>
+
+| Input | Before | After |
 |---|---|---|
+| <toy datum> | <what used to happen> | <what happens now> |
 
-## Dependency Shift
-<before/after side-by-side subgraph Mermaid>
+<two Mermaid `flowchart` fences, before and after, whose node/edge labels carry the toy
+ example's actual data>
 
-## New Components
-<architecture diagram focused on new modules>
+## Code
 
-## Hot Spots
-<quadrant: impact vs frequency>
-```
+<if — and only if — imports or call sites changed: two Mermaid fences, dependency before and
+ after, with new / removed / cyclic arrows distinguished. Caption states facts only; a cycle
+ gets ⚠️ and nothing more. Unchanged dependencies → this block does not appear at all.>
 
-**Translation:** Translate section headers and prose to the detected language. Keep file paths, function names, commit hashes, and technical classifications (feature/refactor/test/docs/config) untranslated.
+<then 3–8 snippets in understanding order, not file order. Each: a one-line summary of the idea
+ it carries, then a ```diff fence populated from `extract-hunks.js --json` — extraction-grounded,
+ never retyped.>
 
-**Length cap:** Keep the markdown report under 300 lines. If data exceeds this, truncate with `(+N more)` notes rather than expanding the report.
+<details><summary>Full diff</summary>
+
+<the complete diff in one ```diff fence>
+
+</details>
+
+## Quiz
+
+Five questions. Answers are folded so the first screen never shows them.
+
+**1.** <question>
+- **A.** <option> · **B.** <option> · **C.** <option> · **D.** <option>
+
+<... 2 through 5 ...>
+
+<details><summary>Answers and explanations</summary>
+
+**1 — B.** <one sentence per option: why each is or isn't the case>
+
+</details>
+````
+
+**Fold-free viewers**: if the target can't render `<details>` (some chat clients), keep the same
+order but put the quiz answers below a `---` rule at the very bottom, under an "Answers" heading.
+The requirement is that the answer is not on screen with its question, not the tag itself.
+
+**Translation:** Translate section headers, prose, and quiz questions/options to the detected
+language. Keep file paths, function names, commit hashes, and code fences untranslated.
+
+**Length cap:** Keep the markdown report under 300 lines. When it doesn't fit, cut in this order —
+(1) the full-diff appendix, (2) the deep Background layer, (3) the number of Code snippets — each
+with a `(+N more)` note. **Intuition and Quiz are never cut**: they are the two sections that do
+the catching up, and a report that drops them has failed at the thing it exists for.
 
 ### Publish (Artifact channel — default for HTML)
 
@@ -385,9 +486,9 @@ After the content-only gate passes (see "HTML mode — Artifact channel" above):
    node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
    ```
 3. Report the URL to the user with one line. This is the **canonical publish notice** shared across
-   the channel skills (doc-visual owns the reference form; here the noun is *dashboard*), so keep it
+   the channel skills (doc-visual owns the reference form; here the noun is *report*), so keep it
    stable: `Published to claude.ai — design is delegated to Claude's built-in Artifact renderer, so
-   it differs from the local dashboard's look; run --local for the local design-system + Mermaid
+   it differs from the local page's look; run --local for the local design-system + Mermaid
    version.` This one line does double duty — it discloses the publish (the deliverable is now a URL,
    not a local file) **and** the design delegation. Phrase it in whatever language you're already
    replying in; the structure (published · delegated-design · `--local` escape hatch) is what's
@@ -398,10 +499,10 @@ unavailable or the publish call fails, the session is non-capable. Don't guess a
 and don't ask before falling back. The fragment you authored is a Mermaid-less, skeleton-less page
 meant for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
 breaks ADR 0009 §3's promise of design-system + Mermaid on a non-capable session). Instead
-**regenerate the full local design-system + Mermaid dashboard** ("HTML mode — local design-system
+**regenerate the full local design-system + Mermaid page** ("HTML mode — local design-system
 channel" above), run its full gate + visual self-audit, save to the `{scope}-diff-visual.html` path,
 `open` it, and state the fallback in one line (e.g. "Artifact publish unavailable — generated the
-local design-system dashboard instead."). Cost = one regeneration, only on a non-capable session.
+local design-system report instead."). Cost = one regeneration, only on a non-capable session.
 
 ### Gotchas
 
@@ -410,7 +511,8 @@ local design-system dashboard instead."). Cost = one regeneration, only on a non
 - **Empty diff for uncommitted changes**: `git diff HEAD` returns nothing when there are no uncommitted changes. This is a valid state — inform the user rather than generating an empty report.
 - **PR diff requires `gh` auth**: `gh pr diff` needs authentication. If it fails with 401/403, suggest `gh auth login` rather than falling back to a different approach silently.
 - **Binary files in diff**: `git diff --stat` counts binary files but `--numstat` shows `-` for their line counts. Don't report binary file "lines added/removed" — note them separately as binary changes.
-- **Very large diffs (>5000 lines)**: Reading the full diff content can overwhelm context. Focus on the `--stat` summary and read only the most architecturally significant changed files in full.
+- **Very large diffs (>5000 lines)**: Reading the full diff content can overwhelm context. Focus on the `--stat` summary and read in full only the files the literate diff will actually walk.
+- **Nothing to catch up on**: a pure lockfile/generated/rename diff has no idea to explain. Say so in one line and skip the report rather than inventing a Background for it.
 
 ### Reference Files
 
@@ -419,9 +521,9 @@ Read these during report generation (not upfront — read the relevant one when 
 | File | When to read |
 |---|---|
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram |
-| `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md` | Before writing the Key Changes split-diff section (layout, highlight.js CDN, budgets, grounding, degrade — including the Artifact-channel no-CDN variant) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md` | Before writing the Code section's snippets (layout, highlight.js CDN, budgets, extraction grounding, degrade — including the Artifact-channel no-CDN variant) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme |
-| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for the flow or dependency picture |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` | When a diagram feels complex |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` | While shaping content — to check you're not falling into a behavioral-slop reflex |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md` | After the gate passes — the render-and-look loop (full procedure) |

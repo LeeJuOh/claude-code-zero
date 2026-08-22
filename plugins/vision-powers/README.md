@@ -15,11 +15,44 @@ The thesis behind this plugin echoes what Thariq Shihipar (Anthropic, Claude Cod
 | Skill | Description |
 |-------|-------------|
 | `plugin-visual` | Claude Code plugin deep analysis — 4 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
-| `diff-visual` | Visualize git diffs as interactive HTML reports — now showing the **actual changed code** as side-by-side split-diff (syntax-highlighted, build-time grounded so it's the real lines, not a paraphrase), plus a file map with change-flags, architecture diagrams, classification heatmap, dependency shift, and hot spot analysis |
+| `diff-visual` | Catch up on a change before you review it — background on the system it lands in, the idea behind it, a literate walkthrough of the real (extraction-grounded) code, and a five-question quiz to check you actually got it. Reads *before* judgement — it never says whether the change is good |
 | `doc-visual` | Visualize any markdown document (research, spec, RFC, ADR, design doc) as a diagram-enhanced HTML or markdown report with Mermaid diagrams matched to section intent |
 | `fact-check` | Verify document accuracy against the actual codebase and git history — corrects claims in place and, when the target is a published Artifact, republishes the fix to the same claude.ai link |
 | `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, skill security scan (prompt injection, data exfil, destructive, credentials, obfuscation, safety override), hook schema validation, plugin components, CLAUDE.md & memory health. 6 graded areas + 5 observational, each threshold cited to official docs |
 | `report-manager` | List, open, delete, search, and refine generated reports — surfaces stored Artifact URLs and republishes a refined report to the same claude.ai link, even across sessions |
+
+## diff-visual — catch up before you review
+
+Your agent wrote the code. So did your teammate's agent. Which means the thing every diff tool
+quietly assumes — that you already know the system the change lands in — isn't true anymore. You
+open the PR, you read twelve changed files, and you still can't say what the change *is*, let alone
+whether it's right. Reviewing from that position isn't review; it's guessing.
+
+`diff-visual` catches you up first. It reads the code around the change, not just the change, and
+hands you the four things you need before an opinion is worth having.
+
+```
+visualize diff HEAD                    # your agent just finished — read this before you push
+visualize diff #142                    # a teammate's PR — read this before you judge it
+visualize diff main...feature-auth     # a branch
+visualize diff HEAD --format md        # terminal / PR description, quiz answers folded
+visualize diff HEAD --lang ko          # prose and quiz in Korean, code and paths untouched
+```
+
+| Section | What you get |
+|---|---|
+| **Background** | The world before the change — the subsystem first (folded away once you know it), then the exact code the change touches |
+| **Intuition** | The idea in a paragraph, one worked example small enough to trace by hand, and before/after flow diagrams carrying that example's real data |
+| **Code** | The change walked in the order it makes sense, not file by file. Every snippet is lifted from git by a script, never retyped — a wrong snippet would teach you a wrong system. Full diff folded at the bottom |
+| **Quiz** | Five questions you can only answer if you actually followed it. Click an option and it tells you why each one is or isn't the case |
+
+**When to run it.** Right after your agent finishes and before you push. And before you form an
+opinion on someone else's PR. The quiz is a speed regulator, not a gate — nothing blocks a push;
+"don't send it until I can pass" is a rule you keep, not one the tool enforces.
+
+**What it won't tell you.** Whether the change is good. There's no verdict anywhere in the report —
+not in the prose, not in the diagram captions. A new dependency cycle gets a ⚠️ on the picture and
+no sentence about it. Judgement is yours, or `/code-review`'s, once you're caught up.
 
 ## Install
 
