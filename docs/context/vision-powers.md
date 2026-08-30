@@ -162,6 +162,32 @@ change to answer; no gotchas; options length-matched so formatting leaks nothing
 regulator* — the reader's own rule is "pass before you push or approve". Never a gate ([[0003]]).
 _Avoid_: test, exam, checkpoint, gate.
 
+**Diagram grounding**:
+Making a diagram's nodes and edges correspond to things that actually exist — the diagram-layer
+analogue of **Build-time grounding** for code. Two flavours, split by [[0011]]: **internal
+consistency** (a diagram is well-formed within itself) and **real-code grounding** (its nodes name
+real code). vision-powers grounds diagrams to real code by *authoring discipline* — the fact-sheet
+Name check is extended so every diagram node label and edge endpoint is drawn from the set of names
+already tied to a `file:line`. It is **not** gate-enforced: unlike code (extraction) or palette (the
+Gate), there is no structured intermediate to check against, because `diff-visual/SKILL.md:33` bans
+one. This is the knowing "wish"-grade exception [[0011]] records.
+_Avoid_: conflating with **Internal consistency** (that is only the weaker half).
+
+**Internal consistency** (of a diagram):
+The one grounding property vision-powers *can* enforce mechanically: every edge endpoint resolves to
+a node declared in the same diagram. The **Gate** checks it by parsing the rendered Mermaid — so it
+runs on the **Local** channel only (`html + --local`), never on the **Artifact** channel (inline SVG
+has no recoverable topology) or md (no gate). Matches archify's `components.has(conn.from)` and
+gitdiagram's `unknown_edge_source`/`unknown_edge_target`. It does **not** verify the diagram matches
+real code — an internally-consistent diagram of a system that doesn't exist still passes ([[0011]]).
+_Avoid_: calling this "topology validation" as if it grounded to code; it is well-formedness only.
+
+**Phantom node**:
+A dashed node or edge in a `diff-visual` before/after diagram marking an element that was **removed
+or moved**. Rendered as Mermaid `-.->` / `stroke-dasharray` on the Local channel and SVG
+`stroke-dasharray` on the Artifact channel. Its caption states the fact only ("removed", "moved to
+X") — never a verdict ([[0010]]). From archify's `architecture-delta`.
+
 ## Flagged ambiguities
 
 **"Diagram-rich" vs "don't force diagrams"** — resolved as: use the *right* visual generously
