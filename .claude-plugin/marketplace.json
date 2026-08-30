@@ -75,6 +75,17 @@
       "version": "1.2.0",
       "description": "cmux terminal integration: terminal I/O, topology control, browser automation, markdown viewer, notifications",
       "tags": ["cmux", "terminal", "browser-automation", "terminal-io"]
+    },
+    {
+      "name": "hermes-tweet",
+      "source": {
+        "source": "github",
+        "repo": "Xquik-dev/hermes-tweet",
+        "sha": "341e991dd21e10105caf1456102f36b246f6e86e"
+      },
+      "version": "0.1.6",
+      "description": "Native Hermes Agent X/Twitter plugin for read-first social media workflows and approval-gated actions.",
+      "tags": ["hermes-agent", "twitter", "x", "social-media", "automation"]
     }
   ]
 }
