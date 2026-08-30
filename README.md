@@ -137,6 +137,16 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
+### [x-twitter-scraper](plugins/x-twitter-scraper/README.md)
+
+**Problem:** X/Twitter data workflows need scoped targets, safe credential handling, and a clear choice between REST API, SDKs, webhooks, and remote MCP.
+
+**Solution:** Xquik workflow guidance for public X/Twitter research, profile lookup, search, monitors, exports, webhook planning, and MCP setup.
+
+`x-twitter-scraper`
+
+---
+
 ### [vibeproxy-kit](plugins/vibeproxy-kit/README.md)
 
 **Problem:** Wiring VibeProxy manually (OAuth, aliases, config.yaml, shell edits) is error-prone. State is unclear — which backend is actually responding?

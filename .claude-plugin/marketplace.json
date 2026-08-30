@@ -57,6 +57,12 @@
       "description": "Rubber duck tutor that keeps you engaged across the whole AI-coding lifecycle — before you ask AI to build (/duck-prebuild), once code is written and before you ship (/duck-verify, /duck-review), and when orienting to unfamiliar code (/duck-orient), plus /duck for auto-detect. /coach is its teaching sibling, manual-invocation only: /coach <topic> explains and drills a concept, /coach <file> or a bare /coach right after generating code dissects it section by section (what/why-this-way/where-it-breaks), and /coach alone surfaces an unresolved gap from a past duck session and teaches it — resolved only once you pass the exercise, not by saying you understand. Ship-point hooks triage what you just pushed against six risk categories and target the riskiest change you didn't actually discuss, fall back to retrieving an unresolved gap from a past session, or demote to a non-blocking scoreboard after three ignored confrontations in a row. Confrontation telemetry (fired/answered/ignored) is queryable from /duck-orient. Doesn't overlap /code-review or /grilling — duck only checks whether you understand, never whether the code or plan is good, and never teaches — that's coach's job."
     },
     {
+      "name": "x-twitter-scraper",
+      "source": "./plugins/x-twitter-scraper",
+      "version": "1.0.0",
+      "description": "Plan Xquik X/Twitter research, monitoring, REST API, and remote MCP workflows with scoped requests and credential-safe setup."
+    },
+    {
       "name": "e2e-test-runner",
       "source": "./plugins/e2e-test-runner",
       "version": "0.2.0",

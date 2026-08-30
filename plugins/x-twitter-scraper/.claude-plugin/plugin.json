@@ -1,0 +1,8 @@
+{
+  "name": "x-twitter-scraper",
+  "description": "Plan Xquik X/Twitter research, monitoring, REST API, and remote MCP workflows with scoped requests and credential-safe setup.",
+  "author": { "name": "Xquik" },
+  "license": "MIT",
+  "defaultEnabled": false,
+  "keywords": ["x", "twitter", "social", "osint", "mcp", "api", "monitoring"]
+}
