@@ -372,7 +372,7 @@ The gate also fails on dead links, alt-less images, and leftover scaffolding: gi
 
 **Content integrity**: All analysis data from sub-agents must survive intact in the report — specific numbers, finding details, risk levels, recommendations. If you're writing "the security audit found issues" instead of listing the actual findings — that's compression.
 
-This cardinal rule (call it *summary-leak*) is one of seven authoring reflexes that pass every mechanical gate and still flatten the output. Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue — linear dump, forced diagram, generic label, uniform density, empty decoration, accent overuse. They're named defaults to break, not design rules: layout and taste stay yours, the catalogue just flags the habits worth resisting (e.g. a forced flowchart on a flat permission list, or every section — security, architecture, dependency map — rendered at the same weight).
+This cardinal rule (call it *summary-leak*) is one of eight authoring reflexes that pass every mechanical gate and still flatten the output. Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue — linear dump, forced diagram, generic label, uniform density, empty decoration, accent overuse, borrowed costume. They're named defaults to break, not design rules: layout and taste stay yours, the catalogue just flags the habits worth resisting (e.g. a forced flowchart on a flat permission list, or every section — security, architecture, dependency map — rendered at the same weight).
 
 **3. Validate**: Run artifact-gate after writing:
 ```bash

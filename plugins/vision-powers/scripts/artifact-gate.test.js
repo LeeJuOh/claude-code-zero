@@ -8,6 +8,7 @@ const {
   checkRawMarkdown,
   checkMermaidDensity,
   checkMermaidClassDef,
+  checkMermaidTopology,
   checkForbiddenColors,
   checkAnchorHrefs,
   checkImageAlt,
@@ -381,4 +382,110 @@ test('trusts a var()-only font-family chain', () => {
 test('flags a bare font-family in an inline style attribute', () => {
   const html = `<html><body><p style="font-family: Geist">hi</p></body></html>`;
   assert.ok(checkFontFallback(html).some(v => v.rule === 'font-fallback'));
+});
+
+// --- checkMermaidTopology (ADR 0011) ---
+
+const mm = (code) => `<pre class="mermaid">${code}</pre>`;
+const badIds = (html) =>
+  checkMermaidTopology(html).map((v) => v.hint.match(/"(\w+)"/)[1]).sort();
+
+test('passes a flowchart whose edges all land on declared nodes', () => {
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  AUTH[Auth] --> CACHE[Cache]
+  CACHE --> DB[(DB)]`)), []);
+});
+
+test('flags an edge endpoint that was never declared', () => {
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  AUTH[Auth] --> CACHE[Cache]
+  AUHT --> DB[DB]`)), ['AUHT']);
+});
+
+test('reports an unknown endpoint once even when it appears on several edges', () => {
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  A[One] --> XX
+  XX --> B[Two]`)), ['XX']);
+});
+
+test('resolves endpoints across dotted and thick arrows', () => {
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  A[One] -.-> B[Two]
+  B ==> C[Three]`)), []);
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  A[One] -.-> BB
+  A --> B[Two]`)), ['BB']);
+});
+
+test('reads through edge labels in both Mermaid forms', () => {
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  A[One] -->|hit| B[Two]`)), []);
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  A[One] -- miss --> B[Two]`)), []);
+});
+
+test('counts a subgraph header as a declaration', () => {
+  assert.deepStrictEqual(badIds(mm(`flowchart TB
+  subgraph GRP[Group]
+    A[One]
+  end
+  GRP --> B[Two]`)), []);
+});
+
+test('follows a chained edge line', () => {
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  A[One] --> B[Two] --> C[Three]`)), []);
+});
+
+test('skips a diagram written entirely in implicit style', () => {
+  // `A --> B` with no shapes anywhere: the id is the label, so there is no
+  // declaration set to compare endpoints against.
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  A --> B
+  B --> C`)), []);
+});
+
+test('leaves sequence diagrams alone', () => {
+  assert.deepStrictEqual(badIds(mm(`sequenceDiagram
+  participant A
+  participant B
+  A-->>B: reply`)), []);
+});
+
+test('ignores classDef and class lines', () => {
+  assert.deepStrictEqual(badIds(mm(`flowchart LR
+  A[One] --> B[Two]
+  classDef phantom fill:#7c6f6411,stroke-dasharray:4 3
+  class B phantom`)), []);
+});
+
+test('runs in the full gate but not in --content-only', () => {
+  const html = `<html><body><h1>x</h1>${mm(`flowchart LR
+  A[One] --> ZZ`)}</body></html>`;
+  withTempHtml(html, (p) => {
+    assert.ok(runArtifactGate(p).violations.some((v) => v.rule === 'mermaid-topology'));
+    assert.ok(!runArtifactGate(p, { contentOnly: true }).violations.some((v) => v.rule === 'mermaid-topology'));
+  });
+});
+
+test('every violation carries a severity alongside the original rule and hint', () => {
+  const html = `<html><body><h1>x</h1><a>dead</a><img src="x.png">${mm(`flowchart LR
+  A[One] --> ZZ`)}</body></html>`;
+  withTempHtml(html, (p) => {
+    const { violations } = runArtifactGate(p);
+    assert.ok(violations.length >= 3);
+    for (const v of violations) {
+      assert.ok(['error', 'warn'].includes(v.severity), `missing severity on ${v.rule}`);
+      assert.strictEqual(typeof v.rule, 'string');
+      assert.strictEqual(typeof v.hint, 'string');
+    }
+  });
+});
+
+test('a topology violation carries machine-readable fixes', () => {
+  const v = checkMermaidTopology(mm(`flowchart LR
+  AUTH[Auth] --> AUHT`))[0];
+  assert.strictEqual(v.severity, 'error');
+  assert.deepStrictEqual(v.supportedFixes.map((f) => f.action), ['declare-node', 'rename-endpoint']);
+  assert.ok(v.supportedFixes[1].candidates.includes('AUTH'));
 });

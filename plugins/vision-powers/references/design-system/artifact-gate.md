@@ -44,8 +44,13 @@ The checklist that model-authored HTML must pass **before** saving. `scripts/art
 8. **Placeholder leak** — unfilled `{{ … }}`, lorem ipsum, or bracketed stubs (`[YOUR NAME]`, `[TODO]`) left in the body
 9. **Gradient-clipped text** — `background-clip: text` (decorative gradient/clipped text) in any real `<style>` block or inline `style=` attribute; quoted CSS inside `<pre>`/`<code>` is exempt
 10. **Font fallback chain** — any `font-family` that names only web fonts with no generic family (e.g. `font-family: Geist` instead of `Geist, system-ui, sans-serif`); `@font-face`, bare keywords, and `var()`-only chains are exempt
+11. **Mermaid edge topology** — an arrow whose source or target id is never declared as a node. It renders as an empty box carrying the raw id, so the reader is taught a relationship the code doesn't have. Flowchart and state diagrams only; a diagram written entirely in implicit style (`A --> B`, no shapes anywhere) has no declaration set to compare against and is skipped
 
 Checks 4–5 mechanize the **Technical** and **Signal** rules above, and 9–10 the **Typography** rule and the anti-slop catalogue, that were previously left to authoring judgment — a request without a gate is a wish.
+
+Check 11 is **internal consistency, not grounding**: it can tell that an arrow points at nothing, never that a node names real code. Whether a diagram describes the actual system stays an authoring discipline in the skill's fact sheet, because there is no symbol set to check against (ADR 0011).
+
+Every violation carries `{ rule, severity, hint }`; `severity` is `'error'` for all current checks, since any violation fails the gate. Check 11 adds `supportedFixes` — `declare-node` (add the missing declaration) and `rename-endpoint` (it was a typo; `candidates` lists the ids actually declared in that diagram) — so the fix loop reads a structure instead of guessing from prose.
 
 Items still requiring manual judgment (Remove test, Type fit, accent ≤ 2, lang consistency) should be considered during authoring; they are not yet mechanically enforced.
 
@@ -56,6 +61,8 @@ raw markdown, anchor hrefs, image alt, placeholder leak). It skips 3–5 and 9�
 classDef, gradient text, font fallback — because on the Artifact channel the design layer belongs to
 the harness's built-in artifact-design skill, not this gate (ADR 0007). Use this mode whenever the
 page was authored for `--artifact`; the full check set stays the default for local html output.
+Check 11 is skipped there too, for a different reason: the Artifact channel emits inline SVG, which
+has no Mermaid source to parse (ADR 0011).
 
 ## On violation
 

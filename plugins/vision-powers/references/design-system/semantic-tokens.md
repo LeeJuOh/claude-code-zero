@@ -13,6 +13,8 @@ The single color/font source for vision-powers. All Layer 1 skills must referenc
 | `accent`, `accent-tint` | focal (1–2 / diagram) | `#b5523a` | `#d6724a` |
 | `link` | HTTP/API/external | `#2563eb` | `#60a5fa` |
 
+Translucent values invert with the ground they sit on: a light-mode `rgba(ink, X)` becomes `rgba(paper, X)` in dark at the same alpha — that is why the `rule` hairline is `rgba(28,25,23,.12)` in light and `rgba(250,247,242,.12)` in dark. Carrying a light-mode ink tint into a dark page turns a hairline invisible against its own background, so derive the dark value rather than reusing the light one.
+
 ## Three font roles
 
 | Role | Family (ship the whole chain) | Usage |

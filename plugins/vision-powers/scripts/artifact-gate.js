@@ -101,7 +101,7 @@ function checkMissingImages(html, htmlDir) {
     if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) continue;
     const resolved = path.resolve(htmlDir, src);
     if (!fs.existsSync(resolved)) {
-      violations.push({ rule: 'missing-image', hint: `Referenced image not found: ${src}` });
+      violations.push({ rule: 'missing-image', severity: 'error', hint: `Referenced image not found: ${src}` });
     }
   }
   return violations;
@@ -140,17 +140,17 @@ function checkRawMarkdown(html) {
 
   const headings = stripped.match(/^\s*#{1,6}\s+\S/gm);
   if (headings) {
-    violations.push({ rule: 'raw-markdown', hint: `${headings.length} markdown heading(s) in HTML body` });
+    violations.push({ rule: 'raw-markdown', severity: 'error', hint: `${headings.length} markdown heading(s) in HTML body` });
   }
 
   const bold = stripped.match(/\*\*[^*]+\*\*/g);
   if (bold) {
-    violations.push({ rule: 'raw-markdown', hint: `${bold.length} markdown bold pattern(s) in HTML body` });
+    violations.push({ rule: 'raw-markdown', severity: 'error', hint: `${bold.length} markdown bold pattern(s) in HTML body` });
   }
 
   const fences = stripped.match(/^```/gm);
   if (fences) {
-    violations.push({ rule: 'raw-markdown', hint: `${fences.length} markdown code fence(s) in HTML body` });
+    violations.push({ rule: 'raw-markdown', severity: 'error', hint: `${fences.length} markdown code fence(s) in HTML body` });
   }
 
   return violations;
@@ -182,7 +182,7 @@ function checkMermaidDensity(html) {
       if (limit != null) {
         const n = counter(code);
         if (n > limit) {
-          violations.push({ rule: 'mermaid-density', hint: `Diagram #${idx} (${type}): ${n} ${label}, budget ${limit}` });
+          violations.push({ rule: 'mermaid-density', severity: 'error', hint: `Diagram #${idx} (${type}): ${n} ${label}, budget ${limit}` });
         }
       }
     }
@@ -215,10 +215,90 @@ function checkMermaidClassDef(html) {
     for (const line of code.split('\n')) {
       if (!/\bclassDef\b/.test(line)) continue;
       if (/\brgba?\s*\(/i.test(line)) {
-        violations.push({ rule: 'mermaid-classdef-color-fn', hint: `Diagram #${idx}: rgb()/rgba() in classDef breaks the Mermaid parser — use 8-digit hex #RRGGBBAA` });
+        violations.push({ rule: 'mermaid-classdef-color-fn', severity: 'error', hint: `Diagram #${idx}: rgb()/rgba() in classDef breaks the Mermaid parser — use 8-digit hex #RRGGBBAA` });
       }
       if (/(?:^|[,\s])color\s*:/i.test(line)) {
-        violations.push({ rule: 'mermaid-classdef-color', hint: `Diagram #${idx}: 'color:' in classDef overrides dark-mode tokens — set node text via a CSS .nodeLabel override instead` });
+        violations.push({ rule: 'mermaid-classdef-color', severity: 'error', hint: `Diagram #${idx}: 'color:' in classDef overrides dark-mode tokens — set node text via a CSS .nodeLabel override instead` });
+      }
+    }
+  }
+  return violations;
+}
+
+// --- Check 4b: Mermaid edge topology (ADR 0011) ---
+// An arrow whose endpoint was never declared renders as an empty box carrying the
+// raw id — the reader learns a relationship the code doesn't have, which is the
+// diagram-layer version of a drifted snippet. archify and gitdiagram both settled
+// on the same guard (edge endpoint must resolve to a known node), and this is the
+// one part of it vision-powers can run: the Mermaid source is right there in the
+// local page, so the check is internal consistency, not grounding against code.
+// Grounding stays an authoring discipline in SKILL.md — there is no symbol set to
+// check against, and the Artifact channel emits inline SVG with nothing to parse.
+
+const EDGE_TOKEN_RE = /-\.->|-->|==>|\.->/;
+const EDGE_SPLIT_RE = /-\.->|-->|==>|\.->/g;
+
+// Node ids that appear in a declaration — a shape (`A[..]`, `A{..}`, `A(..)`) or a
+// subgraph header. Ids seen only as an arrow endpoint are deliberately excluded:
+// those are exactly what this check is looking for.
+function declaredNodeIds(code) {
+  const ids = new Set();
+  for (const m of code.matchAll(/(?:^|[\s|>])([A-Za-z_]\w*)\s*(?:\[|\{|\()/g)) ids.add(m[1]);
+  for (const m of code.matchAll(/^\s*subgraph\s+([A-Za-z_]\w*)/gm)) ids.add(m[1]);
+  return ids;
+}
+
+function stripShapes(segment) {
+  return segment.replace(/\[[^\]]*\]|\{[^}]*\}|\([^)]*\)/g, ' ');
+}
+
+function edgePairs(code) {
+  const pairs = [];
+  for (const raw of code.split('\n')) {
+    let line = raw.trim();
+    if (!line || line.startsWith('%%')) continue;
+    if (/^(classDef|class|style|linkStyle|click|subgraph|end|direction|flowchart|graph|stateDiagram)\b/.test(line)) continue;
+    line = line.replace(/\|[^|]*\|/g, ' ');          // -->|label| form
+    line = line.replace(/\s--\s[^>]*?(?=\s*-->)/g, ' '); // A -- label --> B form
+    if (!EDGE_TOKEN_RE.test(line)) continue;
+    const segs = line.split(EDGE_SPLIT_RE);
+    for (let i = 0; i < segs.length - 1; i++) {
+      const from = (stripShapes(segs[i]).match(/([A-Za-z_]\w*)\s*$/) || [])[1];
+      const to = (stripShapes(segs[i + 1]).match(/^\s*([A-Za-z_]\w*)/) || [])[1];
+      if (from && to) pairs.push([from, to]);
+    }
+  }
+  return pairs;
+}
+
+function checkMermaidTopology(html) {
+  const violations = [];
+  let idx = 0;
+  for (const code of extractMermaidBlocks(html)) {
+    idx++;
+    const type = detectMermaidType(code);
+    // Only box-and-arrow families parse this way. Sequence diagrams write `A-->>B`
+    // and ER diagrams `A ||--o{ B`; running this regex over them invents endpoints.
+    if (type !== 'flowchart' && type !== 'state') continue;
+    const declared = declaredNodeIds(code);
+    // A diagram with no shaped node at all is written in implicit style (`A --> B`,
+    // id doubles as label) — there is no declaration set to compare against, so
+    // every endpoint would "fail". Nothing to say about it; skip.
+    if (declared.size === 0) continue;
+    const seen = new Set();
+    for (const [from, to] of edgePairs(code)) {
+      for (const [id, side] of [[from, 'source'], [to, 'target']]) {
+        if (declared.has(id) || seen.has(`${idx}:${id}`)) continue;
+        seen.add(`${idx}:${id}`);
+        violations.push({
+          rule: 'mermaid-topology',
+          severity: 'error',
+          hint: `Diagram #${idx}: edge ${side} "${id}" is never declared as a node — it renders as an empty box. Fix the typo or declare it.`,
+          supportedFixes: [
+            { action: 'declare-node', nodeId: id, diagram: idx },
+            { action: 'rename-endpoint', nodeId: id, diagram: idx, candidates: [...declared] },
+          ],
+        });
       }
     }
   }
@@ -241,7 +321,7 @@ function checkForbiddenColors(html) {
   const lower = stripVerbatimCode(html).toLowerCase();
   for (const hex of FORBIDDEN_HEXES) {
     if (lower.includes(hex)) {
-      violations.push({ rule: 'forbidden-color', hint: `Violet/fuchsia palette colour ${hex} is the AI-default accent banned by semantic-tokens.md` });
+      violations.push({ rule: 'forbidden-color', severity: 'error', hint: `Violet/fuchsia palette colour ${hex} is the AI-default accent banned by semantic-tokens.md` });
     }
   }
   return violations;
@@ -259,13 +339,13 @@ function checkAnchorHrefs(html) {
     const href = /href\s*=\s*["']([^"']*)["']/i.exec(attrs);
     if (!href) {
       if (!/\b(?:id|name)\s*=/i.test(attrs)) {
-        violations.push({ rule: 'anchor-href', hint: `<a> without href — dead link or missing target` });
+        violations.push({ rule: 'anchor-href', severity: 'error', hint: `<a> without href — dead link or missing target` });
       }
       continue;
     }
     const val = href[1].trim();
     if (val === '' || val === '#') {
-      violations.push({ rule: 'anchor-href', hint: `<a href="${val}"> is a placeholder link` });
+      violations.push({ rule: 'anchor-href', severity: 'error', hint: `<a href="${val}"> is a placeholder link` });
     }
   }
   return violations;
@@ -281,7 +361,7 @@ function checkImageAlt(html) {
   for (const m of html.matchAll(/<img\b([^>]*)>/gi)) {
     if (!/\balt\s*=/i.test(m[1])) {
       const src = /src\s*=\s*["']([^"']*)["']/i.exec(m[1]);
-      violations.push({ rule: 'image-alt', hint: `<img> missing alt attribute${src ? `: ${src[1]}` : ''}` });
+      violations.push({ rule: 'image-alt', severity: 'error', hint: `<img> missing alt attribute${src ? `: ${src[1]}` : ''}` });
     }
   }
   return violations;
@@ -298,13 +378,13 @@ function checkPlaceholders(html) {
   const violations = [];
   const body = stripCodeRegions(html);
   if (/\{\{[^}]*\}\}/.test(body)) {
-    violations.push({ rule: 'placeholder', hint: `Unfilled mustache placeholder ({{ ... }}) left in output` });
+    violations.push({ rule: 'placeholder', severity: 'error', hint: `Unfilled mustache placeholder ({{ ... }}) left in output` });
   }
   if (/lorem ipsum/i.test(body)) {
-    violations.push({ rule: 'placeholder', hint: `Lorem ipsum filler text left in output` });
+    violations.push({ rule: 'placeholder', severity: 'error', hint: `Lorem ipsum filler text left in output` });
   }
   if (/\[(?:placeholder|todo|fixme|your[\s_][^\]]*|insert\b[^\]]*)\]/i.test(body)) {
-    violations.push({ rule: 'placeholder', hint: `Bracketed placeholder stub left in output` });
+    violations.push({ rule: 'placeholder', severity: 'error', hint: `Bracketed placeholder stub left in output` });
   }
   return violations;
 }
@@ -364,7 +444,7 @@ function checkFontFallback(html) {
       .filter(Boolean);
     if (tokens.length === 1 && /^var\(/.test(tokens[0])) continue;
     if (!tokens.some(t => GENERIC_FAMILIES.has(t))) {
-      violations.push({ rule: 'font-fallback', hint: `font-family "${value}" has no generic fallback (end it with e.g. sans-serif) — bare web-font names drop to a browser default offline` });
+      violations.push({ rule: 'font-fallback', severity: 'error', hint: `font-family "${value}" has no generic fallback (end it with e.g. sans-serif) — bare web-font names drop to a browser default offline` });
     }
   }
   return violations;
@@ -379,7 +459,7 @@ function checkFontFallback(html) {
 function runArtifactGate(htmlPath, opts = {}) {
   const { contentOnly = false } = opts;
   if (!fs.existsSync(htmlPath)) {
-    return { ok: false, violations: [{ rule: 'file-not-found', hint: `File not found: ${htmlPath}` }] };
+    return { ok: false, violations: [{ rule: 'file-not-found', severity: 'error', hint: `File not found: ${htmlPath}` }] };
   }
   const html = fs.readFileSync(htmlPath, 'utf-8');
   const htmlDir = path.dirname(htmlPath);
@@ -397,6 +477,7 @@ function runArtifactGate(htmlPath, opts = {}) {
         ...checkRawMarkdown(html),
         ...checkMermaidDensity(html),
         ...checkMermaidClassDef(html),
+        ...checkMermaidTopology(html),
         ...checkForbiddenColors(html),
         ...checkAnchorHrefs(html),
         ...checkImageAlt(html),
@@ -414,6 +495,7 @@ module.exports = {
   checkRawMarkdown,
   checkMermaidDensity,
   checkMermaidClassDef,
+  checkMermaidTopology,
   checkForbiddenColors,
   checkAnchorHrefs,
   checkImageAlt,

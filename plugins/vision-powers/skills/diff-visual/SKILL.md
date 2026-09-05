@@ -171,6 +171,11 @@ Before generating the report, **produce a structured fact sheet** listing every 
 2. **Name check**: Every function name, type name, file path you mention must exist **either in the
    diff or in a source file you actually read** during Step 4 — cite it as `file:line`. (Background
    describes code the diff never touches; that prose is grounded by the read, not by the diff.)
+   Diagrams are prose too: **node labels and edge endpoints come only from this verified set of
+   names** — never invent a box or an arrow for something you haven't confirmed at a `file:line`.
+   A made-up arrow teaches a relationship the system doesn't have, which is the same failure as a
+   retyped snippet that drifted. This is a writing discipline you keep, not something a gate can
+   check for you (ADR 0011) — the fact sheet is the only place it gets enforced.
 3. **Behavior check**: Every behavioral description must be traceable to specific code
 4. **Source citation**: For each claim, name the source (commit hash, `file:line`, diff hunk)
 5. **Verdict check**: No claim asserts quality. If a sentence contains *should*, *bad*, *better*,
@@ -216,6 +221,14 @@ sections; only the rendering technique changes.
 - *Two flow diagrams*, before and after: the path the request/data takes. **They must carry the
   toy example's actual data as labels** — a picture of unlabelled boxes leaves the reader exactly
   where they started. Keep to one diagram family and reuse it across the report.
+- *Phantom notation for what's gone*: anything the change removed or relocated stays on the "after"
+  side as a **dotted** node or edge rather than silently vanishing — half of what a before/after pair
+  is for is showing the reader what disappeared, and a box that is simply absent reads as an oversight.
+  Mermaid (`--local` and md): dotted edge `-.->` plus the `phantom` classDef from
+  `mermaid-patterns.md` — plain dotted already means optional/async there, so the faded class is what
+  separates "gone" from "sometimes taken". Inline SVG (Artifact channel): `stroke-dasharray="4 3"`
+  at reduced opacity. Label it with the fact alone — `removed`, `moved to session.ts` — never why it
+  went (no verdicts).
 - No implementation detail here. If you're naming a function signature, you're in Code's territory.
 
 **3 — Code — the literate diff.** Prose that walks the change in **understanding order**, with
@@ -236,9 +249,10 @@ depends on.
   Everywhere else, the after side alone reads faster.
 - *Dependency picture* — the section's **first** block, and only when imports or call sites actually
   changed: two box-and-arrow pictures, before and after, distinguishing new arrows, removed arrows,
-  and cycles by colour or style. Caption states facts only ("`auth.ts` now calls `session.ts`";
-  a cycle gets a ⚠️ marker and nothing more). No verdict sentence. If dependencies didn't change,
-  the block doesn't exist — don't render an empty one.
+  and cycles by colour or style — removed arrows and dropped modules take the same phantom (dotted)
+  notation as Intuition, so "gone" looks the same everywhere in the report. Caption states facts
+  only ("`auth.ts` now calls `session.ts`"; a cycle gets a ⚠️ marker and nothing more). No verdict
+  sentence. If dependencies didn't change, the block doesn't exist — don't render an empty one.
 - *Appendix*: the complete diff, once, in a collapsed block at the very bottom. The report must not
   grow to the length of the diff.
 
@@ -298,7 +312,7 @@ The gate also fails on dead links, alt-less images, and leftover scaffolding: gi
 the verified fact sheet. Background prose included — its sources are the files you read, cited by
 `file:line`.
 
-Beyond integrity, seven authoring reflexes pass every mechanical gate and still flatten the output — summary-leak (a one-line gist where the real substance belongs), linear dump (file-by-file with no proportion), forced diagram, generic label, uniform density, empty decoration, accent overuse. Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue. They're named defaults to break, not design rules: layout and taste stay yours — the catalogue just flags the habits worth resisting (e.g. let the idea in Intuition land before anything else on the page, don't render a two-line aside at the same weight as the before/after flow).
+Beyond integrity, eight authoring reflexes pass every mechanical gate and still flatten the output — summary-leak (a one-line gist where the real substance belongs), linear dump (file-by-file with no proportion), forced diagram, generic label, uniform density, empty decoration, accent overuse, borrowed costume (the generic "looks designed" outfit worn unchosen). Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue. They're named defaults to break, not design rules: layout and taste stay yours — the catalogue just flags the habits worth resisting (e.g. let the idea in Intuition land before anything else on the page, don't render a two-line aside at the same weight as the before/after flow).
 
 **Output path**: `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`).
 
