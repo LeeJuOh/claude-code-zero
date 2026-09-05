@@ -500,6 +500,19 @@ CMD["/gallery command"] --> SRV["Server: main"]
 | `==>` | Thick | Critical path |
 | `--x` | Cross | Rejected, blocked |
 | `-->&#124;label&#124;` | Labeled | Decision branches |
+| `-.->` + `phantom` class | Faded dotted | Removed or moved — before/after pairs only |
+
+**Phantom vs optional.** Both render dotted, so an `after` diagram carrying an optional path and a
+deleted one side by side reads as two of the same thing — and the reader concludes the deleted code
+is still there, optionally. Phantom therefore adds a faded class on top of the dotted line:
+
+```
+classDef phantom fill:#7c6f6411,stroke:#7c6f6444,stroke-width:1px,stroke-dasharray:4 3
+```
+
+Note `stroke-dasharray:4 3` is space-separated — a comma there is read as a property separator and
+breaks the whole diagram (see classDef rule 2). Use it only in before/after pairs, where "gone" is
+a meaning the pair actually carries; a standalone diagram has no *before* to have lost anything.
 
 ### stateDiagram-v2 Limitations
 

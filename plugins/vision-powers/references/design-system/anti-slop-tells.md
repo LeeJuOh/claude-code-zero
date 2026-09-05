@@ -17,7 +17,7 @@ The taste-skill convention is borrowed wholesale: **name the default, say why it
 
 ---
 
-## The seven Tells
+## The eight Tells
 
 ### 1. Summary-leak
 
@@ -89,8 +89,20 @@ The taste-skill convention is borrowed wholesale: **name the default, say why it
 - Before: four `accent`-coloured nodes in one diagram, three bold inline spans per paragraph.
 - After: one focal node the eye goes to first; emphasis elsewhere carried by structure (position, size) rather than colour.
 
+### 8. Borrowed costume
+
+**What it is.** Dressing the page in the house style of "AI made something designed" rather than choosing for this document — the cream-paper-plus-serif-headline-plus-terracotta-accent editorial set worn as a uniform, a gradient hero band fading violet into blue, Inter or Space Grotesk because they read as *design font*, emoji as section markers, everything centred down the page, every surface given the same soft-rounded card treatment.
+
+**Why it's slop.** These are the tells a reader has seen on a thousand generated pages, so they now read as *generated* rather than as considered. None of them is wrong in itself — the default palette in `semantic-tokens.md` is warm-stone, and a serif headline is often right. The slop is reaching for the whole outfit as a set, unchosen, because it is what a page is "supposed to" look like. The costume is also load-bearing in the wrong direction: it makes a linear dump *look* designed, which is exactly how Tells 2 and 5 survive review. Centring everything destroys the left edge the eye scans; uniform rounding erases the weight difference that carries hierarchy.
+
+**Before → After.**
+- Before: a centred gradient hero, `## 🎯 Overview` beneath it, six identically rounded cards in a grid.
+- After: left-aligned text with one deliberate centred element if any; headings that name their content (Tell #4); the two load-bearing sections given real weight and the rest kept plain. The palette still comes from a token set — the difference is that it was picked for this report rather than inherited.
+
+Palette and font *mechanics* stay where they belong: `semantic-tokens.md` owns the allowed values and the gate enforces them. This Tell is only about the reflex to wear the look.
+
 ---
 
 ## Using this catalogue
 
-These are defaults to break, not rules to obey. The model still chooses the layout, the palette set, the diagram type, the proportion — the entire design surface stays delegated, exactly as the leverage-vs-delegation principle requires. A Tell only flags a reflex worth resisting; the *better* choice is the model's to make. None of these seven are gate-enforced (the gate's reach is `artifact-gate.md`'s automation list) — they're caught by an author who knows their names.
+These are defaults to break, not rules to obey. The model still chooses the layout, the palette set, the diagram type, the proportion — the entire design surface stays delegated, exactly as the leverage-vs-delegation principle requires. A Tell only flags a reflex worth resisting; the *better* choice is the model's to make. None of these eight are gate-enforced (the gate's reach is `artifact-gate.md`'s automation list) — they're caught by an author who knows their names.

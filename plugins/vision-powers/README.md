@@ -42,7 +42,7 @@ visualize diff HEAD --lang ko          # prose and quiz in Korean, code and path
 | Section | What you get |
 |---|---|
 | **Background** | The world before the change — the subsystem first (folded away once you know it), then the exact code the change touches |
-| **Intuition** | The idea in a paragraph, one worked example small enough to trace by hand, and before/after flow diagrams carrying that example's real data |
+| **Intuition** | The idea in a paragraph, one worked example small enough to trace by hand, and before/after flow diagrams carrying that example's real data. Every node and arrow is named from code the report actually verified, so a box on the picture is a thing that exists in the tree — and what the change deleted stays on the diagram as a dotted ghost |
 | **Code** | The change walked in the order it makes sense, not file by file. Every snippet is lifted from git by a script, never retyped — a wrong snippet would teach you a wrong system. Full diff folded at the bottom |
 | **Quiz** | Five questions you can only answer if you actually followed it. Click an option and it tells you why each one is or isn't the case |
 
