@@ -51,12 +51,20 @@ prompt**. There is no "official task prompt" to distort; only our own prompt qua
 
 **Vendored prompt blocks**:
 The XML blocks our task prompts use (`task`, `structured_output_contract`, `grounding_rules`,
-`completeness_contract`, `research_mode`, `citation_rules`, `action_safety`, `verification_loop`)
-are copied from the Official plugin's `gpt-5-4-prompting` skill (`prompt-blocks.md`) and
-**internalized at design time** — not imported at runtime. The official skill is
-`user-invocable: false` guidance (a block menu, not a function) at a version-pinned path, so
-referencing it live would be non-deterministic and version-fragile. Cost of vendoring: drift +
-**provenance debt**. See [[0004]].
+`completeness_contract`, `research_mode`, `citation_rules`, `autonomy_policy`) are
+**internalized at design time** — not imported at runtime. The block *tags* came from the Official
+plugin's `gpt-5-4-prompting` skill (`prompt-blocks.md`); the *bodies* are ours and are re-synced
+against the current OpenAI model guide (as of spec 016: "Using GPT-5.6" and "Using GPT-6 Astra").
+We decide which block goes in which skill — the Official skill is a menu, not a contract. Cost of
+vendoring: drift + **provenance debt**. See [[0004]].
+
+**Autonomy policy**:
+The single block in rescue that tells Codex what it may do without asking: report for
+review/diagnose requests, act for change/fix requests, confirm only for external, destructive, or
+scope-expanding actions, and never stop at a partial answer or a plan. It replaces the three
+overlapping blocks (`completeness_contract`, `verification_loop`, `action_safety`) whose "call out
+before acting" wording made Codex ask — and under `approvalPolicy=never` a question ends the turn.
+_Avoid_: safety block, approval block.
 
 **Static shaping** vs **adaptive shaping**:
 verify/research use **one fixed template per skill** — correct, because their task type is *fixed*
@@ -67,10 +75,31 @@ by determinism + independence; adaptive shaping is acceptable for rescue because
 post-hoc on the diff. See [[0004]].
 
 **Double-check independence**:
-The north star. Claude must **not** read source or the document before Codex returns — Phases 1–3
-forbid `Read`/`Grep`/`git diff`. The wrapper's value is the post-hoc classification, never
-pre-analysis. Reading first means Claude rationalizes away valid catches. For verify/research this
-is enforced by the **blind payload**.
+The north star: the reviewer must not know the reviewed party's conclusions. It has two sides.
+*Write-side*: what Claude sends to Codex carries evidence and focus only, never Claude's
+hypothesis (see **Hypothesis exclusion**). *Read-side*: the verdict on each Codex finding is made
+by a **Verifier** that has no session history, not by the main session that authored the code.
+Instructions alone cannot deliver either side — the main session is the author and already holds
+the code in context — so both are enforced by structure. See [[0012]]. For verify/research the
+document additionally never enters Claude's context (**blind payload**).
+
+**Verifier**:
+The fresh subagent that judges one finding group. It receives the finding, its citation, the
+citation-existence result, and the classification rules — nothing from the session. It returns
+Agreed / Disputed / Nuanced with evidence, tuned skeptical (default Disputed). The report names it:
+`Verifier: fresh subagent`, or `Self-verified — independent sub-task unavailable` when the main
+session had to fall back (headless). Model is inherited from the session, never pinned.
+_Avoid_: double-checker, judge agent, reviewer (that word is Codex's role).
+
+**Hypothesis exclusion**:
+The write-side rule. When Claude composes focus text (adversarial, verify), a research topic, or a
+rescue task, it forwards *evidence* (scope, symptoms, reproduction, logs, the user's own words) and
+*focus* (an area to look at) but drops *hypotheses* (a claimed cause, a suspected `file:line`, an
+expected answer). The preview shows what was dropped as `Excluded (hypothesis):` so the user can
+put it back; the preview cannot be skipped. Assertion → hypothesis; area only → focus. The user's
+own typed text is forwarded verbatim even if it contains a hypothesis — the rule corrects
+Claude's default, not the user's choice.
+_Avoid_: prompt sanitizing, focus filtering.
 
 **Blind payload**:
 verify/research assemble the prompt with `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, empty
@@ -96,8 +125,16 @@ Hooks are the **only** channel that receives the transcript path; the model cann
 **Five-way classification**:
 Every double-check labels each Codex finding: **Agreed** / **Disputed** / **Nuanced** / **False
 Positive** (Codex cited a file/function/line that does not exist — a hallucination) / **Uncited**
-(no concrete citation → "verification deferred"). Inventing a citation to justify reading a file is
+(no concrete citation → "verification deferred"). The split of labour is fixed: False Positive and
+Uncited are *facts* decided by the citation-existence script; Agreed / Disputed / Nuanced are
+*judgments* decided by the **Verifier**. For verify/research (section and URL citations, no
+`file:line`) the Verifier decides all five. Inventing a citation to justify reading a file is
 forbidden.
+
+**Finding group**:
+The unit one Verifier judges. Default is one finding; findings citing the same file with
+overlapping line ranges are merged by the script. Grouping is never the main session's call — the
+biased party must not decide what gets diluted together.
 
 **Pattern A** vs **Pattern B**:
 Two invocation shapes. **A** (review/adversarial): the companion's own `--background`/`--wait` are
@@ -128,13 +165,11 @@ rots faster than the original. Non-blocking validation was never a defence anywa
 saved the value regardless. **Do not reintroduce it.** See spec `012`.
 
 **Provenance debt**:
-Vendored blocks carry no source marker in shipped skills/scripts/README (`grep gpt-5-4-prompting`
-over them finds nothing — only this CONTEXT.md names the origin).
-A maintainer cannot tell they came from the official guide, nor that they should be **re-synced**
-when the Official plugin bumps its prompting guide (the guide targets GPT-5.4, and Codex has shipped
-newer generations since). Note the plugin has no "default model" of its own to compare against — what
-sits in a user's config.toml is whatever that user set. Paying this debt = a provenance note +
-re-sync trigger. See [[0004]].
+The obligation to mark, next to every vendored block, which model guide its wording came from, so
+a maintainer knows what to re-sync when OpenAI publishes the next guide. Partly paid in 4.5.0 (tag
+origin noted); paid in full by spec 016 (each block cites the 5.6 / Astra guide section it follows).
+The plugin has no "default model" of its own to compare against — what sits in a user's
+config.toml is whatever that user set. See [[0004]].
 
 ## Flagged ambiguities
 
