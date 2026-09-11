@@ -134,7 +134,7 @@ Do not write tests for reversible, low-impact changes that mirror the implementa
 1. Phase 3 완료 후 메인 Claude는 Codex 출력 JSON을 파싱만 한다. finding 목록을 뽑는다. 소스는 여전히 안 읽는다.
 2. **인용 존재 검사(스크립트, 결정론)**: 각 finding의 인용(file, line 범위)에 대해 파일 존재·줄 범위 유효를 판정해 JSON으로 돌려준다. 인용이 없으면 `uncited`. 존재하지 않으면 `missing`. 이것이 Five-way의 **False Positive / Uncited** 판정을 코드로 옮긴 것이다. 위키 `evidence-gates`: fact는 코드, judgment는 AI.
 3. **판정 서브에이전트(finding당 1개, 병렬)**: 플러그인 `agents/`에 정의. 입력은 (a) finding 원문, (b) 인용 file:line, (c) 존재 검사 결과, (d) 분류 규칙(`evaluation.md` 참조). 허용 도구는 Read(인용 줄 ± 소량 컨텍스트)·Grep(인용 심볼 확인)만. 출력은 `{classification: Agreed|Disputed|Nuanced, evidence, reason}` JSON 한 개. finding당 분리인 이유: `references/compound-engineering-plugin/ce-code-review` — "묶어서 보면 패턴매칭으로 편향 재발".
-4. 메인 Claude는 JSON을 모아 Agreement 요약과 보고서를 쓴다. 판정은 안 바꾼다. 보고서에 `Verifier: fresh subagent (N findings)` 라벨.
+4. 메인 Claude는 JSON을 모아 Agreement 요약과 보고서를 쓴다. 판정은 안 바꾼다. 보고서에 `Verifier: fresh subagent (N groups)` 라벨.
 5. **열화 모드**: Agent 도구가 없거나 실패하면(headless) 메인이 기존 Phase 4를 수행하되 보고서에 `Self-verified — independent sub-task unavailable` 라벨. 출처: `references/gstack/cso` 동일 fallback.
 
 rescue `--write`: 판정 대상이 finding이 아니라 diff. 서브에이전트 입력 = 유저 task 원문(스펙이지 가설이 아님) + `git diff` 출력. 출력 = 과제 충족 여부·범위 이탈·부작용. 메인은 안 읽는다. 서브에이전트는 diff 주변(변경된 함수·호출처)을 Read·Grep으로 볼 수 있음 — 다른 스킬 판정자와 동일 도구. 리포 전체 탐색 금지 (그릴 2026-09-11).
