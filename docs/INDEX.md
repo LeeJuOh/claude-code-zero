@@ -41,6 +41,7 @@ Retired 2026-07-17: `superpowers/plans/` and `superpowers/specs/` (date-prefixed
 |---|---|
 | `enhancement/2026-04-18-vision-powers-audit.md` | Commit audit for recent `vision-powers` changes, with severity-ranked findings |
 | `enhancement/2026-04-23-rubber-duck-git-hook-latency.md` | Resolved issue note: `rubber-duck-tutor` PostToolUse hook narrowed from `Bash(git *)` to `Bash(git push)` |
+| `enhancement/2026-09-11-agent-docs-audit.md` | Agent-docs audit (repo docs + plugins) against llm-wiki context-engineering lens, with memory migration map — fixes pending |
 
 ## Research
 
