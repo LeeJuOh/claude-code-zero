@@ -161,39 +161,25 @@ yctimlin 캔버스 위에서 동작하는 **판단 전용 스킬.** 네 가지�
 - **문서 위치** (2026-09-11 3차 그릴 확정): 스펙(PRD)만 이 레포에서 그릴로 마무리. 그릴 끝나면 포크 레포 생성 → 스펙을 그쪽 `docs/specs/`로 이동 → ADR·CONTEXT.md·이슈 슬라이스는 **포크 레포에서 생성**. 이 레포엔 `docs/INDEX.md`에 포인터 한 줄만. 포크 레포는 이 마켓플레이스에 의존하지 않고 혼자 완결.
 - 공식 MCP 비교 결과는 재사용 가치가 있어 llm-wiki 카탈로그(`wiki/summaries/raw-repos-catalog.md`) 갱신 후보: yctimlin README 비교표의 "공식은 AI가 캔버스를 못 본다"는 부분적으로 부정확 — 공식도 사용자 편집을 텍스트 diff로 모델에 돌려준다(이미지는 아님).
 
-## Grill Handoff (2026-09-11, 3차)
+## Handoff (2026-09-11, 3차 종료 → 4차는 포크 레포 생성)
 
-> 다음 세션은 `/grill-with-docs docs/specs/015-excalidraw-architect.md` 로 이 절부터 읽고 이어간다. 본문의 "(2026-09-11 그릴 확정)" 표시가 이번 두 세션 확정분. 제안 스킬: `grilling` + `domain-modeling`(grill-with-docs가 둘 다 호출). 코드 편집 금지 — 확정은 이 스펙에만 적는다(feedback: grill-plan-edits-to-doc).
+> 그릴 끝. 본문 "(2026-09-11 … 그릴 확정)" 표시가 확정분, 이 절은 다음 세션이 **뭘 하면 되는지**만 적는다. 근거·대안은 본문 해당 절에 있으므로 여기 반복 안 함.
 
-**Goal** — 015 스펙 그릴 마무리 → 이 레포에 스펙 커밋 → 포크 레포 생성·스펙 이동 → (포크 레포에서) ADR·CONTEXT.md·이슈 슬라이스.
+**Goal** — 포크 레포 `excalidraw-architect` 만들고 이 스펙을 그쪽으로 옮긴 뒤, 거기서 CONTEXT.md·ADR·이슈 슬라이스를 만든다. 코드 구현은 그 다음.
 
-**First Action (3차에서 해결됨 → 7-5a 참조, 플러그인 두 채널 확정)** — ~~**Q7-5a 세 채널 포장**~~(Claude Code 플러그인 + Agent Plugins 1.0/Codex + `npx skills`)을 사용자가 "애매하다"고 보류함. 그릴 재개 지점. 사용자에게 먼저 **무엇이 애매한지** 묻고(아래 후보 셋 중 어느 것인지), 한 번에 하나씩:
-  (a) 매니페스트 4개 두 벌 관리 자체가 싫은 건지 → 대안: 한 채널만 먼저(Claude), 나머지는 나중.
-  (b) `npx skills`가 서버를 못 깔아 npm 배포가 전제되는 점인지 → 대안: 스킬이 `npx -y <npm패키지>`로 서버 호출(yctimlin 방식) vs npx skills 채널 포기.
-  (c) Anthropic이 Agent Plugins 미참여라 Claude 쪽이 장기적으로 어찌 될지인지 → 사실만: 스킬 스펙(Agent Skills)은 Anthropic 것이고 전부 채택, 플러그인 포장만 갈림.
-  조사 원문(1차 소스 다운로드): 이번 세션 scratchpad `cc-plugins-ref.md`, `oai-build-plugins.md`, `vercel-skills-readme.md`, `ap-llms.txt` — 세션 종료 시 사라지므로 필요하면 `https://code.claude.com/docs/en/plugins-reference.md`, `https://learn.chatgpt.com/docs/build-plugins.md`, `https://agent-plugins.org/specification`, `https://raw.githubusercontent.com/vercel-labs/skills/main/README.md` 재조회.
-  조사 요지: 레포 하나로 셋 다 가능. 두 벌 = 루트 `plugin.json`+`mcp.json`(Agent Plugins, `${PLUGIN_*}`) vs `.claude-plugin/plugin.json`+`.mcp.json`(Claude, `${CLAUDE_PLUGIN_*}`). `skills/`·서버 코드·`package.json`은 공유. Codex는 `.claude-plugin/marketplace.json`도 레거시로 읽고 `CLAUDE_PLUGIN_DATA`도 호환 세팅. Claude는 마켓플레이스 없이 GitHub 직접 설치 불가(`source: "./"` 겸용으로 해결). 확인(2026-09-11 3차, 1차 문서): `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`는 Bash 툴 셸 env에 export 안 됨. 플러그인 스킬 마크다운 본문 + `allowed-tools` Bash 규칙에서 텍스트 치환(`skills.md`), hook·MCP·LSP 서브프로세스에만 env export(`plugins-reference.md`). → SKILL.md에 `node ${CLAUDE_PLUGIN_ROOT}/dist/bin.js`라 적으면 절대경로로 치환돼 동작, 스킬 밖에서 모델이 즉흥으로 `$CLAUDE_PLUGIN_ROOT` 쓰면 빈 값. Agent Plugins 스펙 §9.1은 MCP 서브프로세스에 `PLUGIN_ROOT`/`PLUGIN_DATA` 주입 MUST(§9.2 서버 `env`에 같은 이름 금지). Codex 실제 준수 여부는 도그푸딩 확인.
-  마지막 제안 → 3차 확정(7-5b): `package.json` 단일 소스 → `npm run manifests`가 매니페스트 5개 생성.
+**First Action** — 사용자에게 GitHub 계정/레포 생성 방식 확인(gh CLI로 yctimlin 포크 후 rename vs 새 레포에 복사). 확인 전엔 만들지 않는다. 업스트림: `https://github.com/yctimlin/mcp_excalidraw` (MIT, 로컬 사본 `references/mcp-excalidraw-yctimlin/` @ ff42de9). 다른 출처 로컬 사본: `references/excalidraw-diagram-skill/`(라이선스 없음, 문장 복사 금지), `references/archify/`(MIT).
 
-**Context** — 사용자 스타일: 한 번에 질문 하나, 짧게. 추상 요약·거창한 이름("수리 루프 정지 규칙", "receipt")은 3~4번 되물음 → **구체 발화 예시 + 아스키 그림 + "스킬에 들어갈 문장 그대로"**로 보여야 통과. "원래 계획 / 출처(yctimlin·diagram-skill·archify·우리 발명) / 뭐가 다른지 / 추천" 구분. 선택지를 낼 땐 각 선택지가 같은 발화에서 어떻게 다르게 동작하는지 예시. 사용자가 백엔드 전문가(헥사고날·DDD·DDIA)라 내가 틀리면 바로 잡힘 — L4 레이어를 "모듈마다 똑같다"고 했다가 정정됨. **"먼소리야" = 설명 실패**, 같은 말 반복 말고 더 구체적으로.
+**Steps (순서)**
+1. 포크 레포 생성 → `docs/specs/015-excalidraw-architect.md`를 그쪽 `docs/specs/`로 이동. 이 레포에는 같은 경로에 포인터 한 줄 파일만 남기고 커밋(Further Notes "문서 위치").
+2. 포크 레포에서 `CONTEXT.md` — 용어: 그림(=frame 하나) / 캔버스 / 설명 그림 vs 도면 / 필수요소 / 근거 태그(code·design·log) / 세션 키 / "안 그림" 줄. 구현 디테일 금지, 용어 사전만.
+3. 포크 레포에서 ADR 후보 5개 — 포크 결정(스킬만 아닌 이유) / 질문 기준 라우팅(그림 이름보다 질문 우선) / 세션=캔버스 서버=탭 / 근거 검사 매번(저장 시점 아님) / 캔버스 안 지움(자동 보관 대신 새 frame). 각각 본문 근거 절 참조. 셋 조건(되돌리기 어려움·맥락 없으면 의아·실제 트레이드오프) 안 맞으면 빼도 됨.
+4. 이슈 슬라이스 — §3.7 항목이 곧 후보: 7-2 스냅샷 영속화 / 7-3 근거 검사 / 7-4 스킬 교체(shim 포함) / 7-5 포장(a 두 채널, b 매니페스트 생성, b·c 쓰기 폴더) / 7-6 frame / 7-8 세션별 캔버스. 7-1 삭제됨, 7-7은 작업 없음. 도그푸딩 0바퀴(모드·frame 프론트·Codex 실동작)가 슬라이스 전에 와야 한다는 Further Notes 원칙 유지 — 슬라이스 문서는 쓰되 "도그푸딩 후 조정" 표시.
+5. 이 레포 메모리(`project_backend_diagram_015.md`)에 포크 레포 경로 기록.
 
-**3차 세션 확정 (2026-09-11)** — 7-5a 두 채널(npm 배포·npx skills 보류) / 7-5b 매니페스트 생성 / 문서 위치(PRD만 여기, 나머지 포크 레포) / §3.5 자동 보관 삭제 → "캔버스 안 지움, 새 frame" + 세션 종료 감지 소멸 / 이름: 레포·플러그인·npm `excalidraw-architect`, 스킬 `archdraw` / 사실: `${CLAUDE_PLUGIN_ROOT}`는 스킬 본문 텍스트 치환(Bash env 아님), Agent Plugins v1 훅 없음(Codex CLI 자체엔 SessionEnd 있음). Codex는 SKILL.md 치환 없음 확인 → 호출 줄을 `scripts/archdraw` shim으로 확정. **그릴 프론티어 비었음.**
+**Context** — 사용자 스타일: 한 번에 질문 하나, 3~4줄. "먼소리야"·"장황하게 말하지마" = 설명 실패 → 사실 배경 나열 말고 "문제 한 줄 / 해법 한 줄 / 예·아니오". 옵션은 이름만 말고 같은 발화에서 어떻게 다르게 동작하는지 예시. 사용자는 백엔드 전문가(헥사고날·DDD·DDIA). 그릴 중 코드 편집 금지, 확정은 문서에만(feedback grill-plan-edits-to-doc). 커밋은 영어 1~2문장, push는 지시 있을 때만.
 
-**Current Progress** — 커밋 없음. 스펙 미커밋(2차+3차 누적, 파일명 `015-backend-diagram-skill.md` → `015-excalidraw-architect.md` git mv). 2차 세션 확정·반영(일부는 3차에서 수정됨 — 자동 보관 삭제, 호출 줄 shim): 과밀 묶기(§3) / "안 그림" 줄·자가수정 정지·라벨 삭제 금지(§2) / 근거 검사 매번(§3) / 15번 의존 도달 범위(§1) / DDIA 16·17(§1) / L4 스타일별·DDD 매핑·L3 정정(§3) / 어댑터 원칙 3줄(§3) / §3.7 포크 서버 작업 8항목(자동 보관 50개, 스냅샷 영속화, 근거 검사, 스킬 교체 4출처, 포장 b·c, frame, MCP 유지, 세션별 캔버스 `session start`) / CLI 경로 정정 / 모드만 도그푸딩. ADR·CONTEXT.md·INDEX 미작성. yctimlin 미설치.
+**Facts verified this session (1차 문서)** — `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_SKILL_DIR}`는 플러그인 스킬 본문·allowed-tools 텍스트 치환 + hook/MCP env, Bash 셸 env 아님(`skills.md`, `plugins-reference.md`). Codex/Agent Plugins는 SKILL.md 치환 없음, mcp.json args/env/cwd만(§9.2); 훅은 v1 밖(Codex 자체 훅은 있음, `CLAUDE_PLUGIN_ROOT` 호환은 훅 env만). Agent Skills 스펙: 스킬 파일은 스킬 루트 상대경로로 참조, Codex는 스킬 목록에 파일 경로 노출. yctimlin CLI 18 서브커맨드(`start/stop/status/apply/add/update/delete/get/query/describe/screenshot/export/import/mermaid/snapshot/arrange/share/clear` + `install-skill`), 디자인 가이드 CLI 없음(MCP `read_diagram_guide`만). npm `excalidraw-architect` 비어있음(2026-09-11).
 
-**Decisions Made (핵심만, 상세는 본문)**
-- 그림 = frame 하나(서버에 frame 타입 추가). 캔버스 ≠ 그림. 세션 = 캔버스 서버 = 탭.
-- 근거 태그 code/design/log, code만 서버가 파일:줄 확인, 그릴 때마다(저장 시점 아님 — 틀린 그림으로 대화하면 이미 손해).
-- 스택 표 없음 — 모델이 더 잘 앎. 원칙 3줄 + 서버 검사.
-- DDIA는 레벨 아닌 상황. DDD는 레벨 추가 없이 박스 이름·화살표 라벨·L4 스테레오타입.
-- 세션 키는 스킬이 서버에서 발급(`session start`), 호스트 무관.
+**What Didn't Work** — ⚠️ 사실 배경을 3~4문단 깔고 질문 → 두 번 "먼소리야". 결론 먼저, 근거는 물으면. ⚠️ "npm 배포" 같은 용어를 설명 없이 씀 → 사용자에겐 Maven Central 비유가 통했음. ⚠️ curl 결과를 레포 루트에 떨굼(`ap-spec.html`) — 스크래치패드 절대경로로 쓸 것.
 
-**What Worked** — Explore/general-purpose 서브에이전트로 yctimlin 툴 26개·영속화·CLI·포장 스펙 3종 조사 → 파일:라인·URL 근거. "이거 먼데" 나올 때 표 한 장(기존/추가, 채널별 비교)이 통과율 높았음.
-
-**What Didn't Work** — ⚠️ archify 항목 이름을 그대로 쓴 질문("receipt", "수리 루프") 전부 되물음. ⚠️ 옵션 A/B/C를 이름만 적고 예시 없이 냄 → "차이가 뭔데". ⚠️ "L4 레이어는 모듈마다 같다" 단정 → 헥사고날·DDD에선 틀림. ⚠️ "자동 보관 있던데?" 사용자 관찰을 바로 부정하지 말고 README·코드로 확인 후 답한 게 맞았음(png·excalidraw는 모델이 커맨드로 만든 파일).
-
-**Next Steps** (순서대로)
-1. ~~Q7-5a 포장~~ → 3차 확정(7-5a·7-5b)
-2. ~~세션 종료 감지~~ → 3차에서 소멸(자동 보관 삭제, §3.5)
-3. 이 레포: 스펙 커밋(develop, push 없음). INDEX 개별 등록 없음(specs 디렉터리 단위). → 포크 레포 생성 후 그쪽에서: ADR 후보(포크 결정 / 질문 기준 라우팅 / 세션=캔버스 / 근거 검사 매번 / 캔버스 안 지움), CONTEXT.md 용어(그림·캔버스·도면·설명 그림·필수요소·근거 태그·세션 키), 이슈 슬라이스(§3.7 항목이 곧 후보)
-4. 도그푸딩 0바퀴 — yctimlin 설치 후 모드·frame 프론트·Codex 실제 동작(스킬 경로 노출, MCP 서브프로세스 `PLUGIN_DATA` 주입) 확인
+**Suggested skills (4차)** — `domain-modeling`(CONTEXT.md·ADR, 포크 레포에서) / `writing-for-agents`(SKILL.md 초안 때) / `skill-creator-pro`(스킬 골격·eval, 구현 단계). 그릴은 끝났으니 `grilling` 불필요.
