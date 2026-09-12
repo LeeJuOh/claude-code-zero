@@ -8,7 +8,7 @@ Bash's 5-minute timeout, and the most valuable thing — an *independent* check 
 Claude reads the diff before Codex does.
 
 codex-advisor wraps Codex as a **double-check peer**, not an oracle. Every Codex finding is
-classified by Claude *after* Codex returns (Agreed / Disputed / Nuanced / False Positive /
+classified *after* Codex returns (Agreed / Disputed / Nuanced / Unverifiable / False Positive /
 Uncited), the wrapper survives long jobs, and the input parser is whitelisted so a stray comma or a
 Korean meta-instruction never reaches Codex as a flag.
 
@@ -86,7 +86,10 @@ document additionally never enters Claude's context (**blind payload**).
 **Verifier**:
 The fresh subagent that judges one finding group. It receives the finding, its citation, the
 citation-existence result, and the classification rules — nothing from the session. It returns
-Agreed / Disputed / Nuanced with evidence, tuned skeptical (default Disputed). The report names it:
+one verdict per numbered item in its payload (never a single label for a group, never PASS/FAIL —
+that is arithmetic the main session does from the verdicts), each Agreed / Disputed / Nuanced /
+Unverifiable with evidence, tuned skeptical (default Disputed when
+it has seen counter-evidence; Unverifiable when it has seen nothing). The report names it:
 `Verifier: fresh subagent`, or `Self-verified — independent sub-task unavailable` when the main
 session had to fall back (headless). Model is inherited from the session, never pinned.
 _Avoid_: double-checker, judge agent, reviewer (that word is Codex's role).
@@ -122,19 +125,31 @@ Official plugin's, or codex-advisor's conditional hook when the Official plugin 
 Hooks are the **only** channel that receives the transcript path; the model cannot derive it
 (mtime guessing breaks under concurrent sessions). See [[0006]].
 
-**Five-way classification**:
-Every double-check labels each Codex finding: **Agreed** / **Disputed** / **Nuanced** / **False
-Positive** (Codex cited a file/function/line that does not exist — a hallucination) / **Uncited**
-(no concrete citation → "verification deferred"). The split of labour is fixed: False Positive and
-Uncited are *facts* decided by the citation-existence script; Agreed / Disputed / Nuanced are
-*judgments* decided by the **Verifier**. For verify/research (section and URL citations, no
-`file:line`) the Verifier decides all five. Inventing a citation to justify reading a file is
+**Six-way classification** (formerly Five-way):
+Every double-check labels each Codex finding: **Agreed** / **Disputed** (the Verifier found
+evidence against it) / **Nuanced** / **Unverifiable** (the Verifier found no evidence either way
+within the cited range — a verification gap, not a Codex error; the report counts these
+separately; the script also assigns it when the working tree has drifted from the reviewed ref, so
+a stale `missing` is never promoted to False Positive) / **False Positive** (Codex cited a file/function/line that does not exist — a
+hallucination) / **Uncited** (no concrete citation → "verification deferred"). The split of labour
+is fixed: False Positive and Uncited are *facts* decided by the citation-existence script;
+Agreed / Disputed / Nuanced / Unverifiable are *judgments* decided by the **Verifier**. For
+verify/research (section and URL citations, no `file:line`) the Verifier decides all six.
+"Disputed" without evidence is not allowed; "I couldn't tell" is Unverifiable. Inventing a citation to justify reading a file is
 forbidden.
 
 **Finding group**:
 The unit one Verifier judges. Default is one finding; findings citing the same file with
 overlapping line ranges are merged by the script. Grouping is never the main session's call — the
 biased party must not decide what gets diluted together.
+
+**Verifier payload**:
+The text a Verifier receives, and the only text it receives. Written to a file by the citation
+script (one per finding group, hashes in a manifest), chosen by the main session by path, and
+delivered by a plugin hook that replaces the launch prompt with the file's content after checking
+the hash. Anything the main session adds to the prompt is discarded before the Verifier sees it —
+the author cannot brief the judge. _Avoid_: verifier prompt (that is what the main session writes
+and the hook throws away).
 
 **Pattern A** vs **Pattern B**:
 Two invocation shapes. **A** (review/adversarial): the companion's own `--background`/`--wait` are

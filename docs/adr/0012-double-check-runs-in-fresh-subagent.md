@@ -24,7 +24,8 @@ Three alternatives were on the table:
 1. **Strengthen the instruction** (more emphatic "do not rationalize"). Rejected — a natural-language
    rule cannot erase pre-call contamination; the author already knows the code.
 2. **PreToolUse hook** blocking `Read`/`Grep` before Phase 4. Rejected — it addresses reading, not
-   authorship, and the hook cannot tell which phase the skill is in.
+   authorship, and the hook cannot tell which phase the skill is in. (A different hook — one that
+   fixes the Verifier's *input* — was adopted later; see Amendment.)
 3. **Keep the status quo.** Rejected — the plugin's only purpose is independent review; a reviewer
    who is also the author defeats it.
 
@@ -63,5 +64,24 @@ subagent.
   prompt is the mitigation; its strength is an implementation concern, not an architectural one.
 - Changing this back means re-merging Phase 4 into five SKILL.md files and deleting the agent and
   script — deliberate friction.
+
+## Amendment 2026-09-12 — the Verifier's prompt is written by script and enforced by hook
+
+The main session launches each Verifier with the `Agent` tool, and it writes that call's `prompt`.
+The author of the code can slip one sentence of defence into it ("the caller already guards this"),
+and the fresh subagent would judge with the author's opinion in hand — the write-side leak of
+the read-side fix. Instructing "pass it verbatim" would make independence depend on obedience
+again, contradicting the first consequence above.
+
+So the script that checks citations also writes one payload file per finding group plus a
+manifest of sha256 hashes, and a plugin `PreToolUse` hook (matcher `Agent`) fires only when
+`subagent_type` is the Verifier: it reads the payload path out of the prompt, checks the hash, and
+replaces the whole prompt with the file's content via `updatedInput`; missing path, missing file or
+hash mismatch is denied. Anything the main session appended is discarded before the Verifier
+sees it. Measured 2026-09-12 in `claude -p`: the hook receives `prompt` and `subagent_type`, and
+the subagent answers the replaced prompt.
+
+This does not reopen alternative 2: that hook needed to know the skill's phase; this one only
+inspects `subagent_type`.
 
 Related: [[0004]] (prompt ownership — task path is ours, native path untouched), spec 016.
