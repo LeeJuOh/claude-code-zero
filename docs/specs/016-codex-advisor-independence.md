@@ -89,7 +89,7 @@ Phase 1.5 프리뷰(adversarial·rescue 둘 다 이미 있음)에 "제외됨(가
 
 **방어선 구조**: 1(지시문)이 유일한 방어선. 2(프리뷰 `Excluded (hypothesis):`)는 1이 틀렸을 때 보이게 하는 검사 창. 3(`--no-preview` 삭제)은 플래그로 검사 창을 건너뛰는 경로 제거 — 사람이 답하지 않고 넘어가는 경우는 위 보장 범위대로 한계.
 
-**미결(그릴 대상)**: focus와 hypothesis의 경계. "login handler의 null check 봐줘"는 초점인가 가설인가. 이 세션의 잠정 기준: **주장(assertion)이 있으면 가설, 영역 지시만 있으면 초점.** 실제 사례 3~5개로 기준을 다듬은 뒤 SKILL.md에 예시로 박는다.
+**focus와 hypothesis의 경계** (확정 — 이슈 S2): **주장(assertion)이 있으면 가설, 영역 지시만 있으면 초점.** "login handler의 null check 봐줘"처럼 경계가 애매한 것은 사례 3~5개 대비 표로 SKILL.md에 박아 기준을 보여준다(표 작성은 S2 구현).
 
 ### D2 — ② 블록 정리: autonomy policy 한 블록
 
