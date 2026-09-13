@@ -1,6 +1,6 @@
 # 이슈 016 — codex-advisor 검수자 독립성 복원 구현 (슬라이스 S1~S6, S3b)
 
-> 상태: **in-progress** — S3 완료(`7ad6a83`), 다음 S3b · (Q1~Q18·R1~R3 유지. 최종 검수 F1~F9·I1~I3·N1·N2 결정·반영 완료, 2026-09-14) · 생성: 2026-09-11
+> 상태: **in-progress** — S3 완료(`7ad6a83`), S3b 단위 완료(통합 검증 1건은 S4 후), 다음 S4 · (Q1~Q18·R1~R3 유지. 최종 검수 F1~F9·I1~I3·N1·N2 결정·반영 완료, 2026-09-14) · 생성: 2026-09-11
 > 스펙 (PRD): `docs/specs/016-codex-advisor-independence.md` — 문제 정의, 유저 스토리, 결정 D1~D6, 그릴 확정 사항 전부 스펙 참조. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/codex-advisor/` (v4.7.1 → v5.0.0, major — R2)
 > 용어집: `docs/context/codex-advisor.md` — **Double-check independence / Verifier / Verifier payload / Author note / Hypothesis exclusion / Finding group / Autonomy policy** · ADR: 0004(전제), 0012(③ 구조)
@@ -93,12 +93,12 @@ S3 ─┬→ S4 ──┬→ S5a ────────────┼─→ S
 왜 훅인가를 파일 상단에 두 문장으로 쓴다: Verifier를 띄우는 prompt는 메인(코드 저자)이 쓰는데, 저자의 한 줄이 섞이면 fresh 컨텍스트가 무의미해진다. 지시는 그걸 못 막고 훅은 막는다(스펙 D3, ADR 0012 Amendment). 메인이 prompt에 덧붙인 텍스트는 버려진다는 사실을 SKILL.md에도 한 줄 적는다 — 메인이 "왜 내 말이 안 갔지" 하지 않도록.
 
 **Acceptance criteria** (seam: 훅 stdin → stdout — 결정론, 단위 테스트):
-- [ ] `subagent_type` ≠ Verifier인 stdin → stdout 비어 있음, exit 0
-- [ ] Verifier + 유효 경로 + 해시 일치 → `updatedInput.prompt` == 파일 내용 byte 동일, 나머지 필드 원본 유지, `permissionDecision: "allow"`
-- [ ] Verifier + `tool_input.model: "haiku"` → `updatedInput`에 `model` 키 없음(R3); 비-Verifier 호출의 `model`은 건드리지 않음
-- [ ] prompt에 경로 앞뒤로 임의 문장을 덧붙여도 결과 동일(덧붙인 문장 0건)
-- [ ] 경로 없음 / 파일 없음 / 해시 불일치 → 각각 `deny` + 구별되는 이유 문자열
-- [ ] Verifier + malformed `manifest.json` / payload 읽기 권한 없음 / manifest 스키마 불일치, 그리고 깨진 stdin JSON → 전부 `deny` 또는 exit 2, `allow`나 빈 stdout exit 0 없음(F8)
+- [x] `subagent_type` ≠ Verifier인 stdin → stdout 비어 있음, exit 0
+- [x] Verifier + 유효 경로 + 해시 일치 → `updatedInput.prompt` == 파일 내용 byte 동일, 나머지 필드 원본 유지, `permissionDecision: "allow"`
+- [x] Verifier + `tool_input.model: "haiku"` → `updatedInput`에 `model` 키 없음(R3); 비-Verifier 호출의 `model`은 건드리지 않음
+- [x] prompt에 경로 앞뒤로 임의 문장을 덧붙여도 결과 동일(덧붙인 문장 0건)
+- [x] 경로 없음 / 파일 없음 / 해시 불일치 → 각각 `deny` + 구별되는 이유 문자열
+- [x] Verifier + malformed `manifest.json` / payload 읽기 권한 없음 / manifest 스키마 불일치, 그리고 깨진 stdin JSON → 전부 `deny` 또는 exit 2, `allow`나 빈 stdout exit 0 없음(F8)
 - [ ] 통합 1회 (S4 완료 후 — agent 파일 필요): `claude -p --plugin-dir ./plugins/codex-advisor --allowedTools Agent`로 `subagent_type: codex-advisor:verifier`를 띄운 stream-json에서 서브에이전트가 받은 첫 `user` 메시지가 payload 파일 내용과 일치(foreground 호출 — `run_in_background: false`). 같은 방식으로 짧은 이름 `verifier`가 plugin agent를 띄우는지 기록 — 띄우면 훅 매칭에 포함하고 단위 테스트 추가(I1)
 
 **Blocked by**: S3 — `manifest.json` 형식과 payload 파일명. agent 식별자는 `codex-advisor:verifier`로 확정돼 단위 구현은 S4를 기다리지 않는다 — 통합 검증 1건만 S4 이후(I1·동기화).
@@ -386,18 +386,19 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 
 <a id="handoff-2026-09-14"></a>
 
-## 핸드오프 — 구현 세션 (2026-09-14, S3 완료 시점)
+## 핸드오프 — 구현 세션 (2026-09-14, S3b 단위 완료 시점)
 
 **Goal:** 슬라이스를 착수 순서(`S3 → S3b → S4 → S1 → S2 → S5a → S5b → S6`)대로 구현한다. 유저 지시: 한 번에 슬라이스 하나(큰 슬라이스는 절반), 끝나면 문제·남은 작업 보고, 방향과 어긋나는 게 보이면 멈추고 보고.
 
-**First Action:** S3b 구현 — `plugins/codex-advisor/hooks/verifier-payload.mjs`를 새로 만들고 `hooks/hooks.json`에 PreToolUse 항목(matcher `Agent`)을 추가한다(기존 SessionStart 유지). 입력 계약은 아래 **S3 출력 계약**, 규칙은 위 S3b 절. 단위 테스트는 `node --test`로 훅 stdin→stdout만 본다. 통합 검증 1건(`claude -p` 실측·짧은 이름 `verifier`)은 agent 파일이 필요하므로 S4 뒤로 미룬다.
+**First Action:** S4 — `agents/verifier.md` + `evaluation.md` 재편(아래 **S3 출력 계약**의 세 절 이름 포함). 끝나면 S3b 통합 검증 1건(`claude -p` 실측·짧은 이름 `verifier`).
 
 **Context:** S3를 먼저 끝낸 이유는 이슈 착수 순서 그대로 — 새 코드(스크립트·훅·agent)를 먼저, SKILL.md는 뒤에서 한 번씩. S3 스크립트는 판단 없이 사실만 다루도록 짰고, 스킬별 판정 지시는 스크립트에 넣지 않고 `evaluation.md` 절 이름만 가리키게 했다(규칙 단일 원본). 유저는 S3만 마무리하고 보고하라고 해서 S3b는 손대지 않았다.
 
 **Current Progress** (git 기준):
 - 브랜치 `develop`. S3 커밋 `7ad6a83` — `plugins/codex-advisor/scripts/prepare-verifier.py`, `scripts/tests/test_prepare_verifier.py`, `scripts/tests/fixtures/`(adversarial·review 5종·rescue), 이 문서 S3 수용기준 17개 체크.
 - 테스트: `python3 plugins/codex-advisor/scripts/tests/test_prepare_verifier.py` → 23개 통과(python3 + git만 필요).
-- S3b·S4·S1·S2·S5a·S5b·S6: 미착수. SKILL.md·README·매니페스트·버전은 아직 4.7.1 그대로.
+- S3b 단위 완료 — `hooks/verifier-payload.mjs`, `hooks/hooks.json` PreToolUse(matcher `Agent`, timeout 10s), `hooks/tests/verifier-payload.test.mjs`. 테스트: `node --test plugins/codex-advisor/hooks/tests/verifier-payload.test.mjs` → 12개 통과(Node 22는 디렉터리 인자 불가 — 파일 경로로). 통합 검증 1건 남음(S4 후).
+- S4·S1·S2·S5a·S5b·S6: 미착수. SKILL.md·README·매니페스트·버전은 아직 4.7.1 그대로.
 
 ### S3 출력 계약 (다음 슬라이스가 기대는 것)
 
@@ -417,6 +418,11 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 - 리포 밖 절대 경로·`..`로 벗어나는 경로는 `missing`. 드리프트 검사는 `--ref`가 있을 때만, 리포 안 `ok`·`missing` 인용 파일만.
 - review 헤더와 건수가 안 맞으면(`Review comment:`인데 여러 건 등) `parse_error`.
 - 테스트는 `scripts/tests/`에 둠 — 플러그인 설치본에 같이 배포된다. 싫으면 옮길 것.
+- (S3b) 훅의 모든 deny는 JSON `deny` + stderr + **exit 2** 동시 — JSON이 스키마 검증에 걸려도 exit 2가 막는다. allow만 exit 0.
+- (S3b) prompt에서 서로 다른 payload 경로가 2개 이상이면 `multiple-payload-paths`로 deny(같은 경로 반복은 허용). 따옴표로 감싼 경로는 공백 허용, 맨 경로는 공백·괄호에서 끊음, 경로 뒤 마침표 허용. 상대 경로는 훅 입력 `cwd` 기준.
+- (S3b) deny 사유 토큰: `no-payload-path` · `multiple-payload-paths` · `payload-missing` · `payload-unreadable` · `payload-not-in-manifest` · `hash-mismatch` · `payload-not-utf8` · `manifest-unreadable` · `manifest-malformed` · `manifest-schema`(format ≠ `codex-advisor-verifier-payload/1` 또는 `payloads`가 해시 문자열 객체 아님) · `stdin-malformed` · `unexpected-error`.
+- (S3b) stdin 파싱 실패·`tool_input`이 객체 아님은 Verifier 여부를 알 수 없어 모든 Agent 호출을 막는다(F8 fail-closed). 정상 Claude Code 입력에선 발생 안 함.
+- (S3b) README의 hooks 설명은 S6에서 갱신(현재 SessionStart만 언급).
 
 ### What Worked
 
@@ -438,7 +444,7 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 - N1 — `claude -p`에서 질문 도구가 없을 때 프리뷰 동작. 결정은 한계 문서화라 구현을 막지 않음.
 
 **Next Steps** (First Action 이후):
-1. S4 — `agents/verifier.md` + `evaluation.md` 재편(위 세 절 이름 포함). 편집 전 `writing-for-agents` 스킬, 문구 참고 `references/compound-engineering-plugin/skills/ce-code-review/references/validator-template.md`. 끝나면 S3b 통합 검증 1건.
+1. S4 — 편집 전 `writing-for-agents` 스킬, 문구 참고 `references/compound-engineering-plugin/skills/ce-code-review/references/validator-template.md`. 끝나면 S3b 통합 검증 1건.
 2. S1 → S2 → S5a → S5b → S6 (SKILL.md 편집).
 3. S5a 배선 메모: review·adversarial은 branch 대상(`--scope branch`·`--base`)이면 `--ref HEAD`, working-tree면 생략. rescue `--write`는 Phase 2 직전 `snapshot`, Phase 4에 `--mode diff --pre <tree>`. verify·research는 `--mode doc` 1회.
 4. 수동 검증(대화형 세션, 사람이 프리뷰에 답함)이 필요한 수용기준은 위 §검증 방법대로 — 에이전트 단독으로 체크하지 말고 유저에게 넘긴다.
