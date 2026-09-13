@@ -1,0 +1,14 @@
+The change introduces two correctness problems and one maintainability concern.
+
+Full review comments:
+
+- [P1] Token check is not constant time — {REPO}/src/auth.py:3-5
+  The comparison at this line uses == on secrets.
+  
+  An attacker can time the response to recover the token.
+
+- [P2] Retry counter can go negative — {REPO}/src/auth.py:10-12
+  Negative values skip the upper bound — retries never stop.
+
+- [P3] Helper duplicated — {REPO}/src/db.py:1-2
+  Same helper exists twice.

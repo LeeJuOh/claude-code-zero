@@ -66,23 +66,23 @@ S3 ─┬→ S4 ──┬→ S5a ────────────┼─→ S
 **What to build**: `scripts/` 아래 결정론 스크립트 하나. 입력은 companion `--json` 출력 파일 + 스킬 종류 + 리포 루트. finding 추출은 스크립트가 한다(스펙 D3 단계 1, 그릴 2026-09-12): adversarial은 `result.findings[]`를 그대로, review는 `codex.stdout`의 Codex 고정 틀(`Full review comments:` / `Review comment:` 다음 `- {title} — {abs_path}:{start}-{end}` + 들여쓴 body)을 정규식으로 자른다. review 출력 판정은 셋(F5, 그릴 2026-09-14; 스펙 D3 단계 1): 헤더·항목 행이 모두 없고 본문이 있으면 정상 0건(findings `[]`, 정상 종료) / fallback 문구 `Reviewer failed to output a response.` 또는 빈 stdout이면 `no_output`으로 비정상 종료 / 그 외 틀 불일치(헤더는 있는데 항목 행 0개, 항목 행 패턴 불일치)는 `parse_error`로 비정상 종료 — `uncited`로 뭉개지 않는다. rescue read-only는 자르지 않는다: `rawOutput` 전체를 group 하나(`group_id: "all"`, `status: whole`)의 payload로 쓴다. 항목 경계·ID는 Verifier가 정한다(F2). 출력은 finding마다 `{index, file, line_start, line_end, status: ok|missing|uncited, group_id}` JSON. `uncited`는 인용 자체가 없음, `missing`은 파일이 없거나 줄 범위가 파일 길이를 벗어남. 입력에 검수 대상 ref(`--scope branch`면 HEAD, 작업 트리 검수면 생략)를 받아 인용 파일마다 `git diff --quiet <ref> -- <file>`로 작업 트리 변동을 확인하고, 변동된 파일을 인용한 finding은 `ok`·`missing` 구분 없이 전부 `status: unverifiable, reason: worktree-drift`로 내고 payload를 만들지 않는다(F4, 그릴 2026-09-14 — 줄이 남아 있어도 내용이 바뀌었으면 Verifier가 다른 코드를 본다; 스펙 D3 불일치 규칙). 출력 최상위에 `worktree_drift: [files]`를 둔다. 같은 파일이면 같은 `group_id`(Q17, 그릴 2026-09-14; 줄 겹침 조건 삭제). group당 finding 최대 5개·payload 본문 최대 6,000자 — 먼저 걸리는 쪽에서 줄 순서로 쪼갠다. 6,000자를 넘는 finding 하나는 쪼개지 않고 단독 group(I2). 다른 파일은 묶지 않는다. `group_id`는 `ok`에만 주고 `missing`·`uncited`는 `null`. `file`은 절대 경로·리포 상대 경로를 모두 받아 리포 상대로 정규화한다. 그 외 판단은 하지 않는다 — 이 스크립트는 fact만 다룬다(`evidence-gates`: fact는 코드, judgment는 AI). 같은 실행에서 **Verifier payload**도 쓴다: `ok` group마다 `<out-dir>/group-<id>.json`(finding 원문 + 인용 + 존재 결과 + 판정 규칙 경로 — Verifier가 받을 텍스트 전부)과 `<out-dir>/manifest.json`(payload별 sha256). 메인은 이 파일들을 만들지도 고치지도 않는다 — S3b 훅이 해시로 확인한다(스펙 D3 Verifier payload, 그릴 2026-09-12). payload는 항목마다 ID를 매긴다(Q2 출력 계약). 모드 셋: 기본(review/adversarial/rescue read-only — finding 자르기 + 인용 검사 + group payload), `--mode doc`(verify/research — 인용 검사 없이 PROMPT_FILE 경로·문서 경로(있을 때만 — topic-only research는 없음)·Codex 결과 파일 경로·규칙 경로만 담은 payload 1개 + manifest; F7), `--mode diff`(rescue `--write` — `--pre <tree>`로 받은 실행 전 트리와 실행 후 트리의 `git diff`를 파일로 쓰고, diff 경로 + PROMPT_FILE 경로를 담은 payload 1개. 요구사항 분할은 Verifier 몫 — F2). 트리 스냅샷은 같은 스크립트의 `snapshot` 동작이 뜬다: 실제 index를 작업 트리 밖 임시 파일로 복사 → `GIT_INDEX_FILE=<tmp> git add -A` → `git write-tree` → 트리 SHA 출력, 실제 index 불변(F3, 그릴 2026-09-14; 스펙 D3 rescue 절). 문서 본문은 어느 모드에서도 payload에 들어가지 않는다 — 경로만(스펙 D3 원문·diff 전달, 그릴 2026-09-12). 스크립트가 도는 동안 메인 Claude는 소스를 읽지 않는다는 점을 SKILL.md에 설명할 때 근거로 쓰인다.
 
 **Acceptance criteria** (seam: 스크립트 stdout — 결정론, 단위 테스트):
-- [ ] adversarial fixture JSON 1개(ok 2·missing 1·uncited 1·같은 파일 2쌍) → 기대 JSON과 일치
-- [ ] review fixture(`codex.stdout` 텍스트, `Full review comments:` 3건 + body 여러 줄 + 절대 경로) → finding 3개, 경로가 리포 상대로 정규화, body 원문 보존
-- [ ] review fixture 1건짜리(`Review comment:` 헤더) → finding 1개
-- [ ] 틀이 깨진 review 텍스트(항목 행에 ` — ` 없음) → `parse_error` 비정상 종료 + stderr, `uncited` 0건, 부분 출력 없음
-- [ ] review 0건 fixture(실제 formatter 출력 — 헤더 없이 `overall_explanation`만) → findings `[]`, 정상 종료, `parse_error` 아님(F5)
-- [ ] fallback 문구 `Reviewer failed to output a response.` / 빈 stdout → 각각 `no_output` 비정상 종료, 부분 출력 없음. 헤더는 있는데 항목 행 0개 → `parse_error`(F5)
-- [ ] rescue read-only fixture → payload 1개, 내용 == `rawOutput` byte 동일
-- [ ] `--mode doc` fixture(PROMPT_FILE + 문서 1개 + Codex 결과 파일) → payload 1개, 문서·PROMPT_FILE 본문 0줄 포함, 경로 4개 + manifest. 문서 없는 topic-only fixture → 문서 경로 없이 경로 3개(F7)
-- [ ] `--mode diff` 임시 저장소(추적 파일 유저 WIP + 기존 미추적 파일 2개인 상태에서 `snapshot` → 추적 파일 수정·미추적 파일 하나 수정·하나 삭제·새 파일 생성) → diff에 네 변경 모두, 유저 WIP 줄 0건, 실제 index(`git ls-files -s` 결과) 불변, 임시 index가 작업 트리 밖. 깨끗한 저장소에서도 `snapshot`이 트리 SHA 반환. payload에 diff 경로 + PROMPT_FILE 경로, 요구사항 ID 0건(F3·F2)
-- [ ] 같은 파일 finding 2개가 같은 `group_id`, 다른 파일은 다른 `group_id`
-- [ ] 같은 파일 finding 7개 → group 2개(5+2), 줄 순서 유지; 본문이 긴 finding 3개(합계 6,000자 초과) → 자 상한에서 쪼개짐; 본문 7,000자 finding 1개 → 단독 group, 본문 byte 보존(I2)
-- [ ] 임시 저장소: 대상 HEAD엔 4행이 있고 작업 파일을 1행으로 고친 뒤 4행 인용 → `unverifiable` + `worktree-drift`, `missing` 아님. 작업 트리가 HEAD와 같으면 `missing`
-- [ ] 임시 저장소: 4행 파일의 4행 내용만 바꾼 뒤(행 수 동일) 4행 인용 → `unverifiable` + `worktree-drift`, `ok` 아님, payload 없음(F4)
-- [ ] 잘못된 JSON 입력 → 비정상 종료 + stderr 메시지, 부분 출력 없음
-- [ ] 같은 fixture → `ok` group 수만큼 `group-<id>.json` 생성, `missing`·`uncited`는 payload 없음
-- [ ] `manifest.json`의 sha256이 각 payload 파일과 일치, `group-<id>.json` 하나를 고치면 불일치
-- [ ] 테스트 스크립트가 `scripts/` 옆에 있고 `python3`만으로 실행
+- [x] adversarial fixture JSON 1개(ok 2·missing 1·uncited 1·같은 파일 2쌍) → 기대 JSON과 일치
+- [x] review fixture(`codex.stdout` 텍스트, `Full review comments:` 3건 + body 여러 줄 + 절대 경로) → finding 3개, 경로가 리포 상대로 정규화, body 원문 보존
+- [x] review fixture 1건짜리(`Review comment:` 헤더) → finding 1개
+- [x] 틀이 깨진 review 텍스트(항목 행에 ` — ` 없음) → `parse_error` 비정상 종료 + stderr, `uncited` 0건, 부분 출력 없음
+- [x] review 0건 fixture(실제 formatter 출력 — 헤더 없이 `overall_explanation`만) → findings `[]`, 정상 종료, `parse_error` 아님(F5)
+- [x] fallback 문구 `Reviewer failed to output a response.` / 빈 stdout → 각각 `no_output` 비정상 종료, 부분 출력 없음. 헤더는 있는데 항목 행 0개 → `parse_error`(F5)
+- [x] rescue read-only fixture → payload 1개, 내용 == `rawOutput` byte 동일
+- [x] `--mode doc` fixture(PROMPT_FILE + 문서 1개 + Codex 결과 파일) → payload 1개, 문서·PROMPT_FILE 본문 0줄 포함, 경로 4개 + manifest. 문서 없는 topic-only fixture → 문서 경로 없이 경로 3개(F7)
+- [x] `--mode diff` 임시 저장소(추적 파일 유저 WIP + 기존 미추적 파일 2개인 상태에서 `snapshot` → 추적 파일 수정·미추적 파일 하나 수정·하나 삭제·새 파일 생성) → diff에 네 변경 모두, 유저 WIP 줄 0건, 실제 index(`git ls-files -s` 결과) 불변, 임시 index가 작업 트리 밖. 깨끗한 저장소에서도 `snapshot`이 트리 SHA 반환. payload에 diff 경로 + PROMPT_FILE 경로, 요구사항 ID 0건(F3·F2)
+- [x] 같은 파일 finding 2개가 같은 `group_id`, 다른 파일은 다른 `group_id`
+- [x] 같은 파일 finding 7개 → group 2개(5+2), 줄 순서 유지; 본문이 긴 finding 3개(합계 6,000자 초과) → 자 상한에서 쪼개짐; 본문 7,000자 finding 1개 → 단독 group, 본문 byte 보존(I2)
+- [x] 임시 저장소: 대상 HEAD엔 4행이 있고 작업 파일을 1행으로 고친 뒤 4행 인용 → `unverifiable` + `worktree-drift`, `missing` 아님. 작업 트리가 HEAD와 같으면 `missing`
+- [x] 임시 저장소: 4행 파일의 4행 내용만 바꾼 뒤(행 수 동일) 4행 인용 → `unverifiable` + `worktree-drift`, `ok` 아님, payload 없음(F4)
+- [x] 잘못된 JSON 입력 → 비정상 종료 + stderr 메시지, 부분 출력 없음
+- [x] 같은 fixture → `ok` group 수만큼 `group-<id>.json` 생성, `missing`·`uncited`는 payload 없음
+- [x] `manifest.json`의 sha256이 각 payload 파일과 일치, `group-<id>.json` 하나를 고치면 불일치
+- [x] 테스트 스크립트가 `scripts/` 옆에 있고 `python3`만으로 실행
 
 **Blocked by**: None — can start immediately.
 

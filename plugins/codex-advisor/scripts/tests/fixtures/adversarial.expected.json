@@ -1,0 +1,6 @@
+[
+  {"index": 1, "id": "F1", "file": "src/auth.py", "line_start": 3, "line_end": 5, "status": "ok", "reason": null, "group_id": 1},
+  {"index": 2, "id": "F2", "file": "src/auth.py", "line_start": 10, "line_end": 12, "status": "ok", "reason": null, "group_id": 1},
+  {"index": 3, "id": "F3", "file": "src/auth.py", "line_start": 200, "line_end": 210, "status": "missing", "reason": null, "group_id": null},
+  {"index": 4, "id": "F4", "file": null, "line_start": 1, "line_end": 1, "status": "uncited", "reason": null, "group_id": null}
+]
