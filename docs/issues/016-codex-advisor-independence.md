@@ -1,12 +1,12 @@
 # 이슈 016 — codex-advisor 검수자 독립성 복원 구현 (슬라이스 S1~S6, S3b)
 
-> 상태: **needs-grill** (Q1~Q18·R1~R3 기존 결정 유지, 최종 검수의 추가 쟁점 처리 대기, 2026-09-14) · 생성: 2026-09-11
+> 상태: **ready-for-agent** (Q1~Q18·R1~R3 유지. 최종 검수 F1~F9·I1~I3·N1·N2 결정·반영 완료, 2026-09-14) · 생성: 2026-09-11
 > 스펙 (PRD): `docs/specs/016-codex-advisor-independence.md` — 문제 정의, 유저 스토리, 결정 D1~D6, 그릴 확정 사항 전부 스펙 참조. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/codex-advisor/` (v4.7.1 → v5.0.0, major — R2)
 > 용어집: `docs/context/codex-advisor.md` — **Double-check independence / Verifier / Verifier payload / Author note / Hypothesis exclusion / Finding group / Autonomy policy** · ADR: 0004(전제), 0012(③ 구조)
 > 원칙: 강제는 구조로, 판단은 fresh 컨텍스트로, fact는 스크립트로. 지시문은 "왜"를 설명하고 MUST를 남발하지 않는다(skill-creator 가이드).
 
-> **구현 전 그릴:** 아래 [최종 검수 기록](#final-review-2026-09-14)의 F1~F9·I1~I3를 검토하고, 채택한 결정을 스펙과 해당 슬라이스에 반영한다. 검수 의견은 아직 설계 확정이 아니다. 처리 완료 기준은 해당 절 참조.
+> **구현 세션:** 맨 아래 [핸드오프](#handoff-2026-09-14)부터 읽는다. 최종 검수 판정 이력과 반영 위치는 [방향 결정 기록](#cc-factcheck-2026-09-14), 검수 원문은 [최종 검수 기록](#final-review-2026-09-14). 구현 규칙의 원본은 아래 슬라이스와 스펙이다.
 
 ## Slices (tracer bullets)
 
@@ -15,7 +15,7 @@
 **착수 순서** (Q12, 그릴 2026-09-14 확정): **전부 순차, 한 에이전트** — `S3 → S3b → S4 → S1 → S2 → S5a → S5b → S6`. 새 코드(스크립트·훅·agent)를 먼저 만들고 SKILL.md는 뒤에서 한 번씩 고친다. 병렬은 하지 않는다 — S1·S2와 S5a·S5b가 같은 SKILL.md를 고쳐 충돌만 생기고 이득이 없다.
 
 **슬라이스 수정 때 함께 반영 (그릴 불필요)**:
-- **W2**: "verify/research는 이미 구조적으로 독립이었다"(스펙 D3 verify/research 절, S5b 본문) 삭제. 메인이 그 문서를 작성했다면 blind payload로 기억이 지워지지 않는다 — 두 스킬에도 Verifier 적용의 실질 이득이 있다.
+- **W2** (반영 2026-09-14): "verify/research는 이미 구조적으로 독립이었다"(스펙 D3 verify/research 절, S5b 본문) 삭제. 메인이 그 문서를 작성했다면 blind payload로 기억이 지워지지 않는다 — 두 스킬에도 Verifier 적용의 실질 이득이 있다.
 - **W3**: "500행 이하", "MUST/NEVER 0건"은 편집 기준으로만 둔다. 독립성·판정 품질의 증거로 세지 않는다.
 
 ```
@@ -43,7 +43,7 @@ S3 ─┬→ S4 ──┬→ S5a ────────────┼─→ S
 
 ### S2 — ① 가설 제외 + 프리뷰 항상 + verify focus 인자 (스토리 1~4, 9; 결정 D1)
 
-**What to build**: adversarial(focus)·rescue(task, Claude가 작문할 때)·research(topic)·verify(focus — 신설) 네 스킬의 Phase 1에 **Hypothesis exclusion** 규칙을 넣는다. Claude가 Codex로 보낼 문장을 쓸 때 증거(범위·증상·재현·로그·유저 원문)와 초점(볼 영역)은 남기고 가설(원인 주장, 의심 `file:line` 단정, 기대 답)은 뺀다. 기준은 한 줄 — 주장이 있으면 가설, 영역만 있으면 초점 — 그리고 사례 3~5개를 표로 박는다(예: "login handler 봐줘"=초점 / "auth.ts:42 null check 누락으로 뚫림"=가설 / "빈 비번으로 POST /login 하면 500"=증거). 출처를 가리지 않는다 — 유저가 직접 쳤든 Claude가 대신 호출했든 같은 규칙, 판별 로직 없음(Q11, 그릴 2026-09-14; 스펙 D1). 유저가 가설을 넣고 싶으면 프리뷰의 "제외된 것 넣기"로 복구. rescue task 원문은 요구사항이라 증거로 취급, verbatim 유지(스토리 4). Phase 1.5 프리뷰에 `Excluded (hypothesis):` 줄을 추가해 뺀 것을 보여주고 "Needs changes"로 되돌릴 수 있게 한다. `--no-preview` 플래그를 네 스킬에서 삭제한다(argument-hint, Phase 1 파싱, Phase 1.5 "skip" 문장, `companion-usage.md` 언급) — 분류가 Claude 판단(SOFT)이라 프리뷰가 유일한 검사 창인데 플래그가 그 창을 우회하기 때문이다. headless에서는 프리뷰 질문에 답할 호스트가 없어 Phase 1.5에서 멈춘다 — 감수(Q7, 그릴 2026-09-14; 종료 코드는 스킬이 정하지 않는다). verify에 positional focus text를 받아 `<task>`의 Focus areas 뒤에 붙인다. verify 파싱 순서: 문서 경로 → 남은 텍스트 = focus. **verify·research의 `resume [follow-up]` 키워드 삭제** (그릴 2026-09-13, Q13; 스펙 D1): 검수가 이전 Codex 스레드(가설 잔존, rescue 스레드일 수 있음)를 이으면 독립이 아니다. `skills/codex-verify/SKILL.md:49`, `skills/codex-research/SKILL.md:50`의 키워드 줄과 그 파생(`--resume-last` 전달, README 언급)을 지운다. rescue의 `--resume-last`는 손대지 않는다.
+**What to build**: adversarial(focus)·rescue(task, Claude가 작문할 때)·research(topic)·verify(focus — 신설) 네 스킬의 Phase 1에 **Hypothesis exclusion** 규칙을 넣는다. Claude가 Codex로 보낼 문장을 쓸 때 증거(범위·증상·재현·로그·유저 원문)와 초점(볼 영역)은 남기고 가설(원인 주장, 의심 `file:line` 단정, 기대 답)은 뺀다. 기준은 한 줄 — 주장이 있으면 가설, 영역만 있으면 초점 — 그리고 사례 3~5개를 표로 박는다(예: "login handler 봐줘"=초점 / "auth.ts:42 null check 누락으로 뚫림"=가설 / "빈 비번으로 POST /login 하면 500"=증거). 출처를 가리지 않는다 — 유저가 직접 쳤든 Claude가 대신 호출했든 같은 규칙, 판별 로직 없음(Q11, 그릴 2026-09-14; 스펙 D1). 유저가 가설을 넣고 싶으면 프리뷰의 "제외된 것 넣기"로 복구. rescue task 원문은 요구사항이라 증거로 취급, verbatim 유지(스토리 4). Phase 1.5 프리뷰에 `Excluded (hypothesis):` 줄을 추가해 뺀 것을 보여주고 "Needs changes"로 되돌릴 수 있게 한다. `--no-preview` 플래그를 네 스킬에서 삭제한다(argument-hint, Phase 1 파싱, Phase 1.5 "skip" 문장, `companion-usage.md` 언급) — 분류가 Claude 판단(SOFT)이라 프리뷰가 유일한 검사 창인데 플래그가 그 창을 우회하기 때문이다. 프리뷰는 사람이 답했을 때만 확인이다 — 유저가 켠 질문 타임아웃이나 질문 도구 없는 `claude -p`(N1, 미실측)에서는 확인 없이 진행될 수 있고, 코드로 막지 않는 수용한 한계다(F9+N1, 그릴 2026-09-14; 스펙 D1 보장 범위. 종료 코드는 스킬이 정하지 않는다 — Q7). verify에 positional focus text를 받아 `<task>`의 Focus areas 뒤에 붙인다. verify 파싱 순서: 문서 경로 → 남은 텍스트 = focus. **verify·research의 `resume [follow-up]` 키워드 삭제** (그릴 2026-09-13, Q13; 스펙 D1): 검수가 이전 Codex 스레드(가설 잔존, rescue 스레드일 수 있음)를 이으면 독립이 아니다. `skills/codex-verify/SKILL.md:49`, `skills/codex-research/SKILL.md:50`의 키워드 줄과 그 파생(`--resume-last` 전달, README 언급)을 지운다. rescue의 `--resume-last`는 손대지 않는다.
 
 지시문 작성 지침: "왜"를 먼저 쓴다 — 검수자에게 답을 주면 검수자는 답을 확인한다(anchoring). 규칙 나열보다 대비 예시가 낫다. 이미 있는 `Original → focus` 변형 예시를 확장하면 된다.
 
@@ -63,19 +63,22 @@ S3 ─┬→ S4 ──┬→ S5a ────────────┼─→ S
 
 ### S3 — ③-a 인용 존재·묶음 스크립트 (스토리 10, 13; 결정 D3 단계 2)
 
-**What to build**: `scripts/` 아래 결정론 스크립트 하나. 입력은 companion `--json` 출력 파일 + 스킬 종류 + 리포 루트. finding 추출은 스크립트가 한다(스펙 D3 단계 1, 그릴 2026-09-12): adversarial은 `result.findings[]`를 그대로, review는 `codex.stdout`의 Codex 고정 틀(`Full review comments:` / `Review comment:` 다음 `- {title} — {abs_path}:{start}-{end}` + 들여쓴 body)을 정규식으로 자른다. 틀이 안 맞으면(헤더 없음, 항목 행 0개인데 본문 있음, 행이 패턴 불일치) `parse_error`로 비정상 종료 — `uncited`로 뭉개지 않는다. rescue read-only는 자르지 않는다: `rawOutput` 전체를 group 하나(`group_id: "all"`, `status: whole`)의 payload로 쓴다. 출력은 finding마다 `{index, file, line_start, line_end, status: ok|missing|uncited, group_id}` JSON. `uncited`는 인용 자체가 없음, `missing`은 파일이 없거나 줄 범위가 파일 길이를 벗어남. 입력에 검수 대상 ref(`--scope branch`면 HEAD, 작업 트리 검수면 생략)를 받아 인용 파일마다 `git diff --quiet <ref> -- <file>`로 작업 트리 변동을 확인하고, 변동된 파일의 `missing`은 `status: unverifiable, reason: worktree-drift`로 낸다(False Positive 아님 — 스펙 D3 불일치 규칙, 그릴 2026-09-12). 출력 최상위에 `worktree_drift: [files]`를 둔다. 같은 파일이면 같은 `group_id`(Q17, 그릴 2026-09-14; 줄 겹침 조건 삭제). group당 finding 최대 5개·payload 본문 최대 6,000자 — 먼저 걸리는 쪽에서 줄 순서로 쪼갠다. 다른 파일은 묶지 않는다. `group_id`는 `ok`에만 주고 `missing`·`uncited`는 `null`. `file`은 절대 경로·리포 상대 경로를 모두 받아 리포 상대로 정규화한다. 그 외 판단은 하지 않는다 — 이 스크립트는 fact만 다룬다(`evidence-gates`: fact는 코드, judgment는 AI). 같은 실행에서 **Verifier payload**도 쓴다: `ok` group마다 `<out-dir>/group-<id>.json`(finding 원문 + 인용 + 존재 결과 + 판정 규칙 경로 — Verifier가 받을 텍스트 전부)과 `<out-dir>/manifest.json`(payload별 sha256). 메인은 이 파일들을 만들지도 고치지도 않는다 — S3b 훅이 해시로 확인한다(스펙 D3 Verifier payload, 그릴 2026-09-12). payload는 항목마다 ID를 매긴다(Q2 출력 계약). 모드 셋: 기본(review/adversarial/rescue read-only — finding 자르기 + 인용 검사 + group payload), `--mode doc`(verify/research — 인용 검사 없이 문서 경로·Codex 결과 파일 경로·규칙 경로만 담은 payload 1개 + manifest), `--mode diff`(rescue `--write` — 실행 전 스냅샷 대비 `git diff`를 파일로 쓰고 경로 + 유저 task에서 잘라 번호 매긴 요구사항 항목을 담은 payload 1개). 문서 본문은 어느 모드에서도 payload에 들어가지 않는다 — 경로만(스펙 D3 원문·diff 전달, 그릴 2026-09-12). 스크립트가 도는 동안 메인 Claude는 소스를 읽지 않는다는 점을 SKILL.md에 설명할 때 근거로 쓰인다.
+**What to build**: `scripts/` 아래 결정론 스크립트 하나. 입력은 companion `--json` 출력 파일 + 스킬 종류 + 리포 루트. finding 추출은 스크립트가 한다(스펙 D3 단계 1, 그릴 2026-09-12): adversarial은 `result.findings[]`를 그대로, review는 `codex.stdout`의 Codex 고정 틀(`Full review comments:` / `Review comment:` 다음 `- {title} — {abs_path}:{start}-{end}` + 들여쓴 body)을 정규식으로 자른다. review 출력 판정은 셋(F5, 그릴 2026-09-14; 스펙 D3 단계 1): 헤더·항목 행이 모두 없고 본문이 있으면 정상 0건(findings `[]`, 정상 종료) / fallback 문구 `Reviewer failed to output a response.` 또는 빈 stdout이면 `no_output`으로 비정상 종료 / 그 외 틀 불일치(헤더는 있는데 항목 행 0개, 항목 행 패턴 불일치)는 `parse_error`로 비정상 종료 — `uncited`로 뭉개지 않는다. rescue read-only는 자르지 않는다: `rawOutput` 전체를 group 하나(`group_id: "all"`, `status: whole`)의 payload로 쓴다. 항목 경계·ID는 Verifier가 정한다(F2). 출력은 finding마다 `{index, file, line_start, line_end, status: ok|missing|uncited, group_id}` JSON. `uncited`는 인용 자체가 없음, `missing`은 파일이 없거나 줄 범위가 파일 길이를 벗어남. 입력에 검수 대상 ref(`--scope branch`면 HEAD, 작업 트리 검수면 생략)를 받아 인용 파일마다 `git diff --quiet <ref> -- <file>`로 작업 트리 변동을 확인하고, 변동된 파일을 인용한 finding은 `ok`·`missing` 구분 없이 전부 `status: unverifiable, reason: worktree-drift`로 내고 payload를 만들지 않는다(F4, 그릴 2026-09-14 — 줄이 남아 있어도 내용이 바뀌었으면 Verifier가 다른 코드를 본다; 스펙 D3 불일치 규칙). 출력 최상위에 `worktree_drift: [files]`를 둔다. 같은 파일이면 같은 `group_id`(Q17, 그릴 2026-09-14; 줄 겹침 조건 삭제). group당 finding 최대 5개·payload 본문 최대 6,000자 — 먼저 걸리는 쪽에서 줄 순서로 쪼갠다. 6,000자를 넘는 finding 하나는 쪼개지 않고 단독 group(I2). 다른 파일은 묶지 않는다. `group_id`는 `ok`에만 주고 `missing`·`uncited`는 `null`. `file`은 절대 경로·리포 상대 경로를 모두 받아 리포 상대로 정규화한다. 그 외 판단은 하지 않는다 — 이 스크립트는 fact만 다룬다(`evidence-gates`: fact는 코드, judgment는 AI). 같은 실행에서 **Verifier payload**도 쓴다: `ok` group마다 `<out-dir>/group-<id>.json`(finding 원문 + 인용 + 존재 결과 + 판정 규칙 경로 — Verifier가 받을 텍스트 전부)과 `<out-dir>/manifest.json`(payload별 sha256). 메인은 이 파일들을 만들지도 고치지도 않는다 — S3b 훅이 해시로 확인한다(스펙 D3 Verifier payload, 그릴 2026-09-12). payload는 항목마다 ID를 매긴다(Q2 출력 계약). 모드 셋: 기본(review/adversarial/rescue read-only — finding 자르기 + 인용 검사 + group payload), `--mode doc`(verify/research — 인용 검사 없이 PROMPT_FILE 경로·문서 경로(있을 때만 — topic-only research는 없음)·Codex 결과 파일 경로·규칙 경로만 담은 payload 1개 + manifest; F7), `--mode diff`(rescue `--write` — `--pre <tree>`로 받은 실행 전 트리와 실행 후 트리의 `git diff`를 파일로 쓰고, diff 경로 + PROMPT_FILE 경로를 담은 payload 1개. 요구사항 분할은 Verifier 몫 — F2). 트리 스냅샷은 같은 스크립트의 `snapshot` 동작이 뜬다: 실제 index를 작업 트리 밖 임시 파일로 복사 → `GIT_INDEX_FILE=<tmp> git add -A` → `git write-tree` → 트리 SHA 출력, 실제 index 불변(F3, 그릴 2026-09-14; 스펙 D3 rescue 절). 문서 본문은 어느 모드에서도 payload에 들어가지 않는다 — 경로만(스펙 D3 원문·diff 전달, 그릴 2026-09-12). 스크립트가 도는 동안 메인 Claude는 소스를 읽지 않는다는 점을 SKILL.md에 설명할 때 근거로 쓰인다.
 
 **Acceptance criteria** (seam: 스크립트 stdout — 결정론, 단위 테스트):
-- [ ] adversarial fixture JSON 1개(ok 2·missing 1·uncited 1·겹침 2쌍) → 기대 JSON과 일치
+- [ ] adversarial fixture JSON 1개(ok 2·missing 1·uncited 1·같은 파일 2쌍) → 기대 JSON과 일치
 - [ ] review fixture(`codex.stdout` 텍스트, `Full review comments:` 3건 + body 여러 줄 + 절대 경로) → finding 3개, 경로가 리포 상대로 정규화, body 원문 보존
 - [ ] review fixture 1건짜리(`Review comment:` 헤더) → finding 1개
 - [ ] 틀이 깨진 review 텍스트(항목 행에 ` — ` 없음) → `parse_error` 비정상 종료 + stderr, `uncited` 0건, 부분 출력 없음
+- [ ] review 0건 fixture(실제 formatter 출력 — 헤더 없이 `overall_explanation`만) → findings `[]`, 정상 종료, `parse_error` 아님(F5)
+- [ ] fallback 문구 `Reviewer failed to output a response.` / 빈 stdout → 각각 `no_output` 비정상 종료, 부분 출력 없음. 헤더는 있는데 항목 행 0개 → `parse_error`(F5)
 - [ ] rescue read-only fixture → payload 1개, 내용 == `rawOutput` byte 동일
-- [ ] `--mode doc` fixture(문서 1개 + Codex 결과 파일) → payload 1개, 문서 본문 0줄 포함, 경로 3개 + manifest
-- [ ] `--mode diff` 임시 저장소(스냅샷 후 파일 수정 + 새 파일) → diff 파일에 수정·새 파일 모두, payload에 diff 경로 + 요구사항 항목 ID
+- [ ] `--mode doc` fixture(PROMPT_FILE + 문서 1개 + Codex 결과 파일) → payload 1개, 문서·PROMPT_FILE 본문 0줄 포함, 경로 4개 + manifest. 문서 없는 topic-only fixture → 문서 경로 없이 경로 3개(F7)
+- [ ] `--mode diff` 임시 저장소(추적 파일 유저 WIP + 기존 미추적 파일 2개인 상태에서 `snapshot` → 추적 파일 수정·미추적 파일 하나 수정·하나 삭제·새 파일 생성) → diff에 네 변경 모두, 유저 WIP 줄 0건, 실제 index(`git ls-files -s` 결과) 불변, 임시 index가 작업 트리 밖. 깨끗한 저장소에서도 `snapshot`이 트리 SHA 반환. payload에 diff 경로 + PROMPT_FILE 경로, 요구사항 ID 0건(F3·F2)
 - [ ] 같은 파일 finding 2개가 같은 `group_id`, 다른 파일은 다른 `group_id`
-- [ ] 같은 파일 finding 7개 → group 2개(5+2), 줄 순서 유지; 본문이 긴 finding 3개(합계 6,000자 초과) → 자 상한에서 쪼개짐
+- [ ] 같은 파일 finding 7개 → group 2개(5+2), 줄 순서 유지; 본문이 긴 finding 3개(합계 6,000자 초과) → 자 상한에서 쪼개짐; 본문 7,000자 finding 1개 → 단독 group, 본문 byte 보존(I2)
 - [ ] 임시 저장소: 대상 HEAD엔 4행이 있고 작업 파일을 1행으로 고친 뒤 4행 인용 → `unverifiable` + `worktree-drift`, `missing` 아님. 작업 트리가 HEAD와 같으면 `missing`
+- [ ] 임시 저장소: 4행 파일의 4행 내용만 바꾼 뒤(행 수 동일) 4행 인용 → `unverifiable` + `worktree-drift`, `ok` 아님, payload 없음(F4)
 - [ ] 잘못된 JSON 입력 → 비정상 종료 + stderr 메시지, 부분 출력 없음
 - [ ] 같은 fixture → `ok` group 수만큼 `group-<id>.json` 생성, `missing`·`uncited`는 payload 없음
 - [ ] `manifest.json`의 sha256이 각 payload 파일과 일치, `group-<id>.json` 하나를 고치면 불일치
@@ -85,7 +88,7 @@ S3 ─┬→ S4 ──┬→ S5a ────────────┼─→ S
 
 ### S3b — ③-a′ Verifier payload 훅 (스토리 8, 11; 결정 D3 Verifier payload)
 
-**What to build**: `hooks/hooks.json`에 PreToolUse 항목(matcher `Agent`) 하나와 `hooks/verifier-payload.mjs`. 훅은 stdin의 `tool_input.subagent_type`이 Verifier(`codex-advisor:verifier` — S4의 agent 이름과 일치)가 아니면 아무것도 내지 않고 끝난다. Verifier면 `tool_input.prompt`에서 payload 경로(`group-<id>.json`의 절대 경로 또는 리포 상대 경로) 하나를 찾아, 옆의 `manifest.json`에서 sha256을 대조하고, 일치하면 `hookSpecificOutput.updatedInput`으로 **`prompt`를 파일 내용으로 통째 교체**(다른 필드 `description`·`subagent_type`·`run_in_background`는 그대로 되돌려 보내고, **`model`은 제거**한다 — 메인이 검수자 모델을 고르는 통로(해석 순서 1위) 차단, R3 그릴 2026-09-14. `updatedInput`은 입력 전체를 교체한다). 경로가 없거나, 파일이 없거나, 해시가 다르면 `permissionDecision: "deny"` + 이유. 기존 SessionStart 훅은 그대로.
+**What to build**: `hooks/hooks.json`에 PreToolUse 항목(matcher `Agent`) 하나와 `hooks/verifier-payload.mjs`. 훅은 stdin의 `tool_input.subagent_type`이 Verifier(`codex-advisor:verifier` — S4의 agent 이름과 일치)가 아니면 아무것도 내지 않고 끝난다. Verifier면 `tool_input.prompt`에서 payload 경로(`group-<id>.json`의 절대 경로 또는 리포 상대 경로) 하나를 찾아, 옆의 `manifest.json`에서 sha256을 대조하고, 일치하면 `hookSpecificOutput.updatedInput`으로 **`prompt`를 파일 내용으로 통째 교체**(다른 필드 `description`·`subagent_type`·`run_in_background`는 그대로 되돌려 보내고, **`model`은 제거**한다 — 메인이 검수자 모델을 고르는 통로(해석 순서 1위) 차단, R3 그릴 2026-09-14. `updatedInput`은 입력 전체를 교체한다). 경로가 없거나, 파일이 없거나, 해시가 다르면 `permissionDecision: "deny"` + 이유. 그 밖의 예외(manifest 손상·읽기 실패·stdin 파싱 실패·예상 못 한 throw)도 전부 `deny` 또는 exit 2로 끝낸다 — Claude Code는 exit 1·JSON 파싱 실패를 non-blocking으로 보고 도구를 실행하기 때문이다(F8, 그릴 2026-09-14). 훅 타임아웃·`disableAllHooks`는 보장 범위 밖(스펙 D3). 기존 SessionStart 훅은 그대로.
 
 왜 훅인가를 파일 상단에 두 문장으로 쓴다: Verifier를 띄우는 prompt는 메인(코드 저자)이 쓰는데, 저자의 한 줄이 섞이면 fresh 컨텍스트가 무의미해진다. 지시는 그걸 못 막고 훅은 막는다(스펙 D3, ADR 0012 Amendment). 메인이 prompt에 덧붙인 텍스트는 버려진다는 사실을 SKILL.md에도 한 줄 적는다 — 메인이 "왜 내 말이 안 갔지" 하지 않도록.
 
@@ -95,13 +98,14 @@ S3 ─┬→ S4 ──┬→ S5a ────────────┼─→ S
 - [ ] Verifier + `tool_input.model: "haiku"` → `updatedInput`에 `model` 키 없음(R3); 비-Verifier 호출의 `model`은 건드리지 않음
 - [ ] prompt에 경로 앞뒤로 임의 문장을 덧붙여도 결과 동일(덧붙인 문장 0건)
 - [ ] 경로 없음 / 파일 없음 / 해시 불일치 → 각각 `deny` + 구별되는 이유 문자열
-- [ ] 통합 1회: `claude -p --plugin-dir ./plugins/codex-advisor --allowedTools Agent`로 Verifier를 띄운 stream-json에서 서브에이전트가 받은 첫 `user` 메시지가 payload 파일 내용과 일치(foreground 호출 — `run_in_background: false`)
+- [ ] Verifier + malformed `manifest.json` / payload 읽기 권한 없음 / manifest 스키마 불일치, 그리고 깨진 stdin JSON → 전부 `deny` 또는 exit 2, `allow`나 빈 stdout exit 0 없음(F8)
+- [ ] 통합 1회 (S4 완료 후 — agent 파일 필요): `claude -p --plugin-dir ./plugins/codex-advisor --allowedTools Agent`로 `subagent_type: codex-advisor:verifier`를 띄운 stream-json에서 서브에이전트가 받은 첫 `user` 메시지가 payload 파일 내용과 일치(foreground 호출 — `run_in_background: false`). 같은 방식으로 짧은 이름 `verifier`가 plugin agent를 띄우는지 기록 — 띄우면 훅 매칭에 포함하고 단위 테스트 추가(I1)
 
-**Blocked by**: S3 — `manifest.json` 형식과 payload 파일명. S4 — agent 이름.
+**Blocked by**: S3 — `manifest.json` 형식과 payload 파일명. agent 식별자는 `codex-advisor:verifier`로 확정돼 단위 구현은 S4를 기다리지 않는다 — 통합 검증 1건만 S4 이후(I1·동기화).
 
 ### S4 — ③-b Verifier 에이전트 + evaluation.md 재편 (스토리 8, 9, 11, 18; 결정 D3 단계 3)
 
-**What to build**: `agents/verifier.md`를 만든다. 역할: **Finding group** 하나를 판정한다. 입력은 finding 원문 + 인용 + S3 존재 결과 + 판정 규칙 참조. 도구는 Read·Grep·WebFetch(그릴 2026-09-13, Q5 — research payload의 URL 출처를 열기 위해; payload에 인용된 URL만, 못 열면 `Unverifiable(external-source)`, WebFetch 요약에 "없다"는 반박 근거로 안 침). 출력은 `{verdicts: [{id, classification: Agreed|Disputed|Nuanced|Unverifiable, severity, evidence, reason}]}` — payload가 번호 매긴 항목마다 1개(스펙 D3 출력 계약, 그릴 2026-09-12). PASS/FAIL·Agreement 요약은 검수자가 내지 않는다. 프롬프트는 3원칙을 따른다 — 기본 판정은 Disputed(반박 근거를 봤으면 reject), 원 finding에 commitment 없음(Codex 편도 안 듦), 출력은 JSON만. 여기에 하나 더: 인용 범위 안에서 증거를 못 찾으면 `Unverifiable`이고 evidence에 무엇이 부족했는지 적는다 — 반박한 것과 못 본 것을 유저가 구별해야 한다(스펙 D3 Unverifiable, 그릴 2026-09-12). 문구는 `references/compound-engineering-plugin/.../validator-template.md`를 참고하되 그대로 복사하지 않는다. `references/evaluation.md`는 규칙의 단일 원본으로 남기고 에이전트가 참조한다(두 곳에 복사해 갈라지지 않도록). `evaluation.md`의 "Self-Bias Awareness" 절은 삭제한다 — Verifier에겐 자기 코드가 없어 해당 없고, 열화 모드 라벨이 그 자리를 대신한다. rescue `--write`용 입력 변형(요구사항 항목 + diff, 항목별 충족 판정 + `side-effect-N` 추가 허용)과 verify/research용 입력 변형(문서 + Codex 지적 항목, 인용 확인 포함, `severity` 통과; research는 `missing-N` 추가 허용 — Q5, 그릴 2026-09-13)도 같은 에이전트가 payload 안의 지시로 받는다 — 스키마는 하나. `model:`은 박지 않는다(스펙 012).
+**What to build**: `agents/verifier.md`를 만든다. 역할: **Finding group** 하나를 판정한다. 입력은 finding 원문 + 인용 + S3 존재 결과 + 판정 규칙 참조. 도구는 Read·Grep·WebFetch(그릴 2026-09-13, Q5 — research payload의 URL 출처를 열기 위해; payload에 인용된 URL만, 못 열면 `Unverifiable(external-source)`, WebFetch 요약에 "없다"는 반박 근거로 안 침). 출력은 `{verdicts: [{id, classification: Agreed|Disputed|Nuanced|Unverifiable, severity, evidence, reason}]}` — payload가 번호 매긴 항목마다 1개(스펙 D3 출력 계약, 그릴 2026-09-12). PASS/FAIL·Agreement 요약은 검수자가 내지 않는다. 프롬프트는 3원칙을 따른다 — 기본 판정은 Disputed(반박 근거를 봤으면 reject), 원 finding에 commitment 없음(Codex 편도 안 듦), 출력은 JSON만. 여기에 하나 더: 인용 범위 안에서 증거를 못 찾으면 `Unverifiable`이고 evidence에 무엇이 부족했는지 적는다 — 반박한 것과 못 본 것을 유저가 구별해야 한다(스펙 D3 Unverifiable, 그릴 2026-09-12). 문구는 `references/compound-engineering-plugin/.../validator-template.md`를 참고하되 그대로 복사하지 않는다. `references/evaluation.md`는 규칙의 단일 원본으로 남기고 에이전트가 참조한다(두 곳에 복사해 갈라지지 않도록). `evaluation.md`의 "Self-Bias Awareness" 절은 삭제한다 — Verifier에겐 자기 코드가 없어 해당 없다(열화 모드는 Q6에서 폐지). rescue `--write`용 입력 변형(PROMPT_FILE의 task + diff — 요구사항을 Verifier가 나눠 ID를 붙이고 항목별 충족 판정 + `side-effect-N` 추가 허용; F2)과 verify/research용 입력 변형(PROMPT_FILE + 문서(있을 때) + Codex 결과 — 산문이라 Verifier가 지적·주장을 항목으로 나눠 ID를 붙임(F2), 인용 확인 포함, `severity` 통과; research는 PROMPT_FILE 범위 대비 `missing-N` 추가 허용 — Q5·F7)도 같은 에이전트가 payload 안의 지시로 받는다 — 스키마는 하나. `model:`은 박지 않는다(스펙 012).
 
 왜 서브에이전트인가를 파일 상단에 두 문장으로 쓴다: 메인 세션은 그 코드를 쓴 당사자라 옹호할 것이 있고, 지시로는 그 사전 오염을 못 지운다(ADR 0012).
 
@@ -111,24 +115,25 @@ S3 ─┬→ S4 ──┬→ S5a ────────────┼─→ S
 - [ ] 기대 분류: 1 → Agreed, 2 → Agreed면 실패, 3 → Nuanced, 4 → Unverifiable. 네 건이 같은 분류면 실패(전부 Disputed 포함)
 - [ ] Disputed·Unverifiable 출력의 evidence가 비어 있지 않음(반박 근거 / 부족한 증거)
 - [ ] finding 2개짜리 group fixture → `verdicts` 길이 2, ID가 payload와 일치
-- [ ] rescue `--write` fixture(요구사항 2개 + 부작용 있는 diff) → 요구사항 ID 2개 + `side-effect-1`
+- [ ] rescue `--write` fixture(요구사항 2개가 한 문단에 섞인 task + 부작용 있는 diff) → Verifier가 나눈 요구사항 verdict 2개 + `side-effect-1`(F2)
 - [ ] 출력에 PASS/FAIL·Agreement 문자열 0건
 - [ ] 에이전트 프롬프트에 3원칙이 각각 한 번씩 있고, MUST/NEVER 대문자 0건
 - [ ] `evaluation.md`에 Self-Bias Awareness 0건, 분류 규칙은 evaluation.md에만 있고 에이전트는 경로로 참조
 - [ ] `evaluation.md`에 "Cross-Model Comparison"·"Additional Findings"·`Claude additional` 0건(Q8, 그릴 2026-09-14); 템플릿 Summary 줄은 Agreed/Disputed/Nuanced/Unverifiable/Unverified 집계
 - [ ] `evaluation.md`에 `Author note (main session)` 형식이 정의돼 있고 "판정은 바꾸지 않는다"가 함께 적힘(Q18)
+- [ ] `evaluation.md` PASS/FAIL 규칙에 `Unverified` group 또는 severity 불명 항목이 하나라도 있으면 FAIL(사유 "미검증")이라는 조항이 있음(F6)
 - [ ] 에이전트 frontmatter에 `model:` 없음(`inherit`도 없음 — 유저 `CLAUDE_CODE_SUBAGENT_MODEL` 존중, R3), tools는 Read·Grep·WebFetch 세 개
 - [ ] research fixture(URL 출처 1건 + 로컬 파일 출처 1건): URL 항목은 Agreed/Disputed/Unverifiable 중 하나이며 Unverifiable이면 사유 `external-source`; 스킬별 도구 분기 0건
-- [ ] research fixture(핵심 항목 하나가 명백히 빠진 결과) → `missing-1` verdict 1개 이상, evidence에 무엇이 빠졌는지
+- [ ] research topic-only fixture(문서 없음, PROMPT_FILE topic의 핵심 항목 하나가 명백히 빠진 결과) → `missing-1` verdict 1개 이상, evidence에 PROMPT_FILE 범위의 무엇이 빠졌는지(F7)
 - [ ] 묶음 관대함 비교(Q17): 같은 finding 5개를 group 1개로 준 결과와 group 5개로 준 결과의 Agreed 수를 기록 — 통과 기준 아님, 상한 5 조정 근거
 
 **Blocked by**: S3 — 입출력 계약(`status`, `group_id` 필드명)을 공유.
 
 ### S5a — ③-c Phase 4 배선: 코드 경로 3스킬 (스토리 8, 11, 12, 13, 14; 결정 D3 단계 1·4·5)
 
-**What to build**: review·adversarial·rescue의 Phase 4를 교체한다. 메인은 Codex JSON을 파싱해 finding 목록을 뽑고(소스는 안 읽음) → S3 스크립트 실행(인용 검사 + payload 파일 생성) → `ok` group마다 `Agent(subagent_type: Verifier, prompt: <payload 경로>)`로 Verifier를 띄우되(custom agent 신규 실행 — `fork`는 대화 전체를 상속하므로 금지. CLAUDE.md·git status는 공유되며 이는 감수; Q16, 그릴 2026-09-14) 한 번에 10 group까지, 완료 후 다음 묶음(Q17, 그릴 2026-09-14 — 동시 서브에이전트 한도 20)(S3b 훅이 prompt를 payload 내용으로 교체 — 메인이 덧붙인 말은 도착하지 않는다) → JSON을 모아 보고서를 쓴다. 검수자 JSON의 `verdicts`를 ID로 finding에 되붙이고(빠진 ID·모르는 ID가 있는 group은 `Unverifiable`/`contract-violation`), `missing` → False Positive, `uncited` → Uncited, `unverifiable`(worktree-drift) → Unverifiable은 스크립트 결과를 그대로 적고, 스크립트가 `parse_error`면 Phase 4를 진행하지 않고 보고서에 "Codex 출력 형식이 바뀜 — 판정 없음"을 적는다(메인이 대신 finding을 뽑지 않는다). `worktree_drift`가 비어 있지 않으면 보고서 상단에 "리뷰 후 작업 트리가 바뀜: <files>" 한 줄. 판정은 바꾸지 않는다 — 동의하지 않으면 그 finding 아래 `Author note (main session): <이견 + 근거>` 한 줄만 붙인다(Q18, 그릴 2026-09-14; 스펙 D3 단계 4). 보고서 상단에 `Verifier: fresh subagent (N groups)`. Agent 호출이 실패한 group은 `Unverified — Verifier 실행 실패`로 적고 메인은 판정하지 않는다(Q6, 그릴 2026-09-14; 스펙 D3 단계 5). 유저가 요청하면 같은 payload 경로로 재호출, 자동 재시도 없음. rescue `--write`는 finding 대신 diff를 Verifier에 보내고, Verifier가 diff 주변을 Read·Grep으로 볼 수 있음을 명시한다. 그 diff는 Phase 2 실행 직전 `git stash create`(작업 트리를 커밋 객체로 스냅샷, 트리는 안 건드림)로 잡은 커밋 대비 `git diff <snapshot>`이고, 새 파일은 실행 전후 `git ls-files --others --exclude-standard` 차집합 — 기존 `PRE_LIST`(파일명만) 방식을 대체한다(스펙 D3 rescue 절, 그릴 2026-09-12). finding 0개면 Verifier 0개. 크기 임계 없음 — finding 1개여도 띄운다. Read 차단 훅은 만들지 않는다(S3b payload 훅만).
+**What to build**: review·adversarial·rescue의 Phase 4를 교체한다. 메인은 Codex 출력 파일 경로를 S3 스크립트에 넘길 뿐 finding 목록을 직접 뽑지 않는다(소스도 안 읽음; 스펙 D3 단계 1) → S3 스크립트 실행(finding 추출 + 인용 검사 + payload 파일 생성) → `ok` group마다 `Agent(subagent_type: codex-advisor:verifier, prompt: <payload 경로>)`로 Verifier를 띄우되(custom agent 신규 실행 — `fork`는 대화 전체를 상속하므로 금지. CLAUDE.md·git status는 공유되며 이는 감수; Q16, 그릴 2026-09-14) 한 번에 10 group까지, 완료 후 다음 묶음(Q17, 그릴 2026-09-14 — 동시 서브에이전트 한도 20)(S3b 훅이 prompt를 payload 내용으로 교체 — 메인이 덧붙인 말은 도착하지 않는다) → JSON을 모아 보고서를 쓴다. 검수자 JSON의 `verdicts`를 ID로 finding에 되붙이고(빠진 ID·모르는 ID가 있는 group은 `Unverifiable`/`contract-violation`), `missing` → False Positive, `uncited` → Uncited, `unverifiable`(worktree-drift) → Unverifiable은 스크립트 결과를 그대로 적고, 스크립트가 `parse_error`면 Phase 4를 진행하지 않고 보고서에 "Codex 출력 형식이 바뀜 — 판정 없음", `no_output`이면 "Codex 응답 없음 — 판정 없음"을 적는다(메인이 대신 finding을 뽑지 않는다). 정상 0건이면 "지적 0건"과 Codex의 `overall_explanation`만 적는다(F5). `worktree_drift`가 비어 있지 않으면 보고서 상단에 "리뷰 후 작업 트리가 바뀜: <files>" 한 줄 — 그 파일의 finding은 전부 Unverifiable(F4). 판정은 바꾸지 않는다 — 동의하지 않으면 그 finding 아래 `Author note (main session): <이견 + 근거>` 한 줄만 붙인다(Q18, 그릴 2026-09-14; 스펙 D3 단계 4). 보고서 상단에 `Verifier: fresh subagent (N groups)`. Agent 호출이 실패한 group은 `Unverified — Verifier 실행 실패`로 적고 메인은 판정하지 않는다(Q6, 그릴 2026-09-14; 스펙 D3 단계 5). 유저가 요청하면 같은 payload 경로로 새 Agent 호출 — 기존 Verifier를 `SendMessage`로 재개하지 않는다고 SKILL.md에 한 줄. 자동 재시도 없음. 세 스킬 frontmatter에 `disallowed-tools: SendMessage` — 스킬 활성 중 메인이 실행 중·완료된 Verifier에 후속 메시지를 보내는 경로를 뺀다(F1, 그릴 2026-09-14; 스펙 D3 단계 4). rescue `--write`는 finding 대신 diff를 Verifier에 보내고, Verifier가 diff 주변을 Read·Grep으로 볼 수 있음을 명시한다. 그 diff는 Phase 2 실행 직전 S3 스크립트 `snapshot`으로 뜬 트리와 실행 후 트리의 차이다(`--mode diff --pre <tree>`) — 기존 `PRE_LIST`(파일명만) 방식을 대체한다(F3, 그릴 2026-09-14; 스펙 D3 rescue 절). 요구사항 분할은 Verifier가 한다(F2). finding 0개면 Verifier 0개. 크기 임계 없음 — finding 1개여도 띄운다. Read 차단 훅은 만들지 않는다(S3b payload 훅만).
 
-**Phase 3 WAIT 도구 교체** (R1, 그릴 2026-09-14 — 016 밖의 기존 결함이지만 같은 파일·같은 절): review·adversarial의 `allowed-tools`와 Phase 3에서 `BashOutput`·`KillShell`을 지운다. 둘 다 현재 Claude Code에 없다(공식 `tools-reference` 도구 표 0건, 2026-09-14 수령·v2.1.270 세션 도구 목록에도 없음). 대기는 폴링 루프가 아니라 백그라운드 명령 완료 알림 → 출력 파일 `Read`; 30분 상한은 `TaskStop`(`allowed-tools`에 추가). `TaskOutput`은 deprecated라 쓰지 않는다. Execution Contract 표의 Phase 3 행도 같이.
+**Phase 3 WAIT 도구 교체** (R1, 그릴 2026-09-14 — 016 밖의 기존 결함이지만 같은 파일·같은 절): review·adversarial의 `allowed-tools`와 Phase 3에서 `BashOutput`·`KillShell`을 지운다. 둘 다 현재 Claude Code에 없다(공식 `tools-reference` 도구 표 0건, 2026-09-14 수령·v2.1.270 세션 도구 목록에도 없음). 대기는 폴링 루프가 아니라 백그라운드 명령 완료 알림 → 출력 파일 `Read`. 30분 상한(`wait-timeout` 행)은 삭제한다 — 완료 알림 대기엔 타이머가 없고, 드문 경우에 `Monitor` 타이머를 붙이는 건 과하다. 멈춘 작업은 유저가 `/codex-cancel` 또는 Esc로 끝낸다(I3, 그릴 2026-09-14; 초판의 `TaskStop` 추가도 삭제). `TaskOutput`은 deprecated라 쓰지 않는다. Execution Contract 표의 Phase 3 행도 같이.
 
 SKILL.md 지시문은 "메인은 집계만 한다, 판정은 Verifier가 한다"를 이유와 함께 쓰고, 기존 "Read ONLY the file:line Codex cited" 절은 삭제한다(열화 모드 없음 — Q6). 대신 한 문장: "Agent 호출이 실패한 group은 판정하지 말고 `Unverified`로 적는다." Execution Contract 표의 Phase 4 행도 새 구조(집계 + Verifier 기동)로 바꾼다.
 
@@ -140,37 +145,41 @@ SKILL.md 지시문은 "메인은 집계만 한다, 판정은 Verifier가 한다"
 - [ ] SKILL.md에 메인이 소스를 읽어 판정하는 지시 0건("Read ONLY the file:line" 포함)
 - [ ] group 12개 fixture → Agent 호출이 10개 완료 후 2개 추가(동시 10 초과 없음), `Concurrent subagent limit` 문자열 0건
 - [ ] finding 0개 입력에서 Agent 호출 0회
+- [ ] review 0건 실제 출력 fixture → 보고서 "지적 0건", Agent 호출 0회, 형식 변경 라벨 0건 / 빈 stdout fixture → "Codex 응답 없음" 라벨(F5)
+- [ ] 세 SKILL.md frontmatter에 `disallowed-tools: SendMessage`. 실측(대화형 `--plugin-dir`): 스킬 실행 중 Phase 1.5 프리뷰에 답한 뒤에도 메인 도구 목록에 `SendMessage` 없음. 실패(플러그인 스킬에서 미적용, 또는 프리뷰 응답에 해제)면 frontmatter를 지우고 스펙 D3 단계 4의 한계 문장만 남긴다(F1)
 - [ ] `parse_error` fixture 실행 → 보고서에 형식 변경 라벨, Agreed/Disputed 판정 0건, Agent 호출 0회
 - [ ] 검수자 JSON에서 ID 하나를 뺀 fixture → 해당 group이 보고서에서 Unverifiable(contract-violation)
 - [ ] 세 SKILL.md의 Verifier 호출 지시가 "prompt = payload 경로"이고, 판정 힌트를 넣으라는 문구 0건
-- [ ] 세 SKILL.md의 Verifier 호출이 `subagent_type: Verifier`이고 `fork` 0건
+- [ ] 세 SKILL.md의 Verifier 호출이 `subagent_type: codex-advisor:verifier`이고 `fork` 0건(I1)
 - [ ] 세 SKILL.md에 "판정을 바꾸지 말고 Author note로 적는다" 지시가 있고, Cross-Model/Additional Findings 작성 지시 0건
 - [ ] rescue `--write` 실행 보고서에 diff 판정(충족/이탈/부작용) 항목 존재
-- [ ] rescue `--write`: 실행 전 미커밋 수정 1건 + Codex가 새 파일 1개 생성 → Verifier payload의 diff에 유저 수정 0건, 새 파일 포함
-- [ ] 작업 트리를 리뷰 후 고친 fixture 실행 → 보고서에 "작업 트리가 바뀜" 라벨 + 해당 finding Unverifiable
+- [ ] rescue `--write`: 실행 전 추적 파일 미커밋 수정 1건 + 기존 미추적 파일 1개 → Codex가 그 미추적 파일을 고치고 새 파일 1개 생성 → Verifier payload의 diff에 유저 수정 0건, 미추적 파일 수정·새 파일 포함(F3)
+- [ ] 작업 트리를 리뷰 후 고친 fixture 실행 → 보고서에 "작업 트리가 바뀜" 라벨 + 그 파일의 finding 전부 Unverifiable(인용 줄이 남아 있는 finding 포함, F4)
 - [ ] 세 SKILL.md Execution Contract 표 Phase 4 행에 "Read ONLY files/lines Codex cited" 0건
-- [ ] review·adversarial SKILL.md에 `BashOutput`·`KillShell`·`TaskOutput` 0건, `allowed-tools`에 `TaskStop` 존재, Phase 3에 "완료 알림 → 출력 파일 Read" 서술(R1)
+- [ ] review·adversarial SKILL.md에 `BashOutput`·`KillShell`·`TaskOutput`·`wait-timeout`·30분 상한 서술 0건, Phase 3에 "완료 알림 → 출력 파일 Read" 서술(R1·I3)
 - [ ] 세 SKILL.md 500행 이하
 
 **Blocked by**: S3, S4.
 
 ### S5b — ③-c Phase 4 배선: 문서 경로 2스킬 (스토리 8, 11, 12; 결정 D3)
 
-**What to build**: verify·research의 Phase 4를 교체한다. 스크립트는 쓰지 않는다 — 입력이 문서 하나라 Verifier가 헤맬 공간이 없고 섹션/URL 인용은 `file:line`이 아니다. URL 출처는 Verifier가 WebFetch로 직접 연다(Q5, 그릴 2026-09-13; 스펙 D3 **URL 출처 검수**). Verifier에 문서 원문 + Codex 결과를 넘기고(메인 컨텍스트는 여전히 문서를 안 본다 — blind payload 유지) 인용 확인까지 Verifier가 한다. research의 synthesis("Codex가 놓친 것 채우기")는 메인이 아니라 Verifier가 `missing-N` 항목으로 낸다(Q5, 그릴 2026-09-13) — 기존 Phase 4의 메인 보충 작성 절은 삭제하고 보고서는 `missing-N`을 "Verifier가 추가한 항목"으로 따로 집계한다. 호출 형태는 S5a와 같다 — prompt는 payload 경로 하나, S3b 훅이 교체. payload는 S3 스크립트 `--mode doc`이 쓴다(문서 경로 + Codex 결과 파일 경로 + 규칙 경로, 본문 없음) — 인용 검사만 안 할 뿐 파일 생성은 같은 스크립트다(Q4, 그릴 2026-09-12). 라벨·실행 실패 처리(`Unverified`, 메인 판정 없음)는 S5a와 동일. 이 두 스킬은 이미 구조적으로 독립이었으므로 이득은 "다섯 스킬의 판정 주체가 같다"는 일관성이다.
+**What to build**: verify·research의 Phase 4를 교체한다. 인용 존재 검사는 하지 않는다 — 입력이 문서 하나라 Verifier가 헤맬 공간이 없고 섹션/URL 인용은 `file:line`이 아니다. URL 출처는 Verifier가 WebFetch로 직접 연다(Q5, 그릴 2026-09-13; 스펙 D3 **URL 출처 검수**). Verifier는 payload의 경로로 PROMPT_FILE·문서(있을 때)·Codex 결과를 Read한다 — 메인은 본문을 넘기지도 읽지도 않는다(blind payload 유지). Codex 결과가 산문이라 항목 경계·ID와 인용 확인까지 Verifier가 한다(F2). PROMPT_FILE은 유저가 프리뷰에서 승인한 범위라 research `missing-N`의 기준이고, topic-only research는 문서 경로 없이 돈다(F7, 그릴 2026-09-14). research의 synthesis("Codex가 놓친 것 채우기")는 메인이 아니라 Verifier가 `missing-N` 항목으로 낸다(Q5, 그릴 2026-09-13) — 기존 Phase 4의 메인 보충 작성 절은 삭제하고 보고서는 `missing-N`을 "Verifier가 추가한 항목"으로 따로 집계한다. 호출 형태는 S5a와 같다 — prompt는 payload 경로 하나, S3b 훅이 교체. payload는 S3 스크립트 `--mode doc`이 쓴다(PROMPT_FILE 경로 + 문서 경로(있을 때) + Codex 결과 파일 경로 + 규칙 경로, 본문 없음) — 인용 검사만 안 할 뿐 파일 생성은 같은 스크립트다(Q4, 그릴 2026-09-12). 라벨·실행 실패 처리(`Unverified`, 메인 판정 없음)·frontmatter `disallowed-tools: SendMessage`·재검수 방식은 S5a와 동일(F1). 메인이 그 문서를 작성했다면 blind payload로도 저자 기억은 지워지지 않으므로 두 스킬에도 Verifier의 실질 이득이 있다(W2).
 
 **Acceptance criteria**:
 - [ ] verify 실행 보고서에 `Verifier: fresh subagent`, 메인 컨텍스트에 문서 본문 미노출(Bash stdout에 문서 0줄)
 - [ ] research 동일 + 보고서에 `missing-N` 항목이 별도 절로 집계되고, SKILL.md Phase 4에 메인이 Codex 결과 본문을 읽어 보충하는 지시 0건
 - [ ] 두 SKILL.md에 S3 스크립트 호출은 `--mode doc` 1회뿐(인용 검사 모드 호출 0건)
 - [ ] verify SKILL.md(Phase 4·Gotchas)에 Self-Bias / "I authored" / "Already considered" 문구 0건
-- [ ] verify fixture(P1 Agreed 1건) → FAIL, (P1 Disputed + P2 Agreed) → PASS, (P1 Unverifiable) → FAIL + "미검증 P1" 사유 — PASS/FAIL 규칙은 `evaluation.md`에만 있고 SKILL.md는 참조
+- [ ] verify fixture(P1 Agreed 1건) → FAIL, (P1 Disputed + P2 Agreed) → PASS, (P1 Unverifiable) → FAIL + "미검증 P1" 사유, (Agent 실행 실패로 `Unverified`) → FAIL + "미검증", (severity null 항목 1건 + 나머지 P2 Agreed) → FAIL + "미검증"(F6) — PASS/FAIL 규칙은 `evaluation.md`에만 있고 SKILL.md는 참조
 - [ ] `--disallowedTools Agent`로 실행 → `Unverified`, 메인이 문서·Codex 결과를 Read한 호출 0회
+- [ ] research topic-only 실행(문서 없음) → payload에 문서 경로 없음, PROMPT_FILE 경로 있음, 보고서에 `Verifier: fresh subagent`(F7)
+- [ ] 두 SKILL.md frontmatter에 `disallowed-tools: SendMessage`(F1)
 
 **Blocked by**: S3, S4 (S3는 계약 어휘만 공유).
 
 ### S6 — 마무리: `spark` 삭제, 문서·설명·버전 (스토리 15, 17, 19, 20; 결정 D4, D5, D6)
 
-**What to build**: `apply-codex-config.py`의 `MODEL_ALIASES`에서 `spark`를 지우고 README·rescue SKILL.md의 spark 언급을 지운다 — 스펙 012가 남긴 유일한 모델 지식이며 지금은 캐시에 없는 모델을 가리킨다. README "How a call is translated"의 double-check 단계를 Verifier 구조로, "Independent double-check" 항목을 read/write 양면으로 고쳐 쓴다. `plugin.json`·`marketplace.json` description의 "Claude fact-checks every finding"을 fresh-context verifier 표현으로 바꾼다(둘 일치). `marketplace.json` 4.7.1 → 4.8.0. 용어집·ADR은 그릴에서 이미 갱신됨 — 구현 중 어휘가 바뀌었으면 여기서 맞춘다.
+**What to build**: `apply-codex-config.py`의 `MODEL_ALIASES`에서 `spark`를 지우고 README·rescue SKILL.md의 spark 언급을 지운다 — 스펙 012가 남긴 유일한 모델 지식이며 지금은 캐시에 없는 모델을 가리킨다. README "How a call is translated"의 double-check 단계를 Verifier 구조로, "Independent double-check" 항목을 read/write 양면으로 고쳐 쓴다. `plugin.json`·`marketplace.json` description의 "Claude fact-checks every finding"을 fresh-context verifier 표현으로 바꾼다(둘 일치). `marketplace.json` 4.7.1 → 5.0.0(R2). 용어집·ADR은 그릴에서 이미 갱신됨 — 구현 중 어휘가 바뀌었으면 여기서 맞춘다.
 
 **Acceptance criteria**:
 - [ ] `HOME=<tmp> apply-codex-config.py spark ""` → `<tmp>/.codex/config.toml`에 `spark` 그대로, 확장 0건. 실제 `~/.codex/config.toml`은 건드리지 않는다
@@ -184,7 +193,7 @@ SKILL.md 지시문은 "메인은 집계만 한다, 판정은 Verifier가 한다"
 
 ## 검증 방법 (공통)
 
-- **수동 실행이 기본** (Q7, 그릴 2026-09-14): S2 이후 adversarial·rescue·verify·research는 Phase 1.5 프리뷰에서 항상 멈추므로 `claude -p`로는 Phase 2 이후를 못 돌린다. 검토·기각: 테스트용 PreToolUse 훅으로 AskUserQuestion에 답 주입(테스트 파일 추가), Agent SDK `canUseTool` 하네스(SDK 의존), `--no-preview` 삭제 취소(검사 창 우회 경로 부활). 확정: 대화형 세션(`claude --plugin-dir ./plugins/codex-advisor`)에서 사람이 프리뷰에 답하고 파일 산출물(PROMPT_FILE, 보고서)을 검사한다. 수용기준의 "고정 입력 → 산출물" 형식은 유지 — 실행만 손으로.
+- **수동 실행이 기본** (Q7, 그릴 2026-09-14; F9+N1 반영): S2 이후 adversarial·rescue·verify·research의 프리뷰 확인은 사람이 답해야 검증된다. `claude -p`는 질문 도구가 없어 프리뷰 없이 진행될 수 있으므로(N1, 미실측) 프리뷰 관련 수용기준 검증에 쓰지 않는다. 검토·기각: 테스트용 PreToolUse 훅으로 AskUserQuestion에 답 주입(테스트 파일 추가), Agent SDK `canUseTool` 하네스(SDK 의존), `--no-preview` 삭제 취소(검사 창 우회 경로 부활). 확정: 대화형 세션(`claude --plugin-dir ./plugins/codex-advisor`)에서 사람이 프리뷰에 답하고 파일 산출물(PROMPT_FILE, 보고서)을 검사한다. 수용기준의 "고정 입력 → 산출물" 형식은 유지 — 실행만 손으로.
 - 프리뷰가 없는 review와, Phase 1.5를 지난 뒤의 산출물 검사(골든 비교)는 이슈 011의 기법(`claude -p --plugin-dir`)을 그대로 쓸 수 있다.
 - S5a/S5b의 fixture 주입: 대화형 세션에서 테스터가 "Phase 3 결과로 `<fixture 경로>`를 쓰고 Phase 4부터 진행"이라고 지시한다. 실 Codex 1회는 마지막에.
 - 종료 코드: 스킬은 부모 `claude` 프로세스의 종료 코드를 정할 수 없다(Bash `exit 1`은 그 도구 호출의 실패일 뿐). 자동화가 필요해지면 그때 하네스가 보고서 상태를 읽어 정한다 — 이 이슈 범위 밖.
@@ -193,7 +202,7 @@ SKILL.md 지시문은 "메인은 집계만 한다, 판정은 Verifier가 한다"
 
 ## Out of Scope (스펙 참조)
 
-Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차단 PreToolUse 훅(Verifier payload 훅은 S3b), 크기 임계값, AGENTS.md 실측, `--no-preview` 대체 플래그.
+Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차단 PreToolUse 훅(Verifier payload 훅은 S3b), 크기 임계값, AGENTS.md 실측, `--no-preview` 대체 플래그, Verifier `SendMessage` 차단 훅(F1), 대기 30분 상한(I3), 검수 시점 SHA 고정(F4).
 
 <a id="final-review-2026-09-14"></a>
 
@@ -305,7 +314,89 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 
 ### 다음 Claude Code 세션의 진행·완료 기준
 
+> 2026-09-14 Claude Code 세션이 아래 1번의 순서를 [분류](#cc-factcheck-2026-09-14)로 대체했다 — 방향 결정 5건 먼저, 일괄 수정 6건은 뒤. 2~4번 규칙은 그대로. **완료 2026-09-14** — 판정·반영 위치는 [방향 결정 기록](#cc-factcheck-2026-09-14).
+
 1. 이 절을 읽고 **F1 → F2·F7 → F3·F4 → F5·F6 → F8·F9 → I1~I3** 순서로 한 번에 한 쟁점씩 그릴한다. 관련 Claude Code 사실을 재확인할 때는 [공식 인덱스](https://code.claude.com/docs/llms.txt)에서 해당 문서로 이동한다. 현재 Codex 세션의 도구·스킬 규격을 Claude Code에 적용하지 않는다.
 2. 각 항목에 **채택 / 수정 채택 / 기각**과 근거·사용자 결정일을 기록한다. 문서 근거와 런타임 실측을 구분하고, 실측이 필요한 결정에는 검증 조건을 남긴다.
 3. 채택한 결정은 스펙의 해당 D절과 이슈 슬라이스·수용기준에 반영한다. 용어·독립성 보장 범위가 바뀌면 연결된 용어집·ADR도 맞춘다. 이 절에는 판정 이력과 반영 위치를 남겨 구현 규칙의 중복 원본이 되지 않게 한다.
 4. **완료:** F1~F9·I1~I3의 미결 항목이 없고, 채택 사항의 스펙·슬라이스·검증 조건이 일치하며, 위 문서 동기화가 끝났을 때 `ready-for-agent`로 복원한다. 그릴 완료와 구현·테스트 완료는 별개다.
+
+<a id="cc-factcheck-2026-09-14"></a>
+
+### Claude Code 사실 확인·분류 — 2026-09-14
+
+확인 수단: 공식 문서 원문(`curl -sL https://code.claude.com/docs/en/<page>.md` 후 grep — `sub-agents`·`hooks`·`tools-reference`·`skills`), 설치 companion `~/.claude/plugins/cache/openai-codex/codex/1.0.6/`, Codex 소스 `codex-rs/protocol/src/review_format.rs`(태그 `rust-v0.154.0` = main, 설치 codex-cli 0.154.0), 임시 Git 저장소 재현. "확인"은 **지적의 근거가 사실인지**이며 수정 후보 채택이 아니다.
+
+| ID | 근거 사실 | 수단 |
+|---|---|---|
+| F1 ✅ | 완료된 서브에이전트에 `SendMessage`를 보내면 새 `Agent` 호출 없이 재개된다. agent teams 불필요(`sub-agents` §Resume subagents). 대화형은 fork mode 기본 on이라 서브에이전트가 항상 백그라운드(§Run subagents in foreground or background) — 실행 중에도 메시지 가능. matcher `Agent` 훅은 못 봄 | 문서 |
+| F2 ✅ | companion task 실행엔 `outputSchema` 없음(adversarial만 있음). verify(PASS/FAIL+P1/P2 산문)·research(절 산문)·rescue read-only(`rawOutput`) 모두 항목 ID 없음 | 코드 |
+| F3 ✅ | 기존 미추적 파일 수정이 `git stash create` diff에도 파일명 차집합에도 안 잡힘. 깨끗한 저장소의 `stash create`는 빈 stdout·exit 0. 현 rescue `PRE_LIST`는 `git status --porcelain`(파일명만) | 재현 |
+| F4 ✅ | 4행 파일의 4행 내용만 바꾸면 `git diff --quiet HEAD` exit 1인데 4행 존재 → 현 규칙상 `ok`. review JSON `target`은 `{mode, label, baseRef, explicit}`뿐, HEAD·merge-base SHA 없음(`lib/git.mjs` `resolveReviewTarget()`) | 재현·코드 |
+| F5 ✅ | `render_review_output_text()`: findings 0건이면 헤더 없이 `overall_explanation`만, 설명도 비면 `REVIEW_FALLBACK_MESSAGE`("Reviewer failed to output a response."). companion은 review 항목이 안 오면 `codex.stdout: ""` | 소스 |
+| F6 ✅ | 스펙 D3 PASS/FAIL 규칙이 "나머지는 PASS". doc 모드 payload 1개가 Agent 실패하면 severity·verdict 0건 → PASS | 문서 대조 |
+| F7 ✅ | research SKILL.md에 "Topic-only mode" 존재. doc payload는 문서 경로 전제 | 코드 |
+| F8 ✅ | exit 1·JSON 파싱 실패·스키마 불일치는 non-blocking이라 도구 실행. PreToolUse command 훅 타임아웃(기본 600s)도 실행 계속(`hooks` §Other exit codes, §Timeouts). `disableAllHooks`는 훅만 끈다 | 문서 |
+| F9 ⚠️ | 조건부. `askUserQuestionTimeout` 기본 off. 켜면 미응답 질문이 닫히고 "자리 비움일 수 있다"고 Claude에 알림(`tools-reference` §Question auto-continue timeout) | 문서 |
+| I1 ✅ | plugin agent 식별자는 `<plugin>:<agent>`(`sub-agents`). Agent 도구가 짧은 이름 `verifier`도 받는지, 받으면 유저 `verifier` agent가 우선하는지는 (unverified) | 문서 |
+| I2 ✅ | group 분할로는 단일 finding을 못 쪼갬 | 논리 |
+| I3 ✅ | 완료 알림 대기엔 타이머가 없고 `TaskStop`은 중단만. 수단 후보: `Monitor`의 `timeout_ms`(`tools-reference` §Monitor tool). verify류는 이미 `status --wait --timeout-ms 240000` 루프 | 문서·코드 |
+| 재판정 표·동기화 ✅ | `updatedInput` 전체 교체, 동시 한도 20 + `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`, 시작 시 CLAUDE.md·git status 로드, `TaskOutput` deprecated 확인. 동기화 4건 모순 확인 | 문서 |
+
+**검수가 놓친 것**
+- **N1 (중요 · S2/Q7):** `-p`에서 permission host가 없으면 `AskUserQuestion` 자체가 제공되지 않는다(`hooks` §PreToolUse decision control, allow-with-updatedInput 절). Q7 "headless는 Phase 1.5에서 멈춘다"는 전제가 틀렸을 수 있다 — 질문 도구가 없으면 프리뷰 없이 진행할 여지. 런타임 미실측.
+- **N2 (동기화):** 스펙 D3 단계 3에 "finding당 1개, 병렬"·단일 `classification` 출력, D3 verify/research 절에 "인용 존재 스크립트는 안 씀"이 남아 Q2·Q4·Q17과 모순. 스펙 §핸드오프(2026-09-11 작성)도 낡음.
+
+**분류 (유저 수용 2026-09-14)**
+- **방향 결정 — 그릴 5건:** ① F1 · ② F2+F7 · ③ F3+F4 · ④ F9+N1 · ⑤ I3
+- **일괄 수정 — 기본안 채택 (반영 2026-09-14):**
+  - 동기화 4건 + N2: 낡은 문구 정리
+  - I1: `codex-advisor:verifier`로 통일 + 설치본 Agent 호출이 훅에 매칭되는 통합 검증
+  - F6: `Unverified` 또는 severity 불명 항목이 하나라도 있으면 FAIL(사유 "미검증")
+  - F8: 훅의 모든 예외를 deny 또는 exit 2로. 타임아웃·`disableAllHooks`는 보장 범위 밖으로 명시
+  - F5: 헤더·항목 행 없음 + 본문 있음 = 정상 0건 / fallback 문구·빈 stdout = 실패 / 그 외 형식 불일치 = `parse_error`. 헤더와 항목 행이 동시에 바뀌면 0건으로 오인 — 감수, formatter fixture로 검출
+  - I2: 6,000자 초과 단일 finding은 쪼개지 않고 단독 group
+
+**방향 결정 기록** (반영은 5건 그릴 후 일괄)
+- **① F1 — 수정 채택 (2026-09-14):** 다섯 스킬 frontmatter에 `disallowed-tools: SendMessage`(스킬 활성 중 메인 도구 풀에서 제거). 재검수는 payload 경로로 새 Agent 호출만 — SKILL.md 한 줄. 보고서 저장 후 Verifier 재개는 수용한 한계(저장된 판정 불변) — 용어집·ADR 0012에 명시. 기각: B(PostToolUse ID 기록 + SendMessage deny 훅) — 메인은 적대적이지 않고 SendMessage는 prompt와 달리 상시 경로가 아니라 오버엔지니어링. 실측 조건: plugin 스킬에서 제거가 적용되는지, Phase 1.5 AskUserQuestion 응답에 해제되지 않는지. 실패 시 C(계약 + 한계 명시)로 후퇴.
+- **② F2 — 수정 채택 (2026-09-14):** 자유 형식 결과(verify·research·rescue read-only)는 Verifier가 항목 경계를 정하고 ID를 붙여 판정한다(rescue `--write`의 요구사항 분할도 동일). ID 대조 누락 검출은 스크립트가 finding을 추출하는 review·adversarial에만 보장 — Verifier가 항목을 빠뜨리는 것은 수용한 한계로 명시. 기각: Codex 프롬프트에 번호 형식 요구(S1 verify 골든 불변과 충돌, 산문 파싱 불안정), 결과 전체 1판정(항목별 severity 없어 verify PASS/FAIL 불가).
+- **② F7 — 수정 채택 (2026-09-14):** doc payload에 Codex에 보낸 PROMPT_FILE 경로를 넣어 `missing-N`의 기준 범위로 쓴다(프리뷰에서 유저가 승인한 원문 — 메인이 새로 쓰는 범위 요약 없음). 문서 경로는 선택값, topic-only research는 문서 없이 동작. 기각: 메인 범위 요약(저자 개입), topic-only의 `missing-N` 생략.
+- **③ F3 — 채택 (2026-09-14):** rescue `--write` diff는 실행 전후 작업 트리 트리 스냅샷 비교 — 실제 index를 작업 트리 밖 임시 파일로 복사 → `GIT_INDEX_FILE=<tmp> git add -A` → `git write-tree`, 전후 `git diff <pre-tree> <post-tree>`. `git stash create` + 미추적 파일명 차집합을 대체(방식 2개 → 1개). 흔한 경우(커밋 전 새 파일을 Codex가 수정)라 감수 불가. 재현(scratchpad 임시 저장소, 2026-09-14): 기존 미추적 파일 수정·삭제, 새 파일, 유저 WIP 위 Codex 변경 모두 포착, 유저 WIP 제외, 실제 index 불변. 임시 index를 작업 트리 안에 두면 `add -A`에 섞임(재현에서 확인) → 작업 트리 밖에 둔다. 대형 저장소 비용 (unverified) — 구현 시 실측.
+- **③ F4 — 수정 채택 (2026-09-14):** drift 파일(리뷰 후 바뀐 파일)의 finding은 인용 줄 존재와 무관하게 전부 `Unverifiable`. SHA·resolved scope 고정, 동일 시점 증거 제공, 임시 worktree는 기각(드문 경우에 비해 과함). 리뷰 중 HEAD 이동 등 파일 비교로 안 잡히는 drift는 수용한 한계.
+- **④ F9+N1 — 기각(한계 명시) (2026-09-14):** 코드 변경 없음. `askUserQuestionTimeout`(유저가 켠 설정)·`-p`에서 질문 도구 부재 시 프리뷰 확인 없이 진행될 수 있음을 수용한 한계로 문서화. Q7의 "headless는 Phase 1.5에서 멈춘다" 문구는 N1 미실측이므로 이 한계 문장으로 교체.
+- **⑤ I3 — 수정 채택 (2026-09-14):** review·adversarial Phase 3의 30분 상한을 삭제. 멈춘 작업은 유저가 `/codex-cancel`(또는 Esc)로 끝낸다. 상한이 없으므로 R1의 `TaskStop` `allowed-tools` 추가도 삭제 — R1은 `BashOutput`·`KillShell` 제거 + 완료 알림 → 출력 파일 Read만 남는다. 기각: `Monitor` `timeout_ms`(드문 경우에 도구·지시 추가).
+
+**반영 위치** (2026-09-14)
+
+| 결정 | 스펙 016 | 이슈 슬라이스 | 용어집 · ADR 0012 |
+|---|---|---|---|
+| F1 | D3 단계 4·5 | S5a · S5b | Double-check independence · Amendment 2026-09-14 |
+| F2 | D3 단계 1, rescue·verify/research 절, 출력 계약 | S3 · S4 · S5a · S5b | Verifier · Amendment 2026-09-14 |
+| F7 | D3 verify/research·URL 절, 출력 계약 | S3 · S4 · S5b | Verifier payload |
+| F3 | D3 rescue·URL 절 | S3 · S5a | — |
+| F4 | D3 단계 2, Out of Scope | S3 · S5a | Six-way classification |
+| F9+N1 | D1 `--no-preview`·방어선 | S2 · 검증 방법 | Hypothesis exclusion |
+| I3 | Out of Scope | S5a(R1) | Pattern A vs B |
+| F5 | D3 단계 1 | S3 · S5a | — |
+| F6 | 출력 계약 PASS/FAIL | S4 · S5b | — |
+| F8 | Verifier payload 절 | S3b | Amendment 2026-09-14 |
+| I1 | D3 단계 3, Verifier payload 절 | S3b · S5a | — |
+| I2 | 묶음 규칙 | S3 | Finding group |
+| 동기화 4건 · N2 · W2 | D3 단계 3·verify/research 절, 그릴 가이드 역사 기록 표시 | S3b 의존성 · S5a 시작 · S5b 본문 · S6 버전 | ADR Decision(출력·verify/research 문장) |
+
+<a id="handoff-2026-09-14"></a>
+
+## 핸드오프 — 구현 세션 (2026-09-14)
+
+**상태:** `ready-for-agent`. 최종 검수 F1~F9·I1~I3·N1·N2 결정 완료, 스펙·슬라이스·용어집·ADR 0012 반영. 판정 이력·반영 위치는 [방향 결정 기록](#cc-factcheck-2026-09-14).
+
+**First Action:** 맨 위 착수 순서대로 S3부터. SKILL.md·agent 편집 전 `writing-for-agents`, 구현은 `skill-creator-pro`.
+
+**구현 중 실측할 것** (결정이 실측 결과에 달린 항목):
+- F1 — 플러그인 스킬의 `disallowed-tools: SendMessage`가 적용되고 프리뷰 응답에 풀리지 않는지(S5a 수용기준). 실패 시 frontmatter 삭제, 한계 문장만.
+- I1 — 짧은 이름 `verifier`로 plugin agent가 뜨는지(S3b 통합 검증). 뜨면 훅 매칭에 포함.
+- F3 — 대형 저장소에서 트리 스냅샷 비용.
+- F5 — 설치 codex-cli의 formatter 0건 출력이 스펙 D3 단계 1 설명과 일치하는지(fixture 작성 시).
+- N1 — `claude -p`에서 질문 도구가 없을 때 프리뷰 동작. 결정은 한계 문서화라 구현을 막지 않음.
+
+**유저 작업 방식:** 질문은 한 번에 하나, 결론 먼저·표 하나·한 줄 근거, 쉬운 말(내부 약어만으로 묻지 않기, 구체 예시). 오버엔지니어링 거부 — 드문 경우는 막지 말고 한계로 적는다. 단 "드물다"는 추측으로 단정하지 말고 근거를 댄다(F3는 흔한 경우였음).

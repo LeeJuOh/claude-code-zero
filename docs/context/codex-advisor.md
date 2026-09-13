@@ -83,7 +83,10 @@ The north star: the reviewer must not know the reviewed party's conclusions. It 
 hypothesis (see **Hypothesis exclusion**). *Read-side*: the verdict on each Codex finding is made
 by a **Verifier** that has no conversation history, not by the main session that authored the code.
 Instructions alone cannot deliver either side — the main session is the author and already holds
-the code in context — so both are enforced by structure. See [[0012]]. For verify/research the
+the code in context — so both are enforced by structure. See [[0012]]. The structure covers the
+Verifier's launch prompt and, while the skill runs, any follow-up message to a Verifier; a Verifier
+resumed after the report is saved is outside the guarantee, since the saved verdicts no longer
+change. For verify/research the
 document additionally never enters Claude's context (**blind payload**).
 
 **Verifier**:
@@ -91,10 +94,13 @@ The fresh subagent that judges one finding group. It receives the finding, its c
 citation-existence result, and the classification rules — no conversation history and no authoring
 memory. Shared project instructions (the CLAUDE.md hierarchy) are visible to it as to every
 subagent; they are common rules, not the author's memory. It returns
-one verdict per numbered item in its payload (never a single label for a group, never PASS/FAIL —
+one verdict per item (never a single label for a group, never PASS/FAIL —
 that is arithmetic the main session does from the verdicts), each Agreed / Disputed / Nuanced /
 Unverifiable with evidence, tuned skeptical (default Disputed when
-it has seen counter-evidence; Unverifiable when it has seen nothing). The report names it:
+it has seen counter-evidence; Unverifiable when it has seen nothing). Items are numbered in
+advance only where the script extracts findings (review, adversarial), so only there is a skipped
+item caught; for prose results (verify, research, rescue) the Verifier draws the item boundaries
+itself. The report names it:
 `Verifier: fresh subagent`; a group whose Verifier call failed is shown as `Unverified` — the main
 session never judges in its place. Its model is never pinned by the plugin and never chosen by the
 main session: the user's subagent-model setting applies, else the session's model.
@@ -111,7 +117,9 @@ The write-side rule. When Claude composes focus text (adversarial, verify), a re
 rescue task, it forwards *evidence* (scope, symptoms, reproduction, logs, the user's own words) and
 *focus* (an area to look at) but drops *hypotheses* (a claimed cause, a suspected `file:line`, an
 expected answer). The preview shows what was dropped as `Excluded (hypothesis):` so the user can
-put it back; the preview cannot be skipped. Assertion → hypothesis; area only → focus. The rule
+put it back; no flag skips the preview. It is a check only when a person answers — a question
+timeout the user enabled, or a headless run with no question tool, can let the call proceed
+unconfirmed. Assertion → hypothesis; area only → focus. The rule
 applies to every invocation alike — whether the user typed the slash command or Claude composed
 the call from the user's intent — so no source detection exists; a hypothesis the user wants sent
 is restored from the preview in one step. A rescue task statement is the requirement itself, i.e.
@@ -143,8 +151,9 @@ Hooks are the **only** channel that receives the transcript path; the model cann
 Every double-check labels each Codex finding: **Agreed** / **Disputed** (the Verifier found
 evidence against it) / **Nuanced** / **Unverifiable** (the Verifier found no evidence either way
 within the cited range — a verification gap, not a Codex error; the report counts these
-separately; the script also assigns it when the working tree has drifted from the reviewed ref, so
-a stale `missing` is never promoted to False Positive) / **False Positive** (Codex cited a file/function/line that does not exist — a
+separately; the script also assigns it to every finding in a file the working tree has changed
+since the reviewed ref, cited line present or not, so neither a stale `missing` nor a changed line
+reaches a verdict) / **False Positive** (Codex cited a file/function/line that does not exist — a
 hallucination) / **Uncited** (no concrete citation → "verification deferred"). The split of labour
 is fixed: False Positive and Uncited are *facts* decided by the citation-existence script;
 Agreed / Disputed / Nuanced / Unverifiable are *judgments* decided by the **Verifier**. For
@@ -155,7 +164,8 @@ forbidden.
 **Finding group**:
 The unit one Verifier judges. Findings citing the same file are merged by the script, capped
 at five findings and a bounded payload size so a group never grows large enough to invite
-pattern-matching leniency. Grouping is never the main session's call — the biased party must not
+pattern-matching leniency; a single finding over the size bound forms its own group rather than
+being cut. Grouping is never the main session's call — the biased party must not
 decide what gets diluted together.
 
 **Verifier payload**:
@@ -163,7 +173,9 @@ The text a Verifier receives, and the only text it receives. Written to a file b
 script (one per finding group, hashes in a manifest), chosen by the main session by path, and
 delivered by a plugin hook that replaces the launch prompt with the file's content after checking
 the hash. Anything the main session adds to the prompt is discarded before the Verifier sees it —
-the author cannot brief the judge. _Avoid_: verifier prompt (that is what the main session writes
+the author cannot brief the judge. For verify/research the payload also points at the prompt
+Codex received — the scope the user approved in the preview — so omissions are judged against it,
+never against a summary by the main session. _Avoid_: verifier prompt (that is what the main session writes
 and the hook throws away).
 
 **Pattern A** vs **Pattern B**:
@@ -171,7 +183,7 @@ Two invocation shapes. **A** (review/adversarial): the companion's own `--backgr
 **silent no-ops** (`handleReviewCommand` always runs foreground), so we use Bash
 `run_in_background=true` to survive the 300s tool timeout; completion arrives as a background-task
 notification and the output file is then `Read` (the former `BashOutput` polling loop and
-`KillShell` are gone from Claude Code — the cap is enforced with `TaskStop`). **B** (task): the
+`KillShell` are gone from Claude Code; there is no wait cap — the user cancels a stuck job). **B** (task): the
 companion's `--background` **is** honored, returns a job immediately, then we poll via
 `status --wait` (≤240s/call, under the limit).
 

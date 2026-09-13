@@ -43,8 +43,8 @@ Phase 4 is split so that the main session never judges a finding:
   `Read`/`Grep`, plus `WebFetch` for URL sources cited in a research payload (amended 2026-09-13, issue Q5). Its input is the finding, its citation, the existence result, and the
   classification rules — no conversation history, no authorship. Shared project instructions (the
   CLAUDE.md hierarchy) and git status still load, as for every subagent; they are common rules,
-  not the author's memory (amended 2026-09-14, issue Q16). It returns a single JSON verdict
-  (Agreed / Disputed / Nuanced + evidence). Its prompt is tuned skeptical: default to Disputed,
+  not the author's memory (amended 2026-09-14, issue Q16). It returns one verdict per item
+  (Agreed / Disputed / Nuanced / Unverifiable + evidence; amended 2026-09-12, issue Q2/Q15). Its prompt is tuned skeptical: default to Disputed,
   no commitment to the original finding, JSON only.
 - **Aggregation by the main session.** It parses Codex output, launches the subagents, collects
   the JSON, and writes the report labelled `Verifier: fresh subagent`. It does not alter verdicts.
@@ -60,8 +60,9 @@ Phase 4 is split so that the main session never judges a finding:
   with the same payload.)
 
 Applies to all five double-checking skills. For verify/research the subagent receives the document
-plus the Codex result and checks citations itself (no script — the input is bounded and section/URL
-citations are not `file:line`). For rescue `--write` the judged object is the diff. The subagent
+plus the Codex result and checks citations itself (no citation check — the input is bounded and
+section/URL citations are not `file:line`; the same script still writes the payload, amended
+2026-09-14, issue N2). For rescue `--write` the judged object is the diff. The subagent
 model is never pinned in the agent definition: it follows the user's subagent-model setting, else
   the session's model, and the payload hook strips any per-call `model` the main session passes
   (amended 2026-09-14, issue R3). No size threshold: one finding still gets a
@@ -97,5 +98,24 @@ the subagent answers the replaced prompt.
 
 This does not reopen alternative 2: that hook needed to know the skill's phase; this one only
 inspects `subagent_type`.
+
+## Amendment 2026-09-14 — the limits of the guarantee
+
+A final review asked what the structure actually closes. Three limits are now explicit (issue 016
+F1, F2, F8):
+
+- **Follow-up messages.** The hook sees only the `Agent` call, but `SendMessage` resumes a running
+  or finished subagent without one. The five skills list `SendMessage` in `disallowed-tools`,
+  removing it from the main session while the skill is active. The restriction clears on the
+  user's next message, so resuming a Verifier after the report is saved is not blocked — the saved
+  verdicts do not change. A second hook that records Verifier IDs and denies messages to them was
+  rejected: the main session is not adversarial, and unlike the launch prompt, messaging is not a
+  path every call passes through.
+- **Item completeness.** Checking that every item got a verdict works only where the script
+  numbers the items (review, adversarial). For prose results (verify, research, rescue) the
+  Verifier draws the item boundaries, so a skipped item is not detected.
+- **Hook failure.** Claude Code runs the tool when a command hook exits 1 or prints unparsable
+  JSON, so the payload hook turns every error it can catch into a deny. A hook timeout or
+  `disableAllHooks` yields no decision at all; both are outside the guarantee.
 
 Related: [[0004]] (prompt ownership — task path is ours, native path untouched), spec 016.
