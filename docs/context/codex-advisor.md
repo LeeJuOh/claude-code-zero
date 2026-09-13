@@ -63,7 +63,10 @@ The single block in rescue that tells Codex what it may do without asking: repor
 review/diagnose requests, act for change/fix requests, confirm only for external, destructive, or
 scope-expanding actions, and never stop at a partial answer or a plan. It replaces the three
 overlapping blocks (`completeness_contract`, `verification_loop`, `action_safety`) whose "call out
-before acting" wording made Codex ask — and under `approvalPolicy=never` a question ends the turn.
+before acting" wording made Codex ask — and nobody can answer: the companion rejects every
+server request, and a turn that ends in a question still counts as completed, so the work is left
+undone while the status says success. The policy therefore never asks; what the task states is
+treated as approved, and anything else risky is listed in the final report instead.
 _Avoid_: safety block, approval block.
 
 **Static shaping** vs **adaptive shaping**:
@@ -78,30 +81,41 @@ post-hoc on the diff. See [[0004]].
 The north star: the reviewer must not know the reviewed party's conclusions. It has two sides.
 *Write-side*: what Claude sends to Codex carries evidence and focus only, never Claude's
 hypothesis (see **Hypothesis exclusion**). *Read-side*: the verdict on each Codex finding is made
-by a **Verifier** that has no session history, not by the main session that authored the code.
+by a **Verifier** that has no conversation history, not by the main session that authored the code.
 Instructions alone cannot deliver either side — the main session is the author and already holds
 the code in context — so both are enforced by structure. See [[0012]]. For verify/research the
 document additionally never enters Claude's context (**blind payload**).
 
 **Verifier**:
 The fresh subagent that judges one finding group. It receives the finding, its citation, the
-citation-existence result, and the classification rules — nothing from the session. It returns
+citation-existence result, and the classification rules — no conversation history and no authoring
+memory. Shared project instructions (the CLAUDE.md hierarchy) are visible to it as to every
+subagent; they are common rules, not the author's memory. It returns
 one verdict per numbered item in its payload (never a single label for a group, never PASS/FAIL —
 that is arithmetic the main session does from the verdicts), each Agreed / Disputed / Nuanced /
 Unverifiable with evidence, tuned skeptical (default Disputed when
 it has seen counter-evidence; Unverifiable when it has seen nothing). The report names it:
-`Verifier: fresh subagent`, or `Self-verified — independent sub-task unavailable` when the main
-session had to fall back (headless). Model is inherited from the session, never pinned.
+`Verifier: fresh subagent`; a group whose Verifier call failed is shown as `Unverified` — the main
+session never judges in its place. Its model is never pinned by the plugin and never chosen by the
+main session: the user's subagent-model setting applies, else the session's model.
 _Avoid_: double-checker, judge agent, reviewer (that word is Codex's role).
+
+**Author note**:
+The main session's labelled dissent beneath a Verifier verdict it disagrees with. The verdict
+is never edited or overridden; the note sits next to it, marked as the author's opinion, and the
+user weighs both. It is written only after the verdict exists — never fed to the Verifier.
+_Avoid_: override, re-judgment, main's verdict.
 
 **Hypothesis exclusion**:
 The write-side rule. When Claude composes focus text (adversarial, verify), a research topic, or a
 rescue task, it forwards *evidence* (scope, symptoms, reproduction, logs, the user's own words) and
 *focus* (an area to look at) but drops *hypotheses* (a claimed cause, a suspected `file:line`, an
 expected answer). The preview shows what was dropped as `Excluded (hypothesis):` so the user can
-put it back; the preview cannot be skipped. Assertion → hypothesis; area only → focus. The user's
-own typed text is forwarded verbatim even if it contains a hypothesis — the rule corrects
-Claude's default, not the user's choice.
+put it back; the preview cannot be skipped. Assertion → hypothesis; area only → focus. The rule
+applies to every invocation alike — whether the user typed the slash command or Claude composed
+the call from the user's intent — so no source detection exists; a hypothesis the user wants sent
+is restored from the preview in one step. A rescue task statement is the requirement itself, i.e.
+evidence, never a hypothesis.
 _Avoid_: prompt sanitizing, focus filtering.
 
 **Blind payload**:
@@ -139,9 +153,10 @@ verify/research (section and URL citations, no `file:line`) the Verifier decides
 forbidden.
 
 **Finding group**:
-The unit one Verifier judges. Default is one finding; findings citing the same file with
-overlapping line ranges are merged by the script. Grouping is never the main session's call — the
-biased party must not decide what gets diluted together.
+The unit one Verifier judges. Findings citing the same file are merged by the script, capped
+at five findings and a bounded payload size so a group never grows large enough to invite
+pattern-matching leniency. Grouping is never the main session's call — the biased party must not
+decide what gets diluted together.
 
 **Verifier payload**:
 The text a Verifier receives, and the only text it receives. Written to a file by the citation
@@ -154,7 +169,9 @@ and the hook throws away).
 **Pattern A** vs **Pattern B**:
 Two invocation shapes. **A** (review/adversarial): the companion's own `--background`/`--wait` are
 **silent no-ops** (`handleReviewCommand` always runs foreground), so we use Bash
-`run_in_background=true` + `BashOutput` polling to survive the 300s tool timeout. **B** (task): the
+`run_in_background=true` to survive the 300s tool timeout; completion arrives as a background-task
+notification and the output file is then `Read` (the former `BashOutput` polling loop and
+`KillShell` are gone from Claude Code — the cap is enforced with `TaskStop`). **B** (task): the
 companion's `--background` **is** honored, returns a job immediately, then we poll via
 `status --wait` (≤240s/call, under the limit).
 

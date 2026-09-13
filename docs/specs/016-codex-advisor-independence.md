@@ -2,7 +2,7 @@
 
 > 생성: 2026-09-11 · 출처: grill-with-docs 세션 (codex-advisor 아키텍처 점검 → 독립성 누수 3곳 발견)
 > 구현 이슈: `docs/issues/016-codex-advisor-independence.md` (S1~S6, 2026-09-11 그릴 완료 후 작성). ADR 0012 작성됨. 그릴 확정 사항은 D1~D3에 "그릴 2026-09-11" 표기로 인라인.
-> 대상 플러그인: `plugins/codex-advisor/` (현재 v4.7.1 → v4.8.0, minor: 프롬프트·double-check 동작 변경, 명령 표면 동일)
+> 대상 플러그인: `plugins/codex-advisor/` (현재 v4.7.1 → v5.0.0, major: `--no-preview`·verify/research `resume` 삭제로 기존 호출이 깨짐)
 > 용어집: `docs/context/codex-advisor.md` — **Double-check independence**, **Vendored prompt blocks**, **Six-way classification**(구 Five-way), **Provenance debt** 절이 대상.
 > ADR: 0004(prompt ownership)는 유지 — native path 불가침, task path는 우리 소유라는 결정이 이 스펙의 전제. ③은 ADR 후보(하단 §Further Notes).
 > 근거 원문: `llm-wiki/wiki/concepts/verification-layers.md`, `evidence-gates.md`, `summaries/dynamic-workflows-cc.md`, `summaries/openai-model-guidance-gpt56.md`, `docs/origin/Harness design for long-running application development .md`, OpenAI "Using GPT-5.6" / "Using GPT-6 Astra" (`developers.openai.com/api/docs/guides/latest-model`, 2026-09-11 수령), `references/compound-engineering-plugin/.../validator-template.md`, `references/gstack/cso/SKILL.md`.
@@ -21,7 +21,7 @@ Claude(메인) ──프롬프트──▶ Codex ──결과──▶ Claude(do
 
 **① 쓰기 쪽 누수.** Claude가 Codex에 보내는 문구(adversarial의 focus text, rescue의 task text)에 자기 가설·원인 추정·의심 파일을 담아도 막는 규칙이 없다. Codex는 "이게 맞나 확인해줘"를 받는 순간 확인하는 쪽으로 기운다. 별도 모델이어도 self-evaluation으로 퇴화한다. 현재 SKILL.md에는 "verbatim 전달"만 있고 "무엇을 빼라"는 없다.
 
-**② 프롬프트 블록 부채.** task path의 XML 블록은 Official 플러그인의 `gpt-5-4-prompting` 가이드에서 설계 시점에 복사한 것이다(vendored). 지금 모델은 GPT-5.6 계열, 곧 GPT-6 Astra. OpenAI 5.6 가이드는 "지시는 한 번만, 'ask first'류 반복은 불필요한 승인 요청을 유발한다"고 벤더 eval 수치와 함께 말한다. 우리 블록은 `completeness_contract` + `verification_loop` + `action_safety` 세 개가 비슷한 말을 반복하고, `action_safety`의 "위험하면 먼저 알려라"는 `approvalPolicy=never`인 task path에서 되묻기 = 턴 종료 = 작업 실패로 이어진다. Astra 가이드는 이전 모델보다 되묻는 성향이 강하다고 명시해 이 위험을 키운다.
+**② 프롬프트 블록 부채.** task path의 XML 블록은 Official 플러그인의 `gpt-5-4-prompting` 가이드에서 설계 시점에 복사한 것이다(vendored). 지금 모델은 GPT-5.6 계열, 곧 GPT-6 Astra. OpenAI 5.6 가이드는 "지시는 한 번만, 'ask first'류 반복은 불필요한 승인 요청을 유발한다"고 벤더 eval 수치와 함께 말한다. 우리 블록은 `completeness_contract` + `verification_loop` + `action_safety` 세 개가 비슷한 말을 반복하고, `action_safety`의 "위험하면 먼저 알려라"는 task path에서 되묻기 = 작업 미완인데 성공 보고로 이어진다(원인은 D2, 그릴 2026-09-14 교정). Astra 가이드는 이전 모델보다 되묻는 성향이 강하다고 명시해 이 위험을 키운다.
 
 **③ 읽기 쪽 누수 — 가장 큼.** "Codex 결과 전엔 소스를 읽지 마라"는 north star가 실제로 안 지켜진다. 이유 둘: (a) 지시문일 뿐 강제가 없다(hooks.json에 SessionStart 하나뿐). (b) 더 근본적으로, 스킬 호출 시점에 메인 Claude는 이미 그 코드를 **쓴 당사자**다. 안 읽어도 컨텍스트에 다 있다. `evaluation.md`의 "Self-Bias Awareness: 내가 쓴 코드면 인정해라"는 이 상황의 고백이지 해결이 아니다. 위키 원문: *"실제 작업하던 세션에 '검증도 해봐' 하면 매우 일부분만 잡아낸다."*
 
@@ -36,7 +36,7 @@ Claude(메인) ──프롬프트──▶ Codex ──결과──▶ Claude(do
 - **③ 읽기 독립성**: Phase 4 double-check를 메인 Claude가 아니라 **fresh 서브에이전트**가 한다. 서브에이전트는 히스토리가 없으므로 "읽지 마라"가 필요 없다. 입력은 Codex finding 하나 + 인용 file:line + 분류 규칙뿐. 인용 존재 여부(False Positive의 fact 부분)는 스크립트가 먼저 판정한다.
 - 부수: `spark` 별칭 삭제. 용어집에 app-server 프로토콜·모듈 경계·이 스펙의 세 원칙 반영.
 
-유저가 보게 될 것: 명령 표면은 그대로. 프리뷰에 "제외됨(가설)" 항목이 생기고, double-check 보고에 "판정자: fresh subagent" 또는 열화 모드 라벨 "Self-verified — independent sub-task unavailable"이 붙는다.
+유저가 보게 될 것: 명령 표면은 그대로. 프리뷰에 "제외됨(가설)" 항목이 생기고, double-check 보고에 "판정자: fresh subagent"가 붙고, Verifier 실행에 실패한 finding은 `Unverified`로 표시된다(메인이 대신 판정하지 않음 — 그릴 2026-09-14, 이슈 Q6).
 
 ## User Stories
 
@@ -44,14 +44,14 @@ Claude(메인) ──프롬프트──▶ Codex ──결과──▶ Claude(do
 2. As a codex-advisor 유저, I want 프리뷰에서 "보내는 것 / 제외한 것(가설)"을 나눠 보기를, so that 제외가 과했으면 그 자리에서 되돌릴 수 있다.
 3. As a codex-advisor 유저, I want focus 범위("login handler 쪽 봐줘")는 남고 원인 주장("null check 누락으로 auth bypass")만 빠지기를, so that 초점은 주되 답은 안 준다.
 4. As a codex-advisor 유저, I want `/codex-rescue` task 텍스트에 유저 원문이 verbatim 남기를, so that 스펙 004의 "유저 말은 안 바꾼다" 계약이 유지된다.
-5. As a codex-advisor 유저, I want rescue `--write` 실행이 되묻고 멈추지 않기를, so that `approvalPolicy=never`에서 턴이 질문으로 끝나 작업이 날아가지 않는다.
+5. As a codex-advisor 유저, I want rescue `--write` 실행이 되묻고 멈추지 않기를, so that 답할 상대가 없는 질문으로 턴이 끝나 작업 미완이 성공으로 보고되지 않는다.
 6. As a codex-advisor 유저, I want 작은 수정에 Codex가 과잉 테스트를 안 쓰기를, so that rescue 결과 diff가 요청 범위에 머문다.
 7. As a codex-advisor 유저, I want verify/research 프롬프트가 더 짧기를, so that 5.6 계열에서 같은 품질을 더 적은 토큰으로 얻는다.
 8. As a codex-advisor 유저, I want double-check가 내가 방금 Claude와 같이 쓴 코드에 대해서도 엄격하기를, so that "별거 아니네"로 넘어가는 finding이 없다.
 9. As a codex-advisor 유저, I want double-check 판정자가 finding과 인용 줄만 보기를, so that 세션 히스토리가 판정에 스며들지 않는다.
 10. As a codex-advisor 유저, I want 인용된 파일·줄이 존재하는지는 스크립트가 판정하기를, so that False Positive 분류가 모델 기분이 아니라 사실이다.
-11. As a codex-advisor 유저, I want 보고서에 판정자가 누구였는지(fresh subagent / self-verified) 표시되기를, so that 열화 모드 결과를 정상 결과로 오해하지 않는다.
-12. As a headless(`claude -p`) 유저, I want 서브에이전트가 불가할 때 스킬이 죽지 않고 self-verify로 내려가기를, so that 자동화 파이프라인이 끊기지 않는다.
+11. As a codex-advisor 유저, I want 보고서에 finding마다 판정자(Verifier)가 실제로 판정했는지, 아니면 실행 실패로 `Unverified`인지 표시되기를, so that 검수 안 된 결과를 검수된 결과로 오해하지 않는다.
+12. As a headless(`claude -p`) 유저, I want Verifier 호출이 실패해도 스킬이 죽지 않고 해당 finding을 `Unverified`로 적은 보고서를 내기를, so that 자동화 파이프라인이 끊기지 않는다. (그릴 2026-09-14 수정: 원문 "self-verify로 내려가기" — headless에서도 서브에이전트는 정상 동작하므로 전제가 틀렸고, 메인 self-verify는 폐지)
 13. As a codex-advisor 유저, I want finding이 0개일 때 서브에이전트가 안 뜨기를, so that 비용이 finding 수에 비례한다.
 14. As a codex-advisor 유저, I want rescue `--write`의 diff 검수도 같은 fresh 판정자가 하기를, so that 네 스킬의 double-check 품질이 같다.
 15. As a codex-advisor 유저, I want `--model spark`가 더 이상 죽은 모델로 확장되지 않기를, so that 존재하지 않는 slug가 config.toml에 조용히 쓰이지 않는다.
@@ -79,11 +79,13 @@ Phase 1 ANALYZE에 분류 축 하나 추가. 입력 토큰을 셋으로 나눈�
 
 원리 출처: 위키 `dynamic-workflows-cc` "disjoint evidence에서 독립 가설 생성"; `references/gstack/cso` "파일 경로와 줄 번호만 (anchoring 방지)"; `references/harness-kit/dk-close-the-loop` "서브에이전트는 출력만 읽고 가설은 안 본다".
 
-Phase 1.5 프리뷰(adversarial·rescue 둘 다 이미 있음)에 "제외됨(가설)" 항목 추가. 유저가 "Needs changes"로 되돌릴 수 있다 — 유저가 명시적으로 가설을 넣겠다면 그건 유저 결정이고, 규칙은 Claude의 기본값을 바꾸는 것이지 유저를 막는 게 아니다.
+Phase 1.5 프리뷰(adversarial·rescue 둘 다 이미 있음)에 "제외됨(가설)" 항목 추가. 유저가 "Needs changes"로 되돌릴 수 있다. **출처를 가리지 않는다** (그릴 2026-09-14 확정, 이슈 Q11): 유저가 슬래시 명령을 직접 쳤든 Claude가 의도를 읽어 대신 호출했든 규칙은 똑같이 적용된다 — 가설은 항상 제외분으로 프리뷰에 보이고, 유저가 넣겠다면 "제외된 것 넣기" 한 번으로 복구한다. 초안의 "유저 원문은 가설이 있어도 verbatim" 예외는 삭제 — 그 예외는 "누가 쳤는가" 판별 계약을 요구하는데(2차 검수 지적) 안정적인 판별 신호가 없고, Claude 자체 호출(최대 누수 경로)이 유저 원문으로 오인되면 규칙이 통째로 빠진다. 프리뷰는 어차피 항상 뜨므로(`--no-preview` 삭제) 유저 비용은 확인 한 번. 검토 후 기각: 유저 마지막 메시지의 슬래시 명령 유무로 판별 — 직접 호출과 Claude 호출의 동작이 갈라져 유저가 예측하기 어렵다(유저 지적). rescue의 task 원문은 요구사항 자체이므로 증거이지 가설이 아니다 — 스토리 4의 verbatim은 그대로 성립한다.
 
-**`--no-preview` 플래그 삭제** (그릴 2026-09-11 결정). 4개 스킬 모두 항상 프리뷰. 이유: 분류는 Claude 판단(SOFT)이라 프리뷰 사람 확인이 유일한 검사 창인데, 플래그가 그 창을 우회한다. 대가: headless(`claude -p`)에서 이 4개 스킬은 AskUserQuestion 실패 → §9 규칙대로 exit 1. 현재 headless 사용 사례 없음 — 감수. User Story 12는 ③ 열화 모드에만 해당.
+**`--no-preview` 플래그 삭제** (그릴 2026-09-11 결정). 4개 스킬 모두 항상 프리뷰. 이유: 분류는 Claude 판단(SOFT)이라 프리뷰 사람 확인이 유일한 검사 창인데, 플래그가 그 창을 우회한다. 대가: headless(`claude -p`)에서 이 4개 스킬은 프리뷰 질문에 답할 호스트가 없어 Phase 1.5에서 멈춘다. 현재 headless 사용 사례 없음 — 감수. (그릴 2026-09-14 재확인, 이슈 Q7: 삭제 취소 안을 검토 — 자동 테스트는 되지만 Claude 자체 호출이 플래그로 검사 창을 건너뛸 길이 남아 기각. 검증은 수동 실행으로 한다 — 이슈 §검증 방법. 종료 코드 정정: 초안의 "§9 규칙대로 exit 1"은 틀림 — `companion-usage.md` §9의 Bash `exit 1`은 그 Bash 도구 호출의 실패이지 부모 `claude -p`의 종료 코드가 아니다. 스킬 지시로는 부모 종료 코드를 정할 수 없고, 정할 필요도 없다.) User Story 12는 ③ Verifier 실행 실패에만 해당.
 
-**그릴에서 기각** (2026-09-11): (a) 정규식 스크립트로 가설 감지 — `file:line`·단정어는 형태만 잡고 자연어 가설은 놓침, 유저가 정당하게 준 위치도 오탐. 판단 자체를 코드로 못 옮김. (b) Claude 변형 금지(유저 원문 verbatim만) — 유저는 Claude가 의도를 읽어 알맞은 focus를 써주길 원함. (c) 분류를 fresh 서브에이전트가 — ③ 결과 본 뒤 필요하면 재검토.
+**verify·research의 `resume` 키워드 삭제** (그릴 2026-09-13 확정, 이슈 Q13). 두 스킬의 `resume [follow-up]` 키워드는 `--resume-last`로 이전 Codex 스레드를 잇는다. 문제 둘: (1) 이전 턴에 보낸 가설이 스레드에 남아 ①이 무력. (2) `--resume-last`는 스킬 구분 없이 세션의 최근 task job을 고르므로, rescue로 코드 짠 스레드가 verify `resume`으로 자기 코드를 검수한다(maker = checker). 검수에서 "이어서"는 독립성과 정의상 충돌하므로 키워드를 없앤다 — 후속 질문은 새 호출(새 스레드)로 한다. rescue의 `--resume-last`/`--resume`/`--fresh`는 companion 공식 `task` 플래그이고 구현 이어가기는 정상 사용이라 그대로. 기각: (B) 유지 + `Continued thread — not an independent review` 라벨 — 라벨 코드가 늘고 독립 아닌 검수를 계속 제공할 이유가 없음. (A) rescue까지 삭제 — 검수와 무관.
+
+**그릴에서 기각** (2026-09-11): (a) 정규식 스크립트로 가설 감지 — `file:line`·단정어는 형태만 잡고 자연어 가설은 놓침, 유저가 정당하게 준 위치도 오탐. 판단 자체를 코드로 못 옮김. (b) Claude 변형 금지(유저 원문 verbatim만) — 유저는 Claude가 의도를 읽어 알맞은 focus를 써주길 원함. (c) 분류를 fresh 서브에이전트가 — ③ 결과 본 뒤 필요하면 재검토. (d) 유저 직접 호출 / Claude 호출 판별 계약(2026-09-14, Q11) — 위 "출처를 가리지 않는다"로 대체.
 
 **방어선 구조**: 1(지시문)이 유일한 방어선. 2(프리뷰 `Excluded (hypothesis):`)는 1이 틀렸을 때 보이게 하는 검사 창. 3(`--no-preview` 삭제)은 검사 창 우회 제거.
 
@@ -115,7 +117,8 @@ Phase 1.5 프리뷰(adversarial·rescue 둘 다 이미 있음)에 "제외됨(가
 For review, diagnose, or research requests, inspect the relevant materials and report. Do not implement changes.
 For change or fix requests, make the requested in-scope local changes and run relevant non-destructive validation without asking first.
 Bias towards action. Do not stop at a partial answer, a proposed plan, or an offer to continue.
-Require confirmation only for external writes, destructive actions, or a material expansion of scope.
+Do not perform external writes, destructive actions, or scope expansions the task did not ask for; list them in the final report instead. What the task itself asks for is already approved.
+Never end with a question — no one can answer it.
 Do not write tests for reversible, low-impact changes that mirror the implementation.
 </autonomy_policy>
 ```
@@ -124,7 +127,7 @@ Do not write tests for reversible, low-impact changes that mirror the implementa
 
 블록마다 출처 주석을 남긴다: `<!-- source: OpenAI "Using GPT-5.6" §Define autonomy and approval boundaries; "Using GPT-6 Astra" §Initiative and follow-through, §Testing and verification (2026-09-11) -->`. 이것이 ADR 0004가 요구한 provenance note의 지불이다. 기존 `gpt-5-4-prompting` 출처 주석은 유지된 블록에만 남긴다.
 
-왜 되는가: 5.6 가이드는 lean prompt로 내부 eval 10~15%↑·토큰 41~66%↓를 보고했고, "ask first 반복 = 불필요한 승인 요청"을 명시했다. 위키 `openai-model-guidance-gpt56`이 이를 `principles-over-demonstrations`·`nick-nisi`와 수렴 기록. `approvalPolicy=never` 경로에서 되묻기가 곧 실패라는 건 companion 코드로 확인된 사실이다.
+왜 되는가: 5.6 가이드는 lean prompt로 내부 eval 10~15%↑·토큰 41~66%↓를 보고했고, "ask first 반복 = 불필요한 승인 요청"을 명시했다. 위키 `openai-model-guidance-gpt56`이 이를 `principles-over-demonstrations`·`nick-nisi`와 수렴 기록. task path에서 되묻기가 곧 실패다 — Codex의 질문에 답할 상대가 없기 때문(companion은 서버 요청을 전부 `-32601`로 거절, `lib/app-server.mjs:155-160`)이고, 질문으로 끝난 턴도 `finalTurn.status === "completed"`라 성공으로 집계된다(`lib/codex.mjs:754`) — 작업 미완인데 상태는 성공. (그릴 2026-09-14 확정, 이슈 Q10 — 2차 검수 교정: `approvalPolicy=never`가 질문을 종료시키는 게 아니다.) 문구 교정 (같은 그릴, Q10): 초안 4행 `Require confirmation only for …`는 바로 그 되묻기를 지시하므로 위 블록처럼 교체 — 시키지 않은 외부 쓰기·파괴적 행동·범위 확장은 하지 않고 보고에 적되, **task 원문이 명시한 것은 승인된 것**으로 실행, 질문으로 끝내지 않는다. 기각: "그 행동은 하지 않고 보고에 적는다"만 — 유저가 시킨 파괴적 행동(예: 파일 삭제 요청)까지 보류시킨다.
 
 ### D3 — ③ 읽기 독립성: double-check를 fresh 서브에이전트로
 
@@ -133,23 +136,25 @@ Do not write tests for reversible, low-impact changes that mirror the implementa
 **구조**:
 1. Phase 3 완료 후 메인 Claude는 Codex 출력 파일을 스크립트에 넘길 뿐, finding 목록을 직접 뽑지 않는다. 소스는 여전히 안 읽는다. **finding 추출 주체** (그릴 2026-09-12 확정, 이슈 Q1): 규칙은 "출력 틀이 코드로 고정돼 있으면 스크립트가 자르고, 아니면 아무도 안 자른다". adversarial은 `result.findings[]` JSON(schema에 `file`·`line_start`·`line_end` 필수) → 스크립트가 그대로 읽는다. review는 companion이 `codex.stdout`에 담는 텍스트인데, 그 틀은 Codex 소스 `codex-rs/protocol/src/review_format.rs`가 코드로 찍는다 — `overall_explanation` 뒤에 `Full review comments:`(1건이면 `Review comment:`), finding마다 `- {title} — {abs_path}:{start}-{end}` 한 줄 + 두 칸 들여쓴 body 줄들. app-server v2는 구조화 finding을 이 텍스트로 렌더한 뒤에야 보낸다(`v2/item.rs` `ExitedReviewMode { review: String }`) → 구조화 원본은 우리 쪽에 도달하지 않으므로 스크립트가 이 틀을 파싱한다. rescue(read-only)의 `rawOutput`은 틀이 없다 → 자르지 않고 **텍스트 전체를 group 하나의 payload**로 Verifier에 보내고 인용 확인은 Verifier가 한다(verify/research 방식). 메인이 뽑는 안은 기각 — 저자가 finding을 빼먹거나 바꿔 쓰는 통로가 열려 Q3의 훅이 review에서만 무의미해진다. **파서 실패는 `uncited`가 아니다**: Codex가 틀을 바꾸면 스크립트는 `parse_error`로 멈추고 보고서에 "Codex 출력 형식이 바뀜"을 표시한다. 메인이 대신 자르는 fallback은 없다 — 조용히 떨어지면 독립성이 사라진 채 보고서만 멀쩡해 보인다.
 2. **인용 존재 검사(스크립트, 결정론)**: 각 finding의 인용(file, line 범위)에 대해 파일 존재·줄 범위 유효를 판정해 JSON으로 돌려준다. 인용이 없으면 `uncited`. 존재하지 않으면 `missing`. 이것이 Six-way의 **False Positive / Uncited** 판정을 코드로 옮긴 것이다. 위키 `evidence-gates`: fact는 코드, judgment는 AI. **검수 대상과 작업 트리의 불일치** (그릴 2026-09-12 확정, 이슈 Q14): review·adversarial `--scope branch`의 대상은 커밋된 변경인데 스크립트는 작업 트리를 본다. 리뷰 중 유저가 파일을 더 고치면 유효한 인용이 `missing` → False Positive로 확정된다(2차 검수가 재현). 모델이 이를 눈치챌 자리는 이 구조에 없다 — 그래서 스크립트가 한 번 더 확인한다: 검수 대상 ref와 작업 트리가 다른지(`git diff --quiet <ref>`, 파일 단위). 다르면 그 파일의 `missing`은 False Positive가 아니라 `Unverifiable`(사유 `worktree-drift`)이고 보고서에 "리뷰 후 작업 트리가 바뀜" 한 줄. 검토 후 기각: 검수 대상 트리를 임시 worktree로 꺼내 스크립트·Verifier가 같이 보는 안 — 과하다. diff가 삭제한 줄을 지적한 finding도 같은 규칙으로 Unverifiable에 떨어지며 그대로 감수(드묾).
-3. **판정 서브에이전트(finding당 1개, 병렬)**: 플러그인 `agents/`에 정의. 입력은 (a) finding 원문, (b) 인용 file:line, (c) 존재 검사 결과, (d) 분류 규칙(`evaluation.md` 참조). 허용 도구는 Read(인용 줄 ± 소량 컨텍스트)·Grep(인용 심볼 확인)만. 출력은 `{classification: Agreed|Disputed|Nuanced|Unverifiable, evidence, reason}` JSON 한 개(`Unverifiable` 추가는 그릴 2026-09-12, 아래). finding당 분리인 이유: `references/compound-engineering-plugin/ce-code-review` — "묶어서 보면 패턴매칭으로 편향 재발".
-4. 메인 Claude는 JSON을 모아 Agreement 요약과 보고서를 쓴다. 판정은 안 바꾼다. 보고서에 `Verifier: fresh subagent (N groups)` 라벨.
-5. **열화 모드**: Agent 도구가 없거나 실패하면(headless) 메인이 기존 Phase 4를 수행하되 보고서에 `Self-verified — independent sub-task unavailable` 라벨. 출처: `references/gstack/cso` 동일 fallback.
+3. **판정 서브에이전트(finding당 1개, 병렬)**: 플러그인 `agents/`에 정의. 입력은 (a) finding 원문, (b) 인용 file:line, (c) 존재 검사 결과, (d) 분류 규칙(`evaluation.md` 참조). **fresh 컨텍스트의 범위** (그릴 2026-09-14 확정, 이슈 Q16): 없는 것은 대화 이력과 메인의 작성 기억이다. CLAUDE.md 계층(글로벌·프로젝트·local·managed)과 git status는 모든 서브에이전트가 시작 시 로드하므로 Verifier도 본다(공식 `sub-agents` §What loads at startup) — 공용 규칙이지 저자 기억이 아니라 독립성엔 무해하며, 완전한 정보 격리를 주장하지 않는다. 호출은 `subagent_type: Verifier`(custom agent, 신규 실행)로만 — `fork`는 대화 전체를 상속하므로 쓰지 않는다. 허용 도구는 Read(인용 줄 ± 소량 컨텍스트)·Grep(인용 심볼 확인)만. 여기에 WebFetch 하나 추가(그릴 2026-09-13, 이슈 Q5 — 아래 **URL 출처 검수**). 출력은 `{classification: Agreed|Disputed|Nuanced|Unverifiable, evidence, reason}` JSON 한 개(`Unverifiable` 추가는 그릴 2026-09-12, 아래). finding당 분리인 이유: `references/compound-engineering-plugin/ce-code-review` — "묶어서 보면 패턴매칭으로 편향 재발".
+4. 메인 Claude는 JSON을 모아 Agreement 요약과 보고서를 쓴다. 판정은 안 바꾼다. 보고서에 `Verifier: fresh subagent (N groups)` 라벨. **evaluation.md의 저자 시점 절 삭제** (그릴 2026-09-14 확정, 이슈 Q8): "Self-Bias Awareness"(S4에서 기확정), "Cross-Model Comparison"(메인이 자기 과거 분석을 Found/Missed로 자기 채점), 보고서 템플릿의 "Additional Findings"·`Claude additional: N`(메인이 소스를 읽어 놓친 것을 찾아야 채움) — 셋 다 메인이 판정자이던 시절의 절이라 삭제. 템플릿은 Verifier 4분류 + Unverified 집계로 교체(research의 "놓친 것"은 Q5의 `missing-N`이 대신함). **저자 이견 줄(Author note)** (그릴 2026-09-14 확정, 이슈 Q18 — 유저 질문 "검수자 판정이 메인이 보기엔 아니면?"): 메인이 판정에 동의하지 않을 때 판정은 그대로 두고 그 finding 아래 `Author note (main session): <이견 + 근거>` 한 줄을 붙일 수 있다. 유저가 판정과 이견을 나란히 보고 결정한다. 검토한 선택지: (A) 메인 침묵 — 정보를 버림. (C) 메인이 판정을 덮어씀 — 저자가 다시 판정자. 확정 (B). 판정 기록은 손대지 않고, 라벨이 "저자의 말"임을 드러낸다. 이견은 판정 뒤에만 쓴다 — 판정 전에 Verifier에 전달되는 일은 S3b 훅이 막는다.
+5. **Verifier 실행 실패 — 메인은 대신 판정하지 않는다** (그릴 2026-09-14 확정, 이슈 Q6): Agent 호출이 실패한 group은 보고서에 `Unverified — Verifier 실행 실패`로만 적는다. 나머지 group의 Verifier 판정은 그대로. 유저가 요청하면 같은 payload 경로로 Agent를 다시 호출한다(payload는 `${CLAUDE_PLUGIN_DATA}/tmp/`에 남아 있음) — 자동 재시도는 없음(동시 실행 한도 에러는 공식 docs가 재시도 금지를 안내, Q17). 폐지: 초안의 "열화 모드"(Agent 불가 시 메인이 기존 Phase 4를 수행하고 `Self-verified — independent sub-task unavailable` 라벨, gstack cso 방식). 이유 둘: (1) 전제 오류 — `claude -p`도 서브에이전트를 실행한다(공식 `headless` 문서), "headless = Agent 없음"이 아니다. (2) N group 중 일부만 실패해도 메인이 전부 판정하게 되어 이 스펙이 닫으려는 저자 판정 경로가 실패 한 번에 다시 열린다. "검수 못 함"이 "저자가 검수함"보다 정직하고, 메인이 판정하는 문장이 SKILL.md에 없으면 편향 예외를 테스트할 필요도 없다. 검증: `--disallowedTools Agent`로 실행 → 전 group `Unverified`, 메인 Read 호출 0회.
 
 rescue `--write`: 판정 대상이 finding이 아니라 diff. 서브에이전트 입력 = 유저 task 원문(스펙이지 가설이 아님) + Codex가 만든 diff. 그 diff는 실행 **직전** `git stash create`로 잡은 스냅샷 커밋과 실행 후 작업 트리의 차이다(그릴 2026-09-12, Q14) — 맨 `git diff`는 실행 전부터 있던 유저 WIP를 섞고 새 파일을 빠뜨려 "범위 이탈"을 오판한다. 새 파일은 실행 전후 `git ls-files --others --exclude-standard` 차집합으로 잡는다. 출력 = 과제 충족 여부·범위 이탈·부작용. 메인은 안 읽는다. 서브에이전트는 diff 주변(변경된 함수·호출처)을 Read·Grep으로 볼 수 있음 — 다른 스킬 판정자와 동일 도구. 리포 전체 탐색 금지 (그릴 2026-09-11).
 
-verify/research: 판정 대상이 Codex의 verdict/리서치 결과이고 blind payload로 문서 원문이 메인에 없다. 서브에이전트는 문서 + Codex 결과를 받아 분류한다. **인용 존재 스크립트는 안 씀** (그릴 2026-09-11): 스크립트는 `file:line` 인용하는 review/adversarial/rescue 3개만. verify는 문서 하나가 입력 전부라 서브에이전트가 헤맬 공간이 없고, 섹션 인용 형태("§3.2"/"Rollback 절"/본문 인용)가 비정형이라 grep 규칙은 유지비만 생김. research는 URL 검증 = 네트워크라 스크립트 범위 밖. 두 스킬은 서브에이전트가 인용 확인까지 같이 함(SOFT — 입력이 유한해 감수). **원문·diff 전달** (그릴 2026-09-12 확정, 이슈 Q4): 문서 원문은 payload에 **경로만** — 메인이 prompt에 본문을 넣으면 메인이 읽은 것이라 blind payload가 깨진다. Verifier는 경로를 Read. rescue `--write`의 diff는 Verifier가 Bash가 없어 못 뽑으므로 스크립트가 `git diff <스냅샷>`을 파일로 떨궈 경로를 담는다. payload 파일을 쓰는 코드는 S3 스크립트 한 곳: `--mode doc`(verify/research — 인용 검사 없이 문서 경로·Codex 결과 경로·규칙 경로 + manifest)과 `--mode diff`(rescue `--write`). 스킬 Bash 단계가 `cat >`로 직접 payload를 쓰는 안은 기각 — 메인이 파일 내용을 쓰는 셈이라 Q3 취지와 어긋난다. 새 코드는 이 스크립트와 S3b 훅 둘뿐이며 둘 다 판단 없이 자르기·확인·해시·경로만 다룬다. 이 두 스킬은 이미 구조적으로 독립이었으므로 이득은 "규칙이 다섯 스킬에서 같아진다"는 일관성이다.
+verify/research: 판정 대상이 Codex의 verdict/리서치 결과이고 blind payload로 문서 원문이 메인에 없다. 서브에이전트는 문서 + Codex 결과를 받아 분류한다. **인용 존재 스크립트는 안 씀** (그릴 2026-09-11): 스크립트는 `file:line` 인용하는 review/adversarial/rescue 3개만. verify는 문서 하나가 입력 전부라 서브에이전트가 헤맬 공간이 없고, 섹션 인용 형태("§3.2"/"Rollback 절"/본문 인용)가 비정형이라 grep 규칙은 유지비만 생김. research는 URL 검증 = 네트워크라 스크립트 범위 밖. 두 스킬은 서브에이전트가 인용 확인까지 같이 함(SOFT — 입력이 유한해 감수). 두 스킬 모두 항상 새 Codex 스레드 — `resume` 키워드는 D1(그릴 2026-09-13, Q13)에서 삭제.
 
-**Read 차단 PreToolUse 훅은 만들지 않는다.** 서브에이전트에는 막을 히스토리가 없다. 열화 모드에서 메인이 읽는 건 어차피 허용된 Phase 4 행동이다. 훅이 필요해지는 건 "메인이 Phase 1~3에서 읽는" 경우뿐인데, 그건 이 구조에서 메인이 Phase 4 자체를 안 하므로 동기가 사라진다. 그릴 2026-09-11 재검토 → **확정: 훅 없음**. 판정은 서브에이전트가 하므로 메인이 Phase 1~3에 읽어도 판정 불변, 메인 역할은 JSON 집계뿐. 훅은 Phase 경계를 알 수 없어 구현도 불명확. (이 기각은 **Read 차단** 훅에 한한다 — 아래 payload 훅과 다른 종류.)
+**URL 출처 검수 — Verifier 하나에 WebFetch 추가** (그릴 2026-09-13 확정, 이슈 Q5): research 결과는 URL 출처 주장이 대부분인데 Read·Grep으로는 열 수 없다. 검토한 선택지: (a) research 전용 Verifier agent 파일 분리 + WebFetch — 새 파일(기각: agent 하나로 충분). (b) URL 인용은 전부 `Unverifiable` — 검수자가 출처를 안 여는 research 검수는 껍데기(기각). **확정 (a′)**: `agents/verifier.md` 하나의 `tools:`에 WebFetch를 넣는다. 규칙은 payload 지시로 — payload에 인용된 URL만 연다, 탐색 금지. 못 열면(권한 거부·타임아웃·리다이렉트) `Unverifiable`(사유 `external-source`). 감수하는 것 둘(공식 `tools-reference` §WebFetch tool behavior, 2026-09-13 수령): (1) 수동 권한 모드에선 fetch마다 프롬프트 — "Yes"는 한 번만, 도메인별 "don't ask again"으로 줄일 수 있고 `auto` 모드면 없음. (2) WebFetch는 작은 모델이 요약해 돌려주는 손실 도구 — "페이지에 X가 없다"가 "안 물어봐서 못 찾음"일 수 있으므로, 부재 확인만으로는 Disputed를 내지 않고 Unverifiable로 떨어뜨린다(Q15 규칙: 반박 근거를 봤을 때만 Disputed). review·adversarial·rescue payload에는 URL이 없으므로 WebFetch가 있어도 쓸 일이 없다 — 스킬별 도구 분기 코드는 만들지 않는다. **원문·diff 전달** (그릴 2026-09-12 확정, 이슈 Q4): 문서 원문은 payload에 **경로만** — 메인이 prompt에 본문을 넣으면 메인이 읽은 것이라 blind payload가 깨진다. Verifier는 경로를 Read. rescue `--write`의 diff는 Verifier가 Bash가 없어 못 뽑으므로 스크립트가 `git diff <스냅샷>`을 파일로 떨궈 경로를 담는다. payload 파일을 쓰는 코드는 S3 스크립트 한 곳: `--mode doc`(verify/research — 인용 검사 없이 문서 경로·Codex 결과 경로·규칙 경로 + manifest)과 `--mode diff`(rescue `--write`). 스킬 Bash 단계가 `cat >`로 직접 payload를 쓰는 안은 기각 — 메인이 파일 내용을 쓰는 셈이라 Q3 취지와 어긋난다. 새 코드는 이 스크립트와 S3b 훅 둘뿐이며 둘 다 판단 없이 자르기·확인·해시·경로만 다룬다. 이 두 스킬은 이미 구조적으로 독립이었으므로 이득은 "규칙이 다섯 스킬에서 같아진다"는 일관성이다.
+
+**Read 차단 PreToolUse 훅은 만들지 않는다.** 서브에이전트에는 막을 히스토리가 없다. (초안의 열화 모드는 Q6에서 폐지 — 메인이 Phase 4에서 읽는 경로 자체가 없다.) 훅이 필요해지는 건 "메인이 Phase 1~3에서 읽는" 경우뿐인데, 그건 이 구조에서 메인이 Phase 4 자체를 안 하므로 동기가 사라진다. 그릴 2026-09-11 재검토 → **확정: 훅 없음**. 판정은 서브에이전트가 하므로 메인이 Phase 1~3에 읽어도 판정 불변, 메인 역할은 JSON 집계뿐. 훅은 Phase 경계를 알 수 없어 구현도 불명확. (이 기각은 **Read 차단** 훅에 한한다 — 아래 payload 훅과 다른 종류.)
 
 **Verifier payload — 작성은 스크립트, 전달은 훅이 강제** (그릴 2026-09-12 확정, 이슈 Q3): Verifier를 띄우는 `Agent` 호출의 `prompt`는 메인이 쓴다. 메인은 코드 저자라 "참고로 호출자가 이미 막고 있음" 같은 한 줄을 덧붙일 수 있고, 그러면 ③은 ①과 같은 쓰기 누수로 돌아간다(ADR 0012 Consequences "메인의 복종에 의존하지 않는다"와 모순). 검토한 선택지: (A) "verbatim 전달" 지시 + 테스트 로그로 사후 검출 — 실행 중 못 막음, ADR 후퇴. (B) 스크립트가 payload 파일 생성 + 경로만 전달 — 경로 옆에 덧붙이는 건 못 막음. (C) 플러그인 PreToolUse 훅(matcher `Agent`)이 `subagent_type`이 Verifier일 때 prompt에서 payload 경로를 뽑아 **prompt 전체를 파일 내용으로 `updatedInput` 교체**, 경로가 없거나 파일이 없으면 `deny`. **확정: C.** 누수 통로가 prompt 한 곳이고 그걸 코드가 닫는다("강제는 구조로"). 실측 2026-09-12: `claude -p`에서 훅이 Agent `tool_input`(`prompt`·`subagent_type`·`description`·`run_in_background`)을 받고, `updatedInput`으로 바꾼 prompt대로 서브에이전트가 답했다.
 
 - payload 파일(`group-N.json`)은 S3 스크립트가 쓴다(verify/research의 payload 생성 경로는 Q1·Q4에서 정한다). 메인은 파일을 고르기만 한다.
 - **해시 검증** (그릴 2026-09-12): 메인이 payload 파일 자체를 고쳐 쓰는 경로를 닫기 위해 스크립트가 `manifest.json`에 각 payload의 sha256을 함께 쓴다. 훅은 교체 전에 해시를 대조하고 불일치면 `deny`. 매니페스트까지 일관되게 위조하는 건 명백한 고의라 감수.
-- 훅은 `subagent_type`만 본다 — Phase 경계를 알 필요가 없다. 다른 서브에이전트 호출엔 관여하지 않는다.
+- 훅은 `subagent_type`만 본다 — Phase 경계를 알 필요가 없다. 다른 서브에이전트 호출엔 관여하지 않는다. Verifier 호출이면 `prompt` 교체와 함께 `model` 필드를 제거한다(R3, 그릴 2026-09-14) — 저자가 검수자 모델을 고르지 못하게.
 - Verifier가 받는 텍스트 = 스크립트가 만든 파일 내용, 그 이상도 이하도 없다. 이것이 "Verifier의 입력은 finding + 인용 + 존재 결과 + 규칙뿐"을 지시가 아니라 구조로 만든다.
-- 이 훅은 `-p`에서도 동작하므로 열화 모드(D3 단계 5)와 무관하다.
+- 이 훅은 `-p`에서도 동작한다(실측 2026-09-12).
 
 **판정 서브에이전트 프롬프트 3원칙** (그릴 2026-09-11 확정 — 문구는 이슈 슬라이스에서 `validator-template.md` 기반으로 작성): (1) 기본 판정은 Disputed — 의심되면 reject. (2) 원 finding에 commitment 없음 — Codex 편도 안 듦. (3) 출력은 JSON만, 설명은 evidence 필드에. 근거: Anthropic L31 "분리만으론 관대함이 안 사라짐, 회의적 튜닝 필요".
 
@@ -160,16 +165,16 @@ verify/research: 판정 대상이 Codex의 verdict/리서치 결과이고 blind 
 {"verdicts": [{"id": "<payload가 준 항목 ID>", "classification": "Agreed|Disputed|Nuanced|Unverifiable", "severity": "<payload가 준 값 그대로, 없으면 null>", "evidence": "<본 것>", "reason": "<한 줄>"}]}
 ```
 - 항목 = payload가 번호를 매겨 준 것 전부. group에 finding이 둘이면 verdict도 둘. payload에 있는 ID가 빠지거나 없는 ID가 생기면 집계가 그 group을 `Unverifiable`(사유 `contract-violation`)로 적는다 — 검수자가 하나를 빠뜨리는 것도 검출 대상.
-- 모드 차이는 payload의 "무엇을 판정하라"에만 있다. review/adversarial: Codex finding 1개 = 항목 1개. rescue `--write`: 유저 task 원문에서 스크립트가 잘라 준 요구사항 1개 = 항목 1개(충족 = Agreed, 이탈·미충족 = Disputed, 조건부 = Nuanced, diff만으론 판단 불가 = Unverifiable) + 검수자가 발견한 부작용은 `id: "side-effect-N"`으로 추가 허용(이 경우만 새 ID 허용). verify/research: Codex의 지적/주장 1개 = 항목 1개, `severity`는 Codex가 붙인 P1/P2를 그대로 통과.
+- 모드 차이는 payload의 "무엇을 판정하라"에만 있다. review/adversarial: Codex finding 1개 = 항목 1개. rescue `--write`: 유저 task 원문에서 스크립트가 잘라 준 요구사항 1개 = 항목 1개(충족 = Agreed, 이탈·미충족 = Disputed, 조건부 = Nuanced, diff만으론 판단 불가 = Unverifiable) + 검수자가 발견한 부작용은 `id: "side-effect-N"`으로 추가 허용(이 경우만 새 ID 허용). verify/research: Codex의 지적/주장 1개 = 항목 1개, `severity`는 Codex가 붙인 P1/P2를 그대로 통과. research는 여기에 더해 검수자가 주제상 빠졌다고 본 핵심 항목을 `id: "missing-N"`으로 추가 허용(그릴 2026-09-13 확정, 이슈 Q5 — 기존 Phase 4 synthesis "Codex가 놓친 것 채우기"의 담당자를 메인에서 Verifier로 옮긴 것. 메인은 blind payload라 결과 본문을 못 보고, Verifier는 다른 모델이라 cross-model 관점이 유지된다. 새 ID 허용은 rescue `side-effect-N`과 같은 규칙, 스키마 변경 없음. 기각: (c) 메인이 JSON만 보고 종합 — 판정만 있어 놓친 것을 쓸 수 없음. (d) synthesis 삭제 — 스킬 설명 "cross-model synthesis"가 거짓이 됨).
 - 모드별 스키마 3개는 기각 — 훅·스크립트·집계·테스트가 세 배.
 - **PASS/FAIL은 검수자가 내지 않는다.** 메인이 규칙으로 집계한다(판단 아님): `severity: P1` 항목 중 Agreed 또는 Nuanced가 하나라도 있으면 FAIL, P1이 Unverifiable이면 FAIL로 세되 사유를 "미검증 P1"로 따로 적는다(검수 실패를 통과로 바꾸지 않는다), 나머지는 PASS. 규칙은 `evaluation.md`에 한 번만 적는다.
 - 저자 시점 분류 **"Already considered"는 삭제**한다 — "내가 이미 고려했다"는 저자만 할 수 있는 말이고 Verifier에겐 없는 정보다. Codex 지적이 문서 안에서 이미 다뤄졌으면 Verifier가 그 절을 인용해 Disputed로 낸다.
 
-**묶음 규칙** (그릴 2026-09-11 확정): 기본 finding당 서브에이전트 1개, 상한 없음. 단 인용 존재 검사 스크립트가 **같은 파일 + 줄 범위 겹침**인 finding에 같은 `group_id`를 부여하고, 한 group = 서브에이전트 1개. 묶음 판단은 스크립트만 — 메인 Claude 재량 묶기는 기각(편향 당사자가 희석 통로를 쥠, `deterministic-over-clever`). 토큰은 단일 처리보다 늘지만(프리픽스 N회, 캐시 히트) 병렬이라 지연은 동일. 실측 후 상한 재검토.
+**묶음 규칙** (그릴 2026-09-11 확정, 2026-09-14 개정 — 이슈 Q17): 인용 존재 검사 스크립트가 **같은 파일**을 인용한 finding에 같은 `group_id`를 부여하고, 한 group = 서브에이전트 1개. group 크기 상한 둘 — finding **5개**, payload 본문 **6,000자** — 둘 중 먼저 걸리는 쪽에서 줄 순서로 쪼갠다. 다른 파일끼리는 묶지 않는다. 묶음 판단은 스크립트만 — 메인 Claude 재량 묶기는 기각(편향 당사자가 희석 통로를 쥠, `deterministic-over-clever`). 메인이 띄우는 건 한 번에 **10 group**까지, 완료 후 다음 묶음 — Claude Code 동시 서브에이전트 한도 20(`sub-agents` §Concurrent subagent limit, `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`)을 유저의 다른 작업과 나눠 쓴다. 한도 에러는 재시도 금지 안내가 붙으므로 부딪히기 전에 조절한다. 개정 이유: 2026-09-11판은 "줄 범위 겹침만 묶음, 상한 없음, 병렬이라 지연 동일"이었다. finding 25개면 검수자 25개 → 20 한도에 걸려 5개는 시작도 못 하고 `Unverified`(Q6). 유저 제안: 비슷한 건 같은 검수자가 보되 너무 커지지 않게. 같은 파일 묶기는 그 파일을 검수자 여럿이 각자 Read하던 중복도 없앤다. "묶으면 패턴매칭으로 관대해진다"(ce-code-review) 우려는 많이 묶는 것과 메인이 묶는 것이 핵심 — 5개 상한과 스크립트 결정이 둘 다 막는다. 5·6,000자·10은 근거 있는 수치가 아니라 타협값 — S4 fixture에서 "5개 묶음이 1개 묶음보다 Agreed를 더 내는가"를 한 번 재고 조정한다.
 
 **크기 임계 없음** (그릴 2026-09-11): finding 1개여도 서브에이전트. "작으면 메인이 직접"은 편향 예외를 다시 여는 것. 비용은 finding 수에 비례하므로 별도 임계 불필요.
 
-**서브에이전트 모델**: **상속** (그릴 2026-09-11 확정). agent 정의에 `model:` 안 박음 — 박으면 모델 지식이 플러그인에 들어와 스펙 012 위반. 위키 `loops-explained-kopadze` "reviewer는 느리고 엄격하게"는 프롬프트 3원칙으로 충족.
+**서브에이전트 모델**: **`model:` 생략 = 유저의 서브에이전트 모델 설정 존중** (그릴 2026-09-11 "상속" → 2026-09-14 교정, 이슈 R3). agent 정의에 `model:` 안 박음 — 박으면 모델 지식이 플러그인에 들어와 스펙 012 위반. 생략의 실제 의미(공식 `sub-agents` §Choose a model, 2026-09-14 수령): 해석 순서는 (1) 호출 시 `model` 파라미터 → (2) frontmatter `model:` → (3) `CLAUDE_CODE_SUBAGENT_MODEL` → (4) 메인 모델. 우리는 (2)가 비어 있으므로 (3) 유저 환경변수, 없으면 (4) 메인 모델 — "부모 고정 상속"이 아니다. (1)은 메인(저자)이 `model: haiku`처럼 넘겨 검수자를 약화시키는 통로라 **S3b 훅이 `updatedInput`에서 `model` 필드를 제거**한다 — 훅이 prompt를 교체하는 같은 자리. 기각: `model: inherit` — 메인 모델 강제는 유저의 서브에이전트 설정을 무시한다. 위키 `loops-explained-kopadze` "reviewer는 느리고 엄격하게"는 프롬프트 3원칙으로 충족.
 
 왜 되는가: 위키 `verification-layers` L122 "검증은 항상 별개 인스턴스"; Anthropic 원문 L31 "일하는 에이전트와 판단하는 에이전트를 분리하는 게 강한 지렛대"; 같은 글 L135 "Claude는 문제를 찾고도 별거 아니라고 스스로 넘긴다" — 이게 지금 우리 메인 Claude의 Phase 4다. 서브에이전트는 그 코드를 쓴 적이 없으므로 옹호할 것이 없다.
 
@@ -182,7 +187,7 @@ verify/research: 판정 대상이 Codex의 verdict/리서치 결과이고 blind 
 `docs/context/codex-advisor.md`:
 - **Companion** 항목에 호출 프로토콜 명시: `codex app-server` JSON-RPC over stdio(`thread/start` → `review/start` | `turn/start`), `codex exec` 아님. AGENTS.md 로딩은 Codex 코어 동작이며 companion은 관여하지 않음(Astra 가이드가 AGENTS.md 민감도 상승을 명시 — 실측은 Out of Scope).
 - 3층 모듈 경계 표(우리 / Official companion / Codex CLI)와 프롬프트 소유권 표(review=Codex 서버, adversarial=Official prompts, task=우리).
-- **Double-check independence** 항목을 read-side / write-side 둘로 분리하고 판정자(fresh subagent)와 열화 모드 라벨 추가.
+- **Double-check independence** 항목을 read-side / write-side 둘로 분리하고 판정자(fresh subagent)와 `Unverified` 표시 추가.
 - **Vendored prompt blocks**·**Provenance debt** 항목을 D2 이후 상태로 갱신(출처가 5.4 가이드 → 5.6/Astra 가이드).
 - **Five-way classification** → **Six-way classification**으로 개명, "False Positive/Uncited는 스크립트 판정, Agreed/Disputed/Nuanced/Unverifiable은 서브에이전트 판정" 추가(그릴 2026-09-12 반영됨).
 
@@ -190,7 +195,7 @@ README: "How a call is translated" 4단계 double-check 설명을 판정자 구�
 
 ### D6 — 버전
 
-4.7.1 → **4.8.0**. minor: 유저가 보는 프리뷰·보고서 형식이 바뀌고 double-check 실행 주체가 바뀐다. 명령 표면·플래그는 동일.
+4.7.1 → **5.0.0** (그릴 2026-09-14 확정, 이슈 R2; 초안 4.8.0 minor 교정). major: `--no-preview` 플래그(Q7)와 verify/research `resume` 키워드(Q13)가 없어져 기존 호출이 깨진다 — AGENTS.md "major = breaking interface changes". 초안 근거 "명령 표면·플래그 동일"은 그 두 삭제로 틀렸다. 기각: 4.8.0 유지(개인 플러그인이라 감수) — 규칙이 있으면 따르는 게 싸다.
 
 ## Testing Decisions
 
@@ -221,7 +226,7 @@ README: "How a call is translated" 4단계 double-check 설명을 판정자 구�
 
 - ① 가설 문장이 포함된 입력 5개에 대해 PROMPT_FILE/focus 인자에 그 문장이 없고 프리뷰 "제외됨"에 있는가.
 - ② verify/research PROMPT_FILE이 골든과 일치하는가. rescue `--write`와 read-only의 블록 집합이 D2 표와 일치하는가.
-- ③ 존재하지 않는 file:line을 인용한 fixture finding이 최종 보고서에서 False Positive로 분류되는가. 존재하는 인용은 서브에이전트 JSON이 스키마를 만족하는가. headless에서 `Self-verified` 라벨이 붙는가.
+- ③ 존재하지 않는 file:line을 인용한 fixture finding이 최종 보고서에서 False Positive로 분류되는가. 존재하는 인용은 서브에이전트 JSON이 스키마를 만족하는가. `--disallowedTools Agent`에서 전 group이 `Unverified`이고 메인 Read 호출이 0회인가.
 - D4 `spark`가 확장되지 않는가.
 
 ## Out of Scope
@@ -273,8 +278,8 @@ README: "How a call is translated" 4단계 double-check 설명을 판정자 구�
 
 ### ③ fresh 서브에이전트 double-check
 
-- **무엇**: Phase 4를 메인에서 떼어 finding당 서브에이전트 1개 + 인용 존재 스크립트로 분리. 열화 모드 라벨.
-- **메커니즘**: 메인은 Codex JSON 파싱·집계·보고만. 스크립트가 fact(존재)를 판정, 서브에이전트가 judgment(Agreed/Disputed/Nuanced)를 판정. 서브에이전트 입력은 finding + 인용 + 규칙뿐이라 세션 히스토리·작성 이력이 물리적으로 없음.
+- **무엇**: Phase 4를 메인에서 떼어 finding당 서브에이전트 1개 + 인용 존재 스크립트로 분리. 실행 실패는 `Unverified`.
+- **메커니즘**: 메인은 Codex JSON 파싱·집계·보고만. 스크립트가 fact(존재)를 판정, 서브에이전트가 judgment(Agreed/Disputed/Nuanced)를 판정. 서브에이전트 입력은 finding + 인용 + 규칙뿐이라 세션 히스토리·작성 이력이 물리적으로 없음(CLAUDE.md·git status는 공유 — Q16).
 - **왜 되나**: 지시("읽지 마라")는 호출 전 오염을 못 지운다 — 메인은 이미 그 코드를 쓴 당사자. 별개 인스턴스는 옹호할 자기 작업이 없다(위키 `verification-layers` L122·L128, Anthropic L31·L135). fact를 코드로 빼는 건 `evidence-gates` "fact는 코드, judgment는 AI". finding당 분리는 ce-code-review "묶으면 편향 재발".
 - **반박 포인트**: (a) 서브에이전트도 같은 모델(Claude) — self-preferential bias가 "자기 세션"이 아니라 "자기 모델" 수준이면 효과가 얼마나 남나. Anthropic L31: 분리만으론 관대함이 안 사라지고 **회의적 튜닝**이 필요 — 그럼 서브에이전트 프롬프트의 skeptic 강도가 핵심인데 초안이 없다. (b) finding당 1개면 finding 10개에 서브에이전트 10개 — 비용·지연이 review 1회당 감당되나. 묶음 크기 상한이 필요한가. (c) rescue `--write`에서 서브에이전트가 diff만 보고 "과제 충족"을 판단할 수 있나 — 리포 컨텍스트 없이. (d) 훅을 안 만든다는 결정 — 열화 모드(headless)에서 메인이 Phase 1~3에 읽는 걸 여전히 아무도 안 막는다. (e) Anthropic L152 "evaluator는 모델이 혼자 못 하는 경계 밖 작업에서만 가치" — 작은 diff에서는 서브에이전트가 순수 오버헤드. 크기 임계값을 둘 것인가.
 

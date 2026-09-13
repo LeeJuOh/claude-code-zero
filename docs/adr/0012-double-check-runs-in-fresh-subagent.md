@@ -35,22 +35,36 @@ Phase 4 is split so that the main session never judges a finding:
 
 - **Fact by script.** A deterministic script checks each cited `file:line` for existence and
   assigns `ok` / `missing` / `uncited`. False Positive and Uncited are decided here, not by a model.
-  The same script groups findings that cite the same file with overlapping line ranges; grouping is
+  The same script groups findings that cite the same file, capped at five findings / a bounded
+  payload size per group (amended 2026-09-14, issue Q17; was: overlapping line ranges only); grouping is
   never a model's discretion.
-- **Judgment by a fresh subagent.** One subagent per finding group, defined under `agents/`, with
-  `Read`/`Grep` only. Its input is the finding, its citation, the existence result, and the
-  classification rules — no session history, no authorship. It returns a single JSON verdict
+- **Judgment by a fresh subagent.** One subagent per finding group, defined under `agents/` and
+  invoked by `subagent_type` (never `fork`, which inherits the whole conversation), with
+  `Read`/`Grep`, plus `WebFetch` for URL sources cited in a research payload (amended 2026-09-13, issue Q5). Its input is the finding, its citation, the existence result, and the
+  classification rules — no conversation history, no authorship. Shared project instructions (the
+  CLAUDE.md hierarchy) and git status still load, as for every subagent; they are common rules,
+  not the author's memory (amended 2026-09-14, issue Q16). It returns a single JSON verdict
   (Agreed / Disputed / Nuanced + evidence). Its prompt is tuned skeptical: default to Disputed,
   no commitment to the original finding, JSON only.
 - **Aggregation by the main session.** It parses Codex output, launches the subagents, collects
   the JSON, and writes the report labelled `Verifier: fresh subagent`. It does not alter verdicts.
-- **Degraded mode.** When the Agent tool is unavailable (headless), the main session performs the
-  old Phase 4 and labels the report `Self-verified — independent sub-task unavailable`.
+  When it disagrees with a verdict it may append a labelled `Author note (main session)` line
+  beneath the finding — the verdict stands, the dissent is visible, the user decides (amended
+  2026-09-14, issue Q18). The report template's author-perspective sections (Cross-Model
+  Comparison, Additional Findings) are removed with it (issue Q8).
+- **No fallback to the main session.** A group whose Agent call fails is reported as
+  `Unverified — Verifier 실행 실패`; the main session never performs the old Phase 4 itself.
+  (Amended 2026-09-14, issue Q6: the original "degraded mode — main self-verifies, labelled
+  `Self-verified`" rested on the false premise that headless `claude -p` has no Agent tool, and it
+  would have reopened author-side judgment on any partial failure. The user can ask for a re-run
+  with the same payload.)
 
 Applies to all five double-checking skills. For verify/research the subagent receives the document
 plus the Codex result and checks citations itself (no script — the input is bounded and section/URL
 citations are not `file:line`). For rescue `--write` the judged object is the diff. The subagent
-model is inherited from the session, never pinned. No size threshold: one finding still gets a
+model is never pinned in the agent definition: it follows the user's subagent-model setting, else
+  the session's model, and the payload hook strips any per-call `model` the main session passes
+  (amended 2026-09-14, issue R3). No size threshold: one finding still gets a
 subagent.
 
 ## Consequences
