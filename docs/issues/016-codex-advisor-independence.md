@@ -1,6 +1,6 @@
 # 이슈 016 — codex-advisor 검수자 독립성 복원 구현 (슬라이스 S1~S6, S3b)
 
-> 상태: **ready-for-agent** (Q1~Q18·R1~R3 유지. 최종 검수 F1~F9·I1~I3·N1·N2 결정·반영 완료, 2026-09-14) · 생성: 2026-09-11
+> 상태: **in-progress** — S3 완료(`7ad6a83`), 다음 S3b · (Q1~Q18·R1~R3 유지. 최종 검수 F1~F9·I1~I3·N1·N2 결정·반영 완료, 2026-09-14) · 생성: 2026-09-11
 > 스펙 (PRD): `docs/specs/016-codex-advisor-independence.md` — 문제 정의, 유저 스토리, 결정 D1~D6, 그릴 확정 사항 전부 스펙 참조. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/codex-advisor/` (v4.7.1 → v5.0.0, major — R2)
 > 용어집: `docs/context/codex-advisor.md` — **Double-check independence / Verifier / Verifier payload / Author note / Hypothesis exclusion / Finding group / Autonomy policy** · ADR: 0004(전제), 0012(③ 구조)
@@ -386,17 +386,61 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 
 <a id="handoff-2026-09-14"></a>
 
-## 핸드오프 — 구현 세션 (2026-09-14)
+## 핸드오프 — 구현 세션 (2026-09-14, S3 완료 시점)
 
-**상태:** `ready-for-agent`. 최종 검수 F1~F9·I1~I3·N1·N2 결정 완료, 스펙·슬라이스·용어집·ADR 0012 반영. 판정 이력·반영 위치는 [방향 결정 기록](#cc-factcheck-2026-09-14).
+**Goal:** 슬라이스를 착수 순서(`S3 → S3b → S4 → S1 → S2 → S5a → S5b → S6`)대로 구현한다. 유저 지시: 한 번에 슬라이스 하나(큰 슬라이스는 절반), 끝나면 문제·남은 작업 보고, 방향과 어긋나는 게 보이면 멈추고 보고.
 
-**First Action:** 맨 위 착수 순서대로 S3부터. SKILL.md·agent 편집 전 `writing-for-agents`, 구현은 `skill-creator-pro`.
+**First Action:** S3b 구현 — `plugins/codex-advisor/hooks/verifier-payload.mjs`를 새로 만들고 `hooks/hooks.json`에 PreToolUse 항목(matcher `Agent`)을 추가한다(기존 SessionStart 유지). 입력 계약은 아래 **S3 출력 계약**, 규칙은 위 S3b 절. 단위 테스트는 `node --test`로 훅 stdin→stdout만 본다. 통합 검증 1건(`claude -p` 실측·짧은 이름 `verifier`)은 agent 파일이 필요하므로 S4 뒤로 미룬다.
 
-**구현 중 실측할 것** (결정이 실측 결과에 달린 항목):
+**Context:** S3를 먼저 끝낸 이유는 이슈 착수 순서 그대로 — 새 코드(스크립트·훅·agent)를 먼저, SKILL.md는 뒤에서 한 번씩. S3 스크립트는 판단 없이 사실만 다루도록 짰고, 스킬별 판정 지시는 스크립트에 넣지 않고 `evaluation.md` 절 이름만 가리키게 했다(규칙 단일 원본). 유저는 S3만 마무리하고 보고하라고 해서 S3b는 손대지 않았다.
+
+**Current Progress** (git 기준):
+- 브랜치 `develop`. S3 커밋 `7ad6a83` — `plugins/codex-advisor/scripts/prepare-verifier.py`, `scripts/tests/test_prepare_verifier.py`, `scripts/tests/fixtures/`(adversarial·review 5종·rescue), 이 문서 S3 수용기준 17개 체크.
+- 테스트: `python3 plugins/codex-advisor/scripts/tests/test_prepare_verifier.py` → 23개 통과(python3 + git만 필요).
+- S3b·S4·S1·S2·S5a·S5b·S6: 미착수. SKILL.md·README·매니페스트·버전은 아직 4.7.1 그대로.
+
+### S3 출력 계약 (다음 슬라이스가 기대는 것)
+
+- **호출**: 스크립트 docstring이 원본. `snapshot --repo <root>`(트리 SHA만 출력) / 기본 모드 `--skill review|adversarial|rescue --input <codex json> --repo <root> --out-dir <dir> [--ref <ref>]` / `--mode doc --skill verify|research --prompt-file --result-file [--document] --out-dir` / `--mode diff --pre <tree> --prompt-file --repo --out-dir`.
+- **입력 위치**: review는 `codex.stdout`, adversarial은 `result.findings`(없으면 `rawOutput` 비었을 때 `no_output`, 아니면 `parse_error`), rescue read-only는 `result <job> --json` 출력의 `storedJob.result.rawOutput`(최상위 `rawOutput`도 받음).
+- **종료 코드**: 0 성공(stdout JSON 1개) / 2 사용법·입력·git 오류 / 3 `parse_error` / 4 `no_output`. stderr 첫 토큰이 `<kind>:`. 실패 시 stdout 비고 파일도 안 씀. `--out-dir`은 새 디렉터리나 빈 디렉터리만.
+- **stdout(기본 모드)**: `worktree_drift`, `findings[{index, id, file, line_start, line_end, status, reason, group_id}]`, `groups[{group_id, finding_ids, payload}]`, `manifest`. `id`는 `F<index>`, `status`는 `ok|missing|uncited|unverifiable`(`reason: worktree-drift`). rescue read-only는 `findings: []` + `groups[{group_id: "all", status: "whole", payload}]`. diff 모드는 `pre_tree`, `post_tree`, `diff`, `diff_empty` 추가.
+- **payload 파일**: 기본 모드 `<out-dir>/group-<N>.json`(N=1부터), rescue whole·doc·diff는 `group-all.json`. 공통 필드 `format`(`codex-advisor-verifier-payload/1`), `mode`(`findings|whole|doc|diff`), `skill`, `task`, `rules`(`references/evaluation.md` 절대 경로). findings: `repo_root`, `items[{id, severity, citation, existence, finding}]`(`finding`은 Codex 원문, review는 `title/body/location`, `severity` null). whole: `repo_root`, `codex_output`. doc: `prompt_file`, `document`(있을 때만), `codex_result`. diff: `repo_root`, `prompt_file`, `diff`(`<out-dir>/rescue.diff`, manifest 대상 아님).
+- **manifest**: `<out-dir>/manifest.json` = `{"format": ..., "payloads": {"<파일 basename>": "<sha256 of file bytes>"}}`. S3b 훅은 prompt에서 `group-<id>.json` 경로를 찾아 같은 디렉터리 manifest의 basename 키로 대조하면 된다.
+- **S4 연결**: `task` 문자열이 `evaluation.md`의 절 이름 **"Code findings"**(findings) / **"Prose results"**(whole·doc) / **"Rescue diff"**(diff)를 가리킨다. S4에서 이 세 절을 만들거나, 이름을 바꾸면 스크립트의 `TASKS`도 같이 고친다.
+
+### Decisions Made (구현 중 정한 세부 — 스펙에 없던 것)
+
+- 스크립트 이름 `prepare-verifier.py` — S3b 훅 파일명(`verifier-payload.mjs`)과 겹치지 않게.
+- 항목 ID `F<n>`, stdout에 `id`·`reason` 필드 추가(집계 시 되붙이기 편하게).
+- 묶음 크기(6,000자)는 finding 원문의 문자열 필드 길이 합으로 잰다.
+- 리포 밖 절대 경로·`..`로 벗어나는 경로는 `missing`. 드리프트 검사는 `--ref`가 있을 때만, 리포 안 `ok`·`missing` 인용 파일만.
+- review 헤더와 건수가 안 맞으면(`Review comment:`인데 여러 건 등) `parse_error`.
+- 테스트는 `scripts/tests/`에 둠 — 플러그인 설치본에 같이 배포된다. 싫으면 옮길 것.
+
+### What Worked
+
+- Codex formatter 원본을 직접 받아 fixture를 만들었다: `curl -sL https://raw.githubusercontent.com/openai/codex/rust-v0.154.0/codex-rs/protocol/src/review_format.rs` (태그 = 설치 codex-cli 0.154.0). 0건 출력·fallback 문구가 스펙 D3 단계 1 설명과 일치 — 아래 실측 목록의 F5는 해결.
+- companion 출력 구조는 설치본 `~/.claude/plugins/cache/openai-codex/codex/1.0.6/scripts/codex-companion.mjs`의 `executeReviewRun()`·`executeTaskRun()`·`handleResult()`에서 확인.
+- 테스트는 스크립트를 subprocess로 돌려 stdout·종료 코드·파일만 보는 블랙박스 방식, git 저장소는 테스트마다 임시로 만든다.
+
+### What Didn't Work
+
+- ⚠️ review 본문 안의 빈 줄은 formatter가 `"  "`(두 칸 공백)로 찍는다. 완전히 빈 줄은 항목 구분자다. fixture를 틀리게 써서 한 번 실패했다.
+- 과정: 조사·작성 중 진행 상황을 말하지 않아 유저가 두 번 물었다. 중간 보고를 짧게 자주 하고, 보고는 "전체 8개 슬라이스 중 몇 번째" 형식(표 하나)으로.
+
+**Blockers:** 없음.
+
+**구현 중 실측할 것** (남은 것):
 - F1 — 플러그인 스킬의 `disallowed-tools: SendMessage`가 적용되고 프리뷰 응답에 풀리지 않는지(S5a 수용기준). 실패 시 frontmatter 삭제, 한계 문장만.
-- I1 — 짧은 이름 `verifier`로 plugin agent가 뜨는지(S3b 통합 검증). 뜨면 훅 매칭에 포함.
-- F3 — 대형 저장소에서 트리 스냅샷 비용.
-- F5 — 설치 codex-cli의 formatter 0건 출력이 스펙 D3 단계 1 설명과 일치하는지(fixture 작성 시).
+- I1 — 짧은 이름 `verifier`로 plugin agent가 뜨는지(S3b 통합 검증, S4 이후). 뜨면 훅 매칭에 포함.
+- F3 — 대형 저장소 트리 스냅샷 비용. 이 저장소(추적 파일 274개)에서 `snapshot` 0.11초, 대형은 미측정.
 - N1 — `claude -p`에서 질문 도구가 없을 때 프리뷰 동작. 결정은 한계 문서화라 구현을 막지 않음.
 
-**유저 작업 방식:** 질문은 한 번에 하나, 결론 먼저·표 하나·한 줄 근거, 쉬운 말(내부 약어만으로 묻지 않기, 구체 예시). 오버엔지니어링 거부 — 드문 경우는 막지 말고 한계로 적는다. 단 "드물다"는 추측으로 단정하지 말고 근거를 댄다(F3는 흔한 경우였음).
+**Next Steps** (First Action 이후):
+1. S4 — `agents/verifier.md` + `evaluation.md` 재편(위 세 절 이름 포함). 편집 전 `writing-for-agents` 스킬, 문구 참고 `references/compound-engineering-plugin/skills/ce-code-review/references/validator-template.md`. 끝나면 S3b 통합 검증 1건.
+2. S1 → S2 → S5a → S5b → S6 (SKILL.md 편집).
+3. S5a 배선 메모: review·adversarial은 branch 대상(`--scope branch`·`--base`)이면 `--ref HEAD`, working-tree면 생략. rescue `--write`는 Phase 2 직전 `snapshot`, Phase 4에 `--mode diff --pre <tree>`. verify·research는 `--mode doc` 1회.
+4. 수동 검증(대화형 세션, 사람이 프리뷰에 답함)이 필요한 수용기준은 위 §검증 방법대로 — 에이전트 단독으로 체크하지 말고 유저에게 넘긴다.
+
+**유저 작업 방식:** 질문은 한 번에 하나, 결론 먼저·표 하나·한 줄 근거, 쉬운 말(내부 약어만으로 묻지 않기, 구체 예시). 오버엔지니어링 거부 — 드문 경우는 막지 말고 한계로 적는다. 단 "드물다"는 추측으로 단정하지 말고 근거를 댄다(F3는 흔한 경우였음). 진행 보고는 슬라이스 기준으로.
