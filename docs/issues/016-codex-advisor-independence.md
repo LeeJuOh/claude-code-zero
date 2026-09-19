@@ -386,17 +386,17 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 
 <a id="handoff-2026-09-20"></a>
 
-## 핸드오프 — 구현 세션 (2026-09-20, S4 완료 시점)
+## 핸드오프 — 구현 세션 (2026-09-20, S1 완료 시점)
 
-**Goal:** 슬라이스를 착수 순서(`S3 → S3b → S4 → S1 → S2 → S5a → S5b → S6`)대로 구현한다. 앞 네 개(S3·S3b·S4 전반·S4 후반)는 끝났다. **남은 것은 SKILL.md 편집 구간**(S1 → S2 → S5a → S5b → S6)뿐이다.
+**Goal:** 슬라이스를 착수 순서(`S3 → S3b → S4 → S1 → S2 → S5a → S5b → S6`)대로 구현한다. 새 코드 구간(S3·S3b·S4)과 SKILL.md 편집의 첫 슬라이스(S1)가 끝났다. **남은 것은 S2 → S5a → S5b → S6.**
 
-**First Action:** **S1 착수** — `plugins/codex-advisor/skills/codex-rescue/SKILL.md`의 Phase 2 블록 집합을 고친다. 현재 `<completeness_contract>`(110행)·`<verification_loop>`(116행)·`<action_safety>`(121행)·`<grounding_rules>`(127행) 네 블록이 있고 `autonomy_policy`는 아직 이 파일에 한 번도 안 나온다(`grep -c autonomy_policy` = 0). `--write`는 네 블록을 지우고 `<autonomy_policy>` 하나로, read-only는 `<autonomy_policy>`(보고형 행 + follow-through 행) + `<grounding_rules>`로 바꾼다. 102~103행의 분기 설명과 Phase 1.5 프리뷰 예시의 블록 목록도 같이 맞춘다. 본문 문구와 금지 구절 목록은 이 문서 위쪽 §S1 슬라이스에 있다 — 그대로 따른다. 편집 전 `writing-for-agents` 스킬을 불러 읽는다(S4에서 효과를 봤다).
+**First Action:** **S2 착수** — 네 스킬(`codex-adversarial`, `codex-rescue`, `codex-research`, `codex-verify`)의 Phase 1에 **가설 제외(Hypothesis exclusion)** 규칙을 넣는 것부터 시작한다. 규칙 본문·기준 한 줄·대비 예시 표의 내용은 이 문서 위쪽 §S2 슬라이스와 스펙 D1에 있다 — 그대로 따른다. 편집 전 `writing-for-agents` 스킬을 읽는다(S1·S4에서 효과를 봤다). 편집 후 `python3 plugins/codex-advisor/evals/check-prompt-blocks.py`로 페이로드가 골든에서 벗어나지 않았는지 확인한다.
 
-**Context:** "새 코드(스크립트·훅·agent)를 먼저, SKILL.md는 뒤에서 한 번씩"이라는 착수 순서를 따르는 중이었고, 새 코드 쪽이 전부 끝난 지점이다. S4를 전반(agent + 규칙 문서)·후반(fixture 실행)으로 쪼개 돌렸고, 후반에서 Verifier가 네 분류를 실제로 구별하는지 실측해 규칙 문서 결함 2건(R4·R5)을 찾아 유저 결정을 받고 고쳤다. 지금부터는 측정이 아니라 **문서 편집**이다 — S1·S2는 PROMPT_FILE이 seam이라 골든 비교로 검증하고, S5a·S5b는 Phase 4 배선이다.
+**Context:** S1에서 "SKILL.md를 고치면 PROMPT_FILE이 결정론적으로 검증 가능하다"는 걸 실제로 세워놨다 — verify/research는 heredoc이라 골든과 byte 비교가 되고, rescue는 모델이 조립하므로 "copy exactly" 블록 본문이 검사 대상이다. S2도 같은 seam 위에 있지만 가설 제외만은 LM 판단이라 골든으로 못 잰다(§S2 수용기준이 eval 5건을 요구하는 이유). 즉 S2는 **결정론 부분(`--no-preview` 삭제·`resume` 삭제·verify focus 인자)은 스크립트로, 분류 부분은 eval로** 나눠서 재는 슬라이스다.
 
 ### Current Progress
 
-브랜치 `develop`, push 안 함(`origin/develop`보다 앞선 커밋 7개). 이 핸드오프 커밋 직후 기준으로 작업 트리 깨끗.
+브랜치 `develop`, `origin/develop`보다 9 커밋 앞섬(push 안 함). 이 핸드오프 커밋 직후 기준으로 작업 트리 깨끗.
 
 | 슬라이스 | 상태 | 근거 (커밋) |
 |---|---|---|
@@ -404,21 +404,30 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 | S3b | 완료 | `c8ce59d`(단위 테스트 12건). 통합 검증은 S4 후반 실행에서 통과했으나 **실행 산출물을 커밋하지 않으므로 git 증거가 없다** — 의심되면 eval 하네스로 재확인(아래 §eval 하네스 사용법) |
 | S4 전반 | 완료 | `1a3906c` — `agents/verifier.md`, `references/evaluation.md` 재편 |
 | S4 후반 | 완료 | `6a3a04b`(fixture) + `8846605`(빌더·러너·`evals.json` 9종 + 실측 기록) |
-| R4 반영 | 완료 | `83fec68` — raised item 전용 라벨 |
-| R5 반영 | 완료 | `51b9f8c` — 수용기준에서 req 개수 미검사 |
-| S1 | 완료 | rescue `autonomy_policy` 1블록(`--write` 6행 / read-only 3행 — 5행 추가는 아래 R6), research `grounding_rules` 삭제, 출처 주석 3스킬. 검증은 `evals/check-prompt-blocks.py`(골든 `evals/golden/`) |
-| **S2** | **미착수** | `--no-preview`가 rescue·research·verify SKILL.md(각 6·3·3건)와 `plugins/codex-advisor/README.md:127`에 그대로 |
+| R4·R5 반영 | 완료 | `83fec68`, `51b9f8c` |
+| S1 | 완료 | `cac72dc` — rescue 3블록 → `<autonomy_policy>` 1블록, research `grounding_rules` 2곳 삭제, 3스킬 출처 주석, `evals/check-prompt-blocks.py` + `evals/golden/` 신설 |
+| R6 반영 | 완료 | `f0756e2` — read-only `autonomy_policy`에 질문 금지 행 추가 |
+| **S2** | **미착수** | `--no-preview`가 네 SKILL.md와 `plugins/codex-advisor/README.md:127`에 그대로, `resume` 키워드도 그대로 |
 | S5a·S5b·S6 | 미착수 | Phase 4 배선 없음, `marketplace.json` 버전 4.7.1 그대로 |
 
-마지막으로 돌린 검증: `python3 plugins/codex-advisor/scripts/tests/test_prepare_verifier.py` 23건 통과, `node --test plugins/codex-advisor/hooks/tests/verifier-payload.test.mjs` 12건 통과, `unset CLAUDECODE && claude plugin validate .` 통과(경고는 기존 — 로컬 플러그인 버전은 `marketplace.json`에만 둔다). 세 명령 모두 로그를 커밋하지 않으므로 증거는 이 기록뿐 — 편집 후 다시 돌리는 게 맞다.
+마지막으로 돌린 검증(전부 통과, 로그는 커밋 안 함): `python3 plugins/codex-advisor/evals/check-prompt-blocks.py` · `python3 plugins/codex-advisor/scripts/tests/test_prepare_verifier.py` 23건 · `node --test plugins/codex-advisor/hooks/tests/verifier-payload.test.mjs` 12건 · `unset CLAUDECODE && claude plugin validate .`(경고는 기존 — 로컬 플러그인 버전은 `marketplace.json`에만 둔다).
 
-S4 실측 결과와 R4·R5 결정 근거는 [S4 후반 실측 결과](#s4-results-2026-09-19). 이 슬라이스는 다시 돌릴 필요 없다.
+S4 실측 결과와 R4·R5 결정 근거는 [S4 후반 실측 결과](#s4-results-2026-09-19). S3·S3b·S4·S1은 다시 돌릴 필요 없다.
 
-### S1 착수 전 확인된 사실 (grep으로 확인, 2026-09-20)
+### S1 산출물 계약 (S2가 기대는 것)
 
-- `skills/codex-rescue/SKILL.md` 384행. 블록 4개(위 First Action의 행 번호는 편집하면 밀린다 — 태그 이름으로 찾을 것). 105행에 `gpt-5-4-prompting` 출처 주석 1줄이 이미 있다.
-- `skills/codex-research/SKILL.md` 367행. `<grounding_rules>`가 **두 곳**에 있다 — Phase 2의 실제 블록(106행 근처)과 Phase 1.5 프리뷰 예시 안(191행 근처). 둘 다 지워야 프리뷰가 실제 프롬프트와 어긋나지 않는다.
-- `skills/codex-verify/SKILL.md` 362행. S1에서는 **손대지 않는다**(verify 골든이 byte 동일해야 한다 — S1 수용기준).
+- `evals/check-prompt-blocks.py` — 세 task-path 스킬의 PROMPT_FILE 페이로드를 검사한다. verify·research는 heredoc을 통째로 뽑아 `evals/golden/{verify,research}-prompt.txt`와 byte 비교, rescue는 ```xml 펜스의 태그 집합·금지 구절·행 수를 본다. `--update-golden`은 **페이로드 변경이 슬라이스의 목적일 때만** 쓴다(S2의 verify focus 인자가 그 경우다 — 골든이 바뀌는 게 맞다).
+- 판별력 확인함: S1 이전 rescue 파일을 되돌려 돌리면 8건 FAIL이 난다. 통과가 무의미한 스크립트가 아니다.
+- rescue `<autonomy_policy>`는 두 형태다 — `--write`용 6행 전문, read-only용 3행(보고형 + follow-through + 질문 금지, R6). 스크립트가 행 수(6/3… 실제 검사는 `strip().splitlines()` 기준 5행 = 태그 2 + 본문 3)와 `Never end with a question` 1건을 확인한다.
+- 출처 주석은 **페이로드 바깥**에만 있다 — rescue는 `<!-- ... -->`, research·verify는 heredoc 앞의 `# Block provenance —` 주석 블록. 안으로 옮기면 PROMPT_FILE이 오염된다.
+
+### S2 착수 전 확인된 사실 (grep으로 확인, 2026-09-20)
+
+- `--no-preview` 건수: rescue 6 · research 3 · verify 3 · **adversarial 3** · `plugins/codex-advisor/README.md` 1(127행). **`codex-review/SKILL.md`에는 0건**(review는 프롬프트 패싱 스킬이 아니다), `references/companion-usage.md`에도 0건 — 이전 핸드오프가 "세 SKILL.md + companion-usage.md"라 한 것은 틀렸다. 대상은 **네 SKILL.md + 플러그인 README 한 줄**이다. 리포 루트 `README.md`에도 0건.
+- `resume` 키워드 줄: `skills/codex-research/SKILL.md:50`, `skills/codex-verify/SKILL.md:49` 각 1줄. rescue의 `--resume-last`는 유지 대상이다.
+- 네 스킬 모두 `argument-hint` frontmatter에 `[--no-preview]`가 들어 있다(각 4행). Phase 1 파싱과 Phase 1.5 "skip" 문장도 같이 지워야 한다.
+- verify의 `argument-hint`는 현재 `"path/to/document.md [--model SLUG] [--effort LEVEL] [--no-preview]"` — focus text 자리가 없다. S2에서 positional focus를 신설하면서 같이 고친다.
+- 네 스킬의 Phase 1 제목: rescue `## Phase 1: Analyze`, research·verify `## Phase 1: Analyze + assemble blind payload`, adversarial `## Phase 1: Analyze`.
 
 ### S4 산출물 계약 (S5a·S5b가 기대는 것)
 
@@ -476,6 +485,10 @@ python3 plugins/codex-advisor/evals/run-evals.py --out-dir <ws> [--only <name>] 
 - `prepare-verifier.py`를 import해 `TASKS`의 절 이름을 정규식으로 뽑아 `evaluation.md`에 그 절이 실제로 있는지 기계로 확인 — 두 파일이 갈라지는 걸 눈으로 안 찾아도 된다.
 - 편집 전 `writing-for-agents` 스킬 읽기 — "왜"를 설명하고 금지문을 positive로 쓰는 기준이 MUST/NEVER 0건 수용기준과 그대로 맞는다.
 
+- **구조적 결함은 고치지 말고 물어본다** — S1에서 스펙 D2가 read-only에 질문 금지 행을 빼라고 했는데 근거상 넣는 게 맞아 보였다. 임의로 고치지 않고 보고했고, 유저가 이해할 때까지 설명을 **표 → 예시 → "공식 플러그인은 어떤가"** 순으로 바꿔가며 결론을 받았다(R6). 스펙을 이긴 판단은 이렇게 기록으로 남겨야 다음 세션이 되돌리지 않는다.
+- **검증 스크립트의 판별력을 직접 확인** — `check-prompt-blocks.py`를 쓰고 나서 편집 전 파일을 되돌려 돌려봤다(8건 FAIL). "통과했다"는 말에 의미를 주려면 실패도 시켜봐야 한다.
+- **골든은 `git show HEAD:<path>`에서 뽑는다** — 편집 후에 골든을 만들면 방금 만든 실수를 그대로 기준으로 굳힌다. S1은 HEAD 버전의 heredoc에서 골든을 만들고 편집본과 비교했다.
+
 ### What Didn't Work
 
 - ⚠️ **macOS에 `timeout` 명령이 없다.** `claude -p`를 감쌀 때 쓰지 말고 도구 자체의 timeout을 쓴다.
@@ -483,6 +496,11 @@ python3 plugins/codex-advisor/evals/run-evals.py --out-dir <ws> [--only <name>] 
 - ⚠️ 소스 파일에 넓은 범위의 `grep -n 'A\|B\|C' -A 12`나 `sed -n '353,470p'`를 걸면 수천 토큰이 한 번에 들어온다. `awk '/^def f/,/^def g/'`로 함수 하나만 떠서 읽을 것.
 - ⚠️ 수용기준에 **개수를 못박지 말 것**(R5). 규칙이 판단을 Verifier에게 맡긴 지점은 개수가 실행마다 흔들린다. "N개 이상"으로 쓴다.
 - 보고를 길게 썼다가 유저에게 여러 번 지적받았다("장황하게 말하지마"). 결론 한 줄 + 표 하나 + 막힌 것 한 줄로 끝낸다. 설명이 안 통하면 길게 쓰는 게 아니라 **예시로 바꾼다**.
+
+- ⚠️ **이전 핸드오프의 grep 숫자를 믿지 말 것.** "`--no-preview`가 rescue·research·verify 세 곳" + "companion-usage.md 언급"은 틀렸다 — 실제로는 adversarial에도 3건이 있고 companion-usage.md에는 0건이다. 슬라이스 착수 때 숫자를 다시 센다.
+- ⚠️ **Bash 도구의 작업 디렉터리가 호출 사이에 초기화된다.** `cd plugins/codex-advisor` 후 다음 호출이 리포 루트에서 돌기도 했다. 경로는 리포 루트 기준이나 절대경로로 쓴다.
+- ⚠️ zsh에서 `grep --include=*.md`는 `no matches found`로 죽는다. 따옴표로 감싸거나 대상 파일을 직접 나열한다.
+- 유저에게 "read-only 실행" 같은 **우리 내부 용어를 설명 없이 쓰면 대화가 세 번 왕복한다.** 처음부터 "`--write` 없이 돌리면 Codex가 코드를 안 고치고 보고만 하는 모드" 식으로 풀어 쓴다.
 
 **Blockers:** 없음.
 
@@ -495,14 +513,13 @@ python3 plugins/codex-advisor/evals/run-evals.py --out-dir <ws> [--only <name>] 
 
 ### Next Steps
 
-1. **S1** (First Action) — rescue `autonomy_policy` 교체 + research `grounding_rules` 두 곳 삭제 + 블록 출처 주석. verify는 손대지 않는다.
-2. **S2** — 가설 제외 + 프리뷰 항상(`--no-preview` 삭제: 세 SKILL.md + `plugins/codex-advisor/README.md:127` — 리포 루트 README에는 없다) + verify focus 인자 + verify·research `resume` 키워드 삭제.
-3. **S5a** — 코드 경로 3스킬 Phase 4 배선. review·adversarial은 branch 대상(`--scope branch`·`--base`)이면 `--ref HEAD`, working-tree면 생략. rescue `--write`는 Phase 2 직전 `snapshot`, Phase 4에 `--mode diff --pre <tree>`. SKILL.md에 "prompt에 덧붙인 말은 훅이 버린다" 한 줄.
-4. **S5b** — 문서 경로 2스킬(verify·research) `--mode doc` 1회 배선.
-5. **S6** — `spark` 삭제, README에 PreToolUse 훅 설명 추가(현재 SessionStart 훅만 언급), 버전 4.7.1 → 5.0.0(`marketplace.json`), `plugin.json`·`marketplace.json` description 동기화.
-6. 수동 검증(사람이 프리뷰에 답함)이 필요한 수용기준은 §검증 방법대로 — 에이전트 단독으로 체크하지 말고 유저에게 넘긴다.
+1. **S2** (First Action) — 가설 제외 4스킬 + `--no-preview` 삭제(네 SKILL.md + 플러그인 README 127행) + verify positional focus 인자 + verify·research `resume` 키워드 삭제. 결정론 부분은 `check-prompt-blocks.py`로, 분류는 `evals/evals.json`에 5건 추가해 잰다.
+2. **S5a** — 코드 경로 3스킬 Phase 4 배선. review·adversarial은 branch 대상(`--scope branch`·`--base`)이면 `--ref HEAD`, working-tree면 생략. rescue `--write`는 Phase 2 직전 `snapshot`, Phase 4에 `--mode diff --pre <tree>`. SKILL.md에 "prompt에 덧붙인 말은 훅이 버린다" 한 줄.
+3. **S5b** — 문서 경로 2스킬(verify·research) `--mode doc` 1회 배선.
+4. **S6** — `spark` 삭제, README에 PreToolUse 훅 설명 추가(현재 SessionStart 훅만 언급), 버전 4.7.1 → 5.0.0(`marketplace.json`), `plugin.json`·`marketplace.json` description 동기화.
+5. 수동 검증(사람이 프리뷰에 답함)이 필요한 수용기준은 §검증 방법대로 — 에이전트 단독으로 체크하지 말고 유저에게 넘긴다.
 
-**유저 작업 방식:** 질문은 한 번에 하나, 결론 먼저·표 하나·한 줄 근거, 쉬운 말. 장황 금지 — 지적받으면 설명을 늘리는 게 아니라 구체 예시로 바꾼다. 오버엔지니어링 거부 — 드문 경우는 막지 말고 한계로 적되 "드물다"는 근거를 댄다. 아키텍처·메커니즘·철학에 어긋나는 게 보이면 **임의로 고치지 말고 멈추고 보고**한다. 진행 보고는 슬라이스 기준이고 시작할 때도 한 번 한다. 커밋은 슬라이스마다, push는 요청 시에만.
+**유저 작업 방식:** 질문은 한 번에 하나, 결론 먼저·표 하나·한 줄 근거, 쉬운 말. 장황 금지 — 지적받으면 설명을 늘리는 게 아니라 구체 예시로 바꾼다. 오버엔지니어링 거부 — 드문 경우는 막지 말고 한계로 적되 "드물다"는 근거를 댄다. 아키텍처·메커니즘·철학에 어긋나는 게 보이면 **임의로 고치지 말고 멈추고 보고**한다. 진행 보고는 슬라이스 기준이고 **시작할 때도 한 번** 한다. 커밋은 슬라이스마다, push는 요청 시에만.
 
 <a id="s4-results-2026-09-19"></a>
 
