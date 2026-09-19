@@ -1,0 +1,23 @@
+Five issues found in order handling.
+
+Full review comments:
+
+- [P2] Mutable default argument — {REPO}/app/orders.py:4-6
+  lines=[] is created once at definition time, so every caller that omits the
+  argument shares and grows the same list.
+
+- [P2] Bare except swallows every error — {REPO}/app/orders.py:9-13
+  The bare except catches KeyboardInterrupt and SystemExit as well as the
+  missing key it means to handle.
+
+- [P2] Cache grows without bound — {REPO}/app/orders.py:16-17
+  remember() writes into the module-level dict with no eviction, so a long
+  running process keeps every order it ever saw.
+
+- [P2] Integer division drops the remainder — {REPO}/app/orders.py:20-21
+  split_evenly() discards the remainder, so the split does not add back up to
+  the total.
+
+- [P2] Float compared with == — {REPO}/app/orders.py:24-25
+  balance == 0.0 is false for a residue like 1e-18 that arithmetic leaves
+  behind, so a settled order reads as unpaid.

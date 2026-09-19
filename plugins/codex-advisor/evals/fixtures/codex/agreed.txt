@@ -1,0 +1,7 @@
+One issue found in the data access layer.
+
+Review comment:
+
+- [P1] SQL query built by string interpolation — {REPO}/app/auth.py:6-6
+  The username argument is interpolated straight into the SQL text instead of
+  being bound as a parameter, so a crafted username changes the query.
