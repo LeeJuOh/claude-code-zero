@@ -1,7 +1,7 @@
 ---
 name: codex-adversarial
 description: "Run Codex adversarial review — actively tries to break confidence in the change. Use when asked \"adversarial review\", \"red-team this change\", or wants thorough security/correctness challenge."
-argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL] [--no-preview] [focus text]"
+argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL] [focus text]"
 allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -52,7 +52,32 @@ Rules:
   - Never pass through.
 - **Duplicate flag** → `AskUserQuestion` which one.
 - **Ambiguous** → `AskUserQuestion` (interactive) or exit 1 (non-interactive, see `references/companion-usage.md §9`).
-- **`--no-preview`** → skip Phase 1.5 draft review. Power users who trust the translation.
+
+### Hypothesis exclusion
+
+Codex is the second opinion here, and a reviewer handed a cause confirms that
+cause instead of finding its own — anchoring. So the focus text carries **where
+to look and what was observed**, and your cause theory stays behind. Sort what
+you were given into three kinds:
+
+| Kind | Example | Forwarded |
+|---|---|---|
+| **Evidence** — symptom, repro step, log line, the request in the user's own words | "POST /login with an empty password returns 500" | yes |
+| **Focus** — an area to examine, no claim attached | "look at the login handler", "the null handling around session setup" | yes |
+| **Hypothesis** — a claim about cause, a suspected `file:line`, the answer you expect | "auth.ts:42 is missing a null check, that's the bypass", "it's probably the session cache race" | no |
+
+The boundary in one line: **a claim about cause makes it a hypothesis; a bare
+area makes it focus.** "Check the null handling in the login handler" points at
+code and claims nothing — focus. "The login handler's missing null check lets
+auth through" hands over the finding — hypothesis.
+
+Apply this the same way whatever the words' origin — whether the user typed the
+slash command or you read their intent and invoked this skill yourself. Your own
+invocations are where hypotheses leak hardest, and a test for "who typed this"
+would make one sentence behave two ways.
+
+Keep the excluded text. Phase 1.5 shows it, and the user can send it after all
+in one step.
 
 **Input validation** (allowed in Phase 1):
 
@@ -91,8 +116,6 @@ For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 
 ## Phase 1.5: Draft Review
 
-**Skip this phase entirely if `--no-preview` was parsed in Phase 1.**
-
 Before launching the adversarial review, show the user the exact
 command that will be executed. Adversarial uses Pattern A (positional
 args to companion), so the command itself IS the prompt.
@@ -121,6 +144,16 @@ Original: "pls look at the login handler for sql injection stuff"
 → focus: "check SQL injection in login handler"
 ```
 
+Then always print what the hypothesis rule held back, so the user sees the
+rule's decision rather than having to infer it from what survived:
+
+```
+Excluded (hypothesis): "probably the null check at auth.ts:42"
+```
+
+Write `(none)` when nothing was excluded — an absent line reads as "the rule
+didn't run".
+
 ### Ask for approval
 
 Use `AskUserQuestion` exactly once:
@@ -128,12 +161,16 @@ Use `AskUserQuestion` exactly once:
 - Question: "This command will run the adversarial review."
 - Options:
   1. "Approve — execute as shown"
-  2. "Needs changes"
-  3. "Cancel"
+  2. "Send the excluded lines too" — offer this only when something was excluded
+  3. "Needs changes"
+  4. "Cancel"
 
 ### Handle the response
 
 - **Approve** → proceed to Phase 2 with the displayed parameters.
+- **Send the excluded lines too** → append the excluded text to the focus
+  text, then re-display and re-ask. The user asked for it, so it travels —
+  but they see the command it produced before it runs.
 - **Needs changes** → the user will describe what to change (e.g.,
   change base branch, adjust scope, reword focus text). Apply edits,
   re-display, re-ask. No loop limit.

@@ -124,7 +124,7 @@ You can type anything — English, Korean, flags, meta-instructions, emoji, typo
 Every skill does the same four things in order:
 
 1. **Analyze** — parse your input into clean companion flags. Drop junk, obey meta-instructions addressed to Claude, reject unknown flags with a clarifying question instead of silently forwarding them.
-2. **Draft review** — for prompt-passing skills (rescue, research, verify, adversarial), show the exact prompt or command that will be sent to Codex and wait for your approval before proceeding. Skip with `--no-preview`.
+2. **Draft review** — for prompt-passing skills (rescue, research, verify, adversarial), show the exact prompt or command that will be sent to Codex, plus an `Excluded (hypothesis):` line naming anything the skill held back, and wait for your approval before proceeding.
 3. **Invoke** — run the Official Codex plugin's companion in the background, so long jobs don't die on Bash's 5-minute timeout.
 4. **Double-check** — once Codex returns, read only the files and lines it cited. Classify each finding (Agreed / Disputed / Nuanced / False Positive / Uncited).
 5. **Report** — present findings with the classification, save to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failed runs are saved to `<type>-<timestamp>-failed.md` with the categorized error.

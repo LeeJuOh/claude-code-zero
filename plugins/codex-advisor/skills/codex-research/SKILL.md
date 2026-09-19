@@ -1,7 +1,7 @@
 ---
 name: codex-research
 description: "Deep-dive research using Codex with Claude's cross-model synthesis. Use when asked \"codex research\", \"deep dive with codex\", \"investigate this topic\". Not for code review or plan verification."
-argument-hint: "topic [path/to/document.md] [--model SLUG] [--effort LEVEL] [--no-preview]"
+argument-hint: "topic [path/to/document.md] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -47,12 +47,35 @@ Rules:
 
 - **Plain text** → treat as the research topic/question.
 - **A single path** → treat as a context document; the research task comes from the surrounding text or the filename.
-- **`resume [follow-up]`** → pass `--resume-last` to the companion.
 - **Mixed** (topic + path) → both, in the blind payload template.
 - **Meta-instructions addressed to YOU** (e.g. "in Korean", "quickly", "thoroughly" — often typed in the user's own language) → obey for your own behavior, never include in the prompt.
 - **No args** → `AskUserQuestion`: "What should I research?"
 - **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. research has no companion flags to forward. `--model`/`--effort` are the only skill-level flags and route through `apply-codex-config.py`, not the companion.
-- **`--no-preview`** → skip Phase 1.5 draft review. Power users who trust the translation.
+
+### Hypothesis exclusion
+
+Codex is the investigator here, and an investigator handed an answer verifies
+that answer instead of searching — anchoring. So the topic carries **what to
+investigate and what has been observed**, and your own conclusion stays behind.
+Sort what you were given into three kinds:
+
+| Kind | Example | Forwarded |
+|---|---|---|
+| **Evidence** — symptom, measurement, the question in the user's own words | "p99 doubled after the 3.2 upgrade" | yes |
+| **Focus** — an area or angle to investigate, no claim attached | "compare tRPC and GraphQL for our shape of API", "the caching layer" | yes |
+| **Hypothesis** — a claim about cause, a preferred conclusion, the answer you expect | "the regression is the new connection pool default", "tRPC is the right call, confirm it" | no |
+
+The boundary in one line: **a claim about the answer makes it a hypothesis; a
+bare area or question makes it focus.** "Why did p99 double after 3.2?" asks —
+focus. "p99 doubled because 3.2 changed the pool default" answers — hypothesis.
+
+Apply this the same way whatever the words' origin — whether the user typed the
+slash command or you read their intent and invoked this skill yourself. Your own
+invocations are where hypotheses leak hardest, and a test for "who typed this"
+would make one sentence behave two ways.
+
+Keep the excluded text. Phase 1.5 shows it, and the user can send it after all
+in one step.
 
 ### If a document was provided, validate it
 
@@ -153,8 +176,6 @@ For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (
 
 ## Phase 1.5: Draft Review
 
-**Skip this phase entirely if `--no-preview` was parsed in Phase 1.**
-
 Before sending anything to Codex, show the user what will be sent.
 The XML payload is already written to PROMPT_FILE (without the
 document body for document mode — that's blind-appended). Show the
@@ -192,12 +213,17 @@ Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
 ```
 
 Document: `benchmarks/results.md` (512 lines) — blind-appended as `<context_document>`
+Excluded (hypothesis): "the regression is the new connection pool default"
 ````
 
 For topic-only mode (no document), omit the Document line.
 
 The XML block must reflect the **exact content** written to
 PROMPT_FILE. Do not summarize or abbreviate the XML structure.
+
+Always print the `Excluded (hypothesis):` line, with `(none)` when nothing was
+excluded, so the user sees the rule's decision rather than inferring it from
+what survived.
 
 ### Ask for approval
 
@@ -206,12 +232,17 @@ Use `AskUserQuestion` exactly once:
 - Question: "This prompt will be sent to Codex research."
 - Options:
   1. "Approve — execute as shown"
-  2. "Needs changes"
-  3. "Cancel"
+  2. "Send the excluded lines too" — offer this only when something was excluded
+  3. "Needs changes"
+  4. "Cancel"
 
 ### Handle the response
 
 - **Approve** → proceed to Phase 2 with the current PROMPT_FILE.
+- **Send the excluded lines too** → fold the excluded text back into the
+  topic, rewrite PROMPT_FILE the same way as below, then re-display and
+  re-ask. The user asked for it, so it travels — but they see the prompt it
+  produced before it runs.
 - **Needs changes** → the user will describe what to change (e.g.,
   topic rewording, adding/removing XML blocks, changing research
   framing). Rewrite PROMPT_FILE with the updated content (re-append

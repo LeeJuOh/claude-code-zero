@@ -1,7 +1,7 @@
 ---
 name: codex-verify
 description: "Verify a plan or document using Codex as independent reviewer with PASS/FAIL verdict. Use when asked \"codex verify\", \"verify this plan\", \"review this doc for issues\"."
-argument-hint: "path/to/document.md [--model SLUG] [--effort LEVEL] [--no-preview]"
+argument-hint: "path/to/document.md [focus text] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -41,17 +41,45 @@ Unknown flags silently become task prompt content
 
 ### Parse `$ARGUMENTS`
 
-**Whitelist for this skill:** `--model <slug>`, `--effort <level>` (skill-level, route through `apply-codex-config.py` — never reach the companion). The document path is another skill input, not a companion flag.
+**Whitelist for this skill:** `--model <slug>`, `--effort <level>` (skill-level, route through `apply-codex-config.py` — never reach the companion). The document path and the focus text are other skill inputs, not companion flags.
 
-Rules:
+Take the document path first, then read whatever text is left as **focus** —
+natural-language direction for the review, appended to the `<task>` focus areas.
 
-- **A single path** → treat as the document to verify.
-- **`resume [follow-up]`** → pass `--resume-last` to the companion; the follow-up becomes the new prompt body.
+- **A single path** → the document to verify.
+- **Text beside the path** → the focus text. Join the non-flag, non-meta tokens
+  with spaces. No focus text is the normal case; the payload is then identical
+  to a run with no focus at all.
 - **Multiple paths** → `AskUserQuestion` which one.
 - **Meta-instructions addressed to YOU** (e.g. "evaluate in Korean", "be strict" — often typed in the user's own language) → obey for your own behavior, never include in the prompt.
 - **No args** → `AskUserQuestion`: "What document should I verify?"
 - **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. verify has no companion flags to forward. `--model`/`--effort` are skill-level and route through `apply-codex-config.py`.
-- **`--no-preview`** → skip Phase 1.5 draft review. Power users who trust the translation.
+
+### Hypothesis exclusion
+
+Codex is the independent reviewer here, and a reviewer handed a conclusion
+confirms that conclusion instead of forming its own — anchoring. So the focus
+text carries **where to look and what was observed**, and your own read of the
+document stays behind. Sort what you were given into three kinds:
+
+| Kind | Example | Forwarded |
+|---|---|---|
+| **Evidence** — symptom, observed condition, the request in the user's own words | "the rollout section changed twice last week" | yes |
+| **Focus** — an area to examine, no claim attached | "security angle", "look hard at the migration sequencing" | yes |
+| **Hypothesis** — a claim about what is wrong, a named section plus a verdict, the answer you expect | "§4's rollback plan can't work without a feature flag", "the estimates are the weak part" | no |
+
+The boundary in one line: **a claim about what is wrong makes it a hypothesis; a
+bare area makes it focus.** "Check the rollback plan" points somewhere and
+claims nothing — focus. "The rollback plan is missing a feature flag" hands over
+the finding — hypothesis.
+
+Apply this the same way whatever the words' origin — whether the user typed the
+slash command or you read their intent and invoked this skill yourself. Your own
+invocations are where hypotheses leak hardest, and a test for "who typed this"
+would make one sentence behave two ways.
+
+Keep the excluded text. Phase 1.5 shows it, and the user can send it after all
+in one step.
 
 ### Resolve the document path
 
@@ -96,6 +124,7 @@ Focus areas:
 - Feasibility risks (what could go wrong?)
 - Missing dependencies or sequencing issues
 - Internal contradictions or ambiguous requirements
+Pay particular attention to: <literal focus text from Phase 1 — omit this whole line when no focus text was given>
 </task>
 
 <structured_output_contract>
@@ -144,8 +173,10 @@ If neither flag was provided, still call with two empty strings so the user sees
 **Before Phase 2, also print the Parsed line:**
 
 ```
-Parsed: doc="docs/plan.md" (DOC_LINES=247), payload=PROMPT_FILE
+Parsed: doc="docs/plan.md" (DOC_LINES=247), focus="security angle", payload=PROMPT_FILE
 ```
+
+Omit `focus=` when there was none.
 
 Order: apply-codex-config.py output first, Parsed line second. Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, and `USER_DOC` paths. They are needed in later phases.
 
@@ -154,8 +185,6 @@ For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (
 ---
 
 ## Phase 1.5: Draft Review
-
-**Skip this phase entirely if `--no-preview` was parsed in Phase 1.**
 
 Before sending anything to Codex, show the user the verification
 prompt. The XML payload is already written to PROMPT_FILE (with the
@@ -181,6 +210,7 @@ Focus areas:
 - Feasibility risks (what could go wrong?)
 - Missing dependencies or sequencing issues
 - Internal contradictions or ambiguous requirements
+Pay particular attention to: security angle
 </task>
 
 <structured_output_contract>
@@ -203,10 +233,16 @@ Check for interactions between sections that may create contradictions.
 ```
 
 Document: `docs/plan.md` (247 lines) — blind-appended as `<document>`
+Excluded (hypothesis): "§4's rollback plan can't work without a feature flag"
 ````
 
 The XML block must reflect the **exact content** written to
-PROMPT_FILE (minus the document body). Do not summarize.
+PROMPT_FILE (minus the document body). Do not summarize. The example above
+shows a run with focus text — drop that line when there was none.
+
+Always print the `Excluded (hypothesis):` line, with `(none)` when nothing was
+excluded, so the user sees the rule's decision rather than inferring it from
+what survived.
 
 ### Ask for approval
 
@@ -215,12 +251,17 @@ Use `AskUserQuestion` exactly once:
 - Question: "This verification prompt will be sent to Codex."
 - Options:
   1. "Approve — execute as shown"
-  2. "Needs changes"
-  3. "Cancel"
+  2. "Send the excluded lines too" — offer this only when something was excluded
+  3. "Needs changes"
+  4. "Cancel"
 
 ### Handle the response
 
 - **Approve** → proceed to Phase 2 with the current PROMPT_FILE.
+- **Send the excluded lines too** → append the excluded text to the focus
+  text, rewrite PROMPT_FILE the same way as below, then re-display and re-ask.
+  The user asked for it, so it travels — but they see the prompt it produced
+  before it runs.
 - **Needs changes** → the user will describe what to change. Common
   edits: reword focus areas, add domain-specific review criteria,
   remove irrelevant focus areas, change the review tone. Rewrite

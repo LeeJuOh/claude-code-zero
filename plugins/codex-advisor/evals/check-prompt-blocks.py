@@ -31,6 +31,23 @@ GOLDEN_DIR = os.path.join(EVALS_DIR, "golden")
 ASK_FIRST_PHRASES = ["call out", "before taking", "ask first", "ask the user",
                      "require confirmation"]
 
+# The four prompt-passing skills. Preview is their only window onto the
+# hypothesis classification, which is Claude's judgement and so cannot be
+# checked from a golden -- a flag that skipped the preview would close the one
+# window there is, and resuming a Codex thread would carry the previous turn's
+# hypotheses past the rule entirely.
+PREVIEW_SKILLS = ["codex-adversarial", "codex-rescue", "codex-research", "codex-verify"]
+
+# Hypothesis exclusion applies to the skills that judge -- handing a reviewer
+# the cause makes it confirm that cause. rescue builds instead, so its task
+# text is the order, not a claim, and travels verbatim.
+REVIEW_SKILLS = ["codex-adversarial", "codex-research", "codex-verify"]
+
+# verify grew a positional focus argument. Runs without it must still produce
+# the pre-S2 payload byte for byte, so the golden keeps the no-focus form and
+# this line is stripped before the comparison.
+VERIFY_FOCUS_PREFIX = "Pay particular attention to:"
+
 failures = []
 
 
@@ -57,6 +74,15 @@ def tags(block):
     return re.findall(r"^<([a-z_]+)>$", block, re.M)
 
 
+def drop_line(payload, prefix):
+    """Payload minus the one line starting with `prefix` (None if absent)."""
+    lines = payload.split("\n")
+    hits = [l for l in lines if l.startswith(prefix)]
+    if len(hits) != 1:
+        return None
+    return "\n".join(l for l in lines if not l.startswith(prefix))
+
+
 def compare_golden(name, payload, update):
     path = os.path.join(GOLDEN_DIR, name)
     if update:
@@ -75,8 +101,35 @@ def main():
     research = read("skills/codex-research/SKILL.md")
     rescue = read("skills/codex-rescue/SKILL.md")
 
-    compare_golden("verify-prompt.txt", heredoc_payload(verify), args.update_golden)
+    # verify: the focus line is optional at run time, so the golden holds the
+    # payload a focus-less run produces and the placeholder is checked separately.
+    verify_payload = heredoc_payload(verify)
+    no_focus = drop_line(verify_payload, VERIFY_FOCUS_PREFIX)
+    check(no_focus is not None,
+          "verify payload should carry exactly one %r line" % VERIFY_FOCUS_PREFIX)
+    check("<literal focus text from Phase 1" in verify_payload,
+          "verify focus line should be filled from the Phase 1 focus text")
+    compare_golden("verify-prompt.txt", no_focus or verify_payload, args.update_golden)
     compare_golden("research-prompt.txt", heredoc_payload(research), args.update_golden)
+
+    # The preview is the only check on the hypothesis rule, so nothing may skip
+    # it and no skill may continue an earlier Codex thread around it.
+    for name in PREVIEW_SKILLS:
+        text = read("skills/%s/SKILL.md" % name)
+        check("--no-preview" not in text, "%s still offers --no-preview" % name)
+    # rescue is a build path: its <task> is the order itself, so the rule would
+    # delete the job along with the cause claim. The premise line in its
+    # autonomy_policy covers the wrong-order case instead.
+    for name in REVIEW_SKILLS:
+        text = read("skills/%s/SKILL.md" % name)
+        check("Excluded (hypothesis)" in text,
+              "%s preview does not show the excluded hypotheses" % name)
+        check("Hypothesis exclusion" in text,
+              "%s has no hypothesis exclusion rule in Phase 1" % name)
+    check("--no-preview" not in read("README.md"), "README still documents --no-preview")
+    for name in ("codex-verify", "codex-research"):
+        check("resume" not in read("skills/%s/SKILL.md" % name),
+              "%s still resumes a Codex thread" % name)
 
     # research: grounding_rules duplicated structured_output_contract's
     # facts/inferences split, so it is gone from the payload and the preview.
@@ -107,10 +160,17 @@ def main():
               "autonomy_policy should settle scope once with 'already approved'")
         check(full.count("Never end with a question") == 1,
               "autonomy_policy should say 'Never end with a question' once")
-        check(len(readonly.strip().splitlines()) == 5,
-              "read-only autonomy_policy should keep the reporting, follow-through and question lines")
+        check(len(readonly.strip().splitlines()) == 6,
+              "read-only autonomy_policy should keep the reporting, follow-through, question and premise lines")
         check(readonly.count("Never end with a question") == 1,
               "read-only autonomy_policy should say 'Never end with a question' once")
+        # A wrong premise is the one failure Phase 4 cannot see: it checks that
+        # the requested change landed, not that it was the right change.
+        for form, label in ((full, "autonomy_policy"), (readonly, "read-only autonomy_policy")):
+            check(form.count("stated cause does not hold") == 1,
+                  "%s should ask Codex to report a premise that does not hold" % label)
+        check("make the requested change anyway" in full,
+              "autonomy_policy should keep the requested change when the premise fails")
 
     # Provenance: every retained block names the guide and section it came from,
     # so the next model guide tells us what to re-sync.

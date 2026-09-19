@@ -1,7 +1,7 @@
 ---
 name: codex-rescue
 description: "Delegate an implementation task to Codex, then Claude reviews the result. Use when asked \"codex rescue\", \"delegate to codex\", \"have codex do it\", or wants Codex to implement or fix something."
-argument-hint: "task description [--write] [--model MODEL] [--effort LEVEL] [--resume-last|--resume|--fresh] [--no-preview]"
+argument-hint: "task description [--write] [--model MODEL] [--effort LEVEL] [--resume-last|--resume|--fresh]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
 ---
 
@@ -50,7 +50,6 @@ You are a translator. Use LM intelligence, not regex tables.
 - `--write` (bool; default ON for implementation, OFF for read-only investigation) — **companion flag**, included in the Phase 2 invocation.
 - `--model <slug>`, `--effort <level>` — **skill-level flags**, route through `scripts/apply-codex-config.py` (see Apply block below) and **never reach the companion**. The alias `spark` auto-expands to `gpt-5.3-codex-spark`. Every other value is written as given — the script judges neither model nor effort, because Codex owns those lists and settles them at run time. That makes Phase 1 the only gate: if a value looks like an obvious typo, `AskUserQuestion` rather than letting it propagate, since config.toml is global and nothing downstream will second-guess it.
 - `--resume-last` / `--resume` / `--fresh` — mutually exclusive companion flags. Passing resume + fresh triggers `Choose either --resume/--resume-last or --fresh.` (`:750`). If ANALYZE produces a conflict, `AskUserQuestion`; never forward both.
-- `--no-preview` (bool) — skip Phase 1.5 draft review. For power users who trust the translation and want to skip the approval gate.
 
 **Everything else in `$ARGUMENTS` is the task description**, which
 becomes the `<task>` body — you wrap it in prompt blocks below (see
@@ -119,6 +118,7 @@ For change or fix requests, make the requested in-scope local changes and run re
 Bias towards action. Do not stop at a partial answer, a proposed plan, or an offer to continue.
 Do not perform external writes, destructive actions, or scope expansions the task did not ask for; list them in the final report instead. What the task itself asks for is already approved.
 Never end with a question — no one can answer it.
+If the task's stated cause does not hold, make the requested change anyway and say so in the final report.
 Do not write tests for reversible, low-impact changes that mirror the implementation.
 </autonomy_policy>
 ```
@@ -128,11 +128,19 @@ reporting and follow-through ones. The question line stays: a read-only
 run reaches Codex through the same companion, so a question ends the
 turn there too, and the job still reports `completed`.
 
+The premise line is what keeps a wrong order from passing as a clean run.
+The task text travels verbatim, cause claim included, so Codex may be sent to
+the wrong place — and Phase 4 only checks whether the requested change landed,
+not whether it was the right change. Reporting the mismatch costs a sentence;
+acting on it would be the scope expansion the line above forbids, so the
+read-only form asks only for the report.
+
 ```xml
 <autonomy_policy>
 For review, diagnose, or research requests, inspect the relevant materials and report. Do not implement changes.
 Bias towards action. Do not stop at a partial answer, a proposed plan, or an offer to continue.
 Never end with a question — no one can answer it.
+If the task's stated cause does not hold, say so in the final report.
 </autonomy_policy>
 ```
 
@@ -149,14 +157,10 @@ If a point is a hypothesis, label it clearly.
 Assemble the wrapped prompt with `<task>` first, then the selected
 blocks in the order listed. This wrapped XML — **not** the bare task
 text — is what Phase 1.5 previews and Phase 2 writes to PROMPT_FILE.
-Because wrapping happens here in Phase 1, it still applies when
-`--no-preview` skips the preview gate.
 
 ---
 
 ## Phase 1.5: Draft Review
-
-**Skip this phase entirely if `--no-preview` was parsed in Phase 1.**
 
 Before sending anything to Codex, show the user exactly what will be
 sent. The user approved the *intent* — now they approve the *prompt*.
@@ -182,6 +186,7 @@ For change or fix requests, make the requested in-scope local changes and run re
 Bias towards action. Do not stop at a partial answer, a proposed plan, or an offer to continue.
 Do not perform external writes, destructive actions, or scope expansions the task did not ask for; list them in the final report instead. What the task itself asks for is already approved.
 Never end with a question — no one can answer it.
+If the task's stated cause does not hold, make the requested change anyway and say so in the final report.
 Do not write tests for reversible, low-impact changes that mirror the implementation.
 </autonomy_policy>
 ```
@@ -241,11 +246,9 @@ git status --porcelain > "$PRE_LIST" 2>/dev/null || true
 git rev-parse HEAD > "$PRE_SHA"
 
 # Write the approved WRAPPED prompt from Phase 1.5 — <task> with the
-# user's verbatim text plus the Phase 1 blocks. With --no-preview the
-# preview is skipped, but the wrapping is NOT: write the wrapped prompt
-# assembled in Phase 1, never the bare task text.
+# user's verbatim text plus the Phase 1 blocks, never the bare task text.
 cat > "$PROMPT_FILE" <<'EOF'
-<literal approved wrapped XML prompt from Phase 1.5 (or the Phase 1 wrapped prompt if --no-preview)>
+<literal approved wrapped XML prompt from Phase 1.5>
 EOF
 
 # Launch via stdin pipe. Each flag line below is optional — include only
