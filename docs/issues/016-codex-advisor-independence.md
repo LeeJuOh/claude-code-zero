@@ -6,7 +6,7 @@
 > 용어집: `docs/context/codex-advisor.md` — **Double-check independence / Verifier / Verifier payload / Author note / Hypothesis exclusion / Finding group / Autonomy policy** · ADR: 0004(전제), 0012(③ 구조)
 > 원칙: 강제는 구조로, 판단은 fresh 컨텍스트로, fact는 스크립트로. 지시문은 "왜"를 설명하고 MUST를 남발하지 않는다(skill-creator 가이드).
 
-> **구현 세션:** 맨 아래 [핸드오프](#handoff-2026-09-20)부터 읽는다. 최종 검수 판정 이력과 반영 위치는 [방향 결정 기록](#cc-factcheck-2026-09-14), 검수 원문은 [최종 검수 기록](#final-review-2026-09-14). 구현 규칙의 원본은 아래 슬라이스와 스펙이다.
+> **구현 세션:** 맨 아래 [핸드오프](#handoff-2026-09-19)부터 읽는다. (이전 세션들이 2026-09-20으로 미래 날짜를 붙인 기록이 섞여 있다 — 선후는 날짜가 아니라 커밋 순서로 본다.) 최종 검수 판정 이력과 반영 위치는 [방향 결정 기록](#cc-factcheck-2026-09-14), 검수 원문은 [최종 검수 기록](#final-review-2026-09-14). 구현 규칙의 원본은 아래 슬라이스와 스펙이다.
 
 ## Slices (tracer bullets)
 
@@ -384,19 +384,19 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 | I2 | 묶음 규칙 | S3 | Finding group |
 | 동기화 4건 · N2 · W2 | D3 단계 3·verify/research 절, 그릴 가이드 역사 기록 표시 | S3b 의존성 · S5a 시작 · S5b 본문 · S6 버전 | ADR Decision(출력·verify/research 문장) |
 
-<a id="handoff-2026-09-20"></a>
+<a id="handoff-2026-09-19"></a>
 
-## 핸드오프 — 구현 세션 (2026-09-20, S1 완료 시점)
+## 핸드오프 — 구현 세션 (2026-09-19, S2 완료 시점)
 
-**Goal:** 슬라이스를 착수 순서(`S3 → S3b → S4 → S1 → S2 → S5a → S5b → S6`)대로 구현한다. 새 코드 구간(S3·S3b·S4)과 SKILL.md 편집의 첫 슬라이스(S1)가 끝났다. **남은 것은 S2 → S5a → S5b → S6.**
+**Goal:** 슬라이스를 착수 순서(`S3 → S3b → S4 → S1 → S2 → S5a → S5b → S6`)대로 구현한다. 새 코드 구간(S3·S3b·S4)과 SKILL.md 편집 구간(S1·S2)이 끝났다. **남은 것은 S5a → S5b → S6** — 지금까지 만들어둔 스크립트·훅·Verifier를 스킬 Phase 4에 실제로 배선하는 구간이다.
 
-**First Action:** **S2 착수** — 네 스킬(`codex-adversarial`, `codex-rescue`, `codex-research`, `codex-verify`)의 Phase 1에 **가설 제외(Hypothesis exclusion)** 규칙을 넣는 것부터 시작한다. 규칙 본문·기준 한 줄·대비 예시 표의 내용은 이 문서 위쪽 §S2 슬라이스와 스펙 D1에 있다 — 그대로 따른다. 편집 전 `writing-for-agents` 스킬을 읽는다(S1·S4에서 효과를 봤다). 편집 후 `python3 plugins/codex-advisor/evals/check-prompt-blocks.py`로 페이로드가 골든에서 벗어나지 않았는지 확인한다.
+**First Action:** **S5a 착수** — 코드 경로 3스킬(`codex-review`, `codex-adversarial`, `codex-rescue`)의 Phase 4를 `scripts/prepare-verifier.py` + `codex-advisor:verifier` 서브에이전트로 교체하는 것부터 시작한다. 배선 내용은 이 문서 위쪽 §S5a 슬라이스와 아래 §S3 출력 계약·§S4 산출물 계약에 이미 다 적혀 있다 — 새로 설계하지 말고 그대로 배선한다. 편집 전 `writing-for-agents` 스킬을 읽는다(S1·S2·S4에서 세 번 효과를 봤다). 편집 후 `python3 plugins/codex-advisor/evals/check-prompt-blocks.py`를 돌린다 — S5a는 Phase 4만 고치지만, 이 스크립트가 Phase 1 페이로드를 안 물렸는지 확인해주는 회귀 장치다.
 
-**Context:** S1에서 "SKILL.md를 고치면 PROMPT_FILE이 결정론적으로 검증 가능하다"는 걸 실제로 세워놨다 — verify/research는 heredoc이라 골든과 byte 비교가 되고, rescue는 모델이 조립하므로 "copy exactly" 블록 본문이 검사 대상이다. S2도 같은 seam 위에 있지만 가설 제외만은 LM 판단이라 골든으로 못 잰다(§S2 수용기준이 eval 5건을 요구하는 이유). 즉 S2는 **결정론 부분(`--no-preview` 삭제·`resume` 삭제·verify focus 인자)은 스크립트로, 분류 부분은 eval로** 나눠서 재는 슬라이스다.
+**Context:** S1·S2로 **스킬이 Codex에 보내는 것**(Phase 1 페이로드)은 결정론적으로 재게 됐고, S3·S3b·S4로 **Codex 답을 받은 뒤 판정하는 것**도 다 만들어졌다. 그런데 **두 덩어리가 아직 연결되지 않았다** — 어떤 SKILL.md도 `prepare-verifier.py`나 Verifier를 부르지 않고, Phase 4는 여전히 메인이 직접 판정하는 예전 문구(adversarial 기준 `Agree`/`Disagree`/`Nuance`/`False Positive`/`Uncited`)다. S5a·S5b는 새 설계가 아니라 그 배선 작업이다. S2에서 가장 오래 쓴 것은 코드보다 스펙 D1이 rescue를 가설 제외 대상에 넣은 게 다른 두 상위 규칙과 충돌한다는 것을 유저에게 설명하는 일이었다(R8) — 사례를 보여주는 방식이 통했고, 그 대화가 R7을 낳았다.
 
 ### Current Progress
 
-브랜치 `develop`, `origin/develop`보다 9 커밋 앞섬(push 안 함). 이 핸드오프 커밋 직후 기준으로 작업 트리 깨끗.
+브랜치 `develop`, `origin/develop`보다 11 커밋 앞섬. **이 핸드오프 커밋 직후 기준으로 작업 트리 깨끗** — `repo_facts.sh`로 확인했다. (이 문서 자신이 그 커밋에 들어가므로, 재작성 도중에 본 `git status`는 항상 이 파일 하나가 더럽다.)
 
 | 슬라이스 | 상태 | 근거 (커밋) |
 |---|---|---|
@@ -405,29 +405,30 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 | S4 전반 | 완료 | `1a3906c` — `agents/verifier.md`, `references/evaluation.md` 재편 |
 | S4 후반 | 완료 | `6a3a04b`(fixture) + `8846605`(빌더·러너·`evals.json` 9종 + 실측 기록) |
 | R4·R5 반영 | 완료 | `83fec68`, `51b9f8c` |
-| S1 | 완료 | `cac72dc` — rescue 3블록 → `<autonomy_policy>` 1블록, research `grounding_rules` 2곳 삭제, 3스킬 출처 주석, `evals/check-prompt-blocks.py` + `evals/golden/` 신설 |
-| R6 반영 | 완료 | `f0756e2` — read-only `autonomy_policy`에 질문 금지 행 추가 |
-| S2 | 완료 | 가설 제외 3스킬(rescue 제외 — R8), `--no-preview` 15건 삭제, verify positional focus, verify·research `resume` 삭제, R7 premise 행, `check-prompt-blocks.py` 확장, `evals.json` `hypothesis_evals` 5건 |
-| S5a·S5b·S6 | 미착수 | Phase 4 배선 없음, `marketplace.json` 버전 4.7.1 그대로 |
+| S1 | 완료 | `cac72dc` + `f0756e2`(R6) — rescue 3블록 → `<autonomy_policy>` 1블록, research `grounding_rules` 삭제, `evals/check-prompt-blocks.py` + `evals/golden/` 신설 |
+| **S2** | **완료** | `52f4409` — 아래 §S2 산출물 계약 |
+| S5a·S5b·S6 | 미착수 | 어느 SKILL.md도 `prepare-verifier.py`·Verifier를 안 부른다. `marketplace.json` 버전 4.7.1 그대로 |
 
-마지막으로 돌린 검증(전부 통과, 로그는 커밋 안 함): `python3 plugins/codex-advisor/evals/check-prompt-blocks.py` · `python3 plugins/codex-advisor/scripts/tests/test_prepare_verifier.py` 23건 · `node --test plugins/codex-advisor/hooks/tests/verifier-payload.test.mjs` 12건 · `unset CLAUDECODE && claude plugin validate .`(경고는 기존 — 로컬 플러그인 버전은 `marketplace.json`에만 둔다).
+마지막으로 돌린 검증(전부 통과, 로그는 커밋 안 함):
 
-S4 실측 결과와 R4·R5 결정 근거는 [S4 후반 실측 결과](#s4-results-2026-09-19). S3·S3b·S4·S1은 다시 돌릴 필요 없다.
+```bash
+python3 plugins/codex-advisor/evals/check-prompt-blocks.py               # prompt blocks OK
+python3 plugins/codex-advisor/scripts/tests/test_prepare_verifier.py     # 23건
+node --test plugins/codex-advisor/hooks/tests/verifier-payload.test.mjs  # 12건
+unset CLAUDECODE && claude plugin validate .                             # 경고 11건은 기존(로컬 플러그인 버전은 marketplace.json에만 둔다)
+```
 
-### S1 산출물 계약 (S2가 기대는 것)
+S4 실측 결과와 R4·R5 근거는 [S4 후반 실측 결과](#s4-results-2026-09-19). S3·S3b·S4·S1·S2는 다시 돌릴 필요 없다.
 
-- `evals/check-prompt-blocks.py` — 세 task-path 스킬의 PROMPT_FILE 페이로드를 검사한다. verify·research는 heredoc을 통째로 뽑아 `evals/golden/{verify,research}-prompt.txt`와 byte 비교, rescue는 ```xml 펜스의 태그 집합·금지 구절·행 수를 본다. `--update-golden`은 **페이로드 변경이 슬라이스의 목적일 때만** 쓴다(S2의 verify focus 인자가 그 경우다 — 골든이 바뀌는 게 맞다).
-- 판별력 확인함: S1 이전 rescue 파일을 되돌려 돌리면 8건 FAIL이 난다. 통과가 무의미한 스크립트가 아니다.
-- rescue `<autonomy_policy>`는 두 형태다 — `--write`용 6행 전문, read-only용 3행(보고형 + follow-through + 질문 금지, R6). 스크립트가 행 수(6/3… 실제 검사는 `strip().splitlines()` 기준 5행 = 태그 2 + 본문 3)와 `Never end with a question` 1건을 확인한다.
-- 출처 주석은 **페이로드 바깥**에만 있다 — rescue는 `<!-- ... -->`, research·verify는 heredoc 앞의 `# Block provenance —` 주석 블록. 안으로 옮기면 PROMPT_FILE이 오염된다.
+### S2 산출물 계약 (S5a·S5b가 기대는 것)
 
-### S2 착수 전 확인된 사실 (grep으로 확인, 2026-09-20)
-
-- `--no-preview` 건수: rescue 6 · research 3 · verify 3 · **adversarial 3** · `plugins/codex-advisor/README.md` 1(127행). **`codex-review/SKILL.md`에는 0건**(review는 프롬프트 패싱 스킬이 아니다), `references/companion-usage.md`에도 0건 — 이전 핸드오프가 "세 SKILL.md + companion-usage.md"라 한 것은 틀렸다. 대상은 **네 SKILL.md + 플러그인 README 한 줄**이다. 리포 루트 `README.md`에도 0건.
-- `resume` 키워드 줄: `skills/codex-research/SKILL.md:50`, `skills/codex-verify/SKILL.md:49` 각 1줄. rescue의 `--resume-last`는 유지 대상이다.
-- 네 스킬 모두 `argument-hint` frontmatter에 `[--no-preview]`가 들어 있다(각 4행). Phase 1 파싱과 Phase 1.5 "skip" 문장도 같이 지워야 한다.
-- verify의 `argument-hint`는 현재 `"path/to/document.md [--model SLUG] [--effort LEVEL] [--no-preview]"` — focus text 자리가 없다. S2에서 positional focus를 신설하면서 같이 고친다.
-- 네 스킬의 Phase 1 제목: rescue `## Phase 1: Analyze`, research·verify `## Phase 1: Analyze + assemble blind payload`, adversarial `## Phase 1: Analyze`.
+- **가설 제외는 3스킬에만 있다** — `codex-adversarial`, `codex-research`, `codex-verify`의 Phase 1에 `### Hypothesis exclusion` 절(기준 한 줄 + 3분류 표). rescue에는 없다(R8). 이 절을 지우거나 rescue에 복사하면 `check-prompt-blocks.py`가 잡는다.
+- **프리뷰 계약** — 3스킬 프리뷰가 `Excluded (hypothesis):` 줄을 **항상** 출력하고(빈 때는 `(none)`), 제외분이 있을 때만 "Send the excluded lines too" 선택지를 연다. `--no-preview`는 네 스킬 전부와 플러그인 README에서 0건 — **다시 넣지 말 것**(가설 분류가 LM 판단이라 프리뷰가 유일한 검사 창이다).
+- **verify positional focus** — `codex-verify <path> [focus text]`. 파싱 순서는 경로 → 남은 텍스트 = focus. heredoc 안 `Pay particular attention to: <literal ...>` 한 행으로 들어가고, focus가 없으면 **그 행을 통째로 생략**한다.
+- **골든은 안 바뀌었다** — `evals/golden/verify-prompt.txt`는 S2 커밋에 포함되지 않았다. 스크립트가 focus 행만 벗긴 페이로드를 골든과 byte 비교하므로 "focus 인자 없는 실행은 S2 이전과 동일"이 기계로 지켜진다. `--update-golden`은 verify/research 페이로드 자신을 바꿀 때만.
+- **`check-prompt-blocks.py` 상수 두 개** — `PREVIEW_SKILLS`(4개: `--no-preview` 0건만 본다) / `REVIEW_SKILLS`(3개: 가설 제외 절·Excluded 줄을 본다). 이 분리가 R8을 기계로 굳힌 지점이다.
+- **rescue premise 행** (R7) — `<autonomy_policy>` 두 형태 모두에 `If the task's stated cause does not hold, ...`. ⚠️ **회귀 방어가 비대칭이다**: 스크립트는 read-only만 행 수(`len(readonly.strip().splitlines()) == 6`, 태그 2 포함)를 재고, **full 형태에는 행 수 검사가 없다** — full은 문구 존재(`already approved`, `Never end with a question`, `stated cause does not hold`, `make the requested change anyway`)와 `ASK_FIRST_PHRASES` 부재만 본다. 즉 full에 행을 하나 더해도 스크립트는 통과한다. read-only 블록을 고칠 때만 행 수도 같이 고치면 된다.
+- **분류 eval 5건은 사람이 돌릴 것** — `evals.json`의 **별도 키** `hypothesis_evals`(id 10~14). `run-evals.py`가 쓰는 `evals` 배열에 넣으면 payload가 없어 `SystemExit`하므로 섞지 말 것.
 
 ### S4 산출물 계약 (S5a·S5b가 기대는 것)
 
@@ -449,7 +450,7 @@ S4 실측 결과와 R4·R5 결정 근거는 [S4 후반 실측 결과](#s4-result
 - `tool_input.subagent_type`이 `VERIFIER_TYPES`(`codex-advisor:verifier` 하나 — I1 종결로 확정)일 때만 동작. prompt에서 payload 경로 하나를 뽑아 파일 내용으로 교체하고 `model`을 뺀다. 앞뒤 문장은 버려진다(S4 후반에서 실측 확인).
 - deny는 JSON + exit 2 동시. 사유 토큰: `no-payload-path` · `multiple-payload-paths` · `payload-missing` · `payload-unreadable` · `payload-not-in-manifest` · `hash-mismatch` · `payload-not-utf8` · `manifest-unreadable` · `manifest-malformed` · `manifest-schema` · `stdin-malformed` · `unexpected-error`. deny된 group은 보고서에 `Unverified — Verifier 실행 실패`.
 
-### eval 하네스 사용법 (S2가 재사용한다)
+### eval 하네스 사용법 (S5a·S5b 배선 후 회귀 검증에 쓴다)
 
 `evals/`는 커밋되지만 실행 산출물은 커밋하지 않는다(스크래치패드로).
 
@@ -461,11 +462,12 @@ python3 plugins/codex-advisor/evals/run-evals.py --out-dir <ws> [--only <name>] 
 - `build-payloads.py`가 `evals/fixtures/`의 `{REPO}` 자리표시자를 실제 경로로 치환하고 `scripts/prepare-verifier.py`를 돌려 payload 디렉터리를 만든다.
 - `run-evals.py`가 payload마다 `claude -p --plugin-dir ./plugins/codex-advisor --allowedTools Agent --output-format json`을 돌려 원문 그대로 `<ws>/<eval>/runs/<key>.json`에 저장한다. 채점은 일부러 분리했다 — 채점 기준이 바뀌어도 재실행 불필요.
 - **실행 전에 마켓플레이스 설치본을 끈다**: `claude plugin disable codex-advisor@claude-code-zero`, 끝나면 `enable`. 안 끄면 캐시본이 이길 수 있다.
-- S2의 골든 비교는 Verifier가 아니라 PROMPT_FILE이 대상이라 이 러너가 아니라 결정론적 스크립트로 재는 게 맞다 — `evals/`에 새 스크립트를 두는 게 자연스럽다.
+- ⚠️ **`run-evals.py`는 `evals.json`의 `evals` 배열만 읽고, 그 이름마다 payload 디렉터리가 없으면 `SystemExit`한다.** 사람이 돌릴 eval은 별도 키에 둔다 — S2는 `hypothesis_evals`를 새로 만들었다.
+- S2의 골든 비교는 Verifier가 아니라 PROMPT_FILE이 대상이라 이 러너 대신 `check-prompt-blocks.py`로 쟀다.
 
 ### Decisions Made
 
-- **R8 (2026-09-19, S2) — 가설 제외은 검수·조사 3스킬만. rescue는 대상이 아니다.** 스펙 D1이 "적용 스킬 4개"에 rescue를 넣었는데, 그러면 서로 배태되는 세 규칙 중 둘만 지킬 수 있다 — (a) Story 4·rescue SKILL.md 3곳의 "task 텍스트 verbatim", (b) D1·S2 수용기준의 "누가 쿤는지 판별 0건", (c) 가설 제외 자신. 원인 문장을 버리면 (a)가 깨지고, "Claude가 직접 쓴 경우만 버린다"로 하면 (b)가 깨진다. 근본 이유는 rescue가 **검수가 아니라 시공** 경로라는 점이다 — "auth.ts:42 고쳐줘"는 원인 주장이 아니라 주문서이고, 빼면 할 일이 사라진다. 반영: `check-prompt-blocks.py`에 `PREVIEW_SKILLS`(4개 — `--no-preview` 0건) / `REVIEW_SKILLS`(3개 — 가설 제외·Excluded 줄 있었는지) 분리. 스펙 D1의 "적용 스킬 4개"는 이 결정으로 덮어쓴다.
+- **R8 (2026-09-19, S2) — 가설 제외는 검수·조사 3스킬만. rescue는 대상이 아니다.** 스펙 D1이 "적용 스킬 4개"에 rescue를 넣었는데, 그러면 서로 충돌하는 세 규칙 중 둘만 지킬 수 있다 — (a) Story 4·rescue SKILL.md 3곳의 "task 텍스트 verbatim", (b) D1·S2 수용기준의 "누가 쳤는지 판별 0건", (c) 가설 제외 자신. 원인 문장을 버리면 (a)가 깨지고, "Claude가 직접 쓴 경우만 버린다"로 하면 (b)가 깨진다. 근본 이유는 rescue가 **검수가 아니라 시공** 경로라는 점이다 — "auth.ts:42 고쳐줘"는 원인 주장이 아니라 주문서이고, 빼면 할 일이 사라진다. 반영: `check-prompt-blocks.py`에 `PREVIEW_SKILLS`(4개 — `--no-preview` 0건) / `REVIEW_SKILLS`(3개 — 가설 제외·Excluded 줄 있었는지) 분리. 스펙 D1의 "적용 스킬 4개"는 이 결정으로 덮어쓴다.
 
 - **R7 (2026-09-19, S2) — rescue `autonomy_policy`에 "전제가 틀렸으면 보고하라" 한 행 신설.** R8이 task 텍스트를 원인 주장 포함 그대로 보내기로 했으니, 주문 자신이 틀렸을 때 걸리는 것이 없어진다 — Phase 4·Verifier는 `req-N`을 "주문대로 했는가"로만 재고 "주문이 맞았는가"는 재지 않는다(원인이 다른 데 있어 버그가 살아있어도 보고서는 통과). 문구는 **보고만** — `--write`: `If the task's stated cause does not hold, make the requested change anyway and say so in the final report.`, read-only: `If the task's stated cause does not hold, say so in the final report.` 직접 수정을 시키면 같은 부록 안의 `scope expansions the task did not ask for` 줄과 부딪힌다. 공식 플러그인은 이 구멍을 안 막는다 — `agents/codex-rescue.md`는 `Preserve the user's task text as-is` · `Return the stdout ... exactly as-is`만 말하고 결과 검수 자체가 없으며, `prompt-blocks.md` 전진에서 가설 관련은 `grounding_rules`의 `If a point is a hypothesis, label it clearly.` 한 줄이고 그건 Codex 자신의 추로에 대한 것이다(R6과 같은 thin wrapper 결과이지 사례 아님). 반영: `skills/codex-rescue/SKILL.md` 두 형태 · `check-prompt-blocks.py`(full 7행, read-only 6행 — 태길 2 포함).
 
@@ -483,6 +485,10 @@ python3 plugins/codex-advisor/evals/run-evals.py --out-dir <ws> [--only <name>] 
 
 ### What Worked
 
+- **스펙이 서로 충돌하는 지점은 고를 수 없다고 보여준다** — S2에서 스펙 D1이 rescue에도 가설 제외를 적용하라고 했는데, 그러면 "task 원문 verbatim"과 "누가 쳤는지 판별 0건" 중 하나가 반드시 깨진다. 어느 안이 좋냐를 묻기 전에 **세 규칙을 표 한 개로 나열하고 "아무 둘만 지킬 수 있다"**로 보여주니 바로 결론이 나왔다(R8). 모순을 먼저 드러내는 게 짧다.
+- **수용기준을 기계가 재는 것/사람이 재는 것으로 갈라 닫기** — S2는 10건 중 7건을 `check-prompt-blocks.py`로 닫고 3건은 "사람이 프리뷰에 답해야 함"으로 열어뒀다. 전부 닫힌 것으로 쓰면 다음 세션이 안 돌린 것을 돌렸다고 읽는다.
+- **골든을 안 건드리고 새 인자를 넣는 법** — verify focus 행을 골든에 밀지 말고, 스크립트가 **그 행만 벗긴 페이로드**를 기존 골든과 비교하게 했다. 그러자 "인자 없으면 이전과 동일"이라는 수용기준이 그 자체로 한 줄 검사가 됐다.
+- **금지문은 쓰지 못하게 하는 게 아니라 지우는 게 답** — verify에 "resume 키워드는 없다"는 설명부터 썼다가 지워버렸다. 그 문장이 `resume`·`--resume-last`를 컨텍스트에 다시 올리고(negation 역효과) 수용기준의 "0건"도 깨버렸다. 기존 `Unknown flags → AskUserQuestion` 규칙이 이미 막아서 지우는 것만으로 될 일이었다.
 - **슬라이스를 반으로 쪼개기** — S4를 "규칙·agent 작성"과 "fixture 실행"으로 나눴더니, 후반 실측이 전반이 만든 문서의 결함(R4)을 잡아냈다. 한 슬라이스로 몰아 했으면 문서를 쓴 흐름 그대로 통과시켰을 것이다.
 - **fixture 실행을 채점과 분리** — `run-evals.py`가 원문만 저장하게 해서 R4 재검증 때 두 eval만 다시 돌렸다(`--only`).
 - **유저에게 짧게 표로 보고** — 결론 한 줄 + 표 하나. 그리고 유저가 "먼소리야"라고 하면 설명을 늘리지 말고 **before/after 구체 예시**로 바꿔 보여주는 게 통했다(R4를 세 번째 시도에 이해시킨 방식).
@@ -506,21 +512,24 @@ python3 plugins/codex-advisor/evals/run-evals.py --out-dir <ws> [--only <name>] 
 - ⚠️ zsh에서 `grep --include=*.md`는 `no matches found`로 죽는다. 따옴표로 감싸거나 대상 파일을 직접 나열한다.
 - 유저에게 "read-only 실행" 같은 **우리 내부 용어를 설명 없이 쓰면 대화가 세 번 왕복한다.** 처음부터 "`--write` 없이 돌리면 Codex가 코드를 안 고치고 보고만 하는 모드" 식으로 풀어 쓴다.
 
+- ⚠️ **한글을 `\uXXXX` escape로 짜서 python 치환 스크립트에 넘기면 오타 발생률이 크다.** S2에서 `미챙수`·`핵드오프`·`보교`가 나와 `assert t.count(old)==1`이 여러 번 터졌다. 한글 본문은 **별도 파일에 heredoc으로 쓴 다음** python이 그 파일을 읽어 스플라이스하게 하면 끝난다.
+- ⚠️ **치환 대상 문자열은 사본 수를 먼저 확인한다.** verify는 heredoc 페이로드와 Phase 1.5 프리뷰가 **거의 동일한 XML을 두 번** 들고 있어, 짧은 패턴은 항상 2건이 잡힌다. 긴 쪽(프리뷰)을 먼저 치환해 유일하게 만들고 그다음 heredoc을 치환한다.
+
 **Blockers:** 없음.
 
 **구현 중 실측할 것** (남은 것):
 
 - F1 — 플러그인 스킬의 `disallowed-tools: SendMessage`가 적용되고 프리뷰 응답에 풀리지 않는지(S5a). 실패 시 frontmatter 삭제, 한계 문장만.
 - F3 — 대형 저장소 트리 스냅샷 비용(이 저장소 0.11초, 대형 미측정).
-- N1 — `claude -p`에서 질문 도구가 없을 때 프리뷰 동작. 결정은 한계 문서화라 구현을 막지 않음.
+- N1 — `claude -p`에서 질문 도구가 없을 때 프리뷰 동작. 결정은 한계 문서화라 구현을 막지 않지만, S2로 `--no-preview`가 사라진 만큼 네 스킬이 headless에서 어떻게 도는지가 이제 실제 사용 경로에 걸린다 — S6 전에 한 번은 확인한다.
 - S5b 배선 때 확인할 것: verify 항목이 Codex 산문의 P1/P2 절 어디에도 없으면 severity가 `null`이 되어 `evaluation.md` PASS/FAIL 규칙 3으로 FAIL이 된다. 의도대로인지 그때 판단한다(F6의 "severity 불명 → 미검증"을 그대로 적용한 결과).
 
 ### Next Steps
 
-1. **S5a** — 코드 경로 3스킬 Phase 4 배선. review·adversarial은 branch 대상(`--scope branch`·`--base`)이면 `--ref HEAD`, working-tree면 생략. rescue `--write`는 Phase 2 직전 `snapshot`, Phase 4에 `--mode diff --pre <tree>`. SKILL.md에 "prompt에 덧붙인 말은 훅이 버린다" 한 줄.
+1. **S5a** — 코드 경로 3스킬 Phase 4 배선. review·adversarial은 branch 대상(`--scope branch`·`--base`)이면 `--ref HEAD`, working-tree면 생략. rescue `--write`는 Phase 2 직전 `snapshot`, Phase 4에 `--mode diff --pre <tree>`. SKILL.md에 "prompt에 덧붙인 말은 훅이 버린다" 한 줄. 세 스킬의 예전 4분류 문구는 `references/evaluation.md` 경로 참조로 바꾼다 — 규칙을 SKILL.md에 복사하지 않는다(S4 계약).
 2. **S5b** — 문서 경로 2스킬(verify·research) `--mode doc` 1회 배선.
 3. **S6** — `spark` 삭제, README에 PreToolUse 훅 설명 추가(현재 SessionStart 훅만 언급), 버전 4.7.1 → 5.0.0(`marketplace.json`), `plugin.json`·`marketplace.json` description 동기화.
-4. 수동 검증(사람이 프리뷰에 답함)이 필요한 수용기준은 §검증 방법대로 — 에이전트 단독으로 체크하지 말고 유저에게 넘긴다. **S2가 남긴 것**: `evals.json`의 `hypothesis_evals` 5건(id 10~14)은 프리뷰가 사람 답을 기다려서 `run-evals.py`가 못 돌린다 — `claude --plugin-dir ./plugins/codex-advisor`에서 사람이 한 번 돌린다. id 13·14는 같은 문장이 유저 직접 호출·Claude 자신 호출로 들어가는 쌍으로, 출력이 같아야 한다(Q11).
+4. 수동 검증(사람이 프리뷰에 답함)이 필요한 수용기준은 §검증 방법대로 — 에이전트 단독으로 체크하지 말고 유저에게 넘긴다. **S2가 남긴 것**: §S2 수용기준의 빈 3건(가설 제외 결과·빈 Excluded 줄·"그래도 보내" 복구)은 `claude --plugin-dir ./plugins/codex-advisor`에서 사람이 한 번 돌려야 닫힌다. id 13·14는 같은 문장이 유저 직접 호출·Claude 자신 호출로 들어가는 쌍으로, 출력이 같아야 한다(Q11).
 
 **유저 작업 방식:** 질문은 한 번에 하나, 결론 먼저·표 하나·한 줄 근거, 쉬운 말. 장황 금지 — 지적받으면 설명을 늘리는 게 아니라 구체 예시로 바꾼다. 오버엔지니어링 거부 — 드문 경우는 막지 말고 한계로 적되 "드물다"는 근거를 댄다. 아키텍처·메커니즘·철학에 어긋나는 게 보이면 **임의로 고치지 말고 멈추고 보고**한다. 진행 보고는 슬라이스 기준이고 **시작할 때도 한 번** 한다. 커밋은 슬라이스마다, push는 요청 시에만.
 

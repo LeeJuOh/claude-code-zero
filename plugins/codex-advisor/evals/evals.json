@@ -106,7 +106,7 @@
       ]
     }
   ],
-  "hypothesis_notes": "Hypothesis-exclusion cases for the three review skills (S2). They are not run by run-evals.py: the classification is Claude's judgement and the only window onto it is the Phase 1.5 preview, which needs a person to answer the approval question. Run them by hand in `claude --plugin-dir ./plugins/codex-advisor`, answer the preview, and read the `Excluded (hypothesis):` line plus the focus argument or PROMPT_FILE. Cases 12 and 13 are the same sentence reaching the skill two ways and must come out identical -- the rule does not test who typed it.",
+  "hypothesis_notes": "Hypothesis-exclusion cases for the three review skills (S2). They are not run by run-evals.py: the classification is Claude's judgement and the only window onto it is the Phase 1.5 preview, which needs a person to answer the approval question. Run them by hand in `claude --plugin-dir ./plugins/codex-advisor`, answer the preview, and read the `Excluded (hypothesis):` line plus the focus argument or PROMPT_FILE. Cases 13 and 14 are the same sentence reaching the skill two ways and must come out identical -- the rule does not test who typed it.",
   "hypothesis_evals": [
     {
       "id": 10,
