@@ -95,9 +95,12 @@ One JSON object, one verdict per item:
   nothing else. For the other modes, the ids you assigned, as the rules section
   describes, including the extra ids that section allows.
 - `classification` — `Agreed`, `Disputed`, `Nuanced`, or `Unverifiable`, defined in
-  the rules file.
+  the rules file. The extra ids some sections let you raise take their own labels there
+  instead — a gap or an unrequested change is not a claim of Codex's, so answering it
+  with `Agreed` would read as approving it.
 - `severity` — the payload's value for that item, copied through, or `null` when the
-  payload has none and the rules section does not have you derive one.
+  payload has none and the rules section does not have you derive one. `null` is the
+  ordinary case for the ids you raised yourself.
 - `evidence` — what you read, specifically enough that someone can reopen it.
 - `reason` — one line on why that evidence produces that classification.
 

@@ -161,6 +161,16 @@ verify/research (section and URL citations, no `file:line`) the Verifier decides
 "Disputed" without evidence is not allowed; "I couldn't tell" is Unverifiable. Inventing a citation to justify reading a file is
 forbidden.
 
+**Raised item** (vs. Codex finding):
+An item the Verifier introduces itself rather than receiving — a **gap** (`missing-N`: a part of
+the approved research scope the result never answers) or an **unrequested change**
+(`side-effect-N`: something a rescue write did that no requirement asked for). These are not
+claims of Codex's, so the six-way classification does not apply to them: a gap is **Confirmed**
+or **Refuted**, an unrequested change is **Harmless** or **Harmful**. They are reported and
+counted on their own lines and never enter the agreement rate, which measures Codex's accuracy
+on what Codex actually said. Calling a gap "Agreed" would read as approving the gap and would
+credit Codex for its own omission.
+
 **Finding group**:
 The unit one Verifier judges. Findings citing the same file are merged by the script, capped
 at five findings and a bounded payload size so a group never grows large enough to invite

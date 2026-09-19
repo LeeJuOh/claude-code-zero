@@ -498,9 +498,8 @@ S4 수용기준 중 **정적 항목은 확인됨**: `evaluation.md`에 Self-Bias
 
 ### 유저 결정 대기 — 규칙 문서 미결 2건
 
-**R4 (영향 있음) — `missing-N`·`side-effect-N`에 어떤 분류를 붙이는지 `evaluation.md`가 정하지 않았다.**
-Verifier는 `missing-1`에 `Agreed`를 골랐다. 그러면 Agreement 표에서 "Codex가 맞았다" 쪽으로 세어진다 — 실제 의미는 그 반대(Codex가 승인된 범위를 빼먹었다)다. research-coverage는 그래서 5/5 Agreed = **High agreement**로 보고되는데, 그 5건 중 하나는 Codex의 누락이다. Agreement 분모를 "판정된 항목"으로 좁힌 기존 결정이 막으려던 오인이 여기서 다시 생긴다. `side-effect-N`도 규칙이 "무해한지로 분류"라고만 해서 네 라벨 어디로 가는지 불명확하다(실측은 둘 다 Nuanced).
-결정할 것: 이 두 ID 계열을 Agreement 분모에서 빼고 따로 셀지, 아니면 분류 매핑을 `evaluation.md`에 못박을지.
+**R4 — 해결(유저 결정 2026-09-19).** `missing-N`·`side-effect-N`은 4라벨을 쓰지 않는다. 4라벨은 "Codex 주장이 맞나"를 재는 도구이고 이 둘은 Codex의 주장이 아니라 **Verifier가 스스로 올린 항목**(누락·요청 없는 변경)이다. 누락에 `Agreed`를 붙이면 "누락을 승인함"으로 읽히고 Agreement 분자에 Codex 가점으로 들어간다. 전용 라벨: `missing-N` → `Confirmed`/`Refuted`, `side-effect-N` → `Harmless`/`Harmful`. Agreement 분모에서 빠지고 보고서에서 두 줄로 따로 센다(누락 / 부수 변경 — 유저가 할 행동이 다르고 둘은 같은 실행에 안 나온다). PASS/FAIL 규칙 4 신설: `Harmful` 하나면 FAIL(사유 `harmful side effect`), `severity: null`은 이 둘에서 정상이므로 규칙 3 미적용. 반영: `references/evaluation.md`, `agents/verifier.md`, 용어집 신규 항목 **Raised item**.
+재실행 확인: `missing-1 Confirmed` · `side-effect-1 Harmful` · `side-effect-2 Harmless`.
 
 **R5 (경미) — S4 수용기준의 "요구사항 verdict 2개"가 문자 그대로는 안 맞는다.**
 task.md의 "row error가 파일명과 줄 번호를 대게 해라"를 Verifier가 `req-2`(파일명)·`req-3`(줄 번호)로 쪼갰다. 규칙이 항목 경계를 Verifier에게 맡기므로 개수는 고정될 수 없다. 기준을 "`req-N` 2개 이상 + `side-effect-N` 1개 이상"으로 읽는 게 맞는지 확인만 필요하다.

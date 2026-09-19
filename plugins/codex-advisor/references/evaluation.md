@@ -30,6 +30,22 @@ A dispute needs counter-evidence, not doubt. Absence reported by a lossy tool �
 WebFetch summary that simply does not mention the claim — is not counter-evidence, so
 it lands on Unverifiable.
 
+**Two item kinds do not take those four labels**, because the four answer "is this
+claim of Codex's true?" and these items are not claims of Codex's — the Verifier raised
+them itself, about what Codex left out or did unasked. Labelling a gap `Agreed` reads as
+an approval of the gap, and it would land in the agreement tally as a point in Codex's
+favour, which is the opposite of what it means.
+
+| Item ids | Labels | When |
+|---|---|---|
+| `missing-N` (research) | **Confirmed** | The approved scope really does go unanswered |
+| | **Refuted** | A second read found it answered after all |
+| `side-effect-N` (rescue diff) | **Harmless** | The unrequested change costs nothing in reach |
+| | **Harmful** | It breaks, removes, or risks something |
+
+These carry `severity: null` unless the evidence itself sets one, and they are reported
+and counted on their own lines, never inside agreement.
+
 **The citation script decides these two**, before any Verifier runs, and they never go
 to a Verifier at all:
 
@@ -81,8 +97,8 @@ Codex answered in prose and no fixed item list exists.
   the URL. Open URLs the material cites, and only those.
 - **research only**: `prompt_file` is the scope the user approved in the preview. A
   core part of that scope the result does not cover is an item of its own, id
-  `missing-1`, `missing-2`, …, with `evidence` naming the part of the scope that is
-  absent. Judge against that file, never against what the topic seems to imply —
+  `missing-1`, `missing-2`, …, labelled `Confirmed` or `Refuted` (never one of the four),
+  with `evidence` naming the part of the scope that is absent. Judge against that file, never against what the topic seems to imply —
   research runs on a topic alone, with no `document`, and the approved scope is the
   only fixed thing to compare against.
 
@@ -100,7 +116,8 @@ actually does.
   Read around it in `repo_root` when the diff alone does not show whether a change
   holds together.
 - A change the diff makes that no requirement asked for is its own item, id
-  `side-effect-1`, `side-effect-2`, …, classified on whether it is harmless.
+  `side-effect-1`, `side-effect-2`, …, labelled `Harmless` or `Harmful` (never one of the
+  four) on what it costs within reach.
 
 ## Reporting
 
@@ -139,7 +156,10 @@ a count, not a judgment:
 2. Any `P1` item Unverifiable → **FAIL**, reason `unverified P1`.
 3. Any group left `Unverified`, or any item whose severity cannot be known — `null`, or
    lost to `contract-violation` → **FAIL**, reason `unverified`.
-4. Otherwise → **PASS**.
+4. Any `side-effect-N` labelled Harmful → **FAIL**, reason `harmful side effect`. Rule 3
+   does not apply to `missing-N` and `side-effect-N`: their `severity: null` is the normal
+   case, not a lost value.
+5. Otherwise → **PASS**.
 
 Rules 2 and 3 exist because a review that did not happen is not a review that passed.
 A run where the Verifier could not be launched fails loudly rather than reporting a
@@ -149,7 +169,9 @@ clean bill from an empty tally.
 
 Report one agreement line over the items that actually got judged — Agreed, Disputed,
 and Nuanced. Unverifiable and Unverified are counted separately and never fold into
-agreement, because they measure the review's reach, not Codex's accuracy.
+agreement, because they measure the review's reach, not Codex's accuracy. `missing-N` and
+`side-effect-N` stay out of it too, on their own lines: they are not verdicts on anything
+Codex claimed, so a rate computed over them would answer no question anyone asked.
 
 | Level | Criteria |
 |-------|---------|
@@ -203,7 +225,15 @@ Standard format:
     - [F6] Uncited — no concrete citation
     - [group 3] Unverified — Verifier call failed
 
+    ### Gaps in the Codex result        <- research only, when there are any
+    - [missing-1] Confirmed — <the part of the approved scope left unanswered>
+
+    ### Unrequested changes             <- rescue --write only, when there are any
+    - [side-effect-1] Harmless — <what the diff changed that no requirement asked for>
+
     ## Summary
     - Agreed: N | Disputed: N | Nuanced: N | Unverifiable: N | Unverified: N
     - Agreement: <High|Partial|Disagreement> (N/M judged)
+    - Gaps: Confirmed N | Refuted N              <- research only
+    - Unrequested changes: Harmless N | Harmful N    <- rescue --write only
     - Script: False Positive N | Uncited N
