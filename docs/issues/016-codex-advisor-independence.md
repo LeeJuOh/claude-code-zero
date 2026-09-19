@@ -115,7 +115,7 @@ S3 ─┬→ S4 ──┬→ S5a ────────────┼─→ S
 - [ ] 기대 분류: 1 → Agreed, 2 → Agreed면 실패, 3 → Nuanced, 4 → Unverifiable. 네 건이 같은 분류면 실패(전부 Disputed 포함)
 - [ ] Disputed·Unverifiable 출력의 evidence가 비어 있지 않음(반박 근거 / 부족한 증거)
 - [ ] finding 2개짜리 group fixture → `verdicts` 길이 2, ID가 payload와 일치
-- [ ] rescue `--write` fixture(요구사항 2개가 한 문단에 섞인 task + 부작용 있는 diff) → Verifier가 나눈 요구사항 verdict 2개 + `side-effect-1`(F2)
+- [x] rescue `--write` fixture(요구사항이 한 문단에 섞인 task + 부작용 있는 diff) → `req-N` 2개 이상 + `side-effect-N` 1개 이상(F2). **개수는 세지 않는다**(R5) — 규칙이 항목 경계를 Verifier에게 맡기므로 "파일명과 줄 번호"를 1개로도 2개로도 쪼갤 수 있다(실측: 3개·2개). 재는 것은 뭉친 산문을 쪼갰는가다
 - [ ] 출력에 PASS/FAIL·Agreement 문자열 0건
 - [ ] 에이전트 프롬프트에 3원칙이 각각 한 번씩 있고, MUST/NEVER 대문자 0건
 - [ ] `evaluation.md`에 Self-Bias Awareness 0건, 분류 규칙은 evaluation.md에만 있고 에이전트는 경로로 참조
@@ -501,5 +501,4 @@ S4 수용기준 중 **정적 항목은 확인됨**: `evaluation.md`에 Self-Bias
 **R4 — 해결(유저 결정 2026-09-19).** `missing-N`·`side-effect-N`은 4라벨을 쓰지 않는다. 4라벨은 "Codex 주장이 맞나"를 재는 도구이고 이 둘은 Codex의 주장이 아니라 **Verifier가 스스로 올린 항목**(누락·요청 없는 변경)이다. 누락에 `Agreed`를 붙이면 "누락을 승인함"으로 읽히고 Agreement 분자에 Codex 가점으로 들어간다. 전용 라벨: `missing-N` → `Confirmed`/`Refuted`, `side-effect-N` → `Harmless`/`Harmful`. Agreement 분모에서 빠지고 보고서에서 두 줄로 따로 센다(누락 / 부수 변경 — 유저가 할 행동이 다르고 둘은 같은 실행에 안 나온다). PASS/FAIL 규칙 4 신설: `Harmful` 하나면 FAIL(사유 `harmful side effect`), `severity: null`은 이 둘에서 정상이므로 규칙 3 미적용. 반영: `references/evaluation.md`, `agents/verifier.md`, 용어집 신규 항목 **Raised item**.
 재실행 확인: `missing-1 Confirmed` · `side-effect-1 Harmful` · `side-effect-2 Harmless`.
 
-**R5 (경미) — S4 수용기준의 "요구사항 verdict 2개"가 문자 그대로는 안 맞는다.**
-task.md의 "row error가 파일명과 줄 번호를 대게 해라"를 Verifier가 `req-2`(파일명)·`req-3`(줄 번호)로 쪼갰다. 규칙이 항목 경계를 Verifier에게 맡기므로 개수는 고정될 수 없다. 기준을 "`req-N` 2개 이상 + `side-effect-N` 1개 이상"으로 읽는 게 맞는지 확인만 필요하다.
+**R5 — 해결(유저 결정 2026-09-19).** 수용기준을 "`req-N` 2개 이상 + `side-effect-N` 1개 이상"으로 바꿨다(개수 미검사). 같은 입력에서 req가 3개·2개로 갈렸는데 둘 다 옳다 — 규칙이 항목 경계를 Verifier에게 맡긴 결과이므로 결함이 아니다. fixture의 task.md를 번호 매긴 요구사항으로 다시 쓰는 대안은 버렸다: 이 fixture의 목적이 "산문에 뭉친 요구사항을 Verifier가 나눌 수 있나"이고, 미리 나눠주면 시험할 것이 남지 않는다.
