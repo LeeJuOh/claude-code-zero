@@ -78,7 +78,13 @@ echo "PROMPT_FILE=$PROMPT_FILE"
 echo "JOB_JSON_FILE=$JOB_JSON_FILE"
 
 # Header via heredoc — no document content yet.
-# block tags from official gpt-5-4-prompting (prompt-blocks.md); bodies adapted to this skill's output schema — re-sync the tag set if the official guide updates
+# Block provenance — official gpt-5-4-prompting (prompt-blocks.md), bodies
+# adapted to this skill's output schema; re-checked against the 5.6/Astra
+# guides 2026-09-11. Re-sync the tag set if the official guide updates.
+#   task                        — §Core Wrapper
+#   structured_output_contract  — §Output and Format
+#   grounding_rules             — §Grounding and Missing Context
+#   completeness_contract       — §Follow-through and Completion
 cat > "$PROMPT_FILE" <<'EOF'
 <task>
 You are a brutally honest technical reviewer. Review the following document for

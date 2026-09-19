@@ -95,35 +95,46 @@ summarizing, no rewording). You add blocks *around* their text; you
 never rewrite it. That's the whole point: structure without distortion.
 
 Pick the blocks by task type — `--write` is the signal. An
-implementation or fix mutates the repo, so it needs scope + verification
-guards; a read-only investigation needs grounding instead.
+implementation or fix mutates the repo, so it needs an autonomy boundary
+it can act inside; a read-only investigation needs grounding instead.
 
 - **Always:** `<task>` — the approved task text, verbatim.
-- **`--write` ON (implement / fix):** add `<completeness_contract>`, `<verification_loop>`, `<action_safety>`.
-- **`--write` OFF (read-only investigation):** add `<completeness_contract>`, `<grounding_rules>`.
+- **`--write` ON (implement / fix):** add `<autonomy_policy>`, full form.
+- **`--write` OFF (read-only investigation):** add `<autonomy_policy>`, read-only form, plus `<grounding_rules>`.
 
-<!-- blocks copied from official gpt-5-4-prompting (prompt-blocks.md); re-sync if the official guide updates -->
+One policy block covers scope, follow-through, and testing because Codex
+has no one to ask: the companion rejects every server request it makes,
+and a turn that ends in a question still reports `completed`, so a
+question reads as success while the task sits unfinished. The policy
+settles the boundary up front rather than inviting a check-in.
 
 Block bodies — copy exactly:
 
+<!-- source: OpenAI "Using GPT-5.6" §Define autonomy and approval boundaries; "Using GPT-6 Astra" §Initiative and follow-through, §Testing and verification (2026-09-11) -->
+
 ```xml
-<completeness_contract>
-Resolve the task fully before stopping.
-Do not stop at the first plausible answer.
-Check whether there are follow-on fixes, edge cases, or cleanup needed for a correct result.
-</completeness_contract>
+<autonomy_policy>
+For review, diagnose, or research requests, inspect the relevant materials and report. Do not implement changes.
+For change or fix requests, make the requested in-scope local changes and run relevant non-destructive validation without asking first.
+Bias towards action. Do not stop at a partial answer, a proposed plan, or an offer to continue.
+Do not perform external writes, destructive actions, or scope expansions the task did not ask for; list them in the final report instead. What the task itself asks for is already approved.
+Never end with a question — no one can answer it.
+Do not write tests for reversible, low-impact changes that mirror the implementation.
+</autonomy_policy>
+```
 
-<verification_loop>
-Before finalizing, verify the result against the task requirements and the changed files or tool outputs.
-If a check fails, revise the answer instead of reporting the first draft.
-</verification_loop>
+The read-only form keeps the reporting line and the follow-through line:
 
-<action_safety>
-Keep changes tightly scoped to the stated task.
-Avoid unrelated refactors, renames, or cleanup unless they are required for correctness.
-Call out any risky or irreversible action before taking it.
-</action_safety>
+```xml
+<autonomy_policy>
+For review, diagnose, or research requests, inspect the relevant materials and report. Do not implement changes.
+Bias towards action. Do not stop at a partial answer, a proposed plan, or an offer to continue.
+</autonomy_policy>
+```
 
+<!-- source: official gpt-5-4-prompting (prompt-blocks.md) §Grounding and Missing Context › grounding_rules; re-checked against the 5.6/Astra guides 2026-09-11 -->
+
+```xml
 <grounding_rules>
 Ground every claim in the provided context or your tool outputs.
 Do not present inferences as facts.
@@ -161,29 +172,21 @@ blocks selected in Phase 1.
 <the approved task description from Phase 1 — verbatim, nothing added>
 </task>
 
-<completeness_contract>
-Resolve the task fully before stopping.
-Do not stop at the first plausible answer.
-Check whether there are follow-on fixes, edge cases, or cleanup needed for a correct result.
-</completeness_contract>
-
-<verification_loop>
-Before finalizing, verify the result against the task requirements and the changed files or tool outputs.
-If a check fails, revise the answer instead of reporting the first draft.
-</verification_loop>
-
-<action_safety>
-Keep changes tightly scoped to the stated task.
-Avoid unrelated refactors, renames, or cleanup unless they are required for correctness.
-Call out any risky or irreversible action before taking it.
-</action_safety>
+<autonomy_policy>
+For review, diagnose, or research requests, inspect the relevant materials and report. Do not implement changes.
+For change or fix requests, make the requested in-scope local changes and run relevant non-destructive validation without asking first.
+Bias towards action. Do not stop at a partial answer, a proposed plan, or an offer to continue.
+Do not perform external writes, destructive actions, or scope expansions the task did not ask for; list them in the final report instead. What the task itself asks for is already approved.
+Never end with a question — no one can answer it.
+Do not write tests for reversible, low-impact changes that mirror the implementation.
+</autonomy_policy>
 ```
 
 Flags: `--write` `--resume-last`
 ````
 
 The example above shows the `--write` block set. For a read-only run,
-swap `<verification_loop>` + `<action_safety>` for `<grounding_rules>`
+show the read-only `<autonomy_policy>` followed by `<grounding_rules>`
 (per the Phase 1 selection). The fenced block must contain the **exact
 wrapped XML** that will be written to PROMPT_FILE — the user's text
 verbatim inside `<task>`, no summarization, no rewording.

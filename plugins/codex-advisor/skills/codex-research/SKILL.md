@@ -80,7 +80,13 @@ echo "JOB_JSON_FILE=$JOB_JSON_FILE"
 
 # Header via heredoc. Replace <literal topic> with the cleaned research
 # topic from Phase 1. Do NOT embed the user's meta-instructions.
-# block tags from official gpt-5-4-prompting (prompt-blocks.md); bodies adapted to this skill's output schema — re-sync the tag set if the official guide updates
+# Block provenance — official gpt-5-4-prompting (prompt-blocks.md), bodies
+# adapted to this skill's output schema; re-checked against the 5.6/Astra
+# guides 2026-09-11. Re-sync the tag set if the official guide updates.
+#   task                        — §Core Wrapper
+#   structured_output_contract  — §Output and Format
+#   research_mode               — §Task-Specific Blocks
+#   citation_rules              — §Grounding and Missing Context
 cat > "$PROMPT_FILE" <<'EOF'
 <task>
 You are a technical researcher conducting a deep investigation.
@@ -102,10 +108,6 @@ Breadth first, then depth where evidence changes the recommendation.
 <citation_rules>
 Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
 </citation_rules>
-
-<grounding_rules>
-Ground claims in evidence. Label hypotheses clearly.
-</grounding_rules>
 EOF
 ```
 
@@ -187,10 +189,6 @@ Breadth first, then depth where evidence changes the recommendation.
 <citation_rules>
 Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
 </citation_rules>
-
-<grounding_rules>
-Ground claims in evidence. Label hypotheses clearly.
-</grounding_rules>
 ```
 
 Document: `benchmarks/results.md` (512 lines) — blind-appended as `<context_document>`

@@ -1,0 +1,20 @@
+<task>
+You are a technical researcher conducting a deep investigation.
+Topic: <literal topic from Phase 1>
+Investigate thoroughly. Use web search if helpful.
+Surface non-obvious insights, not just the first answer.
+</task>
+
+<structured_output_contract>
+Structured analysis with clear sections.
+Separate: observed facts, reasoned inferences, open questions.
+Identify risks, trade-offs, alternative perspectives.
+</structured_output_contract>
+
+<research_mode>
+Breadth first, then depth where evidence changes the recommendation.
+</research_mode>
+
+<citation_rules>
+Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
+</citation_rules>

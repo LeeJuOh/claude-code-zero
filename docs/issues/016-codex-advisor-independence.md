@@ -1,6 +1,6 @@
 # 이슈 016 — codex-advisor 검수자 독립성 복원 구현 (슬라이스 S1~S6, S3b)
 
-> 상태: **in-progress** — S3·S3b·S4 완료(`7ad6a83`, `c8ce59d`, `1a3906c`, `8846605`) + R4·R5 반영(`83fec68`, `51b9f8c`), 다음 **S1**(SKILL.md 편집 구간 시작) · (Q1~Q18·R1~R3 유지. 최종 검수 F1~F9·I1~I3·N1·N2 결정·반영 완료, 2026-09-14) · 생성: 2026-09-11
+> 상태: **in-progress** — S3·S3b·S4 완료(`7ad6a83`, `c8ce59d`, `1a3906c`, `8846605`) + R4·R5 반영(`83fec68`, `51b9f8c`) + S1 완료, 다음 **S2** · (Q1~Q18·R1~R3 유지. 최종 검수 F1~F9·I1~I3·N1·N2 결정·반영 완료, 2026-09-14) · 생성: 2026-09-11
 > 스펙 (PRD): `docs/specs/016-codex-advisor-independence.md` — 문제 정의, 유저 스토리, 결정 D1~D6, 그릴 확정 사항 전부 스펙 참조. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/codex-advisor/` (v4.7.1 → v5.0.0, major — R2)
 > 용어집: `docs/context/codex-advisor.md` — **Double-check independence / Verifier / Verifier payload / Author note / Hypothesis exclusion / Finding group / Autonomy policy** · ADR: 0004(전제), 0012(③ 구조)
@@ -406,8 +406,8 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 | S4 후반 | 완료 | `6a3a04b`(fixture) + `8846605`(빌더·러너·`evals.json` 9종 + 실측 기록) |
 | R4 반영 | 완료 | `83fec68` — raised item 전용 라벨 |
 | R5 반영 | 완료 | `51b9f8c` — 수용기준에서 req 개수 미검사 |
-| **S1** | **미착수** | `autonomy_policy`가 `skills/codex-rescue/SKILL.md`에 0건 |
-| S2 | 미착수 | `--no-preview`가 rescue·research·verify SKILL.md(각 6·3·3건)와 `plugins/codex-advisor/README.md:127`에 그대로 |
+| S1 | 완료 | rescue `autonomy_policy` 1블록, research `grounding_rules` 삭제, 출처 주석 3스킬. 검증은 `evals/check-prompt-blocks.py`(골든 `evals/golden/`) |
+| **S2** | **미착수** | `--no-preview`가 rescue·research·verify SKILL.md(각 6·3·3건)와 `plugins/codex-advisor/README.md:127`에 그대로 |
 | S5a·S5b·S6 | 미착수 | Phase 4 배선 없음, `marketplace.json` 버전 4.7.1 그대로 |
 
 마지막으로 돌린 검증: `python3 plugins/codex-advisor/scripts/tests/test_prepare_verifier.py` 23건 통과, `node --test plugins/codex-advisor/hooks/tests/verifier-payload.test.mjs` 12건 통과, `unset CLAUDECODE && claude plugin validate .` 통과(경고는 기존 — 로컬 플러그인 버전은 `marketplace.json`에만 둔다). 세 명령 모두 로그를 커밋하지 않으므로 증거는 이 기록뿐 — 편집 후 다시 돌리는 게 맞다.
