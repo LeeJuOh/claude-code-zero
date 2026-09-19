@@ -123,12 +123,16 @@ Do not write tests for reversible, low-impact changes that mirror the implementa
 </autonomy_policy>
 ```
 
-The read-only form keeps the reporting line and the follow-through line:
+The read-only form drops the lines about making changes and keeps the
+reporting and follow-through ones. The question line stays: a read-only
+run reaches Codex through the same companion, so a question ends the
+turn there too, and the job still reports `completed`.
 
 ```xml
 <autonomy_policy>
 For review, diagnose, or research requests, inspect the relevant materials and report. Do not implement changes.
 Bias towards action. Do not stop at a partial answer, a proposed plan, or an offer to continue.
+Never end with a question — no one can answer it.
 </autonomy_policy>
 ```
 

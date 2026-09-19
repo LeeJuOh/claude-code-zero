@@ -406,7 +406,7 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 | S4 후반 | 완료 | `6a3a04b`(fixture) + `8846605`(빌더·러너·`evals.json` 9종 + 실측 기록) |
 | R4 반영 | 완료 | `83fec68` — raised item 전용 라벨 |
 | R5 반영 | 완료 | `51b9f8c` — 수용기준에서 req 개수 미검사 |
-| S1 | 완료 | rescue `autonomy_policy` 1블록, research `grounding_rules` 삭제, 출처 주석 3스킬. 검증은 `evals/check-prompt-blocks.py`(골든 `evals/golden/`) |
+| S1 | 완료 | rescue `autonomy_policy` 1블록(`--write` 6행 / read-only 3행 — 5행 추가는 아래 R6), research `grounding_rules` 삭제, 출처 주석 3스킬. 검증은 `evals/check-prompt-blocks.py`(골든 `evals/golden/`) |
 | **S2** | **미착수** | `--no-preview`가 rescue·research·verify SKILL.md(각 6·3·3건)와 `plugins/codex-advisor/README.md:127`에 그대로 |
 | S5a·S5b·S6 | 미착수 | Phase 4 배선 없음, `marketplace.json` 버전 4.7.1 그대로 |
 
@@ -455,6 +455,8 @@ python3 plugins/codex-advisor/evals/run-evals.py --out-dir <ws> [--only <name>] 
 - S2의 골든 비교는 Verifier가 아니라 PROMPT_FILE이 대상이라 이 러너가 아니라 결정론적 스크립트로 재는 게 맞다 — `evals/`에 새 스크립트를 두는 게 자연스럽다.
 
 ### Decisions Made
+
+- **R6 (2026-09-20, S1)** — read-only rescue의 `autonomy_policy`에도 `Never end with a question`을 넣는다(원안 1·3행 → 1·3·5행). 그 줄이 막는 것은 승인 경계가 아니라 완주이고, read-only도 같은 companion task 경로라 질문으로 끝난 턴이 `completed`로 집계되는 문제가 동일하다. 공식 플러그인은 이 구멍을 안 막는다(`agents/codex-rescue.md`는 forwarding만, `prompt-blocks.md:52`의 `default_follow_through_policy`는 오히려 질문을 허용) — thin wrapper 설계의 결과이지 안전하다는 근거가 아니다. 반영: `skills/codex-rescue/SKILL.md`, 스펙 D2, `evals/check-prompt-blocks.py`.
 
 - **R4 (2026-09-19)** — Verifier가 스스로 올린 항목(`missing-N`·`side-effect-N`)에 4라벨을 붙이면 안 된다. 4라벨은 "Codex 주장이 맞나"를 재는 도구인데 이 둘은 Codex의 주장이 아니다. 누락에 `Agreed`를 붙이면 "누락을 승인함"으로 읽히고 Agreement에서 Codex 가점으로 들어간다(실측: research-coverage가 5/5 Agreed = High agreement로 나왔는데 1건은 Codex 누락). 전용 라벨 도입 + Agreement 분모 제외 + 보고서 두 줄 분리. 용어집에 **Raised item** 항목 신설.
 - **R5 (2026-09-19)** — 수용기준에서 `req-N` 개수를 세지 않는다. 규칙이 항목 경계를 Verifier에게 맡기므로 같은 입력에서 3개·2개로 갈린다. fixture를 번호 매긴 요구사항으로 다시 쓰는 대안은 버렸다 — 이 fixture의 목적이 "뭉친 산문을 나눌 수 있나"인데 나눠주면 시험이 없어진다.

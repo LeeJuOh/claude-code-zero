@@ -123,7 +123,7 @@ Do not write tests for reversible, low-impact changes that mirror the implementa
 </autonomy_policy>
 ```
 
-스킬별 적용 (그릴 2026-09-11 확정): **rescue만**. `--write`는 전문, read-only는 1·3행(보고형 + follow-through). verify/research에는 넣지 않음 — 읽기 전용 sandbox라 승인 경계 무관, 기존 블록이 이미 1회 지시. 이 초안은 세션 산출물이며 실측 전 — 그릴에서 문구 단위로 검토한다.
+스킬별 적용 (그릴 2026-09-11 확정): **rescue만**. `--write`는 전문, read-only는 1·3·5행(보고형 + follow-through + 질문 금지). **5행 추가는 구현 중 결정(2026-09-20, S1)** — 원안은 1·3행이었으나 5행이 막는 것은 승인 경계가 아니라 완주다. read-only도 같은 companion task 경로라 질문으로 끝난 턴이 `completed`로 집계되는 것은 동일하고, 읽기 전용 실행에 "질문 말고 끝까지 보고하라"는 이미 허용된 행동의 범위 안이라 부작용이 없다. verify/research에는 넣지 않음 — 읽기 전용 sandbox라 승인 경계 무관, 기존 블록이 이미 1회 지시. 이 초안은 세션 산출물이며 실측 전 — 그릴에서 문구 단위로 검토한다.
 
 블록마다 출처 주석을 남긴다: `<!-- source: OpenAI "Using GPT-5.6" §Define autonomy and approval boundaries; "Using GPT-6 Astra" §Initiative and follow-through, §Testing and verification (2026-09-11) -->`. 이것이 ADR 0004가 요구한 provenance note의 지불이다. 기존 `gpt-5-4-prompting` 출처 주석은 유지된 블록에만 남긴다.
 

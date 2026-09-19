@@ -107,8 +107,10 @@ def main():
               "autonomy_policy should settle scope once with 'already approved'")
         check(full.count("Never end with a question") == 1,
               "autonomy_policy should say 'Never end with a question' once")
-        check(len(readonly.strip().splitlines()) == 4,
-              "read-only autonomy_policy should keep the reporting and follow-through lines only")
+        check(len(readonly.strip().splitlines()) == 5,
+              "read-only autonomy_policy should keep the reporting, follow-through and question lines")
+        check(readonly.count("Never end with a question") == 1,
+              "read-only autonomy_policy should say 'Never end with a question' once")
 
     # Provenance: every retained block names the guide and section it came from,
     # so the next model guide tells us what to re-sync.
