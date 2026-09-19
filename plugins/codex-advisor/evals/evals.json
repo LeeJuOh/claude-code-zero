@@ -1,0 +1,109 @@
+{
+  "skill_name": "codex-advisor:verifier",
+  "notes": "Payloads are built by build-payloads.py from evals/fixtures/. `{PAYLOAD}` in a prompt is replaced with that eval's payload path. Nothing here calls Codex: the fixtures stand in for Codex output because the thing under test is the Verifier.",
+  "prompt_template": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "agreed",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "One verdict for F1, classification Agreed: app/auth.py:6 really does interpolate the username into SQL text.",
+      "assertions": [
+        "Reply parses as one JSON object with a `verdicts` array and no prose inside it",
+        "verdicts has exactly one entry, with id F1",
+        "F1 classification is Agreed",
+        "Output contains no PASS, FAIL, or Agreement summary string"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "no-such-function",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "One verdict for F1 that is not Agreed: the cited range exists but holds get_user(), not the validate_token() the finding describes.",
+      "assertions": [
+        "Reply parses as one JSON object with a `verdicts` array and no prose inside it",
+        "F1 classification is not Agreed",
+        "evidence is non-empty and names what was read at the cited range"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "nuanced",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "One verdict for F1, classification Nuanced: float() parsing is real, but money.py only uses it for a preview and billing.settle() recomputes the authoritative total with Decimal.",
+      "assertions": [
+        "Reply parses as one JSON object with a `verdicts` array and no prose inside it",
+        "F1 classification is Nuanced",
+        "evidence cites both money.py and billing.py"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "external-fact",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "One verdict for F1, classification Unverifiable: the retry loop is real but the upstream plan's 1,000-call-per-day limit is not a fact the repository holds.",
+      "assertions": [
+        "Reply parses as one JSON object with a `verdicts` array and no prose inside it",
+        "F1 classification is Unverifiable",
+        "evidence names the missing fact (the upstream quota) rather than disputing the finding"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "group-of-two",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "Two verdicts, F1 and F2, one per payload item: F1 (validate_token) not Agreed, F2 (SQL interpolation) Agreed.",
+      "assertions": [
+        "verdicts has exactly two entries",
+        "verdict ids are exactly F1 and F2, matching the payload items",
+        "The two verdicts do not share the same classification"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "rescue-diff",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "The Verifier splits the task prose into requirements req-1 (infer the delimiter) and req-2 (row error names file and line), judges each against the diff, and reports the deleted strip_bom() and the added logging as side-effect-N items.",
+      "assertions": [
+        "Verdict ids include at least req-1 and req-2",
+        "Verdict ids include at least one side-effect-N item",
+        "A side-effect verdict names the removal of strip_bom() or the added logging call",
+        "No verdict id falls outside the req-N and side-effect-N schemes"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "research-sources",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "The Verifier splits the result into items with item-N ids: the billing.py claim is checked by reading the file, and the docs.python.org claim by fetching the cited URL (Unverifiable with reason external-source if the page will not open).",
+      "assertions": [
+        "Verdict ids follow the item-N scheme",
+        "At least two verdicts, covering the local-file claim and the URL-sourced claim",
+        "The local-file verdict's evidence cites app/billing.py",
+        "If the URL verdict is Unverifiable its reason names external-source"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "research-coverage",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "Alongside item-N verdicts for what the result does say, a missing-1 verdict: the approved scope asked whether the loop waits between attempts, and the result never answers it.",
+      "assertions": [
+        "Verdict ids include missing-1",
+        "The missing-1 evidence names the unanswered scope point (whether the loop waits between attempts)",
+        "At least one item-N verdict covers a claim the result does make"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "group-comparison",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "Measurement, not a pass/fail: the same five orders.py findings judged once as a single group of five, then as five separate one-finding groups. Record the Agreed count on each side as evidence for or against the group cap of 5 (issue 016 Q17).",
+      "assertions": [
+        "Recorded: Agreed count out of 5 when judged as one group",
+        "Recorded: Agreed count out of 5 when judged as five separate groups",
+        "Not a pass criterion — the numbers only inform the group cap"
+      ]
+    }
+  ]
+}
