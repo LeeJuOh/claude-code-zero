@@ -3,7 +3,6 @@ name: codex-review
 description: "Run Codex code review with Claude's independent double-check. Use when asked \"codex review\", \"review my code with codex\", or wants Codex to review code changes. For adversarial review use /codex-adversarial."
 argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
-disallowed-tools: ["SendMessage"]
 ---
 
 # Codex Code Review + Double-Check

@@ -104,13 +104,18 @@ inspects `subagent_type`.
 A final review asked what the structure actually closes. Three limits are now explicit (issue 016
 F1, F2, F8):
 
-- **Follow-up messages.** The hook sees only the `Agent` call, but `SendMessage` resumes a running
-  or finished subagent without one. The five skills list `SendMessage` in `disallowed-tools`,
-  removing it from the main session while the skill is active. The restriction clears on the
-  user's next message, so resuming a Verifier after the report is saved is not blocked — the saved
-  verdicts do not change. A second hook that records Verifier IDs and denies messages to them was
-  rejected: the main session is not adversarial, and unlike the launch prompt, messaging is not a
-  path every call passes through.
+- **Follow-up messages — not closed.** The hook sees only the `Agent` call, but `SendMessage`
+  resumes a running or finished subagent without one. The five skills carried
+  `disallowed-tools: SendMessage` until v5.0.1, on the theory that it would hold for the length of
+  a skill run. Measured on 2026-09-20 it does not: the tool is removed when the skill loads and is
+  back one turn later, and the turn that restores it need not be the user's — a background task
+  notification is enough. Every skill here launches Codex in the background, so the restriction is
+  gone before the Verifier is ever launched. The line was removed rather than left to imply a
+  guarantee it never gave. What stands in its place is the instruction in each SKILL.md: a
+  Verifier, running or finished, takes no follow-up message, and a re-verification is a new
+  `Agent` call on the same payload. A second hook that records Verifier IDs and denies messages to
+  them stays rejected for the original reason — the main session is not adversarial, and unlike
+  the launch prompt, messaging is not a path every call passes through.
 - **Item completeness.** Checking that every item got a verdict works only where the script
   numbers the items (review, adversarial). For prose results (verify, research, rescue) the
   Verifier draws the item boundaries, so a skipped item is not detected.

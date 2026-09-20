@@ -3,7 +3,6 @@ name: codex-verify
 description: "Verify a plan or document using Codex as independent reviewer with PASS/FAIL verdict. Use when asked \"codex verify\", \"verify this plan\", \"review this doc for issues\"."
 argument-hint: "path/to/document.md [focus text] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
-disallowed-tools: ["SendMessage"]
 ---
 
 # Codex Document Verification + Double-Check

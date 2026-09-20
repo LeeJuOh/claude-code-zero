@@ -437,7 +437,7 @@ S3·S3b·S4·S1·S2·S5a·S5b는 다시 돌릴 필요 없다. S4 실측 결과�
 - **`--mode doc` 호출은 각 스킬에 1회.** `grep -c 'prepare-verifier.py'`가 2를 세는 건 Execution Contract 표의 한 줄이 같이 잡히기 때문이다 — bash 블록은 하나다.
 - **research는 `--document` 줄을 topic-only 때 통째로 뺀다.** 실측: 뺀 payload에 `document` 키가 없고 `prompt_file`·`codex_result`는 있다(F7 충족).
 - **Phase 3이 결과를 `RESULT_FILE`에 저장한다.** 두 스킬 모두 Phase 1 bash에서 `RESULT_FILE`을 만들어 `echo`하고, Phase 3의 `result --json`을 그 파일로 리다이렉트한다. 리다이렉트가 load-bearing인 이유(Codex 답변이 문서를 인용한다)를 SKILL.md에 적어뒀다.
-- **frontmatter** — 두 스킬 `allowed-tools`에 `Agent` 추가, `disallowed-tools: ["SendMessage"]` 신설. S5a 3스킬과 같은 두 줄.
+- **frontmatter** — 두 스킬 `allowed-tools`에 `Agent` 추가. (`disallowed-tools: ["SendMessage"]`도 함께 넣었으나 **v5.0.1에서 다섯 스킬 전부 제거** — F1 실측 실패.)
 - **정리(cleanup) 규칙** — `$WORK`는 **지우지 않는다**(S5a와 동일). `rm -f`에는 `RESULT_FILE`을 추가했다.
 - **`check-prompt-blocks.py`의 `VERIFIER_SKILLS`가 5개가 됐다.** `ABSENT_WAIT_TOOLS` 루프는 review·adversarial 전용 하드코딩이라 안 건드렸다.
 - **판별력 확인 완료** — 편집 전 두 파일(`git show HEAD:<path>`)로 되돌려 돌리면 **11건 FAIL**. 새 검사는 실제로 무언가를 잡는다.
@@ -451,7 +451,7 @@ S3·S3b·S4·S1·S2·S5a·S5b는 다시 돌릴 필요 없다. S4 실측 결과�
 - `--disallowedTools Agent` 실행 → `Unverified` + verify는 FAIL(규칙 3), 메인이 문서·Codex 결과를 Read한 호출 0회
 - research topic-only 실행 → 보고서에 `Verifier: fresh subagent`(payload 쪽은 실측으로 이미 닫았다)
 - **verify PASS/FAIL 5종** — ⚠️ **fixture가 없다.** `evals/fixtures/`에는 `codex`·`repo`·`rescue`·`research`만 있다. 이 5건은 Verifier가 아니라 **메인의 집계**를 재는 것이라 `run-evals.py`로는 못 닫는다. 대화형 실행에서 Verifier가 돌려준 JSON을 보고 규칙 1~4가 맞게 적용됐는지 확인한다
-- **F1** — 스킬 실행 중 프리뷰에 답한 뒤에도 메인 도구 목록에 `SendMessage`가 없는지(S5a의 R10). 실패면 다섯 스킬 frontmatter의 `disallowed-tools` 줄을 지우고 스펙 D3 단계 4의 한계 문장만 남긴다
+- ~~**F1**~~ — **닫힘, 실패 판정(2026-09-20 실측).** 프리뷰까지 갈 것도 없었다. `disallowed-tools`는 스킬 로드 시 실제로 걸리지만(플러그인 스킬에서도 적용된다 — 그 절반은 참이었다) **다음 턴에 풀린다**. 그리고 그 턴은 유저 메시지일 필요가 없다 — 백그라운드 Codex 완료 알림 하나로 복구됐다. 이 플러그인의 다섯 스킬은 전부 Phase 2에서 Codex를 백그라운드로 띄우므로 **Verifier를 부르기 전에 제한이 사라진다**. R10의 후퇴안대로 다섯 줄을 빼고 한계를 명시했다(v5.0.1). 검사도 뒤집었다 — `check-prompt-blocks.py`가 이제 `disallowed-tools` **부재**와 SKILL.md 지시 문장 존재를 잰다
 - **N1** — `claude -p`에서 질문 도구가 없을 때 프리뷰 동작. **S6 전에 한 번은 확인한다**
 
 이번 세션에서 **실측으로 닫은 것**(로그는 커밋 안 함):
@@ -535,7 +535,7 @@ python3 plugins/codex-advisor/evals/run-evals.py --out-dir <ws> [--only <name>] 
 
 - **S5b 문구 조정 — `"resume"` 금지 검사 오탐.** S2가 verify·research에 `"resume"` 문자열을 금지했다(Codex 스레드 재개 방지). S5a가 쓴 "a Verifier ... is never resumed with a follow-up message"를 그대로 베끼면 뜻이 정반대인데도 FAIL이 난다. 검사를 좁히는 대신 두 스킬의 문장을 "a Verifier already running or finished takes no follow-up message"로 바꿨다 — 회귀 방어를 약화시키지 않는 쪽. ⚠️ **그래서 이 한 문장만 다섯 스킬에서 표현이 갈린다.**
 
-- **R10 (S5a) — `disallowed-tools: SendMessage`를 일단 넣되 F1 실측 결과에 따라 뺀다.** 공식 문서가 "The restriction clears when you send your next message."라고 명시한다. 프리뷰 응답이 `AskUserQuestion` 도구 결과로 오면 유지되고, 유저가 그냥 타이핑하면 풀린다 — F1이 갈라야 하는 지점.
+- **R10 (S5a) — `disallowed-tools: SendMessage`를 일단 넣되 F1 실측 결과에 따라 뺀다. → 뺐다(v5.0.1).** 공식 문서의 "The restriction clears when you send your next message."에서 **"your next message"가 유저 메시지만을 뜻하지 않는다**는 게 실측으로 드러났다. 백그라운드 작업 완료 알림도 턴을 넘기고 제한을 푼다. 프리뷰 유무와 무관하게 — 프리뷰가 없는 `codex-review`에서 났다.
 - **R9 (S5a) — `--ref` 판정을 플래그가 아니라 companion이 실제로 고른 스코프(`target.mode`)로 한다.**
 - **R8 (S2) — 가설 제외는 검수·조사 3스킬만. rescue는 시공 경로라 대상이 아니다.** 스펙 D1의 "적용 스킬 4개"는 이 결정으로 덮어쓴다.
 - **R7 (S2) — rescue `autonomy_policy`에 "전제가 틀렸으면 보고하라" 한 행.** 보고만 — 직접 수정을 시키면 같은 부록의 scope 줄과 부딪힌다.

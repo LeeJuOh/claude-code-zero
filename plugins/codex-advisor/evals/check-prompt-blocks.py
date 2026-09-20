@@ -210,8 +210,15 @@ def main():
         lines = text.split("\n")
         check(len(lines) <= 500, "%s is %d lines, over the 500-line editing bound"
               % (name, len(lines)))
-        check(re.search(r"^disallowed-tools:.*\bSendMessage\b", text, re.M) is not None,
-              "%s frontmatter does not remove SendMessage" % name)
+        # `disallowed-tools: SendMessage` was measured to lapse one turn after the
+        # skill loads — and a background task notification is turn enough, which
+        # every skill here produces before the Verifier is launched. The line is
+        # gone (v5.0.1); what defends the Verifier now is the written instruction,
+        # so that is what gets checked.
+        check(re.search(r"^disallowed-tools:", text, re.M) is None,
+              "%s reintroduces disallowed-tools, which implies a guarantee it does not give" % name)
+        check("follow-up message" in text,
+              "%s does not tell the main session to leave a launched Verifier alone" % name)
         check(re.search(r"^allowed-tools:.*\bAgent\b", text, re.M) is not None,
               "%s cannot launch a Verifier without Agent in allowed-tools" % name)
         check("scripts/prepare-verifier.py" in text,

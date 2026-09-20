@@ -3,7 +3,6 @@ name: codex-rescue
 description: "Delegate an implementation task to Codex, then Claude reviews the result. Use when asked \"codex rescue\", \"delegate to codex\", \"have codex do it\", or wants Codex to implement or fix something."
 argument-hint: "task description [--write] [--model MODEL] [--effort LEVEL] [--resume-last|--resume|--fresh]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
-disallowed-tools: ["SendMessage"]
 ---
 
 # Codex Task Delegation + Double-Check

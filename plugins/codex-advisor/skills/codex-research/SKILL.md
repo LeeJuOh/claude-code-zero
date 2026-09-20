@@ -3,7 +3,6 @@ name: codex-research
 description: "Deep-dive research using Codex, double-checked by a fresh verifier subagent. Use when asked \"codex research\", \"deep dive with codex\", \"investigate this topic\". Not for code review or plan verification."
 argument-hint: "topic [path/to/document.md] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
-disallowed-tools: ["SendMessage"]
 ---
 
 # Codex Research + Independent Verification
