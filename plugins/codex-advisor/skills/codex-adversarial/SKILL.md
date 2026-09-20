@@ -2,15 +2,17 @@
 name: codex-adversarial
 description: "Run Codex adversarial review — actively tries to break confidence in the change. Use when asked \"adversarial review\", \"red-team this change\", or wants thorough security/correctness challenge."
 argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL] [focus text]"
-allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
+allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
+disallowed-tools: ["SendMessage"]
 ---
 
 # Codex Adversarial Review + Double-Check
 
-You are a **translator + executor + double-checker**. Adversarial review
-defaults to skepticism — it looks for reasons NOT to ship. Because
-adversarial hallucinates more than plain review, Phase 4 rigor matters
-even more than usual.
+You are a **translator + executor**. Adversarial review defaults to
+skepticism — it looks for reasons NOT to ship, and it invents more than plain
+review does. Your first job is a clean invocation; your second is to hand what
+comes back to a fresh Verifier subagent and report what it decides. The extra
+noise is why the judging is deliberately not yours.
 
 ## Execution Contract
 
@@ -20,8 +22,8 @@ even more than usual.
 |-------|---------|-----------|
 | 1 ANALYZE | `test -f/-s/-d`, `git rev-parse --verify`, `git branch --list`, `wc -l/-c`, `file`, `echo`, `printf` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
 | 2 INVOKE | Bash for companion launch (multi-arg form only — never `$ARGUMENTS` blob) | All source reads |
-| 3 WAIT | `BashOutput` | All source reads, manual polling, `ps`/`kill` outside `KillShell` |
-| 4 DOUBLE-CHECK | Read ONLY files/lines Codex cited | Reading whole files "for context"; reading uncited files; inventing citations |
+| 3 WAIT | `Read` the output file once the background command reports completion | All source reads, manual polling, `ps`/`kill` |
+| 4 VERIFY | `prepare-verifier.py`, then `Agent` (`codex-advisor:verifier`) per group | Reading source; judging or re-judging any finding yourself |
 | 5 REPORT + SAVE | Write report file | n/a |
 
 The companion collects the diff itself. Unknown flags are silently
@@ -215,45 +217,108 @@ variables do not survive across calls.
 
 ## Phase 3: Wait
 
-Poll with `BashOutput` every **30 seconds** (60s acceptable for very
-long reviews). Termination: `BashOutput` response field
-`status === "completed"`. Never match on stdout content.
+The companion runs in the background, so this turn resumes on its own when the
+command exits — there is no polling loop to write and no timer to set. On the
+completion notification, `Read` `$OUT_FILE`.
 
-| Situation | Action |
+| What you find | Action |
 |-----------|--------|
-| `completed` + `$OUT_FILE` is valid JSON | Proceed to Phase 4 |
-| `completed` + `$OUT_FILE` empty | Read `$ERR_FILE`, categorize per §6, save `adversarial-<ts>-failed.md`, stop |
-| `completed` + non-JSON | `unexpected-format` — show stderr verbatim, abort |
-| 30 minutes elapsed | `wait-timeout` — `KillShell` the bash_id, handle per §6 |
+| `$OUT_FILE` is valid JSON | Proceed to Phase 4 |
+| `$OUT_FILE` empty | Read `$ERR_FILE`, categorize per §6, save `adversarial-<ts>-failed.md`, stop |
+| `$OUT_FILE` non-JSON | `unexpected-format` — show stderr verbatim, abort |
+
+A run that never finishes is the user's to end, with `/codex-cancel` or Esc.
 
 Full error table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
 
 ---
 
-## Phase 4: Double-check
+## Phase 4: Verify
 
-Now — and **only now** — you may read source code.
+You do not judge Codex's findings — a fresh subagent does. You have been in this
+conversation since before the review started, and an author grading a review of
+their own code is not a review (ADR 0012). Your job in this phase is plumbing:
+run the script, launch the Verifiers, collect what comes back. Adversarial's
+higher false-positive rate is handled where it belongs — the script checks every
+citation against the tree, and the Verifier weighs the attack scenario.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
+### Step 1 — Prepare the payloads
 
-Adversarial findings are intentionally skeptical. **Be especially
-rigorous — adversarial review produces more false positives by design.**
+```bash
+set -o pipefail
+REPO=$(git rev-parse --show-toplevel)
+WORK="${CLAUDE_PLUGIN_DATA}/tmp/verify-$(date +%s%N)"
+echo "WORK=$WORK"
 
-Parse `$OUT_FILE` JSON. For each finding:
+# A branch review judged committed code, so its citations should still match HEAD
+# and drift since the review is worth flagging; a working-tree review has no such
+# ref. `target.mode` is the scope the companion actually resolved, which is the
+# only reliable answer when the user passed --scope auto.
+REF=$(node -e 'const t=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).target;process.stdout.write(t&&t.mode==="branch"?"HEAD":"")' \
+  "<literal $OUT_FILE path>")
 
-1. **Read ONLY the file:line Codex cited.** Never whole files.
-2. **Verify the attack scenario is realistic.** Adversarial prompts
-   happily invent implausible failure modes.
-3. **Classify:**
-   - **Agree** — cited code matches a real vulnerability / bug
-   - **Disagree** — cited code does not have the problem described
-   - **Nuance** — real issue but Codex overstated severity or missed a
-     mitigating factor
-   - **False Positive (hallucination)** — Codex cited a file, function,
-     or line that does **not exist** in the current source tree. This is
-     the most common failure mode for adversarial.
-   - **Uncited** — no concrete file:line. Surface to user as
-     "verification deferred". **Never invent citations.**
+# Spelt out rather than folded into `${REF:+...}`: zsh does not word-split an
+# unquoted expansion, so that form arrives as the single argument `--ref HEAD`.
+if [ -n "$REF" ]; then
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+    --skill adversarial --input "<literal $OUT_FILE path>" --repo "$REPO" \
+    --out-dir "$WORK" --ref "$REF"
+else
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+    --skill adversarial --input "<literal $OUT_FILE path>" --repo "$REPO" \
+    --out-dir "$WORK"
+fi
+echo "prepare-verifier exit=$?"
+```
+
+The script reads `result.findings`, checks that every cited `file:line` exists, and
+writes one payload file per group. Its stdout JSON is your view of the findings —
+you do not re-derive that list by hand, because a list you extracted yourself is a
+list you have already formed an opinion about.
+
+| Exit | Meaning | What you do |
+|---|---|---|
+| 0 | payloads written | Step 2 |
+| 3 | `parse_error` — Codex's structured output no longer parses | Go to Phase 5 and report `Codex output format changed — no verdicts`. No Verifier, no hand-extracted findings. |
+| 4 | `no_output` — Codex returned nothing to judge | Go to Phase 5 and report `Codex returned no output — no verdicts`. |
+| 2 | bad usage, unreadable input, or git failure | Show stderr verbatim and stop. |
+
+Exit 0 with an empty `groups` list means Codex raised nothing. Report zero findings
+plus Codex's own `overall_explanation`, and launch no Verifier.
+
+### Step 2 — Launch one Verifier per group
+
+For each entry in the script's `groups`, make one `Agent` call:
+
+- `subagent_type: codex-advisor:verifier`, which starts a fresh subagent. Not
+  `fork` — a fork inherits this entire conversation, which is exactly the memory
+  the double-check exists to remove.
+- `prompt`: the group's `payload` path and nothing else. A PreToolUse hook replaces
+  the prompt with that file's hash-checked contents, so any sentence you write
+  around the path is discarded before the Verifier sees it. There is no hint to
+  pass and no room to pass one.
+
+Launch at most **10 at a time** and start the next batch once those return. The
+session cap is 20 concurrent subagents; the headroom keeps a large review from
+hitting it.
+
+When an `Agent` call fails, that group's findings are `Unverified — Verifier call
+failed`. Do not judge them in its place and do not retry on your own. If the user
+asks for a retry, make a new `Agent` call with the same payload path — a Verifier,
+running or finished, is never resumed with a follow-up message.
+
+### Step 3 — Collect the verdicts
+
+Each Verifier returns one JSON object, `{"verdicts": [...]}`.
+
+Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md` and follow its *Reporting*
+section: match verdicts to ids, transcribe the script's own labels (`missing` →
+False Positive, `uncited` → Uncited, drift `unverifiable` → Unverifiable), and
+count. A non-empty `worktree_drift` gets the drift line the template shows.
+
+A verdict you disagree with stays exactly as the Verifier wrote it; your
+disagreement goes beneath it on one `Author note (main session):` line. Rewriting
+the verdict would make you the judge again.
 
 ---
 
@@ -264,27 +329,33 @@ mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
 ```
 
 **Success:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>.md`. Include
-Codex output verbatim, per-finding classifications, and a realistic risk
-assessment separating genuine concerns from noise.
+`${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>.md` using the
+standard format in `references/evaluation.md` — Codex's output verbatim, the
+verdicts by classification, then the summary counts. The counts are the risk
+picture: a high False Positive line is what separates noise from the real
+concerns, so leave it visible rather than summarizing it away.
 
 **Failure:** save to
 `${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>-failed.md`
 with error category and captured stderr.
 
-Clean up temp files using the literal paths captured in Phase 2:
+Clean up the companion's temp files using the literal paths captured in Phase 2:
 
 ```bash
 rm -f "<literal $OUT_FILE path>" "<literal $ERR_FILE path>"
 ```
 
+Leave `$WORK` where it is. A re-verification the user asks for needs those payload
+files and their manifest, and the hook refuses a payload it cannot hash-check.
+
 ---
 
 ## Gotchas
 
-- **Adversarial hallucinates more.** False Positive classification in
-  Phase 4 is the most common outcome for the noisiest findings. Always
-  verify the cited file:line exists before agreeing.
+- **Adversarial hallucinates more.** False Positive is the most common label on
+  the noisiest findings, and the script reaches it before any Verifier runs by
+  checking the citation against the tree. A high False Positive count in the
+  report is the expected shape here, not a broken run.
 - **Focus text IS allowed here** (unlike `/codex-review`). It goes as a
   positional argument after the flags.
 - **`--commit`, `--uncommitted` do not exist** — translate via ANALYZE,

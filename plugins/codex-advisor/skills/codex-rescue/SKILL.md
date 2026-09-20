@@ -2,17 +2,18 @@
 name: codex-rescue
 description: "Delegate an implementation task to Codex, then Claude reviews the result. Use when asked \"codex rescue\", \"delegate to codex\", \"have codex do it\", or wants Codex to implement or fix something."
 argument-hint: "task description [--write] [--model MODEL] [--effort LEVEL] [--resume-last|--resume|--fresh]"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
+allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
+disallowed-tools: ["SendMessage"]
 ---
 
 # Codex Task Delegation + Double-Check
 
-You are a **translator + executor + double-checker**. The user is
-handing off an implementation task. Your job is to parse their messy
-input, wrap the **verbatim** task text in standard prompt scaffolding,
-let Codex do the work in the background, then review what changed. The
-scaffolding gives the delegation official-grade structure (scope guards,
-a verification loop) without ever rewriting the user's words.
+You are a **translator + executor**. The user is handing off an
+implementation task. Your job is to parse their messy input, wrap the
+**verbatim** task text in standard prompt scaffolding, let Codex do the work in
+the background, then hand the result to a fresh Verifier subagent and report what
+it decides. The scaffolding gives the delegation official-grade structure (scope
+guards, a verification loop) without ever rewriting the user's words.
 
 The scaffolding is **adaptive**: rescue's task type is variable
 (implement / debug / investigate), so you pick the prompt blocks that
@@ -21,8 +22,9 @@ fit the run instead of forcing one fixed template. You add blocks
 result at Phase 1.5.
 
 **Critical:** do NOT explore the repo before Codex runs. The point of
-delegating is that Codex builds the context. Exploring first biases
-your double-check and wastes turns.
+delegating is that Codex builds the context. Exploring first wastes turns, and
+it puts the code in the context of the one session whose opinion the Verifier is
+there to replace.
 
 ## Execution Contract
 
@@ -33,7 +35,7 @@ your double-check and wastes turns.
 | 1 ANALYZE | `test -f/-s/-d`, `git status --porcelain` (file names only, not contents), `echo`, `printf` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
 | 2 INVOKE | Bash for companion launch via stdin pipe (no positional!) | All source reads |
 | 3 WAIT | `status --wait` loop (≤6 iterations, ≤24 min) | All source reads, manual polling, `ps`/`kill` |
-| 4 DOUBLE-CHECK | `git diff` the changed files; Read ONLY files Codex touched or cited | Reading whole files "for context"; reading uncited files |
+| 4 VERIFY | `prepare-verifier.py`, then `Agent` (`codex-advisor:verifier`) | Reading source; judging or re-judging the result yourself |
 | 5 REPORT + SAVE | Write report file | n/a |
 
 Unknown flags are silently joined into the **task prompt** by the
@@ -234,16 +236,18 @@ mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
 TS=$(date +%s%N)
 PROMPT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/rescue-prompt-${TS}.txt"
 JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/rescue-job-${TS}.json"
-PRE_LIST="${CLAUDE_PLUGIN_DATA}/tmp/rescue-pre-${TS}.list"
-PRE_SHA="${CLAUDE_PLUGIN_DATA}/tmp/rescue-pre-${TS}.sha"
+RESULT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/rescue-result-${TS}.json"
 echo "PROMPT_FILE=$PROMPT_FILE"
 echo "JOB_JSON_FILE=$JOB_JSON_FILE"
-echo "PRE_LIST=$PRE_LIST"
-echo "PRE_SHA=$PRE_SHA"
+echo "RESULT_FILE=$RESULT_FILE"
 
-# Snapshot current repo state — file names only, no contents
-git status --porcelain > "$PRE_LIST" 2>/dev/null || true
-git rev-parse HEAD > "$PRE_SHA"
+# --write only: snapshot the whole working tree (tracked + untracked) as a git
+# tree object. Phase 4 diffs against it, so the Verifier sees what Codex changed
+# and not what the tree was already dirty with. Drop this line for a read-only
+# run — there is nothing to diff. The real index is never touched.
+PRE_TREE=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+  snapshot --repo "$(git rev-parse --show-toplevel)")
+echo "PRE_TREE=$PRE_TREE"
 
 # Write the approved WRAPPED prompt from Phase 1.5 — <task> with the
 # user's verbatim text plus the Phase 1 blocks, never the bare task text.
@@ -277,8 +281,8 @@ parsed. Replace `<literal ...>` values with the actual strings from
 Phase 1. `--write` defaults to ON for implementation; omit for
 read-only investigation.
 
-Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, `PRE_LIST`,
-`PRE_SHA`, and `JOB_ID` values. Re-inject these as literal strings in
+Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, `RESULT_FILE`, `PRE_TREE`,
+and `JOB_ID` values. Re-inject these as literal strings in
 every subsequent Bash call — shell variables do not survive across calls.
 
 ---
@@ -304,8 +308,12 @@ Inspect the returned JSON:
 Fetch the final result:
 
 ```bash
-node "$CODEX_COMPANION" result "<literal JOB_ID>" --json
+node "$CODEX_COMPANION" result "<literal JOB_ID>" --json \
+  > "<literal RESULT_FILE path>"
 ```
+
+Phase 4 hands that file to the script rather than to you, so write it to disk even
+when you are about to read it for the report.
 
 Full error table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
 
@@ -316,40 +324,99 @@ Notable cases:
 
 ---
 
-## Phase 4: Double-check
+## Phase 4: Verify
 
-Now — and **only now** — you may read the code.
+You do not judge what Codex produced — a fresh subagent does. You wrote the task
+text, you approved the prompt, and you have been in this conversation the whole
+time; an author grading work done to their own order is not a review (ADR 0012).
+Your job in this phase is plumbing: run the script, launch the Verifier, collect
+what comes back.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
+The two run modes send different things to the Verifier — a diff when Codex wrote
+code, Codex's report when it only investigated. Pick the one that matches Phase 2.
 
 ### If Codex made code changes (`--write`)
 
 ```bash
-git diff
-git diff --stat
-git status --porcelain
+set -o pipefail
+REPO=$(git rev-parse --show-toplevel)
+WORK="${CLAUDE_PLUGIN_DATA}/tmp/verify-$(date +%s%N)"
+echo "WORK=$WORK"
+
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+  --mode diff --pre "<literal PRE_TREE from Phase 2>" \
+  --prompt-file "<literal PROMPT_FILE path>" --repo "$REPO" --out-dir "$WORK"
+echo "prepare-verifier exit=$?"
 ```
 
-For each changed file:
+The script snapshots the tree again and diffs it against the Phase 2 snapshot, so
+the payload holds exactly what changed while Codex ran — not whatever the working
+tree happened to be dirty with beforehand. Untracked files Codex created or edited
+are in it too, because both snapshots cover the whole tree.
 
-1. **Read the diff**, then read only the relevant sections of the file.
-2. **Evaluate:**
-   - Does the change actually solve the task?
-   - Correctness — any bugs introduced?
-   - Scope — any files modified that shouldn't have been? Cross-check against the pre-snapshot file list.
-   - Side effects — does it break something nearby?
+`diff_empty: true` means Codex changed nothing. Report that, and launch no
+Verifier.
 
 ### If Codex returned investigation results (read-only)
 
-Apply the Peer AI Evaluation in `evaluation.md`:
+```bash
+set -o pipefail
+REPO=$(git rev-parse --show-toplevel)
+WORK="${CLAUDE_PLUGIN_DATA}/tmp/verify-$(date +%s%N)"
+echo "WORK=$WORK"
 
-- **Agree** — claim matches the code
-- **Disagree** — claim contradicts the code, with evidence
-- **Nuance** — real insight, but missing context
-- **False Positive (hallucination)** — Codex cited a file / function /
-  line that does **not exist** in the current source tree
-- **Uncited** — no concrete citation. Surface as "verification
-  deferred". Never invent citations.
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+  --skill rescue --input "<literal RESULT_FILE path>" --repo "$REPO" \
+  --out-dir "$WORK"
+echo "prepare-verifier exit=$?"
+```
+
+Codex's report here is prose, so the whole of it becomes one payload and the
+Verifier decides where the items begin and end. You do not cut it into claims
+first — a list you extracted yourself is a list you have already formed an opinion
+about.
+
+### Exit codes (both modes)
+
+| Exit | Meaning | What you do |
+|---|---|---|
+| 0 | payload written | Launch the Verifier |
+| 3 | `parse_error` — the companion's result no longer parses | Go to Phase 5 and report `Codex output format changed — no verdicts`. No Verifier, no hand-extracted claims. |
+| 4 | `no_output` — Codex returned nothing to judge | Go to Phase 5 and report `Codex returned no output — no verdicts`. |
+| 2 | bad usage, unreadable input, or git failure | Show stderr verbatim and stop. |
+
+### Launch the Verifier
+
+Both modes produce a single group, `all`. Make one `Agent` call:
+
+- `subagent_type: codex-advisor:verifier`, which starts a fresh subagent. Not
+  `fork` — a fork inherits this entire conversation, including the task you wrote,
+  which is exactly the memory the double-check exists to remove.
+- `prompt`: the group's `payload` path and nothing else. A PreToolUse hook replaces
+  the prompt with that file's hash-checked contents, so any sentence you write
+  around the path is discarded before the Verifier sees it. There is no hint to
+  pass and no room to pass one.
+
+In `--write` mode the Verifier reads the diff and may `Read` and `Grep` the
+surrounding code to see what the change landed in. It splits your task text into
+requirements (`req-1`, `req-2`, …) itself and raises anything the diff changed that
+no requirement asked for as `side-effect-N`.
+
+When the `Agent` call fails, the result is `Unverified — Verifier call failed`. Do
+not judge it in its place and do not retry on your own. If the user asks for a
+retry, make a new `Agent` call with the same payload path — a Verifier, running or
+finished, is never resumed with a follow-up message.
+
+### Collect the verdicts
+
+The Verifier returns one JSON object, `{"verdicts": [...]}`.
+
+Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md` and follow its *Reporting*
+section for matching ids, counting, and the `side-effect-N` lines.
+
+A verdict you disagree with stays exactly as the Verifier wrote it; your
+disagreement goes beneath it on one `Author note (main session):` line. Rewriting
+the verdict would make you the judge again.
 
 ---
 
@@ -360,14 +427,14 @@ mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
 ```
 
 **Success:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/rescue-<YYYYMMDD-HHMMSS>.md` with:
+`${CLAUDE_PLUGIN_DATA}/reviews/rescue-<YYYYMMDD-HHMMSS>.md` using the standard
+format in `references/evaluation.md`, with the task description in *Scope* and
+Codex's output verbatim. In `--write` mode the Verifier's `req-N` verdicts are
+the per-requirement result and `side-effect-N` goes on the *Unrequested changes*
+line.
 
-- The task description
-- Codex's output verbatim
-- The diff (if any)
-- Claude's per-finding / per-file evaluation
-- Verdict: appropriate / has issues / needs rework
-- **Do NOT auto-accept changes.** Present, wait for user.
+**Do NOT auto-accept the changes.** Present them and wait for the user —
+`references/evaluation.md` has the rule and the reason.
 
 **Failure:** save to
 `${CLAUDE_PLUGIN_DATA}/reviews/rescue-<YYYYMMDD-HHMMSS>-failed.md` with
@@ -376,9 +443,13 @@ the §6 error category and captured stderr.
 Clean up temp files using literal paths:
 
 ```bash
-rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_JSON_FILE.stderr path>" \
-      "<literal pre.list path>" "<literal pre.sha path>"
+rm -f "<literal JOB_JSON_FILE path>" "<literal JOB_JSON_FILE.stderr path>" \
+      "<literal RESULT_FILE path>"
 ```
+
+Leave `$WORK` and `$PROMPT_FILE` where they are. A re-verification the user asks
+for needs the payload, the diff, and the task text the payload points at, and the
+hook refuses a payload it cannot hash-check.
 
 ---
 

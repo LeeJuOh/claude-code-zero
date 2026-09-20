@@ -43,6 +43,21 @@ PREVIEW_SKILLS = ["codex-adversarial", "codex-rescue", "codex-research", "codex-
 # text is the order, not a claim, and travels verbatim.
 REVIEW_SKILLS = ["codex-adversarial", "codex-research", "codex-verify"]
 
+# The skills whose Phase 4 hands judgement to a Verifier subagent. The main
+# session is the author of the code under review, so every string that would put
+# it back in the judge's seat -- reading the cited source, writing its own
+# classification -- has to stay gone once S5a removed it.
+VERIFIER_SKILLS = ["codex-review", "codex-adversarial", "codex-rescue"]
+
+# Tools review and adversarial used to poll a background launch with. Neither
+# exists in Claude Code, so an instruction naming one is an instruction that
+# cannot be followed; waiting is a completion notification now.
+ABSENT_WAIT_TOOLS = ["BashOutput", "KillShell", "TaskOutput"]
+
+# Phrases that put the main session back in the judge's seat.
+SELF_JUDGE_PHRASES = ["Read ONLY the file:line", "Read ONLY files", "Self-verified",
+                      "Cross-Model", "Additional Findings"]
+
 # verify grew a positional focus argument. Runs without it must still produce
 # the pre-S2 payload byte for byte, so the golden keeps the no-focus form and
 # this line is stripped before the comparison.
@@ -187,6 +202,36 @@ def main():
             for tag in expected:
                 check(re.search(r"^#   %s\b" % tag, note.group(0), re.M) is not None,
                       "%s provenance note does not cover %s" % (name, tag))
+
+    # S5a: the main session runs the script and the subagent, and judges nothing.
+    for name in VERIFIER_SKILLS:
+        text = read("skills/%s/SKILL.md" % name)
+        lines = text.split("\n")
+        check(len(lines) <= 500, "%s is %d lines, over the 500-line editing bound"
+              % (name, len(lines)))
+        check(re.search(r"^disallowed-tools:.*\bSendMessage\b", text, re.M) is not None,
+              "%s frontmatter does not remove SendMessage" % name)
+        check(re.search(r"^allowed-tools:.*\bAgent\b", text, re.M) is not None,
+              "%s cannot launch a Verifier without Agent in allowed-tools" % name)
+        check("scripts/prepare-verifier.py" in text,
+              "%s never runs prepare-verifier.py" % name)
+        check("subagent_type: codex-advisor:verifier" in text,
+              "%s does not name the Verifier by its plugin-qualified type" % name)
+        check('subagent_type: fork' not in text,
+              "%s would launch the Verifier as a fork, inheriting this session" % name)
+        check("Author note (main session)" in text,
+              "%s does not tell the main session to leave the verdict alone" % name)
+        for phrase in SELF_JUDGE_PHRASES:
+            check(phrase not in text, "%s still says %r" % (name, phrase))
+
+    # R1: review and adversarial waited on tools Claude Code does not have.
+    for name in ["codex-review", "codex-adversarial"]:
+        text = read("skills/%s/SKILL.md" % name)
+        for tool in ABSENT_WAIT_TOOLS:
+            check(tool not in text, "%s still names the absent tool %s" % (name, tool))
+        check("wait-timeout" not in text, "%s still caps the wait" % name)
+        check("completion notification" in text,
+              "%s does not say how Phase 3 learns the run finished" % name)
 
     if failures:
         for f in failures:
