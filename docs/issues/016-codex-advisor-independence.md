@@ -1,12 +1,12 @@
 # 이슈 016 — codex-advisor 검수자 독립성 복원 구현 (슬라이스 S1~S6, S3b)
 
-> 상태: **in-progress** — S3·S3b·S4 완료(`7ad6a83`, `c8ce59d`, `1a3906c`, `8846605`) + R4·R5 반영(`83fec68`, `51b9f8c`) + S1·S2 완료 + S5a·S5b 완료(`bcd42f9`, `f497e55`, 기계 검증분), 다음 **S6**(마지막) · (Q1~Q18·R1~R3 유지. 최종 검수 F1~F9·I1~I3·N1·N2 결정·반영 완료, 2026-09-14) · 생성: 2026-09-11
+> 상태: **구현 완료, 수동 검증 대기** — 슬라이스 S1~S6·S3b 전부 완료(마지막 `4e80b17`, S6). 남은 것은 사람이 대화형으로 돌려야 닫히는 수용기준뿐: S5a 5건 · S5b 6건 · S2 분류 eval 5건 · N1 · F1(§핸드오프 참조) · (Q1~Q18·R1~R3 유지. 최종 검수 F1~F9·I1~I3·N1·N2 결정·반영 완료, 2026-09-14) · 생성: 2026-09-11
 > 스펙 (PRD): `docs/specs/016-codex-advisor-independence.md` — 문제 정의, 유저 스토리, 결정 D1~D6, 그릴 확정 사항 전부 스펙 참조. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/codex-advisor/` (v4.7.1 → v5.0.0, major — R2)
 > 용어집: `docs/context/codex-advisor.md` — **Double-check independence / Verifier / Verifier payload / Author note / Hypothesis exclusion / Finding group / Autonomy policy** · ADR: 0004(전제), 0012(③ 구조)
 > 원칙: 강제는 구조로, 판단은 fresh 컨텍스트로, fact는 스크립트로. 지시문은 "왜"를 설명하고 MUST를 남발하지 않는다(skill-creator 가이드).
 
-> **구현 세션:** 맨 아래 [핸드오프](#handoff-2026-09-20b)부터 읽는다. (여러 세션이 같은 날짜를 붙인 기록이 섞여 있다 — 선후는 날짜가 아니라 커밋 순서로 본다.) 최종 검수 판정 이력과 반영 위치는 [방향 결정 기록](#cc-factcheck-2026-09-14), 검수 원문은 [최종 검수 기록](#final-review-2026-09-14). 구현 규칙의 원본은 아래 슬라이스와 스펙이다.
+> **구현 세션:** 맨 아래 [핸드오프](#handoff-2026-09-20b)부터 읽는다. 새 코드는 남지 않았다 — 다음 세션의 일은 §검증 방법대로 수동 검증을 돌리고 릴리스 프리플라이트를 거치는 것이다. (여러 세션이 같은 날짜를 붙인 기록이 섞여 있다 — 선후는 날짜가 아니라 커밋 순서로 본다.) 최종 검수 판정 이력과 반영 위치는 [방향 결정 기록](#cc-factcheck-2026-09-14), 검수 원문은 [최종 검수 기록](#final-review-2026-09-14). 구현 규칙의 원본은 아래 슬라이스와 스펙이다.
 
 ## Slices (tracer bullets)
 
@@ -181,15 +181,19 @@ SKILL.md 지시문은 "메인은 집계만 한다, 판정은 Verifier가 한다"
 
 **What to build**: `apply-codex-config.py`의 `MODEL_ALIASES`에서 `spark`를 지우고 README·rescue SKILL.md의 spark 언급을 지운다 — 스펙 012가 남긴 유일한 모델 지식이며 지금은 캐시에 없는 모델을 가리킨다. README "How a call is translated"의 double-check 단계를 Verifier 구조로, "Independent double-check" 항목을 read/write 양면으로 고쳐 쓴다. `plugin.json`·`marketplace.json` description의 "Claude fact-checks every finding"을 fresh-context verifier 표현으로 바꾼다(둘 일치). `marketplace.json` 4.7.1 → 5.0.0(R2). 용어집·ADR은 그릴에서 이미 갱신됨 — 구현 중 어휘가 바뀌었으면 여기서 맞춘다.
 
-**Acceptance criteria**:
-- [ ] `HOME=<tmp> apply-codex-config.py spark ""` → `<tmp>/.codex/config.toml`에 `spark` 그대로, 확장 0건. 실제 `~/.codex/config.toml`은 건드리지 않는다
-- [ ] 플러그인 전체에 `gpt-5.3-codex-spark` 0건
-- [ ] README에 `--no-preview` 0건, `Verifier` 설명 존재, "holds off reading" 류 구지시문 설명 0건, "Self-bias guardrail" 항목 0건
-- [ ] 두 매니페스트 description 일치, "fresh" 또는 "independent verifier" 포함
-- [ ] `marketplace.json` 5.0.0 (R2, 그릴 2026-09-14 — `--no-preview`·`resume` 삭제는 breaking)
-- [ ] `unset CLAUDECODE && claude plugin validate .` 통과
+**Acceptance criteria** (전부 충족 — `4e80b17`):
+- [x] `HOME=<tmp> apply-codex-config.py spark ""` → `<tmp>/.codex/config.toml`에 `spark` 그대로, 확장 0건. 실제 `~/.codex/config.toml`은 건드리지 않는다 — 실측: `model = "spark"`, 실제 config(`gpt-6-astra`) 무변경
+- [x] 플러그인 전체에 `gpt-5.3-codex-spark` 0건
+- [x] README에 `--no-preview` 0건, `Verifier` 설명 존재(5회), "holds off reading" 류 구지시문 설명 0건, "Self-bias guardrail" 항목 0건
+- [x] 두 매니페스트 description 일치, "fresh" 또는 "independent verifier" 포함
+- [x] `marketplace.json` 5.0.0 (R2, 그릴 2026-09-14 — `--no-preview`·`resume` 삭제는 breaking)
+- [x] `unset CLAUDECODE && claude plugin validate .` 통과 (경고 11건은 기존 — 로컬 플러그인은 버전을 `marketplace.json`에만 둔다)
 
-**Blocked by**: S1, S2, S5a, S5b — 문서가 최종 동작을 기술.
+**Blocked by**: S1, S2, S5a, S5b — 문서가 최종 동작을 기술. (전부 선행 완료)
+
+**실제 범위가 계획보다 넓었던 곳** — `spark`는 핸드오프가 적은 3곳이 아니라 6곳에 있었다: `apply-codex-config.py`(2행), `README.md`(2행), `codex-rescue`·**`codex-setup`**·**`codex-review`** SKILL.md. 굵은 둘이 추가분이다. `references/companion-usage.md:71`은 **남겼다** — 우리 alias가 아니라 공식 플러그인의 것(설치본 1.0.6 `codex-companion.mjs:72`에 실재 확인)이라 지우면 그 문서가 외부 동작을 틀리게 기술하게 된다(유저 결정 2026-09-20).
+
+**ADR 0012는 안 고쳤다.** 17행의 "Self-Bias Awareness" 언급은 결정 당시 상태를 적은 Context 절이다. 현재 상태로 덮어쓰면 결정의 근거가 사라진다.
 
 ## 검증 방법 (공통)
 
@@ -390,7 +394,7 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 
 **Goal:** 슬라이스를 착수 순서(`S3 → S3b → S4 → S1 → S2 → S5a → S5b → S6`)대로 구현한다. 코드(S3·S3b·S4), SKILL.md 편집(S1·S2), Phase 4 배선(S5a 코드 경로 3스킬 · S5b 문서 경로 2스킬)이 끝났다. **남은 것은 S6 하나.**
 
-**First Action:** **S6 착수** — `scripts/apply-codex-config.py`의 `MODEL_ALIASES`에서 `spark` 항목을 지우고, README·`skills/codex-rescue/SKILL.md`의 spark 언급을 지운다. 이어서 README의 double-check 설명을 Verifier 구조로 고쳐 쓰고(현재 SessionStart 훅만 언급 — PreToolUse 훅 `hooks/verifier-payload.mjs` 설명 추가), `plugin.json`·`.claude-plugin/marketplace.json`의 description을 서로 같은 fresh-verifier 문구로 맞추고, `marketplace.json`의 codex-advisor 버전을 4.7.1 → 5.0.0으로 올린다. 편집 전 `writing-for-agents` 스킬을 읽는다(S1·S2·S4·S5a·S5b에서 다섯 번 효과를 봤다). 끝나면 `unset CLAUDECODE && claude plugin validate .`.
+**First Action (완료됨 — `4e80b17`):** S6 — `scripts/apply-codex-config.py`의 `MODEL_ALIASES`에서 `spark` 항목을 지우고, README·`skills/codex-rescue/SKILL.md`의 spark 언급을 지운다. 이어서 README의 double-check 설명을 Verifier 구조로 고쳐 쓰고(현재 SessionStart 훅만 언급 — PreToolUse 훅 `hooks/verifier-payload.mjs` 설명 추가), `plugin.json`·`.claude-plugin/marketplace.json`의 description을 서로 같은 fresh-verifier 문구로 맞추고, `marketplace.json`의 codex-advisor 버전을 4.7.1 → 5.0.0으로 올린다. 편집 전 `writing-for-agents` 스킬을 읽는다(S1·S2·S4·S5a·S5b에서 다섯 번 효과를 봤다). 끝나면 `unset CLAUDECODE && claude plugin validate .`.
 
 **Context:** S5b는 S5a가 쓴 `codex-review`의 `## Phase 4: Verify` 절을 베껴 `--mode doc`으로 바꾼 배선 작업이었다. 새 설계는 하나도 없었고, 실제로 시간이 든 곳은 **슬라이스가 안 덮는 지점을 찾아 유저에게 보고하는 일**이었다(아래 R11·R12). S6는 순수 문서·버전 작업이라 코드 위험이 거의 없다. 다만 S6 수용기준의 `apply-codex-config.py` 항목은 `HOME=<tmp>`로 격리해 돌려야 실제 `~/.codex/config.toml`을 안 건드린다.
 
@@ -412,7 +416,7 @@ Official 플러그인 포크·병합, adversarial 프롬프트 수정, Read 차�
 | S2 | 완료 | `52f4409` |
 | S5a | 완료(기계 검증분) | `bcd42f9` — 4파일 +391/−138 |
 | **S5b** | **완료(기계 검증분)** | `f497e55` — 4파일 +201/−132. 아래 §S5b 미검증 수용기준 참조 |
-| S6 | 미착수 | `marketplace.json` 버전 4.7.1 그대로, `MODEL_ALIASES`에 `spark` 그대로 |
+| **S6** | **완료** | `4e80b17` — 8파일 +28/−30. `marketplace.json` 5.0.0, `spark` 0건(공식 플러그인 기록 1건 제외) |
 
 ⚠️ **S5a·S5b의 "완료"는 grep으로 재는 수용기준 + 실측분까지다.** 보고서 산출물을 보는 수용기준은 사람이 대화형으로 돌려야 닫힌다(§S5a·§S5b 미검증 수용기준).
 
@@ -567,9 +571,9 @@ python3 plugins/codex-advisor/evals/run-evals.py --out-dir <ws> [--only <name>] 
 
 ### Next Steps
 
-1. **S6** — `apply-codex-config.py`의 `MODEL_ALIASES`에서 `spark` 삭제, README·rescue SKILL.md의 spark 언급 삭제, README의 double-check 설명을 Verifier 구조로 + PreToolUse 훅 설명 추가, `plugin.json`·`marketplace.json` description 동기화(둘 일치 + "fresh"/"independent verifier" 포함), `marketplace.json` 4.7.1 → 5.0.0. **S6 전에 N1 한 번 확인.**
+1. ~~**S6**~~ — 완료(`4e80b17`). 슬라이스는 전부 끝났고 **새로 쓸 코드는 없다**.
 2. 수동 검증은 §검증 방법대로 — 에이전트 단독으로 체크하지 말고 유저에게 넘긴다. 남은 목록은 §S5b 미검증 수용기준 + §S5a 산출물 계약 안의 S5a 미검증 수용기준 + §S2 산출물 계약의 분류 eval 5건.
-3. 이슈 종결 전에 용어집(`docs/context/codex-advisor.md`)과 ADR 0012를 한 번 훑어 구현 중 바뀐 어휘가 있는지 본다(S6 슬라이스 본문이 지시).
+3. ~~용어집·ADR 훑기~~ — S6에서 처리. 용어집의 `spark` alias 문장을 고치고 spec 012 문단에 v5.0.0 기록을 붙였다. ADR 0012는 결정 당시 상태를 적은 역사 기록이라 의도적으로 안 고쳤다.
 4. ⚠️ **릴리스 프리플라이트** — `git log develop..main`에 `c7e058d`(vision-powers 4.9.0 머지) 한 건이 남아 있다. `docs/release-workflow.md`대로 **main → develop 먼저 머지**한 뒤에 릴리스한다. 최신 태그는 `v1.82.0`.
 
 **유저 작업 방식:** 질문은 한 번에 하나, 결론 먼저·표 하나·한 줄 근거, 쉬운 말. 장황 금지. 설명이 안 통하면 길게 쓰지 말고 **예시로 바꾼다**. 오버엔지니어링 거부 — 드문 경우는 막지 말고 한계로 적되 "드물다"는 근거를 댄다. 아키텍처·메커니즘·철학에 어긋나는 게 보이면 **임의로 고치지 말고 멈추고 보고**한다. 진행 보고는 슬라이스 기준이고 **시작할 때도 한 번** 한다. 커밋은 슬라이스마다, push는 요청 시에만.
