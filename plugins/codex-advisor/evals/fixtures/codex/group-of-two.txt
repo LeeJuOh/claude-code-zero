@@ -1,0 +1,11 @@
+Two issues found in authentication.
+
+Full review comments:
+
+- [P1] validate_token() never checks expiry — {REPO}/app/auth.py:4-7
+  validate_token() accepts a token whose expiry has passed, so a leaked token
+  stays usable forever.
+
+- [P1] SQL query built by string interpolation — {REPO}/app/auth.py:6-6
+  The username argument is interpolated straight into the SQL text instead of
+  being bound as a parameter, so a crafted username changes the query.

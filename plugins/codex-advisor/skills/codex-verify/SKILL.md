@@ -1,16 +1,19 @@
 ---
 name: codex-verify
 description: "Verify a plan or document using Codex as independent reviewer with PASS/FAIL verdict. Use when asked \"codex verify\", \"verify this plan\", \"review this doc for issues\"."
-argument-hint: "path/to/document.md [--model SLUG] [--effort LEVEL] [--no-preview]"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion"]
+argument-hint: "path/to/document.md [focus text] [--model SLUG] [--effort LEVEL]"
+allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
+disallowed-tools: ["SendMessage"]
 ---
 
 # Codex Document Verification + Double-Check
 
-You are a **translator + executor + double-checker**. The user wants an
-independent review of a plan or document. Your job is to hand the
-document to Codex **without ever loading it into your own context**, so
-your follow-up evaluation is genuinely independent.
+You are a **translator + executor**. The user wants an independent review of a
+plan or document. Your first job is to hand the document to Codex **without ever
+loading it into your own context**. Your second job is to hand what Codex returns
+to a fresh Verifier subagent and report the verdict it reaches. The judging is
+deliberately not yours — if you drafted the document in this session, a blind
+payload cannot erase that memory, and a fresh reader has no such stake (ADR 0012).
 
 For code review use `/codex-review`. For research use `/codex-research`.
 
@@ -22,15 +25,15 @@ For code review use `/codex-review`. For research use `/codex-research`.
 |-------|---------|-----------|
 | 1 ANALYZE | `test -f/-s`, `wc -l/-c`, `file`, `echo`, `printf`, `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, no stdout) | `cat "$DOC"` to stdout, `head`, `tail`, Read, Grep, Glob |
 | 2 INVOKE | Bash for companion launch via stdin pipe | All source / document reads to stdout |
-| 3 WAIT | `status --wait` loop (≤6 iterations, ≤24 min) | All reads, manual polling, `ps`/`kill` |
-| 4 DOUBLE-CHECK | Read the document (now — not before) to verify Codex's findings | n/a |
+| 3 WAIT | `status --wait` loop (≤6 iterations, ≤24 min), result written to a file | All reads, manual polling, `ps`/`kill` |
+| 4 VERIFY | `prepare-verifier.py --mode doc`, then `Agent` (`codex-advisor:verifier`) | Reading the document or the Codex result; judging any finding yourself |
 | 5 REPORT + SAVE | Write report file | n/a |
 
-**Why the document stays out of context in Phase 1-3:** if you read the
-document upfront, you form opinions before seeing Codex's. The
-double-check is then biased — you'll rationalize away valid catches.
-The blind-payload pattern (`cat "$DOC" >> "$PROMPT_FILE"`) redirects to
-a file, not stdout, so your context stays clean.
+**Why the document stays out of context:** the Verifier judges against the
+document, and it can only do that honestly if it comes to the document fresh.
+Your copy would add nothing and cost the independence. The blind-payload pattern
+(`cat "$DOC" >> "$PROMPT_FILE"`) redirects to a file, not stdout, so your context
+stays clean; Phase 4 passes paths, not text, for the same reason.
 
 Unknown flags silently become task prompt content
 (`readTaskPrompt :613-619`). Phase 1 is the only safety net.
@@ -41,17 +44,45 @@ Unknown flags silently become task prompt content
 
 ### Parse `$ARGUMENTS`
 
-**Whitelist for this skill:** `--model <slug>`, `--effort <level>` (skill-level, route through `apply-codex-config.py` — never reach the companion). The document path is another skill input, not a companion flag.
+**Whitelist for this skill:** `--model <slug>`, `--effort <level>` (skill-level, route through `apply-codex-config.py` — never reach the companion). The document path and the focus text are other skill inputs, not companion flags.
 
-Rules:
+Take the document path first, then read whatever text is left as **focus** —
+natural-language direction for the review, appended to the `<task>` focus areas.
 
-- **A single path** → treat as the document to verify.
-- **`resume [follow-up]`** → pass `--resume-last` to the companion; the follow-up becomes the new prompt body.
+- **A single path** → the document to verify.
+- **Text beside the path** → the focus text. Join the non-flag, non-meta tokens
+  with spaces. No focus text is the normal case; the payload is then identical
+  to a run with no focus at all.
 - **Multiple paths** → `AskUserQuestion` which one.
 - **Meta-instructions addressed to YOU** (e.g. "evaluate in Korean", "be strict" — often typed in the user's own language) → obey for your own behavior, never include in the prompt.
 - **No args** → `AskUserQuestion`: "What document should I verify?"
 - **Unknown flags** (e.g., `--base`, `--write`, `--foo`) → `AskUserQuestion`. verify has no companion flags to forward. `--model`/`--effort` are skill-level and route through `apply-codex-config.py`.
-- **`--no-preview`** → skip Phase 1.5 draft review. Power users who trust the translation.
+
+### Hypothesis exclusion
+
+Codex is the independent reviewer here, and a reviewer handed a conclusion
+confirms that conclusion instead of forming its own — anchoring. So the focus
+text carries **where to look and what was observed**, and your own read of the
+document stays behind. Sort what you were given into three kinds:
+
+| Kind | Example | Forwarded |
+|---|---|---|
+| **Evidence** — symptom, observed condition, the request in the user's own words | "the rollout section changed twice last week" | yes |
+| **Focus** — an area to examine, no claim attached | "security angle", "look hard at the migration sequencing" | yes |
+| **Hypothesis** — a claim about what is wrong, a named section plus a verdict, the answer you expect | "§4's rollback plan can't work without a feature flag", "the estimates are the weak part" | no |
+
+The boundary in one line: **a claim about what is wrong makes it a hypothesis; a
+bare area makes it focus.** "Check the rollback plan" points somewhere and
+claims nothing — focus. "The rollback plan is missing a feature flag" hands over
+the finding — hypothesis.
+
+Apply this the same way whatever the words' origin — whether the user typed the
+slash command or you read their intent and invoked this skill yourself. Your own
+invocations are where hypotheses leak hardest, and a test for "who typed this"
+would make one sentence behave two ways.
+
+Keep the excluded text. Phase 1.5 shows it, and the user can send it after all
+in one step.
 
 ### Resolve the document path
 
@@ -74,11 +105,19 @@ mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
 TS=$(date +%s%N)
 PROMPT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/verify-prompt-${TS}.txt"
 JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/verify-job-${TS}.json"
+RESULT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/verify-result-${TS}.json"
 echo "PROMPT_FILE=$PROMPT_FILE"
 echo "JOB_JSON_FILE=$JOB_JSON_FILE"
+echo "RESULT_FILE=$RESULT_FILE"
 
 # Header via heredoc — no document content yet.
-# block tags from official gpt-5-4-prompting (prompt-blocks.md); bodies adapted to this skill's output schema — re-sync the tag set if the official guide updates
+# Block provenance — official gpt-5-4-prompting (prompt-blocks.md), bodies
+# adapted to this skill's output schema; re-checked against the 5.6/Astra
+# guides 2026-09-11. Re-sync the tag set if the official guide updates.
+#   task                        — §Core Wrapper
+#   structured_output_contract  — §Output and Format
+#   grounding_rules             — §Grounding and Missing Context
+#   completeness_contract       — §Follow-through and Completion
 cat > "$PROMPT_FILE" <<'EOF'
 <task>
 You are a brutally honest technical reviewer. Review the following document for
@@ -90,6 +129,7 @@ Focus areas:
 - Feasibility risks (what could go wrong?)
 - Missing dependencies or sequencing issues
 - Internal contradictions or ambiguous requirements
+Pay particular attention to: <literal focus text from Phase 1 — omit this whole line when no focus text was given>
 </task>
 
 <structured_output_contract>
@@ -138,18 +178,18 @@ If neither flag was provided, still call with two empty strings so the user sees
 **Before Phase 2, also print the Parsed line:**
 
 ```
-Parsed: doc="docs/plan.md" (DOC_LINES=247), payload=PROMPT_FILE
+Parsed: doc="docs/plan.md" (DOC_LINES=247), focus="security angle", payload=PROMPT_FILE
 ```
 
-Order: apply-codex-config.py output first, Parsed line second. Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, and `USER_DOC` paths. They are needed in later phases.
+Omit `focus=` when there was none.
+
+Order: apply-codex-config.py output first, Parsed line second. Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, `RESULT_FILE`, and `USER_DOC` paths. They are needed in later phases.
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (ANALYZE rules) and `§8` (blind-payload details).
 
 ---
 
 ## Phase 1.5: Draft Review
-
-**Skip this phase entirely if `--no-preview` was parsed in Phase 1.**
 
 Before sending anything to Codex, show the user the verification
 prompt. The XML payload is already written to PROMPT_FILE (with the
@@ -175,6 +215,7 @@ Focus areas:
 - Feasibility risks (what could go wrong?)
 - Missing dependencies or sequencing issues
 - Internal contradictions or ambiguous requirements
+Pay particular attention to: security angle
 </task>
 
 <structured_output_contract>
@@ -197,10 +238,16 @@ Check for interactions between sections that may create contradictions.
 ```
 
 Document: `docs/plan.md` (247 lines) — blind-appended as `<document>`
+Excluded (hypothesis): "§4's rollback plan can't work without a feature flag"
 ````
 
 The XML block must reflect the **exact content** written to
-PROMPT_FILE (minus the document body). Do not summarize.
+PROMPT_FILE (minus the document body). Do not summarize. The example above
+shows a run with focus text — drop that line when there was none.
+
+Always print the `Excluded (hypothesis):` line, with `(none)` when nothing was
+excluded, so the user sees the rule's decision rather than inferring it from
+what survived.
 
 ### Ask for approval
 
@@ -209,12 +256,17 @@ Use `AskUserQuestion` exactly once:
 - Question: "This verification prompt will be sent to Codex."
 - Options:
   1. "Approve — execute as shown"
-  2. "Needs changes"
-  3. "Cancel"
+  2. "Send the excluded lines too" — offer this only when something was excluded
+  3. "Needs changes"
+  4. "Cancel"
 
 ### Handle the response
 
 - **Approve** → proceed to Phase 2 with the current PROMPT_FILE.
+- **Send the excluded lines too** → append the excluded text to the focus
+  text, rewrite PROMPT_FILE the same way as below, then re-display and re-ask.
+  The user asked for it, so it travels — but they see the prompt it produced
+  before it runs.
 - **Needs changes** → the user will describe what to change. Common
   edits: reword focus areas, add domain-specific review criteria,
   remove irrelevant focus areas, change the review tone. Rewrite
@@ -262,54 +314,80 @@ node "$CODEX_COMPANION" status --wait "<literal JOB_ID>" \
 Fetch result:
 
 ```bash
-node "$CODEX_COMPANION" result "<literal JOB_ID>" --json
+node "$CODEX_COMPANION" result "<literal JOB_ID>" --json \
+  > "<literal RESULT_FILE path>"
 ```
+
+The redirect is load-bearing: Phase 4 hands that file to the script and to the
+Verifier, and Codex's answer quotes the document you have been keeping out of
+context. Printing it here would undo Phase 1.
 
 Full error table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
 
 ---
 
-## Phase 4: Double-check with verdict
+## Phase 4: Verify
 
-**Now you read the document.** Not before.
+You still do not read the document. A fresh Verifier subagent reads it, reads
+Codex's result, and decides — you never formed an opinion about this document, and
+this phase keeps it that way. Your job here is plumbing: run the script, launch the
+Verifier, collect what comes back.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md` (Peer AI
-Evaluation + Self-Bias Awareness).
+### Step 1 — Prepare the payload
 
-**Self-bias warning:** if Claude authored the document (same session),
-acknowledge it: "Note: I authored this — extra honesty required." Don't
-rationalize away valid catches.
+```bash
+WORK="${CLAUDE_PLUGIN_DATA}/tmp/verify-payload-$(date +%s%N)"
+echo "WORK=$WORK"
 
-For each of Codex's findings:
-
-- **Valid catch** — "Codex caught this. I missed it during planning."
-  Read the cited document section to confirm.
-- **Already considered** — "I considered this: [reason]." Cite the
-  document section that addresses it.
-- **False Positive (hallucination)** — Codex cited a document section
-  that does **not exist**, or misread what the section says. Read the
-  cited section to confirm.
-- **Uncited** — no concrete section reference. Surface as "verification
-  deferred". Never invent citations.
-
-### Produce the verdict
-
-```markdown
-## Verification Result: PASS / FAIL
-
-### Blocking Issues (P1 — must fix before proceeding)
-- [issue]: [why it's blocking]
-
-### Recommendations (P2 — non-blocking)
-- [suggestion]: [why it would be better]
-
-### False Positives
-- [finding]: [why it's not a real issue]
-
-### Agreement: <High|Partial|Disagreement> (N/M findings)
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+  --mode doc --skill verify \
+  --prompt-file "<literal PROMPT_FILE path>" \
+  --result-file "<literal RESULT_FILE path>" \
+  --document "<literal USER_DOC path>" \
+  --out-dir "$WORK"
+echo "prepare-verifier exit=$?"
 ```
 
-**FAIL** if any P1 issue exists. **PASS** if only P2 or none.
+The payload holds those three paths and nothing else — no document text, no Codex
+text. That is what lets the Verifier read them first-hand while your context stays
+clean. There is no citation check here: the input is one document, so a section
+reference either resolves when the Verifier opens the file or it does not.
+
+| Exit | Meaning | What you do |
+|---|---|---|
+| 0 | payload written | Step 2 |
+| 2 | bad usage, unreadable input, or git failure | Show stderr verbatim and stop. |
+
+### Step 2 — Launch the Verifier
+
+Make one `Agent` call:
+
+- `subagent_type: codex-advisor:verifier`, which starts a fresh subagent. Not
+  `fork` — a fork inherits this entire conversation, including whatever you know
+  about this document.
+- `prompt`: the `group-all.json` path and nothing else. A PreToolUse hook replaces
+  the prompt with that file's hash-checked contents, so any sentence you write
+  around the path is discarded before the Verifier sees it.
+
+When the `Agent` call fails, the result is `Unverified — Verifier call failed`, and
+by rule 3 in `references/evaluation.md` that is a FAIL. Do not judge the result in
+its place and do not retry on your own. A retry the user asks for is a new `Agent`
+call on the same payload path: a Verifier already running or finished takes no
+follow-up message.
+
+### Step 3 — Collect the verdicts
+
+The Verifier returns one JSON object, `{"verdicts": [...]}`. It split Codex's prose
+into items itself and ided them `item-1`, `item-2`, …, because nobody numbered them
+in advance.
+
+Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md` and follow its *Reporting*
+section — match verdicts to ids, count, and apply the PASS/FAIL rules there. The
+verdict is a count, not a judgment of yours.
+
+A verdict you disagree with stays exactly as the Verifier wrote it; your
+disagreement goes beneath it on one `Author note (main session):` line. Rewriting
+the verdict would make you the judge again.
 
 ---
 
@@ -320,11 +398,10 @@ mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
 ```
 
 **Success:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>.md` with:
-- The document path
-- Codex's output verbatim
-- Per-finding classification with document citations
-- Final verdict (PASS / FAIL)
+`${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>.md` using the standard
+format in `references/evaluation.md` — the document path as the scope, Codex's
+output verbatim, the verdicts by classification, the summary counts, and the
+PASS/FAIL line that section's rules produce.
 
 **Failure:** save to
 `${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>-failed.md` with
@@ -333,16 +410,20 @@ the §6 error category, stderr, and the document path.
 Clean up temp files using the literal paths captured in Phase 1:
 
 ```bash
-rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_JSON_FILE path>.stderr"
+rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_JSON_FILE path>.stderr" \
+  "<literal RESULT_FILE path>"
 ```
+
+Leave `$WORK` where it is. A re-verification the user asks for needs that payload
+file and its manifest, and the hook refuses a payload it cannot hash-check.
 
 ---
 
 ## Gotchas
 
-- **Never Read the document before Phase 4.** The blind-payload pattern
-  preserves double-check independence. Reading in Phase 1 defeats the
-  entire purpose of the skill.
+- **The document never enters your context, in any phase.** Phase 1 redirects
+  it into the prompt file and Phase 4 passes its path to the Verifier. Reading it
+  yourself at any point puts an opinion where the independence was.
 - **`cat "$USER_DOC" >> "$PROMPT_FILE"`** — file redirect keeps stdout
   empty. `cat "$USER_DOC"` alone would dump content into Claude's
   context. The `>> "$PROMPT_FILE"` is load-bearing.
@@ -352,11 +433,8 @@ rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_
   sends 0 bytes and the companion's `prompt-empty` error masks the root
   cause.
 - **Temp file paths must come from Phase 1 stdout.** Do not rely on
-  `$PROMPT_FILE` / `$JOB_JSON_FILE` variables in later Bash calls —
-  Bash spawns a fresh shell each call. Re-inject literal absolute paths.
-- **Claude has bias reviewing its own work.** If the document was
-  authored in this session, be extra honest. Don't rationalize valid
-  catches.
+  `$PROMPT_FILE` / `$JOB_JSON_FILE` / `$RESULT_FILE` variables in later Bash
+  calls — Bash spawns a fresh shell each call. Re-inject literal absolute paths.
 
 For the full shared gotchas list, read
 `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §10`.

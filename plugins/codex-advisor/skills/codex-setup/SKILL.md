@@ -89,7 +89,7 @@ Relay that line verbatim to the user — it shows before/after so they can confi
 
 **Model and effort handling**
 
-The script writes both values as given and judges neither — Codex owns the list of valid models and effort levels, and it decides at run time. Don't add a validity check here or reintroduce one downstream: any list we keep goes stale the moment OpenAI ships a model, and then it calls a working value wrong. The only transformation is the `spark` → `gpt-5.3-codex-spark` alias.
+The script writes both values as given and judges neither — Codex owns the list of valid models and effort levels, and it decides at run time. Don't add a validity check here or reintroduce one downstream, and don't teach the script a model alias: any model name we keep goes stale the moment OpenAI ships the next one, and then it calls a working value wrong.
 
 So when a user asks which models or efforts they can use, don't answer from memory — availability is account-scoped and changes. Tell them to run `codex` and open its `/model` picker.
 

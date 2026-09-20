@@ -1,0 +1,6 @@
+One issue found.
+
+Review comment:
+
+- [P1] Token check is not constant time — {REPO}/src/auth.py:3-5
+  The comparison at this line uses == on secrets.

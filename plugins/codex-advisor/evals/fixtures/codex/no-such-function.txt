@@ -1,0 +1,7 @@
+One issue found in authentication.
+
+Review comment:
+
+- [P1] validate_token() never checks expiry — {REPO}/app/auth.py:4-7
+  validate_token() accepts a token whose expiry has passed, so a leaked token
+  stays usable forever.

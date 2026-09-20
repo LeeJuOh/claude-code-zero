@@ -1,0 +1,8 @@
+One issue found in the sync client.
+
+Review comment:
+
+- [P1] Sync exhausts the upstream daily quota — {REPO}/app/client.py:4-13
+  fetch_all() issues up to five calls per URL. Our current plan with the
+  upstream provider allows 1,000 calls per day, so a full sync exhausts the
+  quota and the provider suspends the account for the rest of the day.

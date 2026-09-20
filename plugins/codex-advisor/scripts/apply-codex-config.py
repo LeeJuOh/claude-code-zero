@@ -4,10 +4,10 @@
 Usage: apply-codex-config.py <model> <effort>
        Empty string for either argument means "no change".
 
-Expands known aliases (spark -> gpt-5.3-codex-spark) before writing. Values are
-otherwise written verbatim: Codex owns the list of valid models and effort
+Values are written verbatim. Codex owns the list of valid models and effort
 levels and judges them at runtime, so second-guessing here would only mean
-calling a brand-new model or an account-gated one wrong.
+calling a brand-new model or an account-gated one wrong — and any model name
+this script knew would go stale the moment OpenAI ships the next one.
 
 Stdout (one line): Model: <before> -> <after> | Effort: <before> -> <after>
 """
@@ -15,8 +15,6 @@ import os
 import re
 import sys
 import tempfile
-
-MODEL_ALIASES = {"spark": "gpt-5.3-codex-spark"}
 
 
 def find_line(lines, key):
@@ -54,9 +52,8 @@ def main():
         print("Usage: apply-codex-config.py <model> <effort>", file=sys.stderr)
         sys.exit(2)
 
-    model_in = sys.argv[1].strip()
+    model = sys.argv[1].strip()
     effort_in = sys.argv[2].strip()
-    model = MODEL_ALIASES.get(model_in, model_in) if model_in else ""
 
     config_path = os.path.expanduser("~/.codex/config.toml")
     os.makedirs(os.path.dirname(config_path), exist_ok=True)

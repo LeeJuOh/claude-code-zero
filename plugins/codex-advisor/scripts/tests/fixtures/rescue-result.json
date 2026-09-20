@@ -1,0 +1,14 @@
+{
+  "job": {"id": "task-fixture", "status": "completed", "jobClass": "task"},
+  "storedJob": {
+    "id": "task-fixture",
+    "status": "completed",
+    "result": {
+      "status": 0,
+      "threadId": "thr_fixture",
+      "rawOutput": "Findings:\n1. `src/auth.py:3` compares tokens with ==.\n2. Retry loop in `src/auth.py:10-12` has no floor.\n\nNo changes were made.  \n",
+      "touchedFiles": [],
+      "reasoningSummary": null
+    }
+  }
+}

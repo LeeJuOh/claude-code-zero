@@ -1,0 +1,181 @@
+{
+  "skill_name": "codex-advisor:verifier",
+  "notes": "Payloads are built by build-payloads.py from evals/fixtures/. `{PAYLOAD}` in a prompt is replaced with that eval's payload path. Nothing here calls Codex: the fixtures stand in for Codex output because the thing under test is the Verifier.",
+  "prompt_template": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "agreed",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "One verdict for F1, classification Agreed: app/auth.py:6 really does interpolate the username into SQL text.",
+      "assertions": [
+        "Reply parses as one JSON object with a `verdicts` array and no prose inside it",
+        "verdicts has exactly one entry, with id F1",
+        "F1 classification is Agreed",
+        "Output contains no PASS, FAIL, or Agreement summary string"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "no-such-function",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "One verdict for F1 that is not Agreed: the cited range exists but holds get_user(), not the validate_token() the finding describes.",
+      "assertions": [
+        "Reply parses as one JSON object with a `verdicts` array and no prose inside it",
+        "F1 classification is not Agreed",
+        "evidence is non-empty and names what was read at the cited range"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "nuanced",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "One verdict for F1, classification Nuanced: float() parsing is real, but money.py only uses it for a preview and billing.settle() recomputes the authoritative total with Decimal.",
+      "assertions": [
+        "Reply parses as one JSON object with a `verdicts` array and no prose inside it",
+        "F1 classification is Nuanced",
+        "evidence cites both money.py and billing.py"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "external-fact",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "One verdict for F1, classification Unverifiable: the retry loop is real but the upstream plan's 1,000-call-per-day limit is not a fact the repository holds.",
+      "assertions": [
+        "Reply parses as one JSON object with a `verdicts` array and no prose inside it",
+        "F1 classification is Unverifiable",
+        "evidence names the missing fact (the upstream quota) rather than disputing the finding"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "group-of-two",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "Two verdicts, F1 and F2, one per payload item: F1 (validate_token) not Agreed, F2 (SQL interpolation) Agreed.",
+      "assertions": [
+        "verdicts has exactly two entries",
+        "verdict ids are exactly F1 and F2, matching the payload items",
+        "The two verdicts do not share the same classification"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "rescue-diff",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "The Verifier splits the task prose into requirements req-1 (infer the delimiter) and req-2 (row error names file and line), judges each against the diff, and reports the deleted strip_bom() and the added logging as side-effect-N items.",
+      "assertions": [
+        "Verdict ids include at least req-1 and req-2",
+        "Verdict ids include at least one side-effect-N item",
+        "A side-effect verdict names the removal of strip_bom() or the added logging call",
+        "No verdict id falls outside the req-N and side-effect-N schemes"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "research-sources",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "The Verifier splits the result into items with item-N ids: the billing.py claim is checked by reading the file, and the docs.python.org claim by fetching the cited URL (Unverifiable with reason external-source if the page will not open).",
+      "assertions": [
+        "Verdict ids follow the item-N scheme",
+        "At least two verdicts, covering the local-file claim and the URL-sourced claim",
+        "The local-file verdict's evidence cites app/billing.py",
+        "If the URL verdict is Unverifiable its reason names external-source"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "research-coverage",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "Alongside item-N verdicts for what the result does say, a missing-1 verdict: the approved scope asked whether the loop waits between attempts, and the result never answers it.",
+      "assertions": [
+        "Verdict ids include missing-1",
+        "The missing-1 evidence names the unanswered scope point (whether the loop waits between attempts)",
+        "At least one item-N verdict covers a claim the result does make"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "group-comparison",
+      "prompt": "Launch the codex-advisor:verifier subagent with the payload at {PAYLOAD} . Reply with only the JSON object the subagent returned.",
+      "expected_output": "Measurement, not a pass/fail: the same five orders.py findings judged once as a single group of five, then as five separate one-finding groups. Record the Agreed count on each side as evidence for or against the group cap of 5 (issue 016 Q17).",
+      "assertions": [
+        "Recorded: Agreed count out of 5 when judged as one group",
+        "Recorded: Agreed count out of 5 when judged as five separate groups",
+        "Not a pass criterion — the numbers only inform the group cap"
+      ]
+    }
+  ],
+  "hypothesis_notes": "Hypothesis-exclusion cases for the three review skills (S2). They are not run by run-evals.py: the classification is Claude's judgement and the only window onto it is the Phase 1.5 preview, which needs a person to answer the approval question. Run them by hand in `claude --plugin-dir ./plugins/codex-advisor`, answer the preview, and read the `Excluded (hypothesis):` line plus the focus argument or PROMPT_FILE. Cases 13 and 14 are the same sentence reaching the skill two ways and must come out identical -- the rule does not test who typed it.",
+  "hypothesis_evals": [
+    {
+      "id": 10,
+      "name": "focus-only",
+      "skill": "codex-adversarial",
+      "invocation": "user types the slash command",
+      "prompt": "/codex-adversarial --scope working-tree look hard at the session handling in the login flow",
+      "expected_output": "Nothing is excluded: the input names an area and claims nothing. The focus text reaches the companion carrying the user's intent.",
+      "assertions": [
+        "Preview shows `Excluded (hypothesis): (none)`",
+        "Focus text in the previewed command is non-empty and still names the session handling in the login flow",
+        "Preview offers no 'Send the excluded lines too' option, since nothing was excluded"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "hypothesis-only",
+      "skill": "codex-adversarial",
+      "invocation": "user types the slash command",
+      "prompt": "/codex-adversarial the auth bypass is because validateSession in auth.ts:42 never null-checks the cookie",
+      "expected_output": "The cause claim is excluded. What is left is the area it pointed at -- auth.ts session validation -- so the focus text is not empty.",
+      "assertions": [
+        "Preview's `Excluded (hypothesis):` line quotes the cause claim about the missing null check",
+        "Previewed command's focus text does not contain the words 'because' or 'never null-checks'",
+        "Previewed command's focus text still points at session validation in auth.ts",
+        "Preview offers 'Send the excluded lines too'"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "mixed-evidence-focus-hypothesis",
+      "skill": "codex-verify",
+      "invocation": "user types the slash command",
+      "prompt": "/codex-verify docs/specs/016-codex-advisor-independence.md the rollout section changed twice last week, check the sequencing -- I think D3's phase 4 can't work without the hook landing first",
+      "expected_output": "Three-way split in one input: the rollout-churn fact and the sequencing direction travel, the claim about D3 phase 4 does not.",
+      "assertions": [
+        "PROMPT_FILE's `Pay particular attention to:` line mentions the sequencing",
+        "PROMPT_FILE contains no claim that D3's phase 4 depends on the hook landing first",
+        "Preview's `Excluded (hypothesis):` line quotes that claim",
+        "PROMPT_FILE still carries the observation that the rollout section changed twice last week"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "hypothesis-user-invoked",
+      "skill": "codex-research",
+      "invocation": "user types the slash command",
+      "prompt": "/codex-research p99 on the search endpoint doubled after we moved to 3.2 -- it's the new connection pool default, confirm that",
+      "expected_output": "The measurement travels as the topic; the pool-default cause and the instruction to confirm it are excluded. Same outcome as case 14.",
+      "assertions": [
+        "PROMPT_FILE's `Topic:` line carries the p99 regression after the 3.2 move",
+        "PROMPT_FILE does not mention the connection pool default",
+        "PROMPT_FILE does not ask Codex to confirm a conclusion",
+        "Preview's `Excluded (hypothesis):` line quotes the pool-default claim"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "hypothesis-claude-invoked",
+      "skill": "codex-research",
+      "invocation": "Claude reads the intent and invokes the skill itself -- no slash command typed",
+      "prompt": "p99 on the search endpoint doubled after we moved to 3.2. it's the new connection pool default. dig into this with codex",
+      "expected_output": "Byte-identical treatment to case 13. The rule reads the words, not who supplied them, and this is the path a hypothesis leaks through most easily.",
+      "assertions": [
+        "PROMPT_FILE's `Topic:` line carries the p99 regression after the 3.2 move",
+        "PROMPT_FILE does not mention the connection pool default",
+        "Preview's `Excluded (hypothesis):` line quotes the pool-default claim",
+        "Excluded line and PROMPT_FILE `Topic:` line match case 13's"
+      ]
+    }
+  ]
+}

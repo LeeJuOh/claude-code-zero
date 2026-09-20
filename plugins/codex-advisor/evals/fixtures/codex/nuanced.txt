@@ -1,0 +1,7 @@
+One issue found in amount handling.
+
+Review comment:
+
+- [P2] Monetary amounts parsed as binary floats — {REPO}/app/money.py:1-3
+  parse_amount() converts the amount with float(), which cannot represent most
+  decimal fractions exactly, so totals drift by fractions of a cent.

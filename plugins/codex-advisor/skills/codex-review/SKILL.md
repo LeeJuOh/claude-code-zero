@@ -2,16 +2,17 @@
 name: codex-review
 description: "Run Codex code review with Claude's independent double-check. Use when asked \"codex review\", \"review my code with codex\", or wants Codex to review code changes. For adversarial review use /codex-adversarial."
 argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL]"
-allowed-tools: ["Bash", "BashOutput", "KillShell", "Read", "Grep", "Glob", "AskUserQuestion"]
+allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
+disallowed-tools: ["SendMessage"]
 ---
 
 # Codex Code Review + Double-Check
 
-You are a **translator + executor + double-checker**. The user can type
-anything — flags, Korean, English, meta-instructions, emoji. Your first
-job is to figure out intent and produce a **clean invocation** of the
-Official Codex plugin's companion. Your second job is to double-check
-what Codex returns, without biasing yourself by reading the diff first.
+You are a **translator + executor**. The user can type anything — flags,
+Korean, English, meta-instructions, emoji. Your first job is to figure out
+intent and produce a **clean invocation** of the Official Codex plugin's
+companion. Your second job is to hand what Codex returns to a fresh Verifier
+subagent and report what it decides. The judging is deliberately not yours.
 
 ## Execution Contract
 
@@ -21,12 +22,13 @@ what Codex returns, without biasing yourself by reading the diff first.
 |-------|---------|-----------|
 | 1 ANALYZE | `test -f/-s/-d`, `git rev-parse --verify`, `git branch --list`, `wc -l/-c`, `file`, `echo`, `printf` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
 | 2 INVOKE | Bash for companion launch (multi-arg form only — never `$ARGUMENTS` blob) | All source reads |
-| 3 WAIT | `BashOutput` | All source reads, manual polling, `ps`/`kill` outside `KillShell` |
-| 4 DOUBLE-CHECK | Read ONLY files/lines Codex cited | Reading whole files "for context"; reading uncited files; inventing citations |
+| 3 WAIT | `Read` the output file once the background command reports completion | All source reads, manual polling, `ps`/`kill` |
+| 4 VERIFY | `prepare-verifier.py`, then `Agent` (`codex-advisor:verifier`) per group | Reading source; judging or re-judging any finding yourself |
 | 5 REPORT + SAVE | Write report file | n/a |
 
-The companion collects the diff and context itself. Your value-add is
-the double-check, not pre-analysis. Unknown flags are silently joined
+The companion collects the diff and context itself. Your value-add is a
+verdict reached by someone with no stake in the code, not pre-analysis.
+Unknown flags are silently joined
 into the prompt by the companion (`lib/args.mjs:47-49` + `:643-650`) —
 there is NO post-hoc detection. Phase 1 whitelist is the only safety net.
 
@@ -70,7 +72,7 @@ git rev-parse --verify "<literal clean base>" >/dev/null 2>&1 \
 Run this *before* Phase 2 so the companion sees the new `config.toml`:
 
 ```bash
-# Empty string for either arg = no change. Alias `spark` auto-expands.
+# Empty string for either arg = no change. Values are written as given.
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
   "<literal clean effort from Phase 1 or empty>"
@@ -130,43 +132,107 @@ do not survive across calls.
 
 ## Phase 3: Wait
 
-Poll with `BashOutput` every **30 seconds** (60s acceptable for very
-long reviews). Termination signal: `BashOutput` response field
-`status === "completed"`. Never match on stdout content — the payload
-format can change.
+The companion runs in the background, so this turn resumes on its own when the
+command exits — there is no polling loop to write and no timer to set. On the
+completion notification, `Read` `$OUT_FILE`.
 
-| Situation | Action |
+| What you find | Action |
 |-----------|--------|
-| `status === "completed"` and `$OUT_FILE` parses as JSON | Proceed to Phase 4 |
-| `status === "completed"` and `$OUT_FILE` is empty | Read `$ERR_FILE`, categorize per §6 of companion-usage.md, save as `review-<ts>-failed.md`, stop |
-| `status === "completed"` and `$OUT_FILE` is non-JSON | `unexpected-format` — show raw stderr verbatim, abort |
-| 30 minutes elapsed, still running | `wait-timeout` — `KillShell` the bash_id. If `$OUT_FILE` parses as JSON treat as partial result; otherwise mark `recovery-impossible` and save failure report |
+| `$OUT_FILE` parses as JSON | Proceed to Phase 4 |
+| `$OUT_FILE` is empty | Read `$ERR_FILE`, categorize per §6 of companion-usage.md, save as `review-<ts>-failed.md`, stop |
+| `$OUT_FILE` is non-JSON | `unexpected-format` — show raw stderr verbatim, abort |
 
-Do NOT use `ps`, `kill` (except via `KillShell` on cap), manual polling
-loops, or raw state JSON reads. The full error categorization table is
-in `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
+A run that never finishes is the user's to end, with `/codex-cancel` or Esc.
+
+The full error categorization table is in
+`${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
 
 ---
 
-## Phase 4: Double-check
+## Phase 4: Verify
 
-Now — and **only now** — you may read source code.
+You do not judge Codex's findings — a fresh subagent does. You have been in this
+conversation since before the review started, and an author grading a review of
+their own code is not a review (ADR 0012). Your job in this phase is plumbing:
+run the script, launch the Verifiers, collect what comes back.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md`.
+### Step 1 — Prepare the payloads
 
-Parse `$OUT_FILE` JSON. For each finding Codex reported:
+```bash
+set -o pipefail
+REPO=$(git rev-parse --show-toplevel)
+WORK="${CLAUDE_PLUGIN_DATA}/tmp/verify-$(date +%s%N)"
+echo "WORK=$WORK"
 
-1. **Read ONLY the file:line Codex cited.** Never the whole file. Never
-   adjacent files "for context".
-2. **Classify:**
-   - **Agree** — cited code matches the finding
-   - **Disagree** — cited code contradicts the finding, with evidence
-   - **Nuance** — the finding is real but needs context Codex missed
-   - **False Positive (hallucination)** — Codex cited a file, function,
-     or line that does **not exist** in the current source tree
-   - **Uncited** — no concrete file:line citation. Surface to user as
-     "verification deferred". **Do NOT invent citations** to justify
-     reading files.
+# A branch review judged committed code, so its citations should still match HEAD
+# and drift since the review is worth flagging; a working-tree review has no such
+# ref. `target.mode` is the scope the companion actually resolved, which is the
+# only reliable answer when the user passed --scope auto.
+REF=$(node -e 'const t=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).target;process.stdout.write(t&&t.mode==="branch"?"HEAD":"")' \
+  "<literal $OUT_FILE path>")
+
+# Spelt out rather than folded into `${REF:+...}`: zsh does not word-split an
+# unquoted expansion, so that form arrives as the single argument `--ref HEAD`.
+if [ -n "$REF" ]; then
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+    --skill review --input "<literal $OUT_FILE path>" --repo "$REPO" \
+    --out-dir "$WORK" --ref "$REF"
+else
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+    --skill review --input "<literal $OUT_FILE path>" --repo "$REPO" \
+    --out-dir "$WORK"
+fi
+echo "prepare-verifier exit=$?"
+```
+
+The script cuts the output into findings, checks that every cited `file:line`
+exists, and writes one payload file per group. Its stdout JSON is your view of the
+findings — you do not re-derive that list by hand, because a list you extracted
+yourself is a list you have already formed an opinion about.
+
+| Exit | Meaning | What you do |
+|---|---|---|
+| 0 | payloads written | Step 2 |
+| 3 | `parse_error` — Codex's output format changed | Go to Phase 5 and report `Codex output format changed — no verdicts`. No Verifier, no hand-extracted findings. |
+| 4 | `no_output` — Codex returned nothing to judge | Go to Phase 5 and report `Codex returned no output — no verdicts`. |
+| 2 | bad usage, unreadable input, or git failure | Show stderr verbatim and stop. |
+
+Exit 0 with an empty `groups` list means Codex raised nothing. Report zero findings
+plus Codex's own summary, and launch no Verifier.
+
+### Step 2 — Launch one Verifier per group
+
+For each entry in the script's `groups`, make one `Agent` call:
+
+- `subagent_type: codex-advisor:verifier`, which starts a fresh subagent. Not
+  `fork` — a fork inherits this entire conversation, which is exactly the memory
+  the double-check exists to remove.
+- `prompt`: the group's `payload` path and nothing else. A PreToolUse hook replaces
+  the prompt with that file's hash-checked contents, so any sentence you write
+  around the path is discarded before the Verifier sees it. There is no hint to
+  pass and no room to pass one.
+
+Launch at most **10 at a time** and start the next batch once those return. The
+session cap is 20 concurrent subagents; the headroom keeps a large review from
+hitting it.
+
+When an `Agent` call fails, that group's findings are `Unverified — Verifier call
+failed`. Do not judge them in its place and do not retry on your own. If the user
+asks for a retry, make a new `Agent` call with the same payload path — a Verifier,
+running or finished, is never resumed with a follow-up message.
+
+### Step 3 — Collect the verdicts
+
+Each Verifier returns one JSON object, `{"verdicts": [...]}`.
+
+Read `${CLAUDE_PLUGIN_ROOT}/references/evaluation.md` and follow its *Reporting*
+section: match verdicts to ids, transcribe the script's own labels (`missing` →
+False Positive, `uncited` → Uncited, drift `unverifiable` → Unverifiable), and
+count. A non-empty `worktree_drift` gets the drift line the template shows.
+
+A verdict you disagree with stays exactly as the Verifier wrote it; your
+disagreement goes beneath it on one `Author note (main session):` line. Rewriting
+the verdict would make you the judge again.
 
 ---
 
@@ -177,23 +243,23 @@ mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
 ```
 
 **Success** (Codex returned a result):
-save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>.md`
-using the format from `references/evaluation.md`. Include the Codex
-output verbatim, then Claude's per-finding classification, then an
-Agreement summary.
+save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>.md` using the
+standard format in `references/evaluation.md` — Codex's output verbatim, the
+verdicts by classification, then the summary counts.
 
-**Failure** (Codex never produced a result, or Phase 3 hit a failure
-state):
+**Failure** (Codex never produced a result, or Phase 3 hit a failure state):
 save to `${CLAUDE_PLUGIN_DATA}/reviews/review-<YYYYMMDD-HHMMSS>-failed.md`
-with the §6 error category, the captured stderr, and any partial
-payload.
+with the §6 error category, the captured stderr, and any partial payload.
 
-Clean up temp files by re-injecting the literal absolute paths captured
-in Phase 2:
+Clean up the companion's temp files by re-injecting the literal absolute paths
+captured in Phase 2:
 
 ```bash
 rm -f "<literal $OUT_FILE path>" "<literal $ERR_FILE path>"
 ```
+
+Leave `$WORK` where it is. A re-verification the user asks for needs those payload
+files and their manifest, and the hook refuses a payload it cannot hash-check.
 
 Do NOT rely on `$OUT_FILE` / `$ERR_FILE` shell variables — they are
 scoped to the shell that set them, which is not this shell.

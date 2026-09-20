@@ -8,7 +8,7 @@ Bash's 5-minute timeout, and the most valuable thing — an *independent* check 
 Claude reads the diff before Codex does.
 
 codex-advisor wraps Codex as a **double-check peer**, not an oracle. Every Codex finding is
-classified by Claude *after* Codex returns (Agreed / Disputed / Nuanced / False Positive /
+classified *after* Codex returns (Agreed / Disputed / Nuanced / Unverifiable / False Positive /
 Uncited), the wrapper survives long jobs, and the input parser is whitelisted so a stray comma or a
 Korean meta-instruction never reaches Codex as a flag.
 
@@ -51,12 +51,23 @@ prompt**. There is no "official task prompt" to distort; only our own prompt qua
 
 **Vendored prompt blocks**:
 The XML blocks our task prompts use (`task`, `structured_output_contract`, `grounding_rules`,
-`completeness_contract`, `research_mode`, `citation_rules`, `action_safety`, `verification_loop`)
-are copied from the Official plugin's `gpt-5-4-prompting` skill (`prompt-blocks.md`) and
-**internalized at design time** — not imported at runtime. The official skill is
-`user-invocable: false` guidance (a block menu, not a function) at a version-pinned path, so
-referencing it live would be non-deterministic and version-fragile. Cost of vendoring: drift +
-**provenance debt**. See [[0004]].
+`completeness_contract`, `research_mode`, `citation_rules`, `autonomy_policy`) are
+**internalized at design time** — not imported at runtime. The block *tags* came from the Official
+plugin's `gpt-5-4-prompting` skill (`prompt-blocks.md`); the *bodies* are ours and are re-synced
+against the current OpenAI model guide (as of spec 016: "Using GPT-5.6" and "Using GPT-6 Astra").
+We decide which block goes in which skill — the Official skill is a menu, not a contract. Cost of
+vendoring: drift + **provenance debt**. See [[0004]].
+
+**Autonomy policy**:
+The single block in rescue that tells Codex what it may do without asking: report for
+review/diagnose requests, act for change/fix requests, confirm only for external, destructive, or
+scope-expanding actions, and never stop at a partial answer or a plan. It replaces the three
+overlapping blocks (`completeness_contract`, `verification_loop`, `action_safety`) whose "call out
+before acting" wording made Codex ask — and nobody can answer: the companion rejects every
+server request, and a turn that ends in a question still counts as completed, so the work is left
+undone while the status says success. The policy therefore never asks; what the task states is
+treated as approved, and anything else risky is listed in the final report instead.
+_Avoid_: safety block, approval block.
 
 **Static shaping** vs **adaptive shaping**:
 verify/research use **one fixed template per skill** — correct, because their task type is *fixed*
@@ -67,10 +78,53 @@ by determinism + independence; adaptive shaping is acceptable for rescue because
 post-hoc on the diff. See [[0004]].
 
 **Double-check independence**:
-The north star. Claude must **not** read source or the document before Codex returns — Phases 1–3
-forbid `Read`/`Grep`/`git diff`. The wrapper's value is the post-hoc classification, never
-pre-analysis. Reading first means Claude rationalizes away valid catches. For verify/research this
-is enforced by the **blind payload**.
+The north star: the reviewer must not know the reviewed party's conclusions. It has two sides.
+*Write-side*: what Claude sends to Codex carries evidence and focus only, never Claude's
+hypothesis (see **Hypothesis exclusion**). *Read-side*: the verdict on each Codex finding is made
+by a **Verifier** that has no conversation history, not by the main session that authored the code.
+Instructions alone cannot deliver either side — the main session is the author and already holds
+the code in context — so both are enforced by structure. See [[0012]]. The structure covers the
+Verifier's launch prompt and, while the skill runs, any follow-up message to a Verifier; a Verifier
+resumed after the report is saved is outside the guarantee, since the saved verdicts no longer
+change. For verify/research the
+document additionally never enters Claude's context (**blind payload**).
+
+**Verifier**:
+The fresh subagent that judges one finding group. It receives the finding, its citation, the
+citation-existence result, and the classification rules — no conversation history and no authoring
+memory. Shared project instructions (the CLAUDE.md hierarchy) are visible to it as to every
+subagent; they are common rules, not the author's memory. It returns
+one verdict per item (never a single label for a group, never PASS/FAIL —
+that is arithmetic the main session does from the verdicts), each Agreed / Disputed / Nuanced /
+Unverifiable with evidence, tuned skeptical (default Disputed when
+it has seen counter-evidence; Unverifiable when it has seen nothing). Items are numbered in
+advance only where the script extracts findings (review, adversarial), so only there is a skipped
+item caught; for prose results (verify, research, rescue) the Verifier draws the item boundaries
+itself. The report names it:
+`Verifier: fresh subagent`; a group whose Verifier call failed is shown as `Unverified` — the main
+session never judges in its place. Its model is never pinned by the plugin and never chosen by the
+main session: the user's subagent-model setting applies, else the session's model.
+_Avoid_: double-checker, judge agent, reviewer (that word is Codex's role).
+
+**Author note**:
+The main session's labelled dissent beneath a Verifier verdict it disagrees with. The verdict
+is never edited or overridden; the note sits next to it, marked as the author's opinion, and the
+user weighs both. It is written only after the verdict exists — never fed to the Verifier.
+_Avoid_: override, re-judgment, main's verdict.
+
+**Hypothesis exclusion**:
+The write-side rule. When Claude composes focus text (adversarial, verify), a research topic, or a
+rescue task, it forwards *evidence* (scope, symptoms, reproduction, logs, the user's own words) and
+*focus* (an area to look at) but drops *hypotheses* (a claimed cause, a suspected `file:line`, an
+expected answer). The preview shows what was dropped as `Excluded (hypothesis):` so the user can
+put it back; no flag skips the preview. It is a check only when a person answers — a question
+timeout the user enabled, or a headless run with no question tool, can let the call proceed
+unconfirmed. Assertion → hypothesis; area only → focus. The rule
+applies to every invocation alike — whether the user typed the slash command or Claude composed
+the call from the user's intent — so no source detection exists; a hypothesis the user wants sent
+is restored from the preview in one step. A rescue task statement is the requirement itself, i.e.
+evidence, never a hypothesis.
+_Avoid_: prompt sanitizing, focus filtering.
 
 **Blind payload**:
 verify/research assemble the prompt with `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, empty
@@ -93,16 +147,53 @@ Official plugin's, or codex-advisor's conditional hook when the Official plugin 
 Hooks are the **only** channel that receives the transcript path; the model cannot derive it
 (mtime guessing breaks under concurrent sessions). See [[0006]].
 
-**Five-way classification**:
-Every double-check labels each Codex finding: **Agreed** / **Disputed** / **Nuanced** / **False
-Positive** (Codex cited a file/function/line that does not exist — a hallucination) / **Uncited**
-(no concrete citation → "verification deferred"). Inventing a citation to justify reading a file is
+**Six-way classification** (formerly Five-way):
+Every double-check labels each Codex finding: **Agreed** / **Disputed** (the Verifier found
+evidence against it) / **Nuanced** / **Unverifiable** (the Verifier found no evidence either way
+within the cited range — a verification gap, not a Codex error; the report counts these
+separately; the script also assigns it to every finding in a file the working tree has changed
+since the reviewed ref, cited line present or not, so neither a stale `missing` nor a changed line
+reaches a verdict) / **False Positive** (Codex cited a file/function/line that does not exist — a
+hallucination) / **Uncited** (no concrete citation → "verification deferred"). The split of labour
+is fixed: False Positive and Uncited are *facts* decided by the citation-existence script;
+Agreed / Disputed / Nuanced / Unverifiable are *judgments* decided by the **Verifier**. For
+verify/research (section and URL citations, no `file:line`) the Verifier decides all six.
+"Disputed" without evidence is not allowed; "I couldn't tell" is Unverifiable. Inventing a citation to justify reading a file is
 forbidden.
+
+**Raised item** (vs. Codex finding):
+An item the Verifier introduces itself rather than receiving — a **gap** (`missing-N`: a part of
+the approved research scope the result never answers) or an **unrequested change**
+(`side-effect-N`: something a rescue write did that no requirement asked for). These are not
+claims of Codex's, so the six-way classification does not apply to them: a gap is **Confirmed**
+or **Refuted**, an unrequested change is **Harmless** or **Harmful**. They are reported and
+counted on their own lines and never enter the agreement rate, which measures Codex's accuracy
+on what Codex actually said. Calling a gap "Agreed" would read as approving the gap and would
+credit Codex for its own omission.
+
+**Finding group**:
+The unit one Verifier judges. Findings citing the same file are merged by the script, capped
+at five findings and a bounded payload size so a group never grows large enough to invite
+pattern-matching leniency; a single finding over the size bound forms its own group rather than
+being cut. Grouping is never the main session's call — the biased party must not
+decide what gets diluted together.
+
+**Verifier payload**:
+The text a Verifier receives, and the only text it receives. Written to a file by the citation
+script (one per finding group, hashes in a manifest), chosen by the main session by path, and
+delivered by a plugin hook that replaces the launch prompt with the file's content after checking
+the hash. Anything the main session adds to the prompt is discarded before the Verifier sees it —
+the author cannot brief the judge. For verify/research the payload also points at the prompt
+Codex received — the scope the user approved in the preview — so omissions are judged against it,
+never against a summary by the main session. _Avoid_: verifier prompt (that is what the main session writes
+and the hook throws away).
 
 **Pattern A** vs **Pattern B**:
 Two invocation shapes. **A** (review/adversarial): the companion's own `--background`/`--wait` are
 **silent no-ops** (`handleReviewCommand` always runs foreground), so we use Bash
-`run_in_background=true` + `BashOutput` polling to survive the 300s tool timeout. **B** (task): the
+`run_in_background=true` to survive the 300s tool timeout; completion arrives as a background-task
+notification and the output file is then `Read` (the former `BashOutput` polling loop and
+`KillShell` are gone from Claude Code; there is no wait cap — the user cancels a stuck job). **B** (task): the
 companion's `--background` **is** honored, returns a job immediately, then we poll via
 `status --wait` (≤240s/call, under the limit).
 
@@ -120,21 +211,21 @@ registered review flag (it would become prompt corruption), and config.toml pers
 sessions + keeps every skill identical. The change is **global** — it affects every Codex
 invocation until changed again.
 
-The script **does not judge the values** — no model list, no effort set, no cache lookup. It writes
-what it is given (the one `spark` alias aside) and lets Codex settle validity at run time. This is
+The script **does not judge the values** — no model list, no effort set, no alias, no cache lookup.
+It writes what it is given and lets Codex settle validity at run time. This is
 deliberate and was paid for: v4.7.0 deleted a cache-backed validation layer that had started calling
 real, newly-released models invalid, because any list we keep is a copy of someone else's world and
 rots faster than the original. Non-blocking validation was never a defence anyway — it warned and
-saved the value regardless. **Do not reintroduce it.** See spec `012`.
+saved the value regardless. **Do not reintroduce it.** v5.0.0 (issue `016`) removed the last
+survivor of that layer, the `spark` alias — the same reasoning, applied to the one model name the
+script still knew. See spec `012`.
 
 **Provenance debt**:
-Vendored blocks carry no source marker in shipped skills/scripts/README (`grep gpt-5-4-prompting`
-over them finds nothing — only this CONTEXT.md names the origin).
-A maintainer cannot tell they came from the official guide, nor that they should be **re-synced**
-when the Official plugin bumps its prompting guide (the guide targets GPT-5.4, and Codex has shipped
-newer generations since). Note the plugin has no "default model" of its own to compare against — what
-sits in a user's config.toml is whatever that user set. Paying this debt = a provenance note +
-re-sync trigger. See [[0004]].
+The obligation to mark, next to every vendored block, which model guide its wording came from, so
+a maintainer knows what to re-sync when OpenAI publishes the next guide. Partly paid in 4.5.0 (tag
+origin noted); paid in full by spec 016 (each block cites the 5.6 / Astra guide section it follows).
+The plugin has no "default model" of its own to compare against — what sits in a user's
+config.toml is whatever that user set. See [[0004]].
 
 ## Flagged ambiguities
 

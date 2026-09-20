@@ -1,0 +1,55 @@
+{
+  "review": "Adversarial Review",
+  "target": {"mode": "branch", "label": "branch diff against main", "baseRef": "main", "explicit": true},
+  "threadId": "thr_fixture",
+  "codex": {"status": 0, "stderr": "", "stdout": "", "reasoning": null},
+  "result": {
+    "verdict": "needs-attention",
+    "summary": "Fixture adversarial review.",
+    "findings": [
+      {
+        "severity": "high",
+        "title": "Session token compared with ==",
+        "body": "The token check uses a non-constant-time comparison.",
+        "file": "src/auth.py",
+        "line_start": 3,
+        "line_end": 5,
+        "confidence": 0.8,
+        "recommendation": "Use hmac.compare_digest."
+      },
+      {
+        "severity": "medium",
+        "title": "Unchecked retry count",
+        "body": "Retries are unbounded when the counter is negative.",
+        "file": "src/auth.py",
+        "line_start": 10,
+        "line_end": 12,
+        "confidence": 0.6,
+        "recommendation": "Clamp the counter."
+      },
+      {
+        "severity": "critical",
+        "title": "Password logged in plaintext",
+        "body": "The login handler writes the password to the log.",
+        "file": "src/auth.py",
+        "line_start": 200,
+        "line_end": 210,
+        "confidence": 0.9,
+        "recommendation": "Remove the log line."
+      },
+      {
+        "severity": "low",
+        "title": "General hardening",
+        "body": "Consider rate limiting.",
+        "file": "",
+        "line_start": 1,
+        "line_end": 1,
+        "confidence": 0.3,
+        "recommendation": ""
+      }
+    ],
+    "next_steps": []
+  },
+  "rawOutput": "{}",
+  "parseError": null
+}
