@@ -83,10 +83,11 @@ The north star: the reviewer must not know the reviewed party's conclusions. It 
 hypothesis (see **Hypothesis exclusion**). *Read-side*: the verdict on each Codex finding is made
 by a **Verifier** that has no conversation history, not by the main session that authored the code.
 Instructions alone cannot deliver either side — the main session is the author and already holds
-the code in context — so both are enforced by structure. See [[0012]]. The structure covers the
-Verifier's launch prompt and, while the skill runs, any follow-up message to a Verifier; a Verifier
-resumed after the report is saved is outside the guarantee, since the saved verdicts no longer
-change. For verify/research the
+the code in context — so both are enforced by structure. See [[0012]]. What the structure actually
+covers is the Verifier's launch prompt, which a hook replaces wholesale. A follow-up message to a
+running or finished Verifier is *not* covered: `disallowed-tools` was measured to lapse a turn
+after the skill loads, so v5.0.1 removed it and left the instruction in its place. For
+verify/research the
 document additionally never enters Claude's context (**blind payload**).
 
 **Verifier**:
@@ -130,7 +131,10 @@ _Avoid_: prompt sanitizing, focus filtering.
 verify/research assemble the prompt with `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, empty
 stdout) then `cat "$PROMPT_FILE" | node companion task` (stdin pipe). The document text reaches
 Codex but **never enters Claude's context**. A positional arg after `task` would silently drop the
-whole payload (`:649`), so the pipe is load-bearing.
+whole payload (`:649`), so the pipe is load-bearing. Phase 3 is the other half: `status --json`
+and `result --json` both echo `request.prompt` back, document included, so both redirect to a file
+and only the fields the loop branches on are printed (v5.0.2 — the status leak was measured, not
+foreseen).
 
 **Transfer**:
 Session handoff — the current Claude Code conversation is imported into a resumable Codex thread

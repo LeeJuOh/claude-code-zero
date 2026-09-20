@@ -3,7 +3,6 @@ name: codex-verify
 description: "Verify a plan or document using Codex as independent reviewer with PASS/FAIL verdict. Use when asked \"codex verify\", \"verify this plan\", \"review this doc for issues\"."
 argument-hint: "path/to/document.md [focus text] [--model SLUG] [--effort LEVEL]"
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
-disallowed-tools: ["SendMessage"]
 ---
 
 # Codex Document Verification + Double-Check
@@ -301,9 +300,12 @@ Each call blocks ≤4 min. Re-call on timeout. Cap at **6 iterations** (24
 minutes).
 
 ```bash
-# Repeat until status is "completed" or "failed", or cap hit.
+# Redirect is load-bearing: `status --json` echoes request.prompt back, document and all.
 node "$CODEX_COMPANION" status --wait "<literal JOB_ID>" \
-  --timeout-ms 240000 --json
+  --timeout-ms 240000 --json > "<literal JOB_JSON_FILE path>.status"
+
+node -e 'const o=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(JSON.stringify({status:o.job&&o.job.status,waitTimedOut:o.waitTimedOut})+"\n")' \
+  "<literal JOB_JSON_FILE path>.status"
 ```
 
 - `status === "completed"` → fetch result
@@ -411,6 +413,7 @@ Clean up temp files using the literal paths captured in Phase 1:
 
 ```bash
 rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_JSON_FILE path>.stderr" \
+  "<literal JOB_JSON_FILE path>.status" \
   "<literal RESULT_FILE path>"
 ```
 
