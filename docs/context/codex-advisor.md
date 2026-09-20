@@ -211,12 +211,14 @@ registered review flag (it would become prompt corruption), and config.toml pers
 sessions + keeps every skill identical. The change is **global** — it affects every Codex
 invocation until changed again.
 
-The script **does not judge the values** — no model list, no effort set, no cache lookup. It writes
-what it is given (the one `spark` alias aside) and lets Codex settle validity at run time. This is
+The script **does not judge the values** — no model list, no effort set, no alias, no cache lookup.
+It writes what it is given and lets Codex settle validity at run time. This is
 deliberate and was paid for: v4.7.0 deleted a cache-backed validation layer that had started calling
 real, newly-released models invalid, because any list we keep is a copy of someone else's world and
 rots faster than the original. Non-blocking validation was never a defence anyway — it warned and
-saved the value regardless. **Do not reintroduce it.** See spec `012`.
+saved the value regardless. **Do not reintroduce it.** v5.0.0 (issue `016`) removed the last
+survivor of that layer, the `spark` alias — the same reasoning, applied to the one model name the
+script still knew. See spec `012`.
 
 **Provenance debt**:
 The obligation to mark, next to every vendored block, which model guide its wording came from, so

@@ -1,6 +1,6 @@
 # codex-advisor
 
-> **Get Codex's second opinion — and actually trust it.** A different model reviews your code, plans, and research; Claude fact-checks every finding it returns, so hallucinated citations never slip through.
+> **Get Codex's second opinion — and actually trust it.** A different model reviews your code, plans, and research; a fresh verifier subagent — not the session that wrote the work — judges every finding it returns, so neither a hallucinated citation nor an author's self-approval slips through.
 
 ## Why
 
@@ -29,15 +29,14 @@ prompt and double-check". All four failures were wrapper bugs.
 - Parses the input with LM intelligence first: drops the trailing comma, attempts to obey the meta-instruction ("don't pre-analyze"), and runs a clean `review --base develop`.
 - Launches long-running reviews in the background so Bash's 5-minute timeout never kills them.
 - Uses the official `status --wait` wait mechanism instead of improvised polling.
-- Classifies Codex's findings as Agreed, Disputed, Nuanced, False Positive (hallucinated file/function), or Uncited — holding off from reading your code until Codex returns, so the check stays independent.
+- Hands Codex's findings to a fresh subagent that never saw this conversation, and reports what it sends back: Agreed, Disputed, Nuanced, Unverifiable, plus False Positive (hallucinated file/function) and Uncited from the citation script.
 
 ## What you get
 
-- **A second opinion you can trust** — Codex reviews your code, verifies your plans, or researches for you; Claude then independently fact-checks what Codex returns. You get the cross-model check *and* a guardrail against Codex's confident hallucinations.
-- **Five-way finding classification** on every review — Agreed, Disputed, Nuanced, False Positive, Uncited. Catches hallucinated file:line citations before you act on them.
-- **Independent double-check** — for `codex-verify` / `codex-research` the document is piped straight to Codex and never enters Claude's context (enforced structurally). For `codex-review` / `codex-adversarial` the skill holds Claude back from reading the cited files until Codex returns — a discipline, not a hard gate — so the classification stays independent.
+- **A second opinion you can trust** — Codex reviews your code, verifies your plans, or researches for you; a separate verifier subagent then checks what Codex returns against the evidence. You get the cross-model check *and* a guardrail against Codex's confident hallucinations.
+- **Six-label classification**, from three deciders that can't cover for each other — the Verifier assigns Agreed / Disputed / Nuanced / Unverifiable, and the citation script assigns False Positive and Uncited before any Verifier runs, so hallucinated `file:line` citations are caught by code rather than by judgement.
+- **Independence enforced on both sides** — the Verifier *can't read* this conversation, because it's a fresh subagent (`agents/verifier.md`) rather than a fork; and the session *can't write* to it, because a PreToolUse hook (`hooks/verifier-payload.mjs`) throws away the launch prompt and substitutes the hash-checked payload a script wrote. Neither side rests on the main session choosing to behave.
 - **Background-resilient** — long jobs survive Bash's 5-minute timeout via background launch + `status --wait`. `/codex-result <job-id>` fetches the stored output even after the session that started it is gone.
-- **Self-bias guardrail** on `codex-verify` — if Claude authored the document under review, extra honesty constraints are applied.
 - **Every call persists** to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failures save to `<type>-<timestamp>-failed.md` with a categorized error.
 - **10 skills**, works with the Official Codex plugin hidden — `/codex-result`, `/codex-status`, `/codex-cancel`, `/codex-transfer` call the companion script directly.
 
@@ -70,7 +69,7 @@ prompt and double-check". All four failures were wrapper bugs.
 /codex-adversarial check auth flow     # skeptical review with focus text
 /codex-rescue implement rate limiter   # delegate a task + review the diff
 /codex-verify docs/plan.md             # plan review + PASS/FAIL verdict
-/codex-research GraphQL vs tRPC 2026   # deep-dive + cross-model synthesis
+/codex-research GraphQL vs tRPC 2026   # deep-dive + independent verification
 /codex-status                          # who's running, what's stored
 /codex-result <job-id>                 # fetch final output of a job
 /codex-cancel <job-id>                 # stop a runaway task
@@ -86,7 +85,7 @@ prompt and double-check". All four failures were wrapper bugs.
 | `/codex-adversarial` | Adversarial (skeptical) review + focus text |
 | `/codex-rescue` | Task delegation (structured, preview-approved prompt) + diff review |
 | `/codex-verify` | Document/plan verification, PASS/FAIL verdict |
-| `/codex-research` | Deep-dive research, cross-model synthesis |
+| `/codex-research` | Deep-dive research, independently verified |
 | `/codex-status` | Active + recent Codex jobs plus saved reports |
 | `/codex-result` | Final stored output of a completed job |
 | `/codex-cancel` | Cancel an active background job |
@@ -108,11 +107,11 @@ Examples:
 ```shell
 /codex-review --base main --model gpt-5.6-sol
 /codex-adversarial --effort xhigh focus on SQL injection
-/codex-rescue --model spark implement the rate limiter
+/codex-rescue --model gpt-5.3-codex implement the rate limiter
 /codex-setup --model gpt-5.6-sol --effort high    # or set defaults once
 ```
 
-**Which slugs and efforts can you use?** Run `codex` and use its `/model` picker — that list is scoped to your account, so it's the only one that's right for you. Whatever you pass is written to `config.toml` as given; Codex decides at run time whether it's valid. The one convenience: `spark` expands to `gpt-5.3-codex-spark`.
+**Which slugs and efforts can you use?** Run `codex` and use its `/model` picker — that list is scoped to your account, so it's the only one that's right for you. Whatever you pass is written to `config.toml` as given; Codex decides at run time whether it's valid. The plugin keeps no model list of its own — any list it kept would go stale the moment OpenAI ships the next model, and then it would call a working value wrong.
 
 The effort value lands on the `model_reasoning_effort` key in `config.toml` (`none` is the one exception — it belongs to `plan_mode_reasoning_effort`, a key this plugin doesn't set).
 
@@ -121,17 +120,17 @@ The effort value lands on the `model_reasoning_effort` key in `config.toml` (`no
 ## How a call is translated
 
 You can type anything — English, Korean, flags, meta-instructions, emoji, typos.
-Every skill does the same four things in order:
+Every skill does the same five things in order:
 
 1. **Analyze** — parse your input into clean companion flags. Drop junk, obey meta-instructions addressed to Claude, reject unknown flags with a clarifying question instead of silently forwarding them.
 2. **Draft review** — for prompt-passing skills (rescue, research, verify, adversarial), show the exact prompt or command that will be sent to Codex, plus an `Excluded (hypothesis):` line naming anything the skill held back, and wait for your approval before proceeding.
 3. **Invoke** — run the Official Codex plugin's companion in the background, so long jobs don't die on Bash's 5-minute timeout.
-4. **Double-check** — once Codex returns, read only the files and lines it cited. Classify each finding (Agreed / Disputed / Nuanced / False Positive / Uncited).
+4. **Verify** — a script cuts Codex's output into findings, checks every cited `file:line` against the repo, and writes a payload per group. Each payload goes to a fresh `codex-advisor:verifier` subagent, which reads the cited evidence and returns verdicts. The session that ran the call does the plumbing and the tallying, never the judging.
 5. **Report** — present findings with the classification, save to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failed runs are saved to `<type>-<timestamp>-failed.md` with the categorized error.
 
-The key discipline: **Claude holds off reading your source until Codex returns** — that's what keeps the double-check independent. For document skills (verify / research) it's enforced structurally: the document is streamed into Codex via a file pipe, so it never enters Claude's context at all.
+**Why step 4 leaves the session:** by the time Codex returns, this session has often written the code or drafted the document under review, and an author grading a review of their own work is not a review. Telling it to be impartial can't undo what it already remembers, so the judgement moves to an agent that was never in the room. For `codex-verify` / `codex-research` the document is also piped straight into Codex through a file, so it never enters the session's context to begin with.
 
-`/codex-transfer` is the one exception to this five-step shape — it stops after Invoke. Once the session hands off to Codex, there's nothing left in Claude's hands to double-check or report on.
+`/codex-transfer` is the one exception to this five-step shape — it stops after Invoke. Once the session hands off to Codex, there's nothing left to verify or report on.
 
 ## Prerequisites
 

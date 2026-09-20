@@ -72,7 +72,7 @@ git rev-parse --verify "<literal clean base>" >/dev/null 2>&1 \
 Run this *before* Phase 2 so the companion sees the new `config.toml`:
 
 ```bash
-# Empty string for either arg = no change. Alias `spark` auto-expands.
+# Empty string for either arg = no change. Values are written as given.
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
   "<literal clean effort from Phase 1 or empty>"

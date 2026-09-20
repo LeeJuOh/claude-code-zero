@@ -50,7 +50,7 @@ You are a translator. Use LM intelligence, not regex tables.
 
 **Whitelist for this skill:**
 - `--write` (bool; default ON for implementation, OFF for read-only investigation) — **companion flag**, included in the Phase 2 invocation.
-- `--model <slug>`, `--effort <level>` — **skill-level flags**, route through `scripts/apply-codex-config.py` (see Apply block below) and **never reach the companion**. The alias `spark` auto-expands to `gpt-5.3-codex-spark`. Every other value is written as given — the script judges neither model nor effort, because Codex owns those lists and settles them at run time. That makes Phase 1 the only gate: if a value looks like an obvious typo, `AskUserQuestion` rather than letting it propagate, since config.toml is global and nothing downstream will second-guess it.
+- `--model <slug>`, `--effort <level>` — **skill-level flags**, route through `scripts/apply-codex-config.py` (see Apply block below) and **never reach the companion**. Every value is written as given — the script judges neither model nor effort, because Codex owns those lists and settles them at run time. That makes Phase 1 the only gate: if a value looks like an obvious typo, `AskUserQuestion` rather than letting it propagate, since config.toml is global and nothing downstream will second-guess it.
 - `--resume-last` / `--resume` / `--fresh` — mutually exclusive companion flags. Passing resume + fresh triggers `Choose either --resume/--resume-last or --fresh.` (`:750`). If ANALYZE produces a conflict, `AskUserQuestion`; never forward both.
 
 **Everything else in `$ARGUMENTS` is the task description**, which
