@@ -131,7 +131,10 @@ _Avoid_: prompt sanitizing, focus filtering.
 verify/research assemble the prompt with `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, empty
 stdout) then `cat "$PROMPT_FILE" | node companion task` (stdin pipe). The document text reaches
 Codex but **never enters Claude's context**. A positional arg after `task` would silently drop the
-whole payload (`:649`), so the pipe is load-bearing.
+whole payload (`:649`), so the pipe is load-bearing. Phase 3 is the other half: `status --json`
+and `result --json` both echo `request.prompt` back, document included, so both redirect to a file
+and only the fields the loop branches on are printed (v5.0.2 — the status leak was measured, not
+foreseen).
 
 **Transfer**:
 Session handoff — the current Claude Code conversation is imported into a resumable Codex thread

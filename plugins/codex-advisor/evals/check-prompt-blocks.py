@@ -50,6 +50,10 @@ REVIEW_SKILLS = ["codex-adversarial", "codex-research", "codex-verify"]
 VERIFIER_SKILLS = ["codex-review", "codex-adversarial", "codex-rescue",
                    "codex-verify", "codex-research"]
 
+# Skills whose document never enters the main session's context. `status --json`
+# echoes request.prompt back, so Phase 3 must redirect it (measured 2026-09-20).
+BLIND_SKILLS = ["codex-verify", "codex-research"]
+
 # Tools review and adversarial used to poll a background launch with. Neither
 # exists in Claude Code, so an instruction naming one is an instruction that
 # cannot be followed; waiting is a completion notification now.
@@ -210,11 +214,8 @@ def main():
         lines = text.split("\n")
         check(len(lines) <= 500, "%s is %d lines, over the 500-line editing bound"
               % (name, len(lines)))
-        # `disallowed-tools: SendMessage` was measured to lapse one turn after the
-        # skill loads — and a background task notification is turn enough, which
-        # every skill here produces before the Verifier is launched. The line is
-        # gone (v5.0.1); what defends the Verifier now is the written instruction,
-        # so that is what gets checked.
+        # disallowed-tools lapses a turn after the skill loads (v5.0.1); the
+        # written instruction is what defends the Verifier now.
         check(re.search(r"^disallowed-tools:", text, re.M) is None,
               "%s reintroduces disallowed-tools, which implies a guarantee it does not give" % name)
         check("follow-up message" in text,
@@ -240,6 +241,16 @@ def main():
         check("wait-timeout" not in text, "%s still caps the wait" % name)
         check("completion notification" in text,
               "%s does not say how Phase 3 learns the run finished" % name)
+
+    # Phase 3 must not print the companion's status JSON.
+    for name in BLIND_SKILLS:
+        text = read("skills/%s/SKILL.md" % name)
+        wait = re.search(r'\$CODEX_COMPANION" status --wait.*?```', text, re.S)
+        check(wait is not None, "%s has no status --wait block to check" % name)
+        if wait:
+            check(".json > " in wait.group(0) or "--json > " in wait.group(0),
+                  "%s prints the status JSON, which carries request.prompt and "
+                  "with it the document Phase 1 kept out of context" % name)
 
     if failures:
         for f in failures:
