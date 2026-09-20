@@ -44,10 +44,11 @@ PREVIEW_SKILLS = ["codex-adversarial", "codex-rescue", "codex-research", "codex-
 REVIEW_SKILLS = ["codex-adversarial", "codex-research", "codex-verify"]
 
 # The skills whose Phase 4 hands judgement to a Verifier subagent. The main
-# session is the author of the code under review, so every string that would put
-# it back in the judge's seat -- reading the cited source, writing its own
-# classification -- has to stay gone once S5a removed it.
-VERIFIER_SKILLS = ["codex-review", "codex-adversarial", "codex-rescue"]
+# session is the author of the material under review, so every string that would
+# put it back in the judge's seat -- reading the cited source, writing its own
+# classification, supplementing the findings -- has to stay gone.
+VERIFIER_SKILLS = ["codex-review", "codex-adversarial", "codex-rescue",
+                   "codex-verify", "codex-research"]
 
 # Tools review and adversarial used to poll a background launch with. Neither
 # exists in Claude Code, so an instruction naming one is an instruction that

@@ -93,6 +93,11 @@ Codex answered in prose and no fixed item list exists.
   through the result end to end before assigning verdicts.
 - `severity` carries through whatever Codex attached to that point (`P1`, `P2`), and is
   `null` where Codex attached none.
+- **verify only**: the items are the points listed under Codex's P1 and P2 headings.
+  The verdict line above them ("PASS/FAIL because …") is Codex's own conclusion about
+  the document, not a point to judge, so it is not an item. Counting it as one would
+  give it `severity: null` on every run, and rule 3 below would then fail every
+  verification for a reason that has nothing to do with the document.
 - Checking the citations is yours here too: the quoted passage, the section reference,
   the URL. Open URLs the material cites, and only those.
 - **research only**: `prompt_file` is the scope the user approved in the preview. A
