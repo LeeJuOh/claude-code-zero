@@ -65,7 +65,7 @@
 | S2 ✅ `1d9efd7` | gotchas.md — §1-1 해당 행 + §1-4 gotchas 목적지. §1-4의 context 목적지 3개도 여기서 | — |
 | S3 ✅ `d3c669c` | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13) + auto-optimize 참조 삭제, skill-creator-pro 2.0.6 | — |
 | S4 ✅ `b74fb20` | §1-1 설계 기록 표(상태줄·배너·링크) + rubber-duck 용어집 병합(영어) + context 4개 용어집 형식 정리 + CONTEXT-MAP. rubber-duck-tutor 3.1.2 | — |
-| S5 | 원 작성 머신: 메모리 폴더 정리(`feedback_audit_scope` 포함 삭제), worktree | #4, #12 |
+| S5 | 원 작성 머신: 메모리 폴더 정리(`feedback_audit_scope` 포함 삭제), worktree | #4 |
 | P1~P7 | 2부 — 1부 뒤. 분할은 아래 표 | §1-5 #8~#11 |
 
 | # | 2부 범위 | 막는 결정 |
@@ -295,7 +295,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 9. skill-creator-pro #9 — `claude`/`anthropic` 예약 규칙 유지 여부. API·claude.ai 스킬엔 유효한 규칙이라 #11(Claude.ai 절 삭제, ADR 0001) 결정과 묶인다
 10. vision-powers #7 — doc-visual의 md 게시 예외를 인정하려면 channel-decision.md의 권위인 ADR 0009 §3 개정이 따라온다. 개정할지, doc-visual의 md 게시를 없앨지
 11. 실행 확인 필요(결정 아님): claw-mux #2(라이브 pane에서 `❯` 오판 재현) — 남음. ~~2부 공통 "reference 파일 치환"~~ 확인됨(치환 안 됨, 2026-09-24)
-12. 다른 머신 메모리 2개 이관 여부 — `subagent-model-preference`(→ 전역 선호. 근거가 "세션이 Fable 5"라 지금도 유효한지 확인), `wiki-is-symlink-to-llm-wiki`(→ 전역 `~/.claude/CLAUDE.md` 후보: `wiki -> ../llm-wiki/wiki` 심링크가 claude-code-zero·excalidraw-architect·link-dive 3개 레포에 있음 ✅). 전역 CLAUDE.md는 이 머신에 아직 없음 ✅
+12. ~~다른 머신 메모리 2개 이관 여부~~ — **결정(2026-09-24, 이 머신 `/Users/leejuo`에서 처리):** `subagent-model-preference` 버림(Fable 세션 전제), `wiki-is-symlink-to-llm-wiki` → AGENTS.md `references/ · wiki/` 절 반 줄(llm-wiki 레포에서 수정). 두 메모리 파일 삭제함. 원문: — `subagent-model-preference`(→ 전역 선호. 근거가 "세션이 Fable 5"라 지금도 유효한지 확인), `wiki-is-symlink-to-llm-wiki`(→ 전역 `~/.claude/CLAUDE.md` 후보: `wiki -> ../llm-wiki/wiki` 심링크가 claude-code-zero·excalidraw-architect·link-dive 3개 레포에 있음 ✅). 전역 CLAUDE.md는 이 머신에 아직 없음 ✅
 13. ~~skill 가이드 2개(skill-building-guide·skill-lessons) 줄 단위 수정 vs 삭제~~ — **결정(2026-09-24): 삭제.** §1-1 docs/reference 행
 14. ~~버전 범프 시점: 수정 커밋(메모리) vs 릴리즈 때 묻기(release-workflow 3단계)~~ — **결정(2026-09-24): 수정 커밋.** release-workflow 3단계는 범프 누락 확인으로
 15. ~~`feedback_audit_scope` 메모리(최소 요구 버전 유지, "tested against"는 재확인 절차 없으면 삭제) — 렌즈 제안대로 버릴지~~ — **결정(2026-09-24): 버림.** 파일 삭제는 S5(원 작성 머신)

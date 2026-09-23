@@ -44,9 +44,9 @@ Components (`commands/`, `skills/`, `agents/`, `hooks/`) live at the **plugin ro
 - SemVer: patch = fixes/tweaks, minor = features/renames, major = breaking interface changes.
 - Bump in the commit that changes the plugin, without asking. Installed users keep their cached copy until the version changes.
 
-## references/
+## references/ · wiki/
 
-Tracked symlink to the shared `../references`: external repos cloned as `references/<repo-name>`. Read-only — read, benchmark, and mine for patterns.
+Tracked symlinks into sibling repos: `references/` → `../references` (external repos, read-only — read, benchmark, mine for patterns); `wiki/` → `../llm-wiki/wiki` (edit it from the llm-wiki repo, where its AGENTS.md applies).
 
 ## Git Workflow
 
