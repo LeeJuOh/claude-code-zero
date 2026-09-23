@@ -60,7 +60,7 @@ slice (doc-visual's simpler single-file input validated that combination first; 
 scope makes it a separate follow-up).
 
 **Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
-default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the
+default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get --data-dir "${CLAUDE_PLUGIN_DATA}"` (prints the
 config as JSON, or `{}`). A `default_format` value replaces the `html` default. For the channel: an
 **absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
 force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first. Anything
@@ -325,7 +325,7 @@ If violations found: fix inline, max 2 retries.
 **Visual self-audit (HTML only)**: The gate reads the HTML as *text* — it never sees the rendered picture. A before/after flow pair can pass the density check and render as an unreadable tangle; a long file path can clip at the container edge. After the gate passes, **render the report and look at it** before delivering:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path>
+node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path> --data-dir "${CLAUDE_PLUGIN_DATA}"
 ```
 
 On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:

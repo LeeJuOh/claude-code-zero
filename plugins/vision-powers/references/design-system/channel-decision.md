@@ -39,7 +39,7 @@ Resolve the channel in this order; the first that speaks wins:
 
 1. **This turn's explicit signal** — a literal flag (`--local`, `--artifact`) or its natural-language
    equivalent, in whatever language the user writes. Always overrides everything below.
-2. **Stored config** — `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints JSON, or `{}`).
+2. **Stored config** — `config.js get --data-dir <plugin data dir>` (the skill gives the full command; prints JSON, or `{}`).
    Fills in only when the request is silent on channel. See "config keys" below.
 3. **Default** — artifact-first for capable HTML, per the table.
 

@@ -11,12 +11,22 @@ function withReportsDir(fn) {
   finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
-function runListReports(reportsDir) {
-  const out = execFileSync('node', [path.join(__dirname, 'list-reports.js')], {
-    env: { ...process.env, CLAUDE_PLUGIN_DATA: reportsDir },
-  });
+function runListReports(dataDir) {
+  const out = execFileSync('node', [path.join(__dirname, 'list-reports.js'), '--data-dir', dataDir]);
   return JSON.parse(out.toString());
 }
+
+test('exits 2 without --data-dir, even when CLAUDE_PLUGIN_DATA is set', () => {
+  withReportsDir((base) => {
+    assert.throws(
+      () => execFileSync('node', [path.join(__dirname, 'list-reports.js')], {
+        env: { ...process.env, CLAUDE_PLUGIN_DATA: base },
+        stdio: 'pipe',
+      }),
+      (err) => err.status === 2,
+    );
+  });
+});
 
 test('report with an artifact sidecar surfaces artifact_url', () => {
   withReportsDir((base) => {

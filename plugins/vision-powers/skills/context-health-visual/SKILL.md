@@ -42,7 +42,7 @@ equivalents ("keep it local", "don't publish"); `--artifact` still triggers on "
 "publish as a link", "share as a URL" — in whatever language the user writes.
 
 **Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
-default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the
+default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get --data-dir "${CLAUDE_PLUGIN_DATA}"` (prints the
 config as JSON, or `{}`). A `default_format` value replaces the `html` default. For the channel: an
 **absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
 force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first. Anything
@@ -152,7 +152,7 @@ description, one per line:
 ```
 
 Invoke the subagent via the `Agent` tool with `subagent_type` set to
-`trigger-collision-inspector`. The subagent returns `{total_descriptions_analyzed,
+`vision-powers:trigger-collision-inspector`. The subagent returns `{total_descriptions_analyzed,
 collisions: [...]}`. Surface the pairs verbatim — DUPLICATE / OVERLAP classification
 is shown as reported, without aggregating into a tier (the prior 1-2 vs 3+ OVERLAP
 thresholds had no official basis and were removed in favor of raw observation).
@@ -298,7 +298,7 @@ If violations found: fix inline, max 2 retries.
 The gate reads the HTML as *text* — it never sees the rendered dashboard. A quadrant or timeline can pass the density check and still render as an unreadable tangle; a long skill name or finding can clip at a panel edge; a graded tally that reads fine in source can flatten into a uniform grid of identical cards once styled. After the gate passes, **render the dashboard and look at it** before delivering:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path>
+node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path> --data-dir "${CLAUDE_PLUGIN_DATA}"
 ```
 
 On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
@@ -547,7 +547,7 @@ Read these as needed (not upfront):
 | File | When to read |
 |---|---|
 | `references/health-criteria.md` | Phase 2 — grading thresholds and recommendation templates |
-| `agents/trigger-collision-inspector.md` | Phase 2 — trigger collision detection subagent spec |
+| `${CLAUDE_PLUGIN_ROOT}/agents/trigger-collision-inspector.md` | Phase 2 — trigger collision detection subagent spec |
 | `scripts/env-health-scan.js` | Phase 1 — data collection (execute, don't read) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS/Mermaid theme |

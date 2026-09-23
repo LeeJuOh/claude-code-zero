@@ -334,7 +334,7 @@ test('exempts placeholder-looking text inside code blocks', () => {
 
 test('detects gradient-clipped text in a style block', () => {
   const html = `<html><head><style>.hero{background:linear-gradient(90deg,#b5523a,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}</style></head><body>x</body></html>`;
-  assert.ok(checkGradientText(html).some(v => v.rule === 'gradient-text'));
+  assert.ok(checkGradientText(html).some(v => v.rule === 'gradient-text' && v.severity === 'error'));
 });
 
 test('detects gradient-clipped text in an inline style attribute', () => {

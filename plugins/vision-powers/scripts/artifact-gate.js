@@ -413,7 +413,7 @@ function extractStyleRegions(html) {
 function checkGradientText(html) {
   const css = extractStyleRegions(html);
   if (/-?(?:webkit-)?background-clip\s*:\s*text\b/i.test(css)) {
-    return [{ rule: 'gradient-text', hint: `background-clip:text (gradient-clipped text) is decorative slop — use a solid accent colour so the text stays readable` }];
+    return [{ rule: 'gradient-text', severity: 'error', hint: `background-clip:text (gradient-clipped text) is decorative slop — use a solid accent colour so the text stays readable` }];
   }
   return [];
 }

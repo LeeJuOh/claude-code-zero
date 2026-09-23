@@ -2,13 +2,12 @@
 /**
  * Configuration manager for vision-powers.
  *
- * Reads/writes user preferences to ${CLAUDE_PLUGIN_DATA}/config.json
- * (falls back to ~/.claude-code-zero/vision-powers/config.json if CLAUDE_PLUGIN_DATA is not set).
+ * Reads/writes user preferences to <data-dir>/config.json.
  *
- * Usage:
- *   node config.js get [key]          # Get a config value (or all if no key)
- *   node config.js set <key> <value>  # Set a config value
- *   node config.js path               # Print the config file path
+ * Usage (--data-dir is required; pass "${CLAUDE_PLUGIN_DATA}" from SKILL.md):
+ *   node config.js get [key] --data-dir <dir>          # Get a config value (or all if no key)
+ *   node config.js set <key> <value> --data-dir <dir>  # Set a config value
+ *   node config.js path --data-dir <dir>               # Print the config file path
  *
  * Supported keys:
  *   default_language  — Default output language (e.g., "ko", "en", "ja")
@@ -29,28 +28,31 @@
  * Exit codes:
  *   0 = success
  *   1 = key not found (for get)
- *   2 = usage error
+ *   2 = usage error (including a missing --data-dir)
  */
 
 const fs = require("fs");
 const path = require("path");
-const os = require("os");
 
 // ---------------------------------------------------------------------------
 // Config path resolution
 // ---------------------------------------------------------------------------
-function getConfigPath() {
-  // Prefer CLAUDE_PLUGIN_DATA if set (stable across plugin updates)
-  const pluginData = process.env.CLAUDE_PLUGIN_DATA;
-  if (pluginData) {
-    return path.join(pluginData, "config.json");
+// The caller passes the plugin data dir: SKILL.md substitutes ${CLAUDE_PLUGIN_DATA}, but the
+// Bash tool's environment lacks that variable or holds another plugin's folder.
+function takeDataDir(argv) {
+  const i = argv.indexOf("--data-dir");
+  const dir = i === -1 ? "" : argv[i + 1] || "";
+  if (!dir || dir.startsWith("--")) {
+    console.error("Error: --data-dir <plugin data dir> is required");
+    process.exit(2);
   }
-  // Fallback should not happen in practice — CLAUDE_PLUGIN_DATA is always set for installed plugins
-  return path.join(os.homedir(), ".claude-code-zero", "vision-powers", "config.json");
+  argv.splice(i, 2);
+  return dir;
 }
 
+let configPath;
+
 function readConfig() {
-  const configPath = getConfigPath();
   try {
     return JSON.parse(fs.readFileSync(configPath, "utf-8"));
   } catch {
@@ -59,7 +61,6 @@ function readConfig() {
 }
 
 function writeConfig(config) {
-  const configPath = getConfigPath();
   const dir = path.dirname(configPath);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
@@ -69,15 +70,17 @@ function writeConfig(config) {
 // Commands
 // ---------------------------------------------------------------------------
 function main() {
-  const [,, command, key, ...rest] = process.argv;
+  const argv = process.argv.slice(2);
+  configPath = path.join(takeDataDir(argv), "config.json");
+  const [command, key, ...rest] = argv;
 
   if (!command || command === "help") {
-    console.error("Usage: node config.js <get|set|path> [key] [value]");
+    console.error("Usage: node config.js <get|set|path> [key] [value] --data-dir <dir>");
     process.exit(2);
   }
 
   if (command === "path") {
-    console.log(getConfigPath());
+    console.log(configPath);
     return;
   }
 
@@ -102,7 +105,7 @@ function main() {
 
   if (command === "set") {
     if (!key || rest.length === 0) {
-      console.error("Usage: node config.js set <key> <value>");
+      console.error("Usage: node config.js set <key> <value> --data-dir <dir>");
       process.exit(2);
     }
     const value = rest.join(" ");

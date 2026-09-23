@@ -48,7 +48,7 @@ local design-system + Mermaid file; `md` and non-capable sessions stay local.
 "publish as a link", "share as a URL"; if `--local` and `--artifact` are both signalled, `--local` wins.
 
 **Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
-default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get` (prints the
+default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get --data-dir "${CLAUDE_PLUGIN_DATA}"` (prints the
 config as JSON, or `{}`). A `default_format` value replaces the `html` default. For the channel: an
 **absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
 force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first. Anything
@@ -293,7 +293,7 @@ publishing.
 The gate reads the HTML as *text* — it never sees the rendered picture. A diagram can pass the density check and still render as an unreadable tangle; a label can clip at the container edge; hierarchy that reads fine in source can collapse into a flat wall once styled. After the gate passes, **render the report and look at it** before delivering:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-html-path>
+node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-html-path> --data-dir "${CLAUDE_PLUGIN_DATA}"
 ```
 
 On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
