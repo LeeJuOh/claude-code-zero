@@ -48,7 +48,9 @@ delegated to the harness's built-in artifact-design skill (native to the page's 
 **source passthrough**, **build-time grounding**, and the **Gate**'s content checks remain the
 skill's. Disambiguation: unqualified "artifact" in this repo means the **Visual artifact**
 deliverable (the usage throughout [[0002]]/[[0005]]); the official feature is always qualified —
-"Artifact channel", "Artifact publish", "claude.ai page". See [[0007]], [[0009]].
+"Artifact channel", "Artifact publish", "claude.ai page". A content-only republish of an
+already-designed fragment (`report-manager` step 8) skips the artifact-design load — the design is
+baked into the fragment. See [[0007]], [[0009]].
 
 **Channel**:
 Where a **visual artifact** is rendered and delivered, and which visual identity it carries. Two
@@ -118,7 +120,8 @@ can't be merely *asked* to guarantee: raw-markdown leaks, missing or alt-less im
 links, the forbidden AI-purple palette, Mermaid `classDef` colour traps, diagram density,
 leftover placeholders, gradient-clipped text, and missing font-fallback chains. (Language
 consistency and accent-count discipline are still held by authoring guidance, not yet by the
-gate.) A request without a gate is a wish. See [[0002]].
+gate.) The gate reads the HTML as text, so a pass says nothing about whether the page renders.
+A request without a gate is a wish. See [[0002]].
 
 **Build-time grounding (true-by-construction)**:
 A second flavour of leverage beyond the post-hoc **Gate**. A **structured block** is filled by

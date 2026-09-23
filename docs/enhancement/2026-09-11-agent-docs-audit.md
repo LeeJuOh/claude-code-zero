@@ -45,8 +45,8 @@
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
-| S1 | AGENTS.md·CLAUDE.md·release-workflow.md — §1-1 AGENTS 표 + §1-3 + §1-4 중 AGENTS 목적지 | — |
-| S2 | gotchas.md — §1-1 해당 행 + §1-4 gotchas 목적지("Hooks & scripts"·"Testing"·"Self-contained plugins" 신설, Data paths 보강) | — |
+| S1 ✅ `61b5ec0`·`ae776e2` | AGENTS.md·CLAUDE.md·release-workflow.md — §1-1 AGENTS 표 + §1-3 + §1-4 중 AGENTS 목적지. AGENTS 행과 짝인 gotchas 줄(:19·:21·:23 삭제, :29 정정, "Testing" 신설)도 같은 커밋. INDEX.md:23 "8-step"은 S3에서 | — |
+| S2 ✅ | gotchas.md — §1-1 해당 행 + §1-4 gotchas 목적지("Hooks & scripts"·"Testing"·"Self-contained plugins" 신설, Data paths 보강). §1-4의 context 목적지 3개(vision-powers 2, skill-creator-pro 1)도 여기서 | — |
 | S3 | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13) | #2·#3은 `claude-preset`·new-vibe handoff, research 2개에만 |
 | S4 | §1-1 설계 기록 표(상태줄·배너) + rubber-duck 용어집 병합 | — |
 | S5 | 원 작성 머신: 메모리 폴더 정리, worktree | #4 |
@@ -285,6 +285,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 12. 다른 머신 메모리 2개 이관 여부 — `subagent-model-preference`(→ 전역 선호. 근거가 "세션이 Fable 5"라 지금도 유효한지 확인), `wiki-is-symlink-to-llm-wiki`(→ 전역 `~/.claude/CLAUDE.md` 후보: `wiki -> ../llm-wiki/wiki` 심링크가 claude-code-zero·excalidraw-architect·link-dive 3개 레포에 있음 ✅). 전역 CLAUDE.md는 이 머신에 아직 없음 ✅
 13. ~~skill 가이드 2개(skill-building-guide·skill-lessons) 줄 단위 수정 vs 삭제~~ — **결정(2026-09-24): 삭제.** §1-1 docs/reference 행
 14. ~~버전 범프 시점: 수정 커밋(메모리) vs 릴리즈 때 묻기(release-workflow 3단계)~~ — **결정(2026-09-24): 수정 커밋.** release-workflow 3단계는 범프 누락 확인으로
+15. `feedback_audit_scope` 메모리(최소 요구 버전 유지, "tested against"는 재확인 절차 없으면 삭제) — 렌즈 제안대로 버릴지. S5(메모리 정리) 전에
 
 ## 1-6. 수정 순서
 
