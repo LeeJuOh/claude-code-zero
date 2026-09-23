@@ -94,20 +94,20 @@ If `get url` is empty or `about:blank`, navigate first instead of waiting on loa
 
 | Reference | When to Use |
 |-----------|-------------|
-| [Commands]($SKILL_DIR/references/commands.md) | Full browser command mapping and quick syntax |
-| [Snapshot and Refs]($SKILL_DIR/references/snapshot-refs.md) | Ref lifecycle and stale-ref troubleshooting |
-| [Authentication]($SKILL_DIR/references/authentication.md) | Login/OAuth/2FA patterns and state save/load |
-| [Session Management]($SKILL_DIR/references/session-management.md) | Multi-surface isolation and state persistence patterns |
-| [Video Recording]($SKILL_DIR/references/video-recording.md) | Recording limitations and screenshot/snapshot alternatives |
-| [Proxy Support]($SKILL_DIR/references/proxy-support.md) | Proxy behavior in WKWebView and workarounds |
+| [Commands](references/commands.md) | Full browser command mapping and quick syntax |
+| [Snapshot and Refs](references/snapshot-refs.md) | Ref lifecycle and stale-ref troubleshooting |
+| [Authentication](references/authentication.md) | Login/OAuth/2FA patterns and state save/load |
+| [Session Management](references/session-management.md) | Multi-surface isolation and state persistence patterns |
+| [Video Recording](references/video-recording.md) | Recording limitations and screenshot/snapshot alternatives |
+| [Proxy Support](references/proxy-support.md) | Proxy behavior in WKWebView and workarounds |
 
 ## Ready-to-Use Templates
 
 | Template | Description |
 |----------|-------------|
-| [Form Automation]($SKILL_DIR/templates/form-automation.sh) | Snapshot/ref form fill loop |
-| [Authenticated Session]($SKILL_DIR/templates/authenticated-session.sh) | Login once, save/load state |
-| [Capture Workflow]($SKILL_DIR/templates/capture-workflow.sh) | Navigate + capture snapshots/screenshots |
+| [Form Automation](templates/form-automation.sh) | Snapshot/ref form fill loop |
+| [Authenticated Session](templates/authenticated-session.sh) | Login once, save/load state |
+| [Capture Workflow](templates/capture-workflow.sh) | Navigate + capture snapshots/screenshots |
 
 ## Limits (WKWebView)
 
