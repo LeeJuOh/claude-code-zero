@@ -7,8 +7,7 @@
  *   node list-reports.js --data-dir <dir> [--limit N]
  *
  * --data-dir is required; pass "${CLAUDE_PLUGIN_DATA}" from SKILL.md.
- * Uses <data-dir>/reports/ as the reports directory, unless <data-dir>/config.json
- * sets a custom reports_dir.
+ * Lists <data-dir>/reports/, where every report skill saves its output.
  *
  * Output: JSON with reports_dir, count, and reports array.
  *
@@ -31,20 +30,6 @@ function takeDataDir(argv) {
   }
   argv.splice(i, 2);
   return dir;
-}
-
-function getReportsDir(dataDir) {
-  // Check config for custom reports_dir
-  const configPath = path.join(dataDir, "config.json");
-
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    if (config.reports_dir) return config.reports_dir;
-  } catch {
-    // No config or invalid — use default
-  }
-
-  return path.join(dataDir, "reports");
 }
 
 function detectType(filename) {
@@ -77,7 +62,7 @@ function main() {
     }
   }
 
-  const reportsDir = getReportsDir(dataDir);
+  const reportsDir = path.join(dataDir, "reports");
 
   if (!fs.existsSync(reportsDir)) {
     console.log(JSON.stringify({ reports_dir: reportsDir, count: 0, reports: [] }));

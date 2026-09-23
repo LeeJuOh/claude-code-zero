@@ -15,7 +15,6 @@
  *   aesthetic         — Preferred aesthetic (Blueprint, Editorial, Paper-ink, Monochrome)
  *   auto_open         — Auto-open report in browser after generation (true/false)
  *   artifact          — Channel preference for HTML reports (see below)
- *   reports_dir       — Custom reports output directory
  *
  * The `artifact` key (channel default; SSOT = references/design-system/channel-decision.md + ADR 0009):
  *   absent  → interpret as artifact-first — capable HTML publishes to a claude.ai Artifact by default

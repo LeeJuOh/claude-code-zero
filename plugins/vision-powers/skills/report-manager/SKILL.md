@@ -154,7 +154,6 @@ Harvesting is optional — always fall through to the conventional "ask what to 
 
 ## Gotchas
 
-- **Don't call config.js before listing.** `list-reports.js` already checks config internally for custom `reports_dir`. Calling config.js separately wastes a tool call and exits 1 when the key doesn't exist.
 - **Report type detection is filename-based**: `*-diff-visual` → diff-visual, `*-doc-visual` → doc-visual, `*-context-health-visual` → context-health-visual, `*-report` → plugin-visual.
 - **Refine edits must preserve `style="--i: N"`** on `<li>` and animated elements — these drive staggered CSS animations. Removing them makes items invisible (opacity: 0).
 - **A local report and its Artifact-channel fragment are two separate files** (e.g. `2026-07-06-x-doc-visual.html` vs `2026-07-06-x-doc-visual.artifact.html`) with independently designed content — refining one never touches the other. A partial-name match in step 1 of refine can hit both; if the resolved list has more than one candidate, ask which one rather than guessing (issue 007 S4.5).
