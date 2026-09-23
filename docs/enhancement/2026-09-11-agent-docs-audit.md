@@ -1,48 +1,59 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 수정 전** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 수정 전** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-23 → 다음 세션)
+## 핸드오프 (2026-09-24 → 다음 세션)
 
-**Goal** — 이 문서의 수정 목록을 실행해 레포 문서(1부)와 플러그인 문서(2부)를 정리한다.
+**Goal** — 1부(레포 문서) 수정을 실행한다. 이번 세션은 수정안을 확정했고, 다음 세션은 남은 결정 2개를 받고 S1~S4를 실행한다.
 
-**First Action** — §1-5 결정 12개를 사용자에게 하나씩 짧게 묻는다. #1(협업 규칙 위치)과 #7(AGENTS.md:60·:82 정책)부터 — S1(AGENTS.md·CLAUDE.md)이 이 둘에 막혀 있다. #4·#5는 원 작성 머신 전용이라 이 머신에선 건너뛴다.
+**First Action** — 사용자에게 결정 2개를 하나씩, 평이한 말로 묻는다(번호·용어만 던지지 말 것 — "무엇을, A와 B 중 어느 쪽"으로).
+1. **#1 협업 규칙 위치** — 규칙 5개(보고 ≠ 승인 / 그릴 중 계획 수정은 이슈 문서에 작업으로 / 가리킨 레이어만 삭제 / 질문은 하나씩 짧게 / 기각 전 최선 변형 검토)를 전역 `~/.claude/CLAUDE.md`(모든 프로젝트, 이 머신엔 파일이 아직 없음, 머신마다 따로)와 `AGENTS.md`(이 레포만, 두 머신 공유) 중 어디에 둘지.
+2. **#7 AGENTS.md "Plugin Development" 첫 문장** — 지금 "all plugin development work → `/skill-creator-pro`". 제안 "Skill authoring and evals: `/skill-creator-pro`. Registration, README, validation: follow Workflow below."로 바꿀지.
 
-**Context** — 2026-09-23 세션은 이 문서를 HEAD `23c69ec` 기준으로 재검수했다(1부는 직접, 2부는 서브에이전트 3개 병렬). 근거는 탄탄했지만(공식 문서 인용·커밋 해시 25개 일치, 2부 약 90% 확인) 낡은 행·틀린 행·틀린 수정안이 섞여 그대로 실행할 수 없었다. 그래서 실행 전에 이 문서부터 고쳤다(작업 0). 무엇을 고쳤는지는 §재검수에 있다. 그다음 작업 분할안(아래 Next Steps)을 제안했고, 사용자는 작업 0 진행만 명시 승인했다 — 분할안 자체는 확정 전이다.
+답을 받으면 §1-5에 결정으로 적고 Next Steps의 S1부터 실행한다.
+
+**Context** — 2026-09-23 세션은 사실 재검수(`1c6f93f`). 2026-09-24 세션은 1부 §1-1·§1-3·§1-4를 `writing-for-agents` 스킬 렌즈로 다시 봤다: 사실은 맞았지만 수정안이 한 개념을 여러 목적지로 흩었고(버전 지식 6곳, 테스트 교훈 3곳), gotchas 포인터가 hooks·testing을 부르지 않아 옮긴 교훈에 닿지 못했고, "유지" 판정에 no-op·이미 강제되는 규칙이 섞여 있었다. 요약은 §렌즈 재검수, 행 단위 수정은 §1-1·§1-3·§1-4 표에 반영했다. 사용자가 "다음 세션에서 결정하고 1부 진행"을 지시했다.
 
 **Current Progress** (git 기준)
-- 브랜치 `develop`, 마지막 커밋 `23c69ec`.
-- 작업 0 완료, **미커밋**: `git status`에 이 문서 하나만 수정(` M`)으로 잡힌다(§재검수 + 이 §핸드오프). 다른 파일은 손대지 않았다.
-- S1~S5, P1~P7은 착수 전.
+- 브랜치 `develop`, 최신 커밋 `1c6f93f`(origin/develop과 동일).
+- **미커밋**: 이 문서 하나(` M`) — 렌즈 재검수 반영 + 이 핸드오프. 커밋은 사용자 요청 시.
+- 대상 파일(AGENTS.md, CLAUDE.md, docs/reference/, release-workflow.md, .claude/settings.json)은 감사 기준 커밋 `21a87ab` 이후 변경 없음 → §1-1·§1-3의 AGENTS.md 줄 번호는 지금도 유효. INDEX.md만 1줄 밀림.
+- S1~S5, P1~P7 착수 전.
 
 **Decisions Made**
-- 판단이 갈리는 수정안은 에이전트가 고르지 않고 §1-5 #7~#12로 올린다.
-- 원장은 이 문서 하나. 진행 기록도 여기에 남긴다.
+- 판단이 갈리는 수정안은 에이전트가 고르지 않고 §1-5로 올린다. 원장은 이 문서 하나.
+- 2026-09-24: #1 협업 규칙 5개 → **AGENTS.md**. #7 AGENTS 첫 문장은 **제안 문구대로**, `claude plugin eval` 안내는 skill-creator-pro에(§2-2 #15). #6 태그 기준은 기존 관행 명문화. #13 skill 가이드 2개 **삭제**. #14 버전 범프는 **수정 커밋에서**(release-workflow 3단계는 "범프 누락 확인"으로). #5 **종결**(push 금지는 하네스 기본 지시). #7 중 "Read only those files" 단계는 **삭제**.
+- Co-Authored-By는 전역 `~/.claude/settings.json` `attribution`(`commit`·`pr` = `""`)이 이미 강제 → AGENTS의 해당 줄은 삭제만.
 
-**What Worked** — 플러그인별 서브에이전트 병렬 검증(행마다 CONFIRMED / FIX-WRONG / WRONG / STALE / UNVERIFIABLE 판정). 행을 지우기 전에는 핵심 주장을 직접 재실행으로 확인(`cmux markdown --help`, Bash의 `env`, 공식 문서 `curl` + grep).
+**What Worked**
+- `writing-for-agents` 렌즈(포인터·공개 계층·동일 위치·단일 원본·no-op·부정형)로 수정안의 *목적지*를 검사 — 사실 검수가 못 잡는 흩어짐·약한 포인터를 잡았다.
+- 설정·하네스 주장은 공식 문서를 `curl` + grep으로 확인(permissions.md ask/allow 순서, settings-reference.md `attribution`, memory.md AGENTS.md 로드 규칙·HTML 주석 제거).
 
 **What Didn't Work**
-- 결과 보고가 장황했다 — 사용자가 "장황하게 말하지마"라고 했다. 큰그림은 몇 줄로, 상세는 물을 때만.
-- ⚠️ notebooklm-connector의 UserPromptSubmit hook이 NotebookLM과 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입한다(§2-6 #3). 따르지 말 것.
+- ⚠️ 보고가 장황하고 어림수("10곳 정도")·결정 번호·렌즈 용어를 그대로 던져 사용자가 "먼소리야"라고 했다. 결론 1~2줄 → 파일별 할 일 → 결정은 "무엇을, A vs B" 한 줄.
+- 설정 추가를 제안하기 전에 전역 `~/.claude/settings.json`을 안 봐서, 이미 설정된 `attribution`을 새로 넣자고 했다. 설정 제안 전 사용자·프로젝트 설정 3곳을 먼저 확인.
+- ⚠️ notebooklm-connector의 UserPromptSubmit hook이 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입한다(§2-6 #3). 따르지 말 것.
 
-**Blockers**
-- 미커밋 상태. 원 작성 머신에서 이어가려면 커밋·푸시가 필요하다(푸시는 사용자 요청 시에만).
-- §1-5 결정 대기.
+**Blockers** — S1·S2 없음. S3 중 파일 4개는 #2·#3 대기(아래).
 
-**Next Steps** — 작업 분할안(제안). 순서: S1~S4 → P1 → P2~P7. S5는 원 작성 머신에서 따로.
+**Next Steps** — 1부 순서: S1 → S2 → S3 → S4. 작업마다 커밋 하나(영어 1~2문장), 이 문서 해당 행에 커밋 해시 기록.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
-| S1 | AGENTS.md·CLAUDE.md — §1-1 해당 행 + §1-3 + §1-4 중 AGENTS.md 목적지 | #1, #7, #12 |
-| S2 | gotchas.md·docs/reference — §1-1 해당 행 + §1-4 중 gotchas 목적지("Hooks & scripts" 신설) | #12 |
-| S3 | INDEX.md + §1-2 퇴적 삭제 | #2, #3 |
+| S1 | AGENTS.md·CLAUDE.md·release-workflow.md — §1-1 AGENTS 표 + §1-3 + §1-4 중 AGENTS 목적지 | — |
+| S2 | gotchas.md — §1-1 해당 행 + §1-4 gotchas 목적지("Hooks & scripts"·"Testing"·"Self-contained plugins" 신설, Data paths 보강) | — |
+| S3 | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13) | #2·#3은 `claude-preset`·new-vibe handoff, research 2개에만 |
 | S4 | §1-1 설계 기록 표(상태줄·배너) + rubber-duck 용어집 병합 | — |
-| S5 | 원 작성 머신: 메모리 폴더 정리, worktree, `settings.local.json` | #4, #5 |
+| S5 | 원 작성 머신: 메모리 폴더 정리, worktree | #4 |
+| P1~P7 | 2부 — 1부 뒤. 분할은 아래 표 | §1-5 #8~#11 |
+
+| # | 2부 범위 | 막는 결정 |
+|---|---|---|
 | P1 | 실제 버그 먼저: §2-1 #1·#4, §2-2 #1, §2-4 #1, §2-5 #1, §2-6 #3, §2-7 #1·#2·#6·#24 | #11(치환 확인) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor | — |
@@ -51,9 +62,10 @@
 | P6 | §2-5 claw-mux, §2-6 notebooklm-connector | #11 |
 | P7 | §2-7 나머지 | — |
 
-- 플러그인을 고칠 때마다 `marketplace.json` 버전 범프를 함께 한다(AGENTS.md Versioning).
-- §1-5 #11(reference 파일 치환 확인)은 P1 전에 한다 — §2-5 #1, §2-7 #24 수정안이 그 결과에 달려 있다.
-- 각 작업 뒤 이 문서의 해당 행에 완료 커밋을 적는다. 끝나면 §1-1 INDEX 행의 handoff 수명 규칙대로 이 문서를 정리한다.
+- S3의 skill 가이드 삭제는 `plugins/skill-creator-pro/skills/auto-optimize/SKILL.md`의 `skill-lessons-from-anthropic.md` 참조 삭제를 동반 → 플러그인 수정이므로 같은 커밋에 `marketplace.json` skill-creator-pro 버전 범프(#14).
+- #12(다른 머신 메모리 2개 → 전역 `~/.claude/CLAUDE.md`)는 레포 밖 작업이라 1부를 막지 않는다. #1이 AGENTS.md로 정해져 #12는 따로 처리한다.
+- §1-5 #11(reference 파일 치환 확인)은 P1 전에 — §2-5 #1, §2-7 #24 수정안이 그 결과에 달려 있다.
+- 1부·2부가 끝나면 §1-1 INDEX 행의 handoff 수명 규칙대로 이 문서를 정리한다.
 
 ## 검수 기준
 
@@ -82,6 +94,16 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 - **줄 번호 갱신** — §2-3(리뷰 스킬 5개 재작성), INDEX.md(1줄 밀림), 위치 오기.
 - **새 발견** — 2부 공통 관찰 "Bash 환경변수"·"reference 파일 치환(추측)", vision-powers #31, vibeproxy-kit #24, skill-creator-pro 기타.
 
+## 렌즈 재검수 (2026-09-24, 1부 §1-1·§1-3·§1-4)
+
+`writing-for-agents` 스킬 기준. 사실 판정은 그대로, 수정안의 **목적지·포인터·유지 판정**을 고쳤다.
+
+- **흩어짐 → 한 곳으로** — 버전 지식 6곳(AGENTS:122·:140, gotchas:19·:21, validate 경고, 메모리 범프 규칙) → AGENTS Versioning 블록 하나. 테스트 교훈 4개(3곳으로 나뉘어 있던 것) → gotchas "Testing" 하나.
+- **포인터** — gotchas 포인터가 hooks·scripts·testing을 안 부르면 §1-4로 옮긴 교훈에 닿지 못한다 → "Before any plugin change, read gotchas.md"(43줄이라 싸다).
+- **no-op·강제 가능 → 삭제** — AGENTS:115(전역 `attribution` 설정이 이미 강제 ✅), :116(하네스 기본 지시가 "push only when asked" ✅), :139·gotchas:23 kebab-case(validate), :141 Descriptions(기본 행동), :142 줄바꿈(`.gitattributes` `* text=auto eol=lf` ✅).
+- **부정형·절대 규칙** — Git Workflow "Never …"는 긍정형으로. :41 "Always start"와 :43-47 조건부 fetch를 한 조건문으로.
+- **새 결정** — #13 skill 가이드 삭제, #14 버전 범프 시점(둘 다 결정됨). #5는 불필요로 종결.
+
 ---
 
 # 1부 — 레포 문서
@@ -92,30 +114,31 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 
 | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|
-| AGENTS.md:94-99 | 로컬 테스트 전 마켓 버전 disable 지시. 공식 `plugins.md:299`: `--plugin-dir` 로컬 복사본이 그 세션에서 우선 | "A `--plugin-dir` copy overrides a same-named marketplace install for that session." 한 줄로 교체 | ✅ |
+| AGENTS.md:88-99 | 로컬 테스트 전 마켓 버전 disable 지시. 공식 `plugins.md:299`: `--plugin-dir` 로컬 복사본이 그 세션에서 우선. 테스트할 때만 필요한 내용(공개 계층) | (렌즈) 절 전체를 gotchas 신설 "Testing"으로 — `--plugin-dir` 우선 + §1-4 테스트 교훈 3개와 한곳에. AGENTS에서는 삭제 | ✅ |
 | AGENTS.md:86 | `unset CLAUDECODE` 우회 불필요 — `CLAUDECODE=1`에서 `claude plugin validate .` 통과 | "Run `claude plugin validate .`"로 교체, `.claude/settings.json`의 `Bash(unset CLAUDECODE*)` allow 삭제 | ✅ |
-| AGENTS.md:86 · :140 | validate가 로컬 플러그인마다 `No version specified` 경고 — 따라서 plugin.json에 넣으면 조용히 우선(gotchas:19) | "Expected warning … ignore; adding it silently overrides marketplace.json." 한 줄 추가 | ✅ |
+| AGENTS.md:86 · :122 · :140 · gotchas.md:19 · :21 | validate가 로컬 플러그인마다 `No version specified` 경고 — 따라서 plugin.json에 넣으면 조용히 우선. 버전 지식이 이미 4곳에 흩어짐(단일 원본 위반) | (렌즈) AGENTS "Versioning" 블록 하나로 병합: 위치 규칙 + SemVer + "validate 경고는 정상, plugin.json에 넣으면 조용히 우선" + 수정 커밋에서 범프(#14). gotchas:19·:21 삭제 | ✅ |
+| AGENTS.md:79-86 Workflow | (렌즈) 1단계가 :43-47 필수 fetch와 중복. 매 플러그인 수정마다 하는 버전 범프 단계가 없음 | 1단계 삭제(조건부 fetch 문장 하나로), "Bump the plugin's version in `marketplace.json` in the same commit" 단계 추가 | ✅ |
 | AGENTS.md:11-12 | lab 목록 낡음 — `lab-harness-zero`는 `76a31f5`에서 제거, claw-mo·claw-mux는 `category: null` | 삭제(원본은 marketplace.json) | ✅ |
-| AGENTS.md:139 · gotchas.md:23 | `lab-` 접두사 규칙 — 쓰는 플러그인 0개, e2e-test-runner는 `"category": "lab"`만 | gotchas 한 곳에 "Mark experimental plugins with `\"category\": \"lab\"`", AGENTS 문구 삭제 | ✅ |
+| AGENTS.md:139 · gotchas.md:23 | `lab-` 접두사 규칙 — 쓰는 플러그인 0개, e2e-test-runner는 `"category": "lab"`만. kebab-case는 validate가 잡는다(gotchas:23 스스로 기재) | (렌즈) 둘 다 삭제. lab 표시는 marketplace.json의 기존 항목이 보여준다 | ✅ |
 | AGENTS.md:22 · :103 | `references/`를 gitignored라 함 — 실제는 git 추적 심링크 `references -> ../references` | "tracked symlink to shared `../references`. Read-only." | ✅ |
 | AGENTS.md:74 · gotchas.md:29 | 플러그인 settings.json 지원 키 — 공식 `plugins-reference.md:1004`: `agent`, `subagentStatusLine` | gotchas:29 수정, AGENTS:74 삭제 | ✅ |
-| AGENTS.md:60 | "all plugin development work → `/skill-creator-pro`" — 그 스킬은 marketplace·validate·README를 안 다룸 | 정책 변경 — §1-5 #7. 제안: "Skill authoring and evals: `/skill-creator-pro`. Registration, README, validation: follow Workflow below." | 🔹 |
-| AGENTS.md:82 | "Read **only** those files" ↔ :43-45 공식 문서 필수 fetch, CLAUDE.md "read gotchas before structural change" | 정책 변경 — §1-5 #7. 제안: "Start from the files the user names; widen only to gotchas.md and the official pages required above." | 🔹 |
+| AGENTS.md:60 | "all plugin development work → `/skill-creator-pro`" — 그 스킬은 marketplace·validate·README를 안 다룸 | **결정(#7, 2026-09-24)**: "Skill authoring and evals: `/skill-creator-pro`. Registration, README, validation: follow Workflow below." `claude plugin eval` 안내는 AGENTS가 아니라 스킬에(§2-2 #15) | 🔹 |
+| AGENTS.md:82 | "Read **only** those files" ↔ :43-45 공식 문서 필수 fetch, CLAUDE.md "read gotchas before structural change" | **삭제**(2026-09-24). 에이전트 행동이 아니라 사용자 행동 서술이고 완료 조건 없음 | 🔹 |
 | AGENTS.md:3 · :36 | GEMINI.md 없음. issues 001-010은 짝 spec 없음 | :3 둘째 문장 삭제, :36 "paired by number from 011" | 🔹 |
-| CLAUDE.md:7 | 백틱 안 `` `@AGENTS.md` ``는 import 안 됨(memory.md) + 맵 목록이 AGENTS.md와 중복 | `@AGENTS.md` 한 줄만 남김 | ✅ |
-| .claude/settings.local.json:12,18,19 | `git push`·`git merge`·`git tag` allow — AGENTS "No auto-push"가 산문으로만 존재(C9). gitignored, 원 작성 머신에만 있음 | `git push`를 `permissions.ask`로 옮길지 결정(§1-5 #5) | ✅ |
+| AGENTS.md:3-5 | (렌즈) 관리자용 메모("map, not encyclopedia") — 매 턴 컨텍스트 비용 | HTML 주석으로(주입 전 제거됨, 공식 `memory.md:138`) | ✅ |
+| AGENTS.md:41 ↔ :43-47 | (렌즈) "Always start with llms.txt"(절대) ↔ "Mandatory fetch when … Skip for minor edits"(조건부) — 같은 대상 | 조건부 포인터 하나로: "When creating plugins/components, changing schema, or reviewing a spec/issue that cites official docs: fetch llms.txt, then the page; verify each cited number." | ✅ |
+| AGENTS.md:110 · :115 · :116 · :120 | (렌즈) :115 Co-Authored-By 금지 — 전역 `~/.claude/settings.json` `attribution` `""`이 이미 강제. :116 no auto-push — 하네스 기본 지시와 같음(no-op). :110·:120 "Never …" 부정형 | :115·:116 삭제. :110 → "Work on `develop`; `main` receives only `--no-ff` merges at release." 태그 규칙(:120-123)은 release-workflow.md로 | ✅ |
+| AGENTS.md:141 · :142 | (렌즈) Descriptions "Clear, concise" — 기본 행동(no-op), 실질은 Workflow 4단계. Line endings — `.gitattributes`(`* text=auto eol=lf`)가 이미 강제 | 둘 다 삭제 | ✅ |
+| CLAUDE.md:7 | 백틱 안 `` `@AGENTS.md` ``는 import 안 됨(memory.md) + 맵 목록이 AGENTS.md와 중복 | `@AGENTS.md` 한 줄만 남김. 단 CLAUDE.md:14의 gotchas 트리거("read before …")는 AGENTS 포인터로 옮긴다(§1-3) | ✅ |
+| .claude/settings.local.json:12,18,19 | `git push`·`git merge`·`git tag` allow. gitignored, 원 작성 머신에만 있음 | 변경 불필요(#5 종결) — push 금지는 하네스 기본 지시 | ✅ |
 | .claude/hooks/load-secrets.sh | settings 3곳(project·local·user) 어디에도 등록 안 됨 | 삭제 후보 | ✅ |
 
 ### docs/reference
 
 | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|
-| skill-lessons-from-anthropic.md:191 | "Reference other skills **by name**" ↔ gotchas:13 플러그인 독립성. 공식에 `dependencies` 필드 존재(`plugins-reference.md:583`) | :191 삭제, gotchas:13에 "hard dependency → `plugin.json` `dependencies`" 추가 | ✅ |
-| skill-lessons-from-anthropic.md:207-209 | `/skill-creator` 안내 ↔ 레포는 `/skill-creator-pro` | 삭제 또는 "In this repo use `/skill-creator-pro`." | 🔹 |
-| skill-building-guide.md:35-61, :417 | "Required Fields", "Under 1024 characters", "under 5,000 words" — 공식: 전부 선택(`skills.md:329`), 1,536자(:338), 500줄(:475) | 공식 frontmatter 참조 한 줄로 교체, :417 "under 500 lines" | ✅ |
-| skill-building-guide.md:3, :50 | 없는 파일 3개 참조(`skill-supporting-files.md`, `skill-allowed-tools.md`, `command-proxy-pattern.md`) | 문장 삭제, :50 → "see gotchas.md 'Skill allowed-tools'" | ✅ |
-| skill-building-guide.md:198-219 | "Combat Model Laziness"·"CRITICAL:" ↔ skill-creator-pro SKILL.md:318 "ALWAYS/NEVER in all caps … yellow flag" | 삭제 | 🔹 |
-| skill-building-guide.md:21, :332-369, :403-410 | Claude.ai 업로드·API 배포 — 이 레포와 무관, 공식 `skills.md:351-358`과도 어긋남 | 삭제 | 🔹 |
+| skill-building-guide.md · skill-lessons-from-anthropic.md 전체 | Claude.ai PDF·X 글 옮김. 공식과 충돌 다수(Required Fields·1024자·5,000단어 ↔ 전부 선택·1,536자·500줄, 없는 파일 3개 참조, "CRITICAL:" 문체, Claude.ai·API 배포 절, `/skill-creator` 안내). `docs/context/skill-creator-pro.md:18-19`가 이미 "~95% 공식과 같음 → 빠진 부분만 증류" 판정 ✅. 작성 지식은 llm-wiki(`agents-md`·`progressive-disclosure`·`skill-formation`)에 있음 | **두 파일 삭제**(#13, 2026-09-24). 함께: AGENTS Knowledge Map :33-34·INDEX :13-14 행 삭제, `context/skill-creator-pro.md:18-19` 갱신, auto-optimize SKILL.md:59 참조 삭제(2부 skill-creator-pro) | ✅ |
+| skill-lessons-from-anthropic.md:191 ↔ gotchas.md:13 | "Reference other skills **by name**" ↔ 플러그인 독립성. 공식에 `dependencies` 필드 존재(`plugins-reference.md:583`) | 파일은 삭제되므로 gotchas 쪽만: "hard dependency → `plugin.json` `dependencies`" 추가(§1-4 "Self-contained plugins" 절로) | ✅ |
 | gotchas.md:27 | 플러그인 에이전트 지원 필드 목록 불완전(`name`, `description`, `effort` 누락, `isolation`은 `"worktree"`만) — `plugins-reference.md:72-73` | 목록 빼고 "ignored: `permissionMode`, `hooks`, `mcpServers`"만 | ✅ |
 | gotchas.md:33 | ~200단어, 절반이 vision-powers 전용 artifact-design 논증 | 2줄로 축약("`allowed-tools` only pre-approves; declare `Skill(<name>)` for skills you load"), carve-out은 `docs/context/vision-powers.md`로 | 🔹 |
 
@@ -123,14 +146,15 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 
 | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|
-| INDEX.md:9, :13 | "Required reading"·"spec" — 두 문서는 Claude.ai PDF·X 글 옮김, 공식과 충돌 다수 | "Optional background; official skills.md wins on conflict" | 🔹 |
+| INDEX.md:9, :13-14 | "Required reading"·"spec" — 두 문서는 Claude.ai PDF·X 글 옮김, 공식과 충돌 다수 | 두 행 삭제(#13). :9는 gotchas 행에 맞게 "Read before any plugin change" | 🔹 |
 | INDEX.md:17 | "see CLAUDE.md for the entry point" — 진입점은 AGENTS.md:41 | "see AGENTS.md § Official Claude Code Docs" | 🔹 |
 | INDEX.md:24 | `plugin-marketplaces.md` 설명 — 실제는 홍보 채널 목록, 파일명도 공식 페이지명과 겹침 | `docs/promotion-channels.md`로 이름 변경 | ✅ |
 | INDEX.md:30-34 | `adr/`, `context/` 미등록 | 디렉터리 행 추가 | ✅ |
 | INDEX.md:36 | superpowers 폐지 이력 | 삭제 | 🔹 |
-| INDEX.md:5 | handoff 수명 규칙 없음 → 퇴적 원인 | "Handoffs are temporary: once absorbed into specs/issues/ADRs/commits, delete them." 추가 | 🔹 |
+| INDEX.md:5 | handoff 수명 규칙 없음 → 퇴적 원인. (렌즈) "register it in this index"가 파일 단위 등록을 불러 목록이 낡음. 설계 기록 상태줄 10건 낡음도 같은 원인(갱신 시점 규칙 없음) | "Handoffs are temporary: once absorbed into specs/issues/ADRs/commits, delete them." + "Register directories, not files." + "Update a spec/issue status line in the commit that completes it." | 🔹 |
 | INDEX.md:46-63 | research·handoff 등록이 실제와 불일치 | §1-2 삭제 후 디렉터리 행으로 정리 | ✅ |
-| release-workflow.md:20 | 레포 태그 번호 기준 없음(SemVer는 플러그인 버전용) | 기준 한 줄 추가 — 기준 자체는 사용자 결정 | 🔹 |
+| release-workflow.md:20 | 레포 태그 번호 기준 없음(SemVer는 플러그인 버전용) | 기준 한 줄 추가: "Repo tag: minor if any plugin got a minor or major bump, else patch." (#6 결정) | ✅ |
+| release-workflow.md:17-18 | (렌즈) 3·4단계 "릴리즈 때 범프할 플러그인을 묻고 범프" ↔ 메모리 `feedback_version_bump` "수정 커밋에서 범프, 묻지 않음". 이력에 둘 다 있음 ✅(`89cb4a7` 릴리즈 범프, `c865a28` 수정 커밋 범프) | #14 결정: 3단계 → "Check every plugin changed since `main` has a version bump", 4단계 범프 커밋 삭제. AGENTS 태그 규칙(:120-123)을 여기로 흡수 | ✅ |
 | `.claude/worktrees/remove-test-3` | 살아 있는 git worktree(브랜치 `worktree-remove-test-3`) — docs 사본이 레포 grep 오염. 원 작성 머신에만 있음 | `git worktree remove` 결정(§1-5 #4) | ✅ |
 
 ### 설계 기록 (docs/specs · issues · adr · context)
@@ -206,16 +230,17 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 |---|---|---|
 | Repository Overview 플러그인 목록(:10-12) | 삭제 | marketplace.json이 원본, 이미 낡음 |
 | Directory Structure(:14-23), Plugin Component Structure(:62-75) | 삭제, :77 한 줄만 유지 | `ls`로 보이는 트리, 공식 컴포넌트(`workflows/`, `output-styles/` 등) 누락으로 이미 낡음 |
-| Knowledge Map 표(:27-37) | 유지 | 목차 역할 |
-| Official Docs(:39-56) | :49 페이지 나열 삭제, :51 Codex 링크는 `context/codex-advisor.md`로, :53-56 대용량 파일 규칙은 **유지** | :53-56은 실제 사고 기반 gotcha |
-| Plugin Development Workflow(:58-99) | §1-1 수정 반영 | |
+| Knowledge Map 표(:27-37) | (렌즈) "조건 → 대상" 포인터로 재작성. 필수만: gotchas(Before any plugin change), release-workflow(When the user asks to release or tag), specs/issues, INDEX. skill 가이드 2행 삭제(#13) | 현재는 무엇(what)만 있고 언제(when)가 없음. release 포인터 3곳 중복(:35, :125, CLAUDE.md) |
+| Official Docs(:39-56) | :41·:43-47은 조건부 포인터 하나로(§1-1), :49 페이지 나열 삭제, :51 Codex 링크는 `context/codex-advisor.md`로, :53-56 대용량 파일 규칙은 **유지** | :53-56은 작업 도중에 닥치는 상황이라 gotchas로 빼면 포인터가 제때 안 걸림 |
+| Plugin Development Workflow(:58-99) | §1-1 수정 반영: 1·2단계 삭제, 버전 범프 단계 추가, Local Testing → gotchas "Testing" | |
 | references/ 섹션(:101-105) | 한 줄로 | |
-| Git Workflow(:107-125) | pre-flight(:123) 삭제, release-workflow.md 포인터만 | 중복 |
-| Plugin Data Paths(:127-134) | 삭제, "Before editing plugin structure, versions, or data paths: read gotchas.md" 한 줄 | gotchas:9·19·39와 중복 |
-| Coding Style(:136-142) | 유지 + §1-4 설계 원칙 3줄 추가 | |
+| Git Workflow(:107-125) | :110 긍정형, :115·:116 삭제, 태그 규칙·pre-flight(:120-123)는 release-workflow.md로, 포인터 1개 | 중복·no-op·부정형 |
+| Plugin Data Paths(:127-134) | 삭제, "Before any plugin change, read `docs/reference/gotchas.md`." 한 줄 | gotchas:9·39와 중복. (렌즈) 포인터가 hooks·scripts·testing을 불러야 §1-4 교훈에 닿음 — 갈래를 나열하느니 "any plugin change"(43줄이라 싸다) |
+| Coding Style(:136-142) | Language + Versioning 블록(§1-1)만 남기고 + §1-4 원칙 2줄(deterministic, 로직은 스크립트에) | :139 validate, :141 no-op, :142 `.gitattributes`가 이미 강제 |
 | Plugin README Style(:144-153) | `docs/reference/readme-style.md`로 이동, Workflow 4단계에 포인터 | README 작업에만 필요 |
+| 머리말(:3-5) | HTML 주석으로 | 관리자용 메모, 주석은 주입 전 제거 |
 
-**유지해야 할 것:** AGENTS.md:43-45(인용 숫자를 공식 원문과 대조), :53-56(WebFetch 요약 사고), gotchas.md:19(version 우선순위), :31(`Write(path)` 미동작), :43(리서치 결과 대조).
+**유지해야 할 것:** AGENTS.md:43-45(인용 숫자를 공식 원문과 대조), :53-56(WebFetch 요약 사고), 버전 우선순위(gotchas:19 → AGENTS Versioning 블록으로 이동), gotchas.md:31(`Write(path)` 미동작), :43(리서치 결과 대조).
 
 ## 1-4. 메모리 이관 맵
 
@@ -225,38 +250,41 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 
 | 메모리 | 살릴 내용 | 목적지 |
 |---|---|---|
-| project_rubber_duck_redesign | jq `.key // default`가 JSON `false`를 삼킴 → boolean은 raw 비교 | gotchas.md 신설 "Hooks & scripts" |
+| project_rubber_duck_redesign | jq `.key // default`가 JSON `false`를 삼킴 → boolean은 raw 비교 | gotchas.md 신설 "Hooks & scripts"(렌즈: 테스트 교훈은 "Testing"으로 분리) |
 | project_rubber_duck_redesign | `set -u` 아래 `${CLAUDE_PLUGIN_ROOT}` 무가드 참조 → hook 전체 사망. `[[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]` | gotchas.md "Hooks & scripts" |
 | (enhancement 문서) | hook `if` 조건을 좁혀 프로세스 기동 전에 거르기 | gotchas.md "Hooks & scripts" |
-| (handoff 문서) | `node --test <dir>`은 가짜 fail — 파일 경로를 지정 | gotchas.md "Hooks & scripts" |
-| project_worktree_plus_setup_skill | headless `-p` 쓰기 검증: `--permission-mode acceptEdits` + 프롬프트에 선승인 | gotchas.md "Hooks & scripts"(또는 Testing) |
-| project_vision_powers_artifact_channel | 설치 캐시가 레포보다 오래되면 일반 세션의 Skill 툴이 구 로직 실행(`--plugin-dir`은 로컬 우선) | gotchas.md Loading 절, AGENTS.md:94 교정과 같은 자리 |
+| (handoff 문서) | `node --test <dir>`은 가짜 fail — 파일 경로를 지정 | gotchas.md 신설 "Testing" |
+| project_worktree_plus_setup_skill | headless `-p` 쓰기 검증: `--permission-mode acceptEdits` + 프롬프트에 선승인 | gotchas.md "Testing" |
+| project_vision_powers_artifact_channel | 설치 캐시가 레포보다 오래되면 일반 세션의 Skill 툴이 구 로직 실행(`--plugin-dir`은 로컬 우선) | gotchas.md "Testing"(AGENTS:88-99 이동분과 한 항목) |
 | feedback_plugin_data_paths | 임시 파일·산출물도 `${CLAUDE_PLUGIN_DATA}`, CWD 금지 | gotchas.md:39 보강 |
-| feedback_audit_scope | 최소 요구 버전은 유지, "tested against"는 재확인 절차 없으면 삭제. 릴리즈 노트 감사 때 억지 변경 금지 | gotchas.md Versioning 절 |
+| (재검수 발견, 2부 공통) | Bash 도구 환경의 `CLAUDE_PLUGIN_DATA`는 비었거나 남의 플러그인 폴더 ✅ → 스크립트엔 경로를 인자로 | gotchas.md:39 같은 항목에(렌즈: 동일 위치) |
+| feedback_audit_scope | 최소 요구 버전은 유지, "tested against"는 재확인 절차 없으면 삭제. 릴리즈 노트 감사 때 억지 변경 금지 | (렌즈) gotcha 아님(조용한 실패가 아닌 드문 작업의 판단 규칙) → 버림 제안 |
 | feedback_verify_rules_against_references | 내부 문서의 FORBIDDEN 규칙도 코드로 강제 전 references와 대조 | gotchas.md:43 병합 |
-| feedback_deterministic_over_clever | 로직 배치는 프롬프트보다 hook/스크립트 고정 코드 우선, 가지 기각 전 최선 변형 검토 | AGENTS.md Coding Style |
-| feedback_plugin_scope | 플러그인엔 기능 범위에 해당하는 지식만 | AGENTS.md Coding Style |
-| feedback_version_bump | 플러그인 수정 커밋에 버전 범프 포함, 따로 묻지 않음 | AGENTS.md Versioning |
+| feedback_deterministic_over_clever | 로직 배치는 프롬프트보다 hook/스크립트 고정 코드 우선, 가지 기각 전 최선 변형 검토 | (렌즈) 두 뜻 분리: 앞은 AGENTS Coding Style("Prefer deterministic code — hooks, scripts — over prompt instructions for anything checkable"), 뒤("기각 전 최선 변형")는 협업 규칙 → #1 묶음 |
+| feedback_plugin_scope | 플러그인엔 기능 범위에 해당하는 지식만 | (렌즈) gotchas:11(설치본 격리)·:13(독립성)과 같은 개념 → gotchas 신설 "Self-contained plugins" 한 제목 아래 셋 + `dependencies`(§1-1) |
+| feedback_version_bump | 플러그인 수정 커밋에 버전 범프 포함, 따로 묻지 않음 | AGENTS Versioning 블록 + Workflow 범프 단계. release-workflow.md 3·4단계와 충돌 → #14로 해소 |
 | project_vision_powers_artifact_channel | `artifact-gate.js`는 HTML을 텍스트로만 읽음 — 통과 ≠ 렌더 정상 | docs/context/vision-powers.md |
 | project_rubber_duck_redesign | 단일턴 trigger eval은 auto-detect형 스킬에 부적합 | docs/context/skill-creator-pro.md |
-| feedback_no_unilateral_decisions · feedback_grill_plan_edits_to_doc · feedback_removal_scope · (015·013 메모의 질문 스타일) | 보고 ≠ 승인 / 그릴 중엔 이슈 문서에 작업으로 / 가리킨 레이어만 삭제 / 질문은 하나씩 짧게 | §1-5 #1 결정 |
+| feedback_no_unilateral_decisions · feedback_grill_plan_edits_to_doc · feedback_removal_scope · (015·013 메모의 질문 스타일) | 보고 ≠ 승인 / 그릴 중엔 이슈 문서에 작업으로 / 가리킨 레이어만 삭제 / 질문은 하나씩 짧게 | AGENTS.md(§1-5 #1) |
 
 **삭제할 것** — 레포에 이미 있음: `project_references_folder_purpose`, `feedback_issue_docs_location`, `feedback_release_pull_first`, `feedback_readme_style`, `reference_origin_docs`. 끝났거나 낡음: `project_diff_visual_catch_up`, `project_worktree_plus_setup_skill`(교훈 이관 후), `project_vision_powers_artifact_channel`(교훈 이관 후), `project_rubber_duck_redesign`(교훈 이관 후), `project_codex_advisor_105`, `project_skill_creator_pro_status`, `project_codex_advisor_016`(이슈 016에 있음). 다른 레포: `project_harness_engineer`, `reference_harness_landscape`, `project_health_visual_skill`, `project_backend_diagram_015`. 판단 필요: `project_product_demo_video`.
 
 ## 1-5. 결정 필요
 
-1. 협업 규칙 4개(§1-4 마지막 행) 위치 — 전역 `~/.claude/CLAUDE.md`(프로젝트 무관) vs AGENTS.md
+1. ~~협업 규칙(§1-4 마지막 행 4개 + `deterministic_over_clever` 뒷부분 "기각 전 최선 변형") 위치 — 전역 `~/.claude/CLAUDE.md` vs AGENTS.md~~ — **결정(2026-09-24): AGENTS.md.** 두 머신이 git으로 공유. 다른 레포엔 적용 안 됨을 감수
 2. handoff 중 살릴 것 — `claude-preset` 아이디어(삭제/spec), new-vibe Issue 7(`discover.sh:16` 경로 오염이 버그면 issue로)
 3. research 2개 llm-wiki 이동 — llm-wiki `raw/`는 사용자만 채우는 규칙. 삭제 or 사용자가 직접 드롭
 4. `.claude/worktrees/remove-test-3` 제거 여부 (원 작성 머신)
-5. `settings.local.json` `git push` allow → ask 전환 여부 (원 작성 머신)
-6. release-workflow 레포 태그 번호 기준
-7. AGENTS.md:60(모든 플러그인 작업 → `/skill-creator-pro`)·:82("Read **only** those files") — 사실 교정이 아니라 작업 방식 정책. 바꿀지, 제안 문구(§1-1)로 할지
+5. ~~`settings.local.json` `git push` allow → ask 전환 여부~~ — **종결(2026-09-24): 불필요.** push 금지는 하네스 기본 지시
+6. ~~release-workflow 레포 태그 번호 기준~~ — **결정(2026-09-24): 기존 관행 명문화.** 이번 릴리즈에 minor·major로 오른 플러그인이 있으면 태그 minor, patch만이면 태그 patch(v1.83.0 ← codex 5.0.0, v1.83.1 ← 5.0.2)
+7. ~~AGENTS.md:60(모든 플러그인 작업 → `/skill-creator-pro`) — 제안 문구(§1-1)로 할지~~ — **결정(2026-09-24): 제안 문구대로.** 공식 skill-creator 대신 pro를 가리킨다(본문 동일 + 플러그인 스킬용 35줄, 결함은 §2-2에서 수정). 플러그인 스킬의 동작 검증(`claude plugin eval`)은 스킬에 넣는다(§2-2 #15). :82는 삭제
 8. rubber-duck #2 수정안 — (a) 원안: 4번을 "already committed session edits"로 재정의 (b) 3·4번 순서 교환. (a)는 미커밋 세션 편집을 `/duck-review`로 보내 duck-verify:4("code just written")와 어긋나고, (b)는 Mode Map(:18-19) 순서와 맞는다
 9. skill-creator-pro #9 — `claude`/`anthropic` 예약 규칙 유지 여부. API·claude.ai 스킬엔 유효한 규칙이라 #11(Claude.ai 절 삭제, ADR 0001) 결정과 묶인다
 10. vision-powers #7 — doc-visual의 md 게시 예외를 인정하려면 channel-decision.md의 권위인 ADR 0009 §3 개정이 따라온다. 개정할지, doc-visual의 md 게시를 없앨지
 11. 실행 확인 필요(결정 아님): claw-mux #2(라이브 pane에서 `❯` 오판 재현), 2부 공통 "reference 파일 치환"(추측)
-12. 다른 머신 메모리 2개(`subagent-model-preference` → 전역 선호, `wiki-is-symlink-to-llm-wiki` → gotchas 후보) 이관 여부
+12. 다른 머신 메모리 2개 이관 여부 — `subagent-model-preference`(→ 전역 선호. 근거가 "세션이 Fable 5"라 지금도 유효한지 확인), `wiki-is-symlink-to-llm-wiki`(→ 전역 `~/.claude/CLAUDE.md` 후보: `wiki -> ../llm-wiki/wiki` 심링크가 claude-code-zero·excalidraw-architect·link-dive 3개 레포에 있음 ✅). 전역 CLAUDE.md는 이 머신에 아직 없음 ✅
+13. ~~skill 가이드 2개(skill-building-guide·skill-lessons) 줄 단위 수정 vs 삭제~~ — **결정(2026-09-24): 삭제.** §1-1 docs/reference 행
+14. ~~버전 범프 시점: 수정 커밋(메모리) vs 릴리즈 때 묻기(release-workflow 3단계)~~ — **결정(2026-09-24): 수정 커밋.** release-workflow 3단계는 범프 누락 확인으로
 
 ## 1-6. 수정 순서
 
@@ -334,6 +362,7 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 | 12 | low | auto-optimize:261 | "NEVER STOP" ↔ :215 "ALL CAPS 금지" | 이유 붙인 기준 문장으로 | 🔹 |
 | 13 | low | auto-optimize:58-59,:380 | 레포 전용 경로 참조, "step 2" 오기 | 삭제, "Step 3" | 🔹 |
 | 14 | low | README.md:23 | 없는 기능 "confidence scoring" | 삭제 | 🔹 |
+| 15 | med | skill-creator-pro(eval 절) | 공식은 플러그인에 실린 스킬의 동작 검증에 `claude plugin eval`을 권함(skills.md:831, v2.1.269+). skill-creator의 `evals/evals.json`과 형식 비호환(plugin-evals.md:15). 스킬은 이를 모름 | 플러그인 스킬이면 `claude plugin eval`로 안내하는 분기 추가(#7 결정). 500줄 초과(#11)와 함께 줄 수 관리 | ✅ |
 
 기타: agents 3개·schemas.md·scripts는 공식과 동일(ADR 0001 준수). 기록 안 된 fork 2개 — `eval-viewer/generate_review.py:279-291` `</script>` 이스케이프, `eval-viewer/viewer.html`의 sandboxed iframe(.html 출력 실시간 렌더). 공식 `LICENSE.txt`(Apache-2.0) 누락. → ADR/README에 fork 기록, LICENSE 추가.
 
