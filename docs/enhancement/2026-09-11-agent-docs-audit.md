@@ -46,7 +46,7 @@
 **Blockers** — P1 없음(Q11 답만). P2는 #10, P4는 #8, P5는 #9, P6의 claw-mux #2는 #11 라이브 확인(cmux pane에서 `❯` 오판 재현 — 이 머신 세션은 cmux 안에서 돈다). S5는 원 작성 머신 + #4.
 
 **Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 아래 표에 해시 기록.
-1. Q11 그릴 → P1 실행 → 커밋(플러그인별). 4차 세션(2026-09-24)에서 우선순위 1위 notebooklm hook(§2-6 #3)만 먼저 처리(`d9b5177`) — 나머지 P1 10건은 Q11 답 대기.
+1. Q11 그릴 → P1 실행 → 커밋(플러그인별). 4차 세션(2026-09-24)에서 우선순위 순으로 하나씩 처리 중: notebooklm hook(§2-6 #3, `d9b5177`), claw-mux `$SKILL_DIR`(§2-5 #1, `ca54ade`). 나머지 P1 9건.
 2. P2~P7 순서대로. 막는 결정(#10·#8·#9)은 해당 단계 직전에 하나씩 묻는다. P6 전에 claw-mux #2 라이브 확인.
 3. 푸시 여부는 사용자에게 묻는다.
 4. 원 작성 머신에서 S5.
@@ -64,7 +64,7 @@
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: §2-1 #1·#4·#32, §2-2 #1, §2-3 #17, §2-4 #1, §2-5 #1, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | Q11(범위 확인) |
+| P1 | 실제 버그: §2-1 #1·#4·#32, §2-2 #1, §2-3 #17, §2-4 #1, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | Q11(범위 확인) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
@@ -435,7 +435,7 @@ ADR 0003·0008은 재논의하지 않음.
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | claw-mux/SKILL.md:102,118,173-179, terminal-io.md, sync-and-automation.md:45, cmux-browser:97-110, cmux-markdown:95-96 | `$SKILL_DIR` 25곳 — 공식 치환 변수는 `${CLAUDE_SKILL_DIR}`, 셸 env도 비어 `/scripts/…` 실행 실패 | SKILL.md 본문은 `${CLAUDE_SKILL_DIR}`로 교체. references(terminal-io.md 5곳, sync-and-automation.md:45)는 치환 안 될 수 있으므로(2부 공통 "reference 파일 치환") SKILL.md에 스크립트 경로를 한 번 제시하고 references는 상대 경로로 | ✅ |
+| 1 | high | claw-mux/SKILL.md:102,118,173-179, terminal-io.md, sync-and-automation.md:45, cmux-browser:97-110, cmux-markdown:95-96 | `$SKILL_DIR` 25곳 — 공식 치환 변수는 `${CLAUDE_SKILL_DIR}`, 셸 env도 비어 `/scripts/…` 실행 실패 | SKILL.md 본문은 `${CLAUDE_SKILL_DIR}`로 교체. references(terminal-io.md 5곳, sync-and-automation.md:45)는 치환 안 될 수 있으므로(2부 공통 "reference 파일 치환") SKILL.md에 스크립트 경로를 한 번 제시하고 references는 상대 경로로 | ✅ **완료**(2026-09-24, `ca54ade`, 1.2.1). 링크 표 19곳은 상대 경로(`references/…`, `templates/…`, 공식 예시와 같은 형식), SKILL.md 스크립트 호출 2곳은 `${CLAUDE_SKILL_DIR}`, references 5곳은 `poll-screen.sh`로 줄이고 SKILL.md가 전체 경로를 한 번 제시 |
 | 2 | med | terminal-io.md:146, SKILL.md:107-108 | Claude Code 완료 감지를 `╭─`/`❯`로 — 작업 중에도 렌더돼 오판 (추측 — poll-screen.sh:26-27이 스크롤백 어디든 `❯`를 매칭. 라이브 pane 확인 필요, §1-5 #11) | `cmux wait-for -S task-done` 방식 | 🔹 |
 | 3 | med | notifications.md:82-91 | Stop hook `stop_reason` 분기 — 공식 입력에 없음, 유저 settings 편집은 범위 밖 | 절 삭제 또는 `last_assistant_message` | 🔹 |
 | 4 | med | SKILL.md:62-69,71-125,127-144,13-21 | wait-for 줄 3회, 사이드바 명령 3회, 환경 체크 3회 | 전략 표 + 1줄, ~100줄로 | 🔹 |
