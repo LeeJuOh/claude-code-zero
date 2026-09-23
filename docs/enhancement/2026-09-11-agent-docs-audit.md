@@ -294,7 +294,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 8. rubber-duck #2 수정안 — (a) 원안: 4번을 "already committed session edits"로 재정의 (b) 3·4번 순서 교환. (a)는 미커밋 세션 편집을 `/duck-review`로 보내 duck-verify:4("code just written")와 어긋나고, (b)는 Mode Map(:18-19) 순서와 맞는다
 9. skill-creator-pro #9 — `claude`/`anthropic` 예약 규칙 유지 여부. API·claude.ai 스킬엔 유효한 규칙이라 #11(Claude.ai 절 삭제, ADR 0001) 결정과 묶인다
 10. vision-powers #7 — doc-visual의 md 게시 예외를 인정하려면 channel-decision.md의 권위인 ADR 0009 §3 개정이 따라온다. 개정할지, doc-visual의 md 게시를 없앨지
-11. 실행 확인 필요(결정 아님): claw-mux #2(라이브 pane에서 `❯` 오판 재현), 2부 공통 "reference 파일 치환"(추측)
+11. 실행 확인 필요(결정 아님): claw-mux #2(라이브 pane에서 `❯` 오판 재현) — 남음. ~~2부 공통 "reference 파일 치환"~~ 확인됨(치환 안 됨, 2026-09-24)
 12. 다른 머신 메모리 2개 이관 여부 — `subagent-model-preference`(→ 전역 선호. 근거가 "세션이 Fable 5"라 지금도 유효한지 확인), `wiki-is-symlink-to-llm-wiki`(→ 전역 `~/.claude/CLAUDE.md` 후보: `wiki -> ../llm-wiki/wiki` 심링크가 claude-code-zero·excalidraw-architect·link-dive 3개 레포에 있음 ✅). 전역 CLAUDE.md는 이 머신에 아직 없음 ✅
 13. ~~skill 가이드 2개(skill-building-guide·skill-lessons) 줄 단위 수정 vs 삭제~~ — **결정(2026-09-24): 삭제.** §1-1 docs/reference 행
 14. ~~버전 범프 시점: 수정 커밋(메모리) vs 릴리즈 때 묻기(release-workflow 3단계)~~ — **결정(2026-09-24): 수정 커밋.** release-workflow 3단계는 범프 누락 확인으로
@@ -318,7 +318,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 - **본문 길이:** 공식 팁 500줄 초과 — vision-powers `context-health-visual` 557·`plugin-visual` 553·`diff-visual` 543, `skill-creator-pro` 520, rubber-duck `engine.md` 375(모든 /duck-* 실행마다 로드).
 - **설치본 격리 위반 패턴:** 여러 플러그인이 레포 전용 경로(`docs/…`, `references/…`, research §번호)를 가리킴 — 설치본엔 없음(gotchas "Installed plugin isolation").
 - **Bash 환경변수 (재검수 추가):** `CLAUDE_PLUGIN_ROOT`·`CLAUDE_PLUGIN_DATA`는 Bash 도구 환경에 없다(plugins-reference.md:765). SKILL.md·에이전트 본문의 `${…}`는 치환되지만, Bash로 실행된 스크립트가 `process.env`/`os.environ`으로 읽으면 안 된다. 2026-09-23 세션 Bash엔 다른 플러그인 값 `CLAUDE_PLUGIN_DATA=~/.claude/plugins/data/codex-openai-codex`가 들어 있었다 ✅ — 비어 있는 게 아니라 **남의 폴더**를 가리킨다. 해당: vision-powers #4, vibeproxy-kit #24. 경로는 인자로 넘긴다.
-- **reference 파일 치환 (재검수 추가, 추측):** 공식은 치환 위치를 "the skill's markdown content"와 `allowed-tools`로만 적는다(skills.md:416). Read로 여는 references 파일의 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`·`${CLAUDE_SKILL_DIR}`는 치환되지 않을 가능성이 있다 — 그대로 Bash에 넣으면 빈 값이거나 위의 남의 값. 해당 파일: claw-mo `references/shared.md`, codex-advisor `references/companion-usage.md`·`evaluation.md`, rubber-duck `skills/ducking/engine.md`, vibeproxy-kit `references/model-selection.md`·`write-guide.md`, vision-powers `references/design-system/{channel-decision,structured-blocks,visual-self-audit}.md`·`plugin-visual/.../analysis-criteria.md`. 실행 확인 후(§1-5 #11) 공통 처리.
+- **reference 파일 치환 (재검수 추가, 2026-09-24 확인 ✅ — 치환 안 됨):** 설치본 `claw-mo/2.8.2/references/shared.md`에 `${CLAUDE_PLUGIN_DATA}`가 문자 그대로 있고 Read는 디스크 내용을 그대로 돌려준다. 같은 날 Bash 환경: `CLAUDE_PLUGIN_ROOT` 빈 값, `CLAUDE_PLUGIN_DATA`=`…/data/codex-openai-codex`(남의 폴더) 재현. 공식은 치환 위치를 "the skill's markdown content"와 `allowed-tools`로만 적는다(skills.md:416). Read로 여는 references 파일의 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`·`${CLAUDE_SKILL_DIR}`는 치환되지 않을 가능성이 있다 — 그대로 Bash에 넣으면 빈 값이거나 위의 남의 값. 해당 파일: claw-mo `references/shared.md`, codex-advisor `references/companion-usage.md`·`evaluation.md`, rubber-duck `skills/ducking/engine.md`, vibeproxy-kit `references/model-selection.md`·`write-guide.md`, vision-powers `references/design-system/{channel-decision,structured-blocks,visual-self-audit}.md`·`plugin-visual/.../analysis-criteria.md`. 실행 확인 후(§1-5 #11) 공통 처리.
 
 ## 2-1. vision-powers
 
