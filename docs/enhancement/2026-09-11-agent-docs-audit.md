@@ -1,56 +1,53 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1부터** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(2/11, 다음 vision-powers)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-24 3차 → 다음 세션)
+## 핸드오프 (2026-09-24 4차 → 다음 세션)
 
-**Goal** — 2부(플러그인 수정)를 P1부터 진행한다. 1부(레포 문서)는 이 머신에서 할 수 있는 게 모두 끝났고, S5만 원 작성 머신에 남았다.
+**Goal** — 2부(플러그인 수정) P1의 남은 버그를 플러그인 하나씩 고친다. 다음은 vision-powers. 1부는 이 머신에서 할 게 끝났고 S5(원 작성 머신의 메모리 폴더·worktree 정리)만 남았다.
 
-**First Action** — 그릴을 Q11부터 다시 한다: **P1 범위 확인**. 아래 P1 행의 버그 11건을 플러그인별로 "무엇이 고장났는지" 한 줄씩 풀어 쓴 표로 보여주고, 질문 하나와 추천을 한다. 추천: 이 범위 그대로, 플러그인끼리 파일이 안 겹치므로 플러그인별 병렬 에이전트, 플러그인마다 커밋 하나 + patch 범프, 끝나면 diff 직접 검토. 행 번호(§2-x #n)만 쓰지 말고 처음 꺼낼 때 뜻을 풀 것. 그릴은 `/grill-with-docs`, 질문은 한 번에 하나.
+**First Action** — vision-powers P1 버그 3건을 사용자에게 한 줄씩 풀어 보여주고, 첫 결정 하나를 추천과 함께 묻는다: `skills/context-health-visual/agents/trigger-collision-inspector.md`는 플러그인이 로드하지 않는 위치라 SKILL.md의 `Agent` 호출(`subagent_type: trigger-collision-inspector`)이 실패한다. 루트 `agents/`로 옮기면 description(120자)이 매 세션 컨텍스트에 들어간다. 추천: 루트로 이동하고 `vision-powers:trigger-collision-inspector`로 호출(비용 작음). 답을 받으면 3건을 고치고 커밋 하나 + patch 범프(4.9.0 → 4.9.1).
 
-**Context** — 이번 세션(3차)은 S4를 그릴(Q1~Q5)한 뒤 에이전트 4개로 실행·커밋했고, 1부 남은 결정 #15·#16·#12를 받았다. #11 중 "reference 파일 치환"은 직접 확인했다. Q11(P1 범위)을 물은 직후 사용자가 "2부부터 다음 세션, Q11부터 다시 그릴"로 정했다. P1 범위 제안은 아래 P1 행 그대로다 — 사용자는 아직 답하지 않았다.
+vision-powers P1 3건 (2026-09-24 grep 확인):
+- §2-1 #1 — 위 에이전트 이동. 함께 고칠 참조: `skills/context-health-visual/SKILL.md`의 호출부와 파일 표(`agents/trigger-collision-inspector.md` 행), `references/health-criteria.md`의 같은 경로.
+- §2-1 #4 — `scripts/config.js`·`list-reports.js`·`render-report.js`·`log-report.js`가 `process.env.CLAUDE_PLUGIN_DATA`를 읽는다. Bash 환경엔 없거나 남의 플러그인 폴더다(2부 공통 관찰). 스크립트는 경로를 인자로 받고, SKILL.md는 `${CLAUDE_PLUGIN_DATA}`로 넘긴다. report-manager SKILL.md의 "shell env var, not a SKILL.md substitution" gotcha는 삭제. 이 스크립트들을 부르는 SKILL.md가 여러 스킬에 걸쳐 있다(`grep -rn 'log-report.js\|render-report.js\|list-reports.js\|config.js' plugins/vision-powers/skills`로 호출부 전부 찾기).
+- §2-1 #32 — `scripts/artifact-gate.js` → `checkGradientText()`의 `gradient-text` 위반에 `severity` 없음. 다른 규칙의 severity 값과 맞추고, 테스트는 `node --test <파일 경로>`(디렉터리 지정은 가짜 fail — gotchas "Testing").
+
+**Context** — 3차 핸드오프는 "Q11(P1 11건 범위 확인) 후 플러그인별 병렬 에이전트"였다. 이번 세션에서 사용자는 Q11에 답하지 않고 "우선순위 가장 높은 거 하나"를 골라 하나씩 고치는 방식으로 진행했다. 순서는 영향 범위 기준으로 내가 추천: notebooklm hook(무관한 세션에도 발동) → claw-mux(쓸 때마다 스크립트 실패) → vision-powers(버그 3건). 사용자는 "바로 고쳐"로 승인하는 흐름이었다.
 
 **Current Progress** (git 기준 — `repo_facts.sh`)
-- 브랜치 `develop`, 작업 트리 깨끗(이 핸드오프 재작성 전 기준). origin/develop은 `de3166e`까지 푸시됨, 그 뒤 2커밋(`432144a`, `d1b4bcc`) 미푸시.
-- `b74fb20` S4: issues 001·002·003·005·009·011·012·013·014·spec 016 상태줄, issue 007·ADR 0002·0004·0005·0009 배너·정정, `docs/context/` 4개를 순수 용어집 형식으로(rubber-duck은 plugin `CONTEXT.md`를 병합해 영어로), `CONTEXT-MAP.md`가 4개를 가리킴, rubber-duck-tutor 3.1.2.
-- `b8b9b61` `.claude/hooks/load-secrets.sh` 삭제(#16).
-- `de3166e` #15 기록(메모리 파일 삭제는 S5).
-- `432144a` #11 중 reference 치환 확인 기록(2부 공통 관찰).
-- `d1b4bcc` AGENTS.md `## references/ · wiki/` 절 + #12 기록.
-- 레포 밖: 이 머신 메모리 폴더(`~/.claude/projects/-Users-leejuo-…/memory/`)의 메모리 2개 삭제, `MEMORY.md`만 남음.
-- 1부 이전 단계(S1~S3)는 아래 표의 해시 참조.
+- 브랜치 `develop`, 작업 트리 깨끗. origin/develop보다 7커밋 앞섬(미푸시): `432144a`·`d1b4bcc`·`dc07ff2`·`d9b5177`·`3dd0abc`·`ca54ade`·`c0ab03d`.
+- `d9b5177` notebooklm-connector 1.3.2 — `hooks/ensure-skill-loaded.sh` 삭제, `hooks/hooks.json`에서 `UserPromptSubmit` 항목 삭제(§2-6 #3). 기록 `3dd0abc`.
+- `ca54ade` claw-mux 1.2.1 — `$SKILL_DIR` 25곳: SKILL.md 링크 표는 상대 경로, SKILL.md 스크립트 호출은 `${CLAUDE_SKILL_DIR}`, references 5곳은 `poll-screen.sh`로 줄이고 SKILL.md가 전체 경로를 한 번 제시(§2-5 #1). 기록 `c0ab03d`. 링크 대상 존재·`claude plugin validate .`는 확인, 실제 스킬 호출로 스크립트 실행은 미확인.
+- 1부 커밋은 아래 S1~S4·1부 결정 행의 해시 참조.
 
-**Decisions Made** (2026-09-24 3차. 이전 결정은 §1-5)
-- rubber-duck 용어집은 영어로 병합 — 다른 context 3개가 영어.
-- 용어집엔 구현 세부를 넣지 않는다(domain-modeling 규칙) → issue 014 토폴로지 결정은 용어집에 반영 안 함.
-- context 4개 형식 정리를 S4에 포함. Why/What → 맨 위 1~2문장, Flagged ambiguities → `_Avoid_`, 예시 대화·결정 목록·구현 세부 → 삭제, 여기에만 있는 미확인 사실은 유지.
-- 설계 이유를 ADR로 빼지 않는다 — 결정은 이미 ADR 0004·0012에 있고, 나머지는 문제 설명이라 ADR 3조건에 안 맞음.
-- #16 삭제 · #15 버림 · #12: `subagent-model-preference` 버림, wiki 심링크는 AGENTS.md 반 줄(writing-for-agents 기준 — `ls`로 보이는 사실은 빼고, 안 보이는 것(llm-wiki의 AGENTS.md가 여기선 안 로드됨)만 긍정형으로, `references/`와 같은 절에).
+**Decisions Made** (2026-09-24 4차. 이전 결정은 §1-5)
+- notebooklm hook은 좁히지 않고 **삭제**. 스킬 description이 같은 트리거를 이미 말하고, 원 목적(`982f6a1` "후속 메시지에서 스킬 재호출")은 키워드 없는 후속 메시지엔 안 걸린다. 재호출의 실익(`allowed-tools` 승인이 다음 메시지에 풀림, skills.md:528)은 §2-6 #1의 README allow 규칙 안내로 대신한다.
+- references 파일의 스크립트 경로는 변수 대신 짧은 이름 + SKILL.md에서 전체 경로 한 번 제시(references는 치환 안 됨, 2부 공통 관찰).
+- P1 진행 방식: 병렬 일괄 대신 우선순위 순으로 플러그인 하나씩, 플러그인마다 수정 커밋 + 원장 기록 커밋.
 
 **What Worked**
-- 그릴 전에 사실 조사 에이전트(용어집 밖 내용이 다른 문서에 있는지)를 먼저 돌려, 질문을 사실 위에서 했다.
-- 파일이 안 겹치게 에이전트 4개로 나누고 diff를 직접 검토 — 에이전트 오류 2건(CONTEXT-MAP "keeping the eval harness", vision-powers Leverage "4개(boilerplate 포함)" ↔ ADR 0002의 3개)을 잡았다.
-- 결정을 받는 즉시 이 문서에 적고, 단계마다 커밋.
+- 수정 전에 실제로 실행해 보여주기 — hook에 샘플 프롬프트 5개를 넣어 오탐·미탐을 표로 보여주니 사용자가 바로 판단했다.
+- 사용자의 "꼭 hook이어야 해?"에 공식 문서(skills.md)와 hook의 원 커밋을 확인해 답했고, 추천이 "좁히기"에서 "삭제"로 바뀌었다.
+- 플러그인 하나당: 수정 → 링크/실행 확인 → validate → 커밋 → 원장 기록 커밋.
 
 **What Didn't Work**
-- ⚠️ 또 "장황하게 말하지 마"(2회), "먼소리야"(2회), "S4 작업 뭔데?"를 들었다. 번호(#12, S4, Q11)나 표 위치만 대고 묻지 말 것 — 처음 꺼낼 때 무엇인지 한 구절로. 질문은 두세 줄.
-- ⚠️ AGENTS.md 수정안을 writing-for-agents 없이 냈다가 사용자가 스킬 기준 재판단을 요구. AGENTS.md·스킬 문구를 제안하기 전에 그 스킬 기준을 먼저 적용.
-- 병렬 에이전트가 다른 에이전트가 고칠 파일의 옛 문구를 가져다 씀(C가 D 수정 전 문장 인용). 파일 간 인용은 검토 때 교차 확인.
-- ⚠️ notebooklm-connector의 UserPromptSubmit hook이 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입한다 — `d9b5177`(1.3.2)에서 삭제. 설치 캐시가 1.3.1이면 아직 발동하니 따르지 말 것.
+- ⚠️ 또 "장황하게 말하지 마"를 들었다(큰 그림 설명에서 표 11행 + 배경 문단). "S5가 뭔데?"도 — 번호만 대지 말 것. 답은 두세 줄, 표는 필요할 때만.
+- ⚠️ 설치 캐시의 notebooklm-connector가 1.3.1이면 무관한 메시지에 "MUST invoke notebooklm-manager"가 아직 주입된다. 따르지 말 것.
 
-**Blockers** — P1 없음(Q11 답만). P2는 #10, P4는 #8, P5는 #9, P6의 claw-mux #2는 #11 라이브 확인(cmux pane에서 `❯` 오판 재현 — 이 머신 세션은 cmux 안에서 돈다). S5는 원 작성 머신 + #4.
+**Blockers** — vision-powers P1 없음(에이전트 위치 답만). P2는 #10, P4는 #8, P5는 #9, P6의 claw-mux #2는 #11 라이브 확인. S5는 원 작성 머신 + #4.
 
 **Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 아래 표에 해시 기록.
-1. Q11 그릴 → P1 실행 → 커밋(플러그인별). 4차 세션(2026-09-24)에서 우선순위 순으로 하나씩 처리 중: notebooklm hook(§2-6 #3, `d9b5177`), claw-mux `$SKILL_DIR`(§2-5 #1, `ca54ade`). 나머지 P1 9건.
-2. P2~P7 순서대로. 막는 결정(#10·#8·#9)은 해당 단계 직전에 하나씩 묻는다. P6 전에 claw-mux #2 라이브 확인.
-3. 푸시 여부는 사용자에게 묻는다.
-4. 원 작성 머신에서 S5.
-5. 1부·2부가 끝나면 INDEX.md의 handoff 수명 규칙대로 이 문서를 정리.
+1. vision-powers P1 3건 → 커밋 → 원장 기록.
+2. 남은 P1: rubber-duck-tutor(gap 해소 안 됨, §2-4 #1), codex-advisor(effort 키가 마지막 테이블로, §2-3 #17), e2e-test-runner(hook timeout 단위, §2-7 #6), worktree-plus(문서 2곳, §2-7 #1·#2), skill-creator-pro(패키징 import 에러, §2-2 #1). 하나씩, 우선순위 추천과 함께.
+3. P2~P7 순서대로. 막는 결정(#10·#8·#9)은 해당 단계 직전에 하나씩 묻는다.
+4. 푸시 여부는 사용자에게 묻는다.
+5. 원 작성 머신에서 S5. 1부·2부가 끝나면 INDEX.md의 handoff 수명 규칙대로 이 문서를 정리.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
@@ -64,7 +61,7 @@
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: §2-1 #1·#4·#32, §2-2 #1, §2-3 #17, §2-4 #1, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | Q11(범위 확인) |
+| P1 | 실제 버그: §2-1 #1·#4·#32, §2-2 #1, §2-3 #17, §2-4 #1, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
