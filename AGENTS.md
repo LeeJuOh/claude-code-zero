@@ -20,6 +20,8 @@ Personal marketplace for Claude Code plugins. Plugins are developed under `plugi
 
 When creating a plugin or component, changing a schema, or reviewing a spec or issue that cites official docs: fetch `https://code.claude.com/docs/llms.txt`, then the page as `https://code.claude.com/docs/en/<page>.md`, and verify each cited number against the source. Doc-internal tables may hold invented or outdated values.
 
+When a change depends on Codex behavior (codex-advisor, vibeproxy-kit): fetch `https://learn.chatgpt.com/docs/llms.txt`.
+
 **Large structured files: download and parse.** WebFetch summarizes through a model and returns wrong numbers on big JSON/CSV (a 1.5 MB `marketplace.json` came back as "287 plugins, eli5 absent" — `curl` + parse gave 2282 and present). Anything over a few hundred KB: `curl -sL <url> -o <file>` then `jq`/`python` on the file.
 
 ## Plugin Development

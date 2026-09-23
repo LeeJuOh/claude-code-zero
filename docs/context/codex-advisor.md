@@ -16,8 +16,6 @@ The wrapper calls the **companion binary directly** and bypasses the Official Co
 skill / agent / command layer. What that means for prompt fidelity — when we can distort an
 official prompt and when we structurally cannot — is the domain model below. See [[0004]].
 
-Codex's own docs index: `https://learn.chatgpt.com/docs/llms.txt`.
-
 ## What it does
 
 Ten skills (`codex-review`, `codex-adversarial`, `codex-rescue`, `codex-verify`,
