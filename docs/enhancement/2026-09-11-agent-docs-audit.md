@@ -1,27 +1,29 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(2/11, 다음 vision-powers)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(5/11, vision-powers 완료 `5be2cec`)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-24 4차 → 다음 세션)
+## 핸드오프 (2026-09-24 5차 → 다음 세션)
 
-**Goal** — 2부(플러그인 수정) P1의 남은 버그를 플러그인 하나씩 고친다. 다음은 vision-powers. 1부는 이 머신에서 할 게 끝났고 S5(원 작성 머신의 메모리 폴더·worktree 정리)만 남았다.
+**Goal** — 2부(플러그인 수정) P1의 남은 버그를 플러그인 하나씩 고친다. vision-powers까지 끝났다. 1부는 이 머신에서 할 게 끝났고 S5(원 작성 머신의 메모리 폴더·worktree 정리)만 남았다.
 
-**First Action** — vision-powers P1 버그 3건을 사용자에게 한 줄씩 풀어 보여주고, 첫 결정 하나를 추천과 함께 묻는다: `skills/context-health-visual/agents/trigger-collision-inspector.md`는 플러그인이 로드하지 않는 위치라 SKILL.md의 `Agent` 호출(`subagent_type: trigger-collision-inspector`)이 실패한다. 루트 `agents/`로 옮기면 description(120자)이 매 세션 컨텍스트에 들어간다. 추천: 루트로 이동하고 `vision-powers:trigger-collision-inspector`로 호출(비용 작음). 답을 받으면 3건을 고치고 커밋 하나 + patch 범프(4.9.0 → 4.9.1).
+**First Action** — 남은 P1 5건(Next Steps 2)을 사용자에게 한 줄씩 풀어 보여주고, 먼저 고칠 하나를 추천과 함께 묻는다. 버그마다 `/grill-with-docs`로 한 질문씩 정한 뒤 고치는 흐름이 이번에 잘 됐다.
 
-vision-powers P1 3건 (2026-09-24 grep 확인):
-- §2-1 #1 — 위 에이전트 이동. 함께 고칠 참조: `skills/context-health-visual/SKILL.md`의 호출부와 파일 표(`agents/trigger-collision-inspector.md` 행), `references/health-criteria.md`의 같은 경로.
-- §2-1 #4 — `scripts/config.js`·`list-reports.js`·`render-report.js`·`log-report.js`가 `process.env.CLAUDE_PLUGIN_DATA`를 읽는다. Bash 환경엔 없거나 남의 플러그인 폴더다(2부 공통 관찰). 스크립트는 경로를 인자로 받고, SKILL.md는 `${CLAUDE_PLUGIN_DATA}`로 넘긴다. report-manager SKILL.md의 "shell env var, not a SKILL.md substitution" gotcha는 삭제. 이 스크립트들을 부르는 SKILL.md가 여러 스킬에 걸쳐 있다(`grep -rn 'log-report.js\|render-report.js\|list-reports.js\|config.js' plugins/vision-powers/skills`로 호출부 전부 찾기).
-- §2-1 #32 — `scripts/artifact-gate.js` → `checkGradientText()`의 `gradient-text` 위반에 `severity` 없음. 다른 규칙의 severity 값과 맞추고, 테스트는 `node --test <파일 경로>`(디렉터리 지정은 가짜 fail — gotchas "Testing").
+vision-powers P1 3건 — ✅ `5be2cec` — 결정 기록(2026-09-24 5차 그릴):
+- §2-1 #1 — `trigger-collision-inspector`를 루트 `agents/`로 이동, `vision-powers:trigger-collision-inspector`로 호출. 근거: plugins-reference.md:49, 세션 Agent 목록에 없었음. `claude -p --plugin-dir`로 로드 확인.
+- §2-1 #4 — `config.js`·`list-reports.js`·`render-report.js`가 `--data-dir <경로>` 필수 인자(없으면 exit 2), env·`~/.claude-code-zero` fallback 삭제. SKILL.md 호출부는 `--data-dir "${CLAUDE_PLUGIN_DATA}"`, report-manager의 `$CLAUDE_PLUGIN_DATA`는 `${…}`로, 잘못된 gotcha 삭제. references 2곳(channel-decision·visual-self-audit)은 짧은 이름 + `<plugin data dir>`. **`log-report.js`는 호출부가 없어 삭제**(Q5). 원인 조사: Bash의 `CLAUDE_PLUGIN_DATA`는 openai-codex 1.0.6 `session-lifecycle-hook.mjs:80`이 `CLAUDE_ENV_FILE`에 자기 경로를 export한 것 — codex가 없어도 Bash엔 원래 없으므로 우리 버그는 그대로. codex 폴더에 쌓였던 `audit-*.png` 6장 삭제. 실제 데이터 폴더로 list·config·render 실행 확인.
+- §2-1 #32 — `gradient-text`에 `severity: 'error'` + 테스트 조건 추가. 테스트 3파일 73개 통과.
+- 범위 밖으로 남긴 것: `config.js`의 `reports_dir`는 list-reports만 따르고 생성 스킬은 `${CLAUDE_PLUGIN_DATA}/reports/`에 고정 저장(불일치, P2 후보).
 
 **Context** — 3차 핸드오프는 "Q11(P1 11건 범위 확인) 후 플러그인별 병렬 에이전트"였다. 이번 세션에서 사용자는 Q11에 답하지 않고 "우선순위 가장 높은 거 하나"를 골라 하나씩 고치는 방식으로 진행했다. 순서는 영향 범위 기준으로 내가 추천: notebooklm hook(무관한 세션에도 발동) → claw-mux(쓸 때마다 스크립트 실패) → vision-powers(버그 3건). 사용자는 "바로 고쳐"로 승인하는 흐름이었다.
 
 **Current Progress** (git 기준 — `repo_facts.sh`)
-- 브랜치 `develop`, 작업 트리 깨끗. origin/develop보다 7커밋 앞섬(미푸시): `432144a`·`d1b4bcc`·`dc07ff2`·`d9b5177`·`3dd0abc`·`ca54ade`·`c0ab03d`.
+- 브랜치 `develop`. origin/develop보다 앞선 미푸시 커밋: `432144a`·`d1b4bcc`·`dc07ff2`·`d9b5177`·`3dd0abc`·`ca54ade`·`c0ab03d`·`00a89b0`·`5be2cec` + 이 기록 커밋.
+- `5be2cec` vision-powers 4.9.1 — §2-1 #1·#4·#32(위 참조).
 - `d9b5177` notebooklm-connector 1.3.2 — `hooks/ensure-skill-loaded.sh` 삭제, `hooks/hooks.json`에서 `UserPromptSubmit` 항목 삭제(§2-6 #3). 기록 `3dd0abc`.
 - `ca54ade` claw-mux 1.2.1 — `$SKILL_DIR` 25곳: SKILL.md 링크 표는 상대 경로, SKILL.md 스크립트 호출은 `${CLAUDE_SKILL_DIR}`, references 5곳은 `poll-screen.sh`로 줄이고 SKILL.md가 전체 경로를 한 번 제시(§2-5 #1). 기록 `c0ab03d`. 링크 대상 존재·`claude plugin validate .`는 확인, 실제 스킬 호출로 스크립트 실행은 미확인.
 - 1부 커밋은 아래 S1~S4·1부 결정 행의 해시 참조.
@@ -38,12 +40,14 @@ vision-powers P1 3건 (2026-09-24 grep 확인):
 
 **What Didn't Work**
 - ⚠️ 또 "장황하게 말하지 마"를 들었다(큰 그림 설명에서 표 11행 + 배경 문단). "S5가 뭔데?"도 — 번호만 대지 말 것. 답은 두세 줄, 표는 필요할 때만.
+- ⚠️ 5차에도 "장황하게 말하지 마"·"먼소리지"를 세 번 들었다. 버그 설명에 배경 문단·선택지 상세를 붙였을 때다. 통한 형식: 버그 한 줄(무엇이 깨지나) + 질문 한 줄 + 추천 한 줄. 용어(`--data-dir`, severity)는 예시 명령이나 비유로 풀 것.
+- 사용자가 근거를 캐묻는다("로컬 문서 근거냐?", "우리 문제 아니지 않아?") — 공식 문서 줄 번호와 실제 실행 결과로 답하니 바로 결정했다.
 - ⚠️ 설치 캐시의 notebooklm-connector가 1.3.1이면 무관한 메시지에 "MUST invoke notebooklm-manager"가 아직 주입된다. 따르지 말 것.
 
 **Blockers** — vision-powers P1 없음(에이전트 위치 답만). P2는 #10, P4는 #8, P5는 #9, P6의 claw-mux #2는 #11 라이브 확인. S5는 원 작성 머신 + #4.
 
 **Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 아래 표에 해시 기록.
-1. vision-powers P1 3건 → 커밋 → 원장 기록.
+1. ~~vision-powers P1 3건~~ ✅ `5be2cec`.
 2. 남은 P1: rubber-duck-tutor(gap 해소 안 됨, §2-4 #1), codex-advisor(effort 키가 마지막 테이블로, §2-3 #17), e2e-test-runner(hook timeout 단위, §2-7 #6), worktree-plus(문서 2곳, §2-7 #1·#2), skill-creator-pro(패키징 import 에러, §2-2 #1). 하나씩, 우선순위 추천과 함께.
 3. P2~P7 순서대로. 막는 결정(#10·#8·#9)은 해당 단계 직전에 하나씩 묻는다.
 4. 푸시 여부는 사용자에게 묻는다.
@@ -61,7 +65,7 @@ vision-powers P1 3건 (2026-09-24 grep 확인):
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: §2-1 #1·#4·#32, §2-2 #1, §2-3 #17, §2-4 #1, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
+| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`, §2-2 #1, §2-3 #17, §2-4 #1, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
