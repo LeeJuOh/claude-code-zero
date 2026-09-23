@@ -17,12 +17,12 @@ vision-powers P1 3건 — ✅ `5be2cec` — 결정 기록(2026-09-24 5차 그릴
 - §2-1 #1 — `trigger-collision-inspector`를 루트 `agents/`로 이동, `vision-powers:trigger-collision-inspector`로 호출. 근거: plugins-reference.md:49, 세션 Agent 목록에 없었음. `claude -p --plugin-dir`로 로드 확인.
 - §2-1 #4 — `config.js`·`list-reports.js`·`render-report.js`가 `--data-dir <경로>` 필수 인자(없으면 exit 2), env·`~/.claude-code-zero` fallback 삭제. SKILL.md 호출부는 `--data-dir "${CLAUDE_PLUGIN_DATA}"`, report-manager의 `$CLAUDE_PLUGIN_DATA`는 `${…}`로, 잘못된 gotcha 삭제. references 2곳(channel-decision·visual-self-audit)은 짧은 이름 + `<plugin data dir>`. **`log-report.js`는 호출부가 없어 삭제**(Q5). 원인 조사: Bash의 `CLAUDE_PLUGIN_DATA`는 openai-codex 1.0.6 `session-lifecycle-hook.mjs:80`이 `CLAUDE_ENV_FILE`에 자기 경로를 export한 것 — codex가 없어도 Bash엔 원래 없으므로 우리 버그는 그대로. codex 폴더에 쌓였던 `audit-*.png` 6장 삭제. 실제 데이터 폴더로 list·config·render 실행 확인.
 - §2-1 #32 — `gradient-text`에 `severity: 'error'` + 테스트 조건 추가. 테스트 3파일 73개 통과.
-- 범위 밖으로 남긴 것: `config.js`의 `reports_dir`는 list-reports만 따르고 생성 스킬은 `${CLAUDE_PLUGIN_DATA}/reports/`에 고정 저장(불일치, P2 후보).
+- 추가 발견 ✅ `143aa9c`(4.9.2) — `config.js`의 `reports_dir`는 list-reports만 따르고 생성 스킬은 `${CLAUDE_PLUGIN_DATA}/reports/`에 고정 저장했다. 문서 안내도 사용자도 없어 키를 삭제(B안 "스킬 7곳이 설정을 읽게"는 기각).
 
 **Context** — 3차 핸드오프는 "Q11(P1 11건 범위 확인) 후 플러그인별 병렬 에이전트"였다. 이번 세션에서 사용자는 Q11에 답하지 않고 "우선순위 가장 높은 거 하나"를 골라 하나씩 고치는 방식으로 진행했다. 순서는 영향 범위 기준으로 내가 추천: notebooklm hook(무관한 세션에도 발동) → claw-mux(쓸 때마다 스크립트 실패) → vision-powers(버그 3건). 사용자는 "바로 고쳐"로 승인하는 흐름이었다.
 
 **Current Progress** (git 기준 — `repo_facts.sh`)
-- 브랜치 `develop`. origin/develop보다 앞선 미푸시 커밋: `432144a`·`d1b4bcc`·`dc07ff2`·`d9b5177`·`3dd0abc`·`ca54ade`·`c0ab03d`·`00a89b0`·`5be2cec` + 이 기록 커밋.
+- 브랜치 `develop`. origin/develop보다 앞선 미푸시 커밋: `432144a`·`d1b4bcc`·`dc07ff2`·`d9b5177`·`3dd0abc`·`ca54ade`·`c0ab03d`·`00a89b0`·`5be2cec`·`cbad384`·`143aa9c` + 이 기록 커밋.
 - `5be2cec` vision-powers 4.9.1 — §2-1 #1·#4·#32(위 참조).
 - `d9b5177` notebooklm-connector 1.3.2 — `hooks/ensure-skill-loaded.sh` 삭제, `hooks/hooks.json`에서 `UserPromptSubmit` 항목 삭제(§2-6 #3). 기록 `3dd0abc`.
 - `ca54ade` claw-mux 1.2.1 — `$SKILL_DIR` 25곳: SKILL.md 링크 표는 상대 경로, SKILL.md 스크립트 호출은 `${CLAUDE_SKILL_DIR}`, references 5곳은 `poll-screen.sh`로 줄이고 SKILL.md가 전체 경로를 한 번 제시(§2-5 #1). 기록 `c0ab03d`. 링크 대상 존재·`claude plugin validate .`는 확인, 실제 스킬 호출로 스크립트 실행은 미확인.
