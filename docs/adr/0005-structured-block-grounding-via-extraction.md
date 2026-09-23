@@ -1,8 +1,16 @@
 ---
 status: accepted
+amended-by: [0007, 0010]
 ---
 
 # 0005 — structured-block content is grounded by mechanical extraction, not a fragmenting pipeline
+
+> **Amended by [[0007]] (2026-07-05) and [[0010]] (2026-08-22).** [[0007]] rescopes the runtime
+> CDN highlighting (`highlight.js`) to the local html channel; Artifact pages keep extract-hunks'
+> verbatim code with the no-CDN monospace fallback. [[0010]] makes diff-visual a catch-up tool
+> and deletes its review sections, File Map included, so the `file-tree` change-flags in this
+> ADR's rollout are gone. This ADR's core — structured-block facts come from mechanical
+> extraction, never model retyping — still holds.
 
 ## Context
 

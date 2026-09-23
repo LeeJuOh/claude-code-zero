@@ -38,7 +38,8 @@ source (`grep` finds none). rescue alone sends the user's text raw, with no scaf
 
 Note: the official guide is `gpt-5-4-prompting` (GPT-5.4), while codex-advisor's default model is
 `gpt-5.5`. The official plugin ships no 5.5 prompting guide — it is itself one model-generation
-behind.
+behind. *(Corrected by spec 012 D5: codex-advisor has no default model — `gpt-5.5` was the
+user's own `config.toml` setting.)*
 
 ## Decision
 

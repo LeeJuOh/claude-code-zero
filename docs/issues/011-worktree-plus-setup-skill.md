@@ -1,6 +1,6 @@
 # 이슈 011 — worktree-plus `worktree-setup` 확장 구현 (슬라이스 S1~S4)
 
-> 상태: **ready-for-agent** — 구현 착수 전 · 생성: 2026-07-17
+> 상태: **완료** — `99ced96`(worktree-plus 3.1.0 · marketplace 버전·description은 `92c01ce`에 포함) · 라이브/대화형 검증 AC(S1 회귀, S2·S3 동작)는 실행 기록 없음 · 생성: 2026-07-17
 > 스펙 (PRD): `docs/specs/011-worktree-plus-setup-skill.md` — 문제 정의, 유저 스토리, 구현/테스트 결정 전부 스펙 참조
 > 대상 플러그인: `plugins/worktree-plus/` (v3.0.3 → v3.1.0)
 > Seam: `skills/worktree-setup/SKILL.md` 단일 (기존 `skills/worktree-config/` 리네임). hook 스크립트 무변경.
@@ -14,9 +14,9 @@
 **What to build**: `worktree-config` 스킬을 `worktree-setup`으로 리네임(디렉터리·frontmatter name·description)하고, `allowed-tools`에 스캔용 읽기 명령(`git ls-files`, `du`)을 추가한다. 기존 git config 관리 동작은 그대로. `disable-model-invocation: true` 유지. 착수 전 공식 `skills.md`에서 frontmatter 필드 재확인 (스펙 Further Notes 참조).
 
 **Acceptance criteria**:
-- [ ] `unset CLAUDECODE && claude plugin validate .` 통과
+- [x] `unset CLAUDECODE && claude plugin validate .` 통과
 - [ ] `claude --plugin-dir` 라이브 세션에서 `/worktree-setup` 호출로 기존 config 조회/변경 동작 회귀 없음
-- [ ] 구이름 참조가 스킬 내부에 남아있지 않음
+- [x] 구이름 참조가 스킬 내부에 남아있지 않음
 
 **Blocked by**: None — can start immediately.
 
@@ -47,8 +47,8 @@
 **What to build**: README의 `/worktree-config` 참조 전부 `/worktree-setup`으로 교체, Features 표 "Conversational config" 행 갱신. `plugin.json`·`marketplace.json` description 갱신, 버전 3.0.3 → 3.1.0.
 
 **Acceptance criteria**:
-- [ ] `grep -r "worktree-config" plugins/worktree-plus/ .claude-plugin/` 결과 0건
-- [ ] 양쪽 description이 확장된 실제 기능 반영
-- [ ] `claude plugin validate .` 통과
+- [x] `grep -r "worktree-config" plugins/worktree-plus/ .claude-plugin/` 결과 0건
+- [x] 양쪽 description이 확장된 실제 기능 반영
+- [x] `claude plugin validate .` 통과
 
 **Blocked by**: S1–S3.

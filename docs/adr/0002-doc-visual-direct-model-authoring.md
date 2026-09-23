@@ -1,8 +1,15 @@
 ---
 status: accepted
+amended-by: [0005, 0007]
 ---
 
 # 0002 — vision-powers generates artifacts by direct model authoring, not pipelines
+
+> **Amended by [[0005]] (2026-06-27) and [[0007]] (2026-07-05).** [[0005]] lets a script back
+> into the generation path — `extract-hunks.js` supplies verbatim code for structured blocks —
+> scoped to extraction, not authoring. [[0007]] rescopes this ADR's Mermaid CDN `<script>`
+> pattern to the local html channel; Artifact pages carry no CDN runtime. This ADR's core — the
+> model authors the whole artifact directly, no fragmenting pipeline — still holds.
 
 ## Context
 

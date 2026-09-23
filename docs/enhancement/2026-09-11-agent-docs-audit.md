@@ -1,55 +1,71 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 수정 전** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4 수정 완료(2026-09-24), 1부 남은 결정(#15·#16)부터** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-24 → 다음 세션)
+## 핸드오프 (2026-09-24 2차 → 다음 세션)
 
-**Goal** — 1부(레포 문서) 수정을 실행한다. 이번 세션은 수정안을 확정했고, 다음 세션은 남은 결정 2개를 받고 S1~S4를 실행한다.
+**Goal** — 1부(레포 문서)의 마지막 작업 S4(설계 기록 정정)를 끝내고 2부(플러그인)로 넘어간다.
 
-**First Action** — 사용자에게 결정 2개를 하나씩, 평이한 말로 묻는다(번호·용어만 던지지 말 것 — "무엇을, A와 B 중 어느 쪽"으로).
-1. **#1 협업 규칙 위치** — 규칙 5개(보고 ≠ 승인 / 그릴 중 계획 수정은 이슈 문서에 작업으로 / 가리킨 레이어만 삭제 / 질문은 하나씩 짧게 / 기각 전 최선 변형 검토)를 전역 `~/.claude/CLAUDE.md`(모든 프로젝트, 이 머신엔 파일이 아직 없음, 머신마다 따로)와 `AGENTS.md`(이 레포만, 두 머신 공유) 중 어디에 둘지.
-2. **#7 AGENTS.md "Plugin Development" 첫 문장** — 지금 "all plugin development work → `/skill-creator-pro`". 제안 "Skill authoring and evals: `/skill-creator-pro`. Registration, README, validation: follow Workflow below."로 바꿀지.
+**First Action** — ~~S4를 실행한다.~~ S4 완료(2026-09-24 3차, 아래 A~D). 다음은 Next Steps 2번. 대상은 §1-1 "설계 기록" 표 세 개(상태줄 10행 · 뒤집힌 결정 5행 · 충돌·중복·링크 8행). 파일이 겹치지 않게 셋으로 나눠 병렬 에이전트에 맡기고, 끝나면 diff를 직접 검토한 뒤 커밋 하나로 묶는다.
+- **A 상태줄** — issues 001·002·003·005·009·011·012·013·014, spec 016(상태줄 행과 :184 인용 오류 행 둘 다 — 같은 파일이라 A에 몰아준다)
+- **B 배너·정정** — issue 007, ADR 0002·0004·0005·0009, `docs/context/codex-advisor.md`("landing via issue 006"), `docs/context/skill-creator-pro.md`("Keep eval harness", 지금 :38), `docs/context/vision-powers.md`(Mermaid CDN 서술 :11-15. 토폴로지 결정 행은 **반영 안 함**(2026-09-24 결정 — 용어집엔 구현 세부를 넣지 않는다, domain-modeling 규칙. issue 014에 그대로 둠))
+- **C rubber-duck** — 용어집 병합(`docs/context/rubber-duck-tutor.md` 정본, **영어로 번역**(2026-09-24 결정 — 다른 context 3개가 영어, 정의는 바꾸지 않음), `plugins/rubber-duck-tutor/CONTEXT.md` 삭제 전 참조 grep, 삭제하면 플러그인 파일이라 rubber-duck-tutor 버전 범프), 루트 `CONTEXT-MAP.md`가 `docs/context/*.md` 4개를 가리키게, 같은 파일 Engagement 정의(:67)·삭제된 handoff 링크(:106)
+- **D context 형식 정리**(2026-09-24 결정, S4에 포함) — `docs/context/*.md` 4개를 domain-modeling `CONTEXT-FORMAT.md` 형식(제목 + 1~2문장 설명 + Language, 정의는 1~2문장, 구현 세부 없음)으로. 용어집 밖 내용(2026-09-24 결정): Why this exists·What it does → 맨 위 1~2문장 설명으로 압축, Flagged ambiguities → 해당 용어 `_Avoid_`로, 예시 대화·결정 목록·구현 세부·Recorded in → 삭제(결정은 ADR, 구현은 코드, 원문은 git). 이 문서에만 있고 코드·references로 확인 안 되는 사실은 지우지 말고 보고.
+- **분담(파일 안 겹침)** — A 상태줄(위와 같음) · B issue 007, ADR 0002·0004·0005·0009 · C `docs/context/rubber-duck-tutor.md` 병합+형식, plugin CONTEXT.md 삭제, `CONTEXT-MAP.md`, rubber-duck-tutor patch 범프 · D `docs/context/` codex-advisor·skill-creator-pro·vision-powers 형식 정리(B에 있던 세 파일 정정 포함).
+- 에이전트 지시: 기록 문서라 근거·이력은 줄이지 않는다 · 주장마다 git으로 확인 후 수정 · 틀린 행은 건너뛰고 보고 · 커밋 금지.
 
-답을 받으면 §1-5에 결정으로 적고 Next Steps의 S1부터 실행한다.
+**Context** — 이번 세션(2026-09-24 2차)은 남은 결정 #1·#2·#3·#6·#7을 받고 S1~S3를 실행·커밋했다. S4는 에이전트 3개를 띄운 직후 사용자가 현황 확인을 위해 중단했고, "S4부터 다음 세션"으로 정했다. 파일 변경은 없다.
 
-**Context** — 2026-09-23 세션은 사실 재검수(`1c6f93f`). 2026-09-24 세션은 1부 §1-1·§1-3·§1-4를 `writing-for-agents` 스킬 렌즈로 다시 봤다: 사실은 맞았지만 수정안이 한 개념을 여러 목적지로 흩었고(버전 지식 6곳, 테스트 교훈 3곳), gotchas 포인터가 hooks·testing을 부르지 않아 옮긴 교훈에 닿지 못했고, "유지" 판정에 no-op·이미 강제되는 규칙이 섞여 있었다. 요약은 §렌즈 재검수, 행 단위 수정은 §1-1·§1-3·§1-4 표에 반영했다. 사용자가 "다음 세션에서 결정하고 1부 진행"을 지시했다.
+**Current Progress** (git 기준 — `repo_facts.sh`)
+- 브랜치 `develop`. 미커밋은 이 문서의 핸드오프 재작성뿐. origin/develop보다 5커밋 앞섬, **미푸시**(푸시는 사용자 요청 시).
+- `170300f` 이 문서: 렌즈 재검수 + 결정 #1·#6·#7 기록.
+- `61b5ec0` S1: AGENTS.md 153→58줄(협업 규칙·Versioning 블록·조건부 포인터), CLAUDE.md는 `@AGENTS.md` 한 줄, release-workflow.md 7단계 + 태그 기준, `docs/reference/readme-style.md` 신설, AGENTS와 짝인 gotchas 줄, `.claude/settings.json`의 `unset CLAUDECODE` allow 삭제.
+- `ae776e2` S1 보정: Codex 문서 포인터를 AGENTS 공식 문서 절에 조건부 한 줄로 되돌림.
+- `1d9efd7` S2: gotchas.md에 Self-contained plugins · Hooks & scripts 절 신설, Testing 절(`61b5ec0`에서 신설)에 항목 추가, Data paths 보강 + context 3곳(vision-powers 2, skill-creator-pro 1).
+- `d3c669c` S3: 퇴적 문서 19개 삭제(handoff 11, enhancement 2, research 4, skill 가이드 2), `plugin-marketplaces.md` → `promotion-channels.md`, INDEX.md를 디렉터리 지도로 재작성, auto-optimize의 가이드 참조 삭제 + skill-creator-pro 2.0.6, `context/skill-creator-pro.md`에 가이드 삭제 표시, vibeproxy research 문서에 "§10 적용됨" 상태줄.
+- S4 줄 번호: 대상 중 `21a87ab` 이후 바뀐 파일은 context 3개(codex-advisor·skill-creator-pro·vision-powers)와 issue·spec 016 두 파일뿐이고, 016 두 파일은 `23c69ec` 이후 그대로다. issues 001–014, ADR 0002·0004·0005·0009, `context/rubber-duck-tutor.md`는 표의 줄 번호가 유효.
 
-**Current Progress** (git 기준)
-- 브랜치 `develop`, 최신 커밋 `1c6f93f`(origin/develop과 동일).
-- **미커밋**: 이 문서 하나(` M`) — 렌즈 재검수 반영 + 이 핸드오프. 커밋은 사용자 요청 시.
-- 대상 파일(AGENTS.md, CLAUDE.md, docs/reference/, release-workflow.md, .claude/settings.json)은 감사 기준 커밋 `21a87ab` 이후 변경 없음 → §1-1·§1-3의 AGENTS.md 줄 번호는 지금도 유효. INDEX.md만 1줄 밀림.
-- S1~S5, P1~P7 착수 전.
-
-**Decisions Made**
-- 판단이 갈리는 수정안은 에이전트가 고르지 않고 §1-5로 올린다. 원장은 이 문서 하나.
-- 2026-09-24: #1 협업 규칙 5개 → **AGENTS.md**. #7 AGENTS 첫 문장은 **제안 문구대로**, `claude plugin eval` 안내는 skill-creator-pro에(§2-2 #15). #6 태그 기준은 기존 관행 명문화. #13 skill 가이드 2개 **삭제**. #14 버전 범프는 **수정 커밋에서**(release-workflow 3단계는 "범프 누락 확인"으로). #5 **종결**(push 금지는 하네스 기본 지시). #7 중 "Read only those files" 단계는 **삭제**.
-- Co-Authored-By는 전역 `~/.claude/settings.json` `attribution`(`commit`·`pr` = `""`)이 이미 강제 → AGENTS의 해당 줄은 삭제만.
+**Decisions Made** (2026-09-24, 상세는 §1-5)
+- #1 협업 규칙 5개 → AGENTS.md "Working with the user". 두 머신 공유, 다른 레포엔 적용 안 됨을 감수.
+- #7 AGENTS 첫 문장 = "Skill authoring and evals: `/skill-creator-pro`…". 공식 skill-creator 대신 pro: 본문이 공식 485줄 + 플러그인 스킬용 35줄이고 공식보다 뒤처진 게 없다. `claude plugin eval`(공식 `skills.md`가 플러그인 스킬용으로 권함) 안내는 AGENTS가 아니라 스킬 안에 → §2-2 #15.
+- #6 태그: minor·major로 오른 플러그인이 있으면 태그 minor, 아니면 patch.
+- #2 claude-preset 삭제. new-vibe Issue 7(`discover.sh:16`)은 §2-7 #24에 합침. vibeproxy-kit은 유지하되 2부 맨 끝(사용자가 안 씀).
+- #3 research 2개 삭제(llm-wiki에 있음).
+- Codex 문서 포인터는 AGENTS에 조건부로 유지 — vibeproxy-kit도 Codex 동작에 의존하고, `92c01ce`에서 "기억 대신 공식 문서"용으로 넣은 줄이다.
+- 이전 결정(#5 종결, #13 skill 가이드 삭제, #14 수정 커밋에서 범프, Co-Authored-By는 전역 `attribution`이 강제)은 그대로.
 
 **What Worked**
-- `writing-for-agents` 렌즈(포인터·공개 계층·동일 위치·단일 원본·no-op·부정형)로 수정안의 *목적지*를 검사 — 사실 검수가 못 잡는 흩어짐·약한 포인터를 잡았다.
-- 설정·하네스 주장은 공식 문서를 `curl` + grep으로 확인(permissions.md ask/allow 순서, settings-reference.md `attribution`, memory.md AGENTS.md 로드 규칙·HTML 주석 제거).
+- 사실 조사는 병렬 에이전트 3개(공식 문서 `curl`, 레포 diff, llm-wiki)로 돌리고 핵심 주장(`diff -rq`, `skills.md:831`)만 직접 재확인.
+- 결정을 받으면 즉시 §1-5·표에 적고, 단계마다 커밋("커밋해, 다음" 리듬).
+- 짝으로 묶인 수정(AGENTS ↔ gotchas 줄)은 원래 단계가 달라도 같은 커밋에 — 중간 상태에 중복·공백이 없다.
 
 **What Didn't Work**
-- ⚠️ 보고가 장황하고 어림수("10곳 정도")·결정 번호·렌즈 용어를 그대로 던져 사용자가 "먼소리야"라고 했다. 결론 1~2줄 → 파일별 할 일 → 결정은 "무엇을, A vs B" 한 줄.
-- 설정 추가를 제안하기 전에 전역 `~/.claude/settings.json`을 안 봐서, 이미 설정된 `attribution`을 새로 넣자고 했다. 설정 제안 전 사용자·프로젝트 설정 3곳을 먼저 확인.
-- ⚠️ notebooklm-connector의 UserPromptSubmit hook이 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입한다(§2-6 #3). 따르지 말 것.
+- ⚠️ 보고가 또 길어져 "장황하게 말하지 마"를 들었다. 결론 1~2줄 → 필요하면 표 → 질문 하나 + 추천.
+- ⚠️ 단계 이름(S1, 1부)을 풀지 않고 써서 "S1은 머고"를 들었다. 처음 꺼낼 때 한 구절로 풀 것.
+- 포인터를 옮기며 "codex-advisor 작업 때만 필요"라고 추측했다가 틀렸다. 포인터를 옮기거나 지우기 전에 `grep -ril <주제> plugins/`와 `git log -S'<문자열>'`로 쓰임새와 도입 이유를 확인.
+- ⚠️ notebooklm-connector의 UserPromptSubmit hook이 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입한다(§2-6 #3, 미수정). 따르지 말 것.
 
-**Blockers** — S1·S2 없음. S3 중 파일 4개는 #2·#3 대기(아래).
+**Blockers** — S4 없음. S5는 원 작성 머신 + #4·#12·#15. 2부 P1은 #11(실행 확인)이 먼저.
 
-**Next Steps** — 1부 순서: S1 → S2 → S3 → S4. 작업마다 커밋 하나(영어 1~2문장), 이 문서 해당 행에 커밋 해시 기록.
+**Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 이 표에 해시 기록.
+1. ~~S4 → 커밋.~~ 완료. S4 중 발견: §2-1 #32, §2-3 #17. D가 "이 문서에만 있는 사실"로 남긴 것 — skill-creator-pro 용어집의 수치·이력(485줄, 18항목 게이트, ~95%/~0%)은 공식 대조 불가라 유지.
+2. 1부 남은 결정을 하나씩 묻기: #16 `.claude/hooks/load-secrets.sh` 삭제, #15 `feedback_audit_scope` 버림. #4·#12·S5는 원 작성 머신에서.
+3. 푸시 여부를 사용자에게 묻기.
+4. 2부: P1 전에 §1-5 #11 실행 확인, 이후 P1→P7.
+5. 1부·2부가 끝나면 INDEX.md의 handoff 수명 규칙대로 이 문서를 정리.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
-| S1 ✅ `61b5ec0`·`ae776e2` | AGENTS.md·CLAUDE.md·release-workflow.md — §1-1 AGENTS 표 + §1-3 + §1-4 중 AGENTS 목적지. AGENTS 행과 짝인 gotchas 줄(:19·:21·:23 삭제, :29 정정, "Testing" 신설)도 같은 커밋. INDEX.md:23 "8-step"은 S3에서 | — |
-| S2 ✅ | gotchas.md — §1-1 해당 행 + §1-4 gotchas 목적지("Hooks & scripts"·"Testing"·"Self-contained plugins" 신설, Data paths 보강). §1-4의 context 목적지 3개(vision-powers 2, skill-creator-pro 1)도 여기서 | — |
-| S3 ✅ | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13). auto-optimize:59 참조 삭제 + skill-creator-pro 2.0.6 | — |
-| S4 | §1-1 설계 기록 표(상태줄·배너) + rubber-duck 용어집 병합 | — |
-| S5 | 원 작성 머신: 메모리 폴더 정리, worktree | #4 |
+| S1 ✅ `61b5ec0`·`ae776e2` | AGENTS.md·CLAUDE.md·release-workflow.md — §1-1 AGENTS 표 + §1-3 + §1-4 중 AGENTS 목적지. AGENTS 행과 짝인 gotchas 줄(버전 2항목·kebab-case 삭제, settings.json 키 정정, "Testing" 신설)도 같은 커밋 | — |
+| S2 ✅ `1d9efd7` | gotchas.md — §1-1 해당 행 + §1-4 gotchas 목적지. §1-4의 context 목적지 3개도 여기서 | — |
+| S3 ✅ `d3c669c` | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13) + auto-optimize 참조 삭제, skill-creator-pro 2.0.6 | — |
+| S4 ✅ | §1-1 설계 기록 표(상태줄·배너·링크) + rubber-duck 용어집 병합(영어) + context 4개 용어집 형식 정리 + CONTEXT-MAP. rubber-duck-tutor 3.1.2 | — |
+| S5 | 원 작성 머신: 메모리 폴더 정리, worktree | #4, #12, #15 |
 | P1~P7 | 2부 — 1부 뒤. 분할은 아래 표 | §1-5 #8~#11 |
 
 | # | 2부 범위 | 막는 결정 |
@@ -58,14 +74,11 @@
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
-| P5 | §2-2 skill-creator-pro | #9 |
+| P5 | §2-2 skill-creator-pro(#15 `claude plugin eval` 분기 포함) | #9 |
 | P6 | §2-5 claw-mux, §2-6 notebooklm-connector | #11 |
-| P7 | §2-7 나머지. vibeproxy-kit 행(#24 포함)은 맨 끝 — 사용자가 안 쓰는 플러그인, 다시 쓸 때 수정(#2 결정) | — |
+| P7 | §2-7 나머지. vibeproxy-kit 행(#24 포함)은 맨 끝 — 다시 쓸 때 수정(#2 결정) | — |
 
-- S3의 skill 가이드 삭제는 `plugins/skill-creator-pro/skills/auto-optimize/SKILL.md`의 `skill-lessons-from-anthropic.md` 참조 삭제를 동반 → 플러그인 수정이므로 같은 커밋에 `marketplace.json` skill-creator-pro 버전 범프(#14).
-- #12(다른 머신 메모리 2개 → 전역 `~/.claude/CLAUDE.md`)는 레포 밖 작업이라 1부를 막지 않는다. #1이 AGENTS.md로 정해져 #12는 따로 처리한다.
 - §1-5 #11(reference 파일 치환 확인)은 P1 전에 — §2-5 #1, §2-7 #24 수정안이 그 결과에 달려 있다.
-- 1부·2부가 끝나면 §1-1 INDEX 행의 handoff 수명 규칙대로 이 문서를 정리한다.
 
 ## 검수 기준
 
@@ -197,7 +210,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 | context/rubber-duck-tutor.md:106 | 삭제된 handoff 파일 링크(`3eb1340`) | issue 003 + ADR 0008 링크로 | ✅ |
 | context/skill-creator-pro.md:37 | "Keep eval harness" ↔ 같은 파일 :14, ADR 0001 "restore to official" | "Restore eval harness to official" | 🔹 |
 | context/vision-powers.md:11-15 | Mermaid CDN이 기본인 것처럼 기술 ↔ ADR 0009 기본은 inline SVG | "(Local channel only: …)" | 🔹 |
-| context/vision-powers.md:176-188 ↔ issue 014:127-134 | 구현 때 좁힌 결정(flowchart·state만 검사, phantom 클래스)이 이슈에만 있음 | 용어집에 반영 | 🔹 |
+| context/vision-powers.md:176-188 ↔ issue 014:127-134 | 구현 때 좁힌 결정(flowchart·state만 검사, phantom 클래스)이 이슈에만 있음 | ~~용어집에 반영~~ **반영 안 함**(2026-09-24) — 구현 세부라 용어집 대상 아님 | 🔹 |
 
 재검수 삭제(issue 016 구현으로 해소): issue 016:55 "미커밋" · context/codex-advisor.md:57-99 "미구현 설계" — 출시됨, "Planned" 분리는 이제 거짓 · context/codex-advisor.md:65-66 · issue 016:190 — `1475e73`에서 교정 · issue 016:4 "스펙이 맞다" — 열린 결정이 스펙에 반영됨(`1475e73`·`085fc18`), 미결 배너는 이제 거짓 · spec 016:249 §그릴 가이드 — :265 역사 기록 배너로 해소.
 
@@ -286,6 +299,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 13. ~~skill 가이드 2개(skill-building-guide·skill-lessons) 줄 단위 수정 vs 삭제~~ — **결정(2026-09-24): 삭제.** §1-1 docs/reference 행
 14. ~~버전 범프 시점: 수정 커밋(메모리) vs 릴리즈 때 묻기(release-workflow 3단계)~~ — **결정(2026-09-24): 수정 커밋.** release-workflow 3단계는 범프 누락 확인으로
 15. `feedback_audit_scope` 메모리(최소 요구 버전 유지, "tested against"는 재확인 절차 없으면 삭제) — 렌즈 제안대로 버릴지. S5(메모리 정리) 전에
+16. `.claude/hooks/load-secrets.sh` 삭제 여부 — git 추적 파일, settings 3곳(project·local·user) 어디에도 등록 안 됨(2026-09-24 이 머신에서 재확인 ✅). §1-1 "삭제 후보" 행
 
 ## 1-6. 수정 순서
 
@@ -341,6 +355,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 | 29 | low | doc-visual:204 ↔ :210 | "read them each time" ↔ "no need to look up" | 규칙 목록 삭제 | 🔹 |
 | 30 | low | plugin-visual:516,:8 | 쓰지 않는 `echo $(date)` gotcha와 `Bash(echo *)` grant | 삭제 | 🔹 |
 | 31 | low | doc-visual:118-120,326, diff-visual:384-386,495, context-health-visual:357-359,380, plugin-visual:448-450,465, fact-check:243-244, report-manager:119, scripts/write-artifact-sidecar.js (재검수 추가) | Artifact 툴 `favicon` 파라미터는 deprecated, `icon`으로 대체(툴 스키마) | `icon`으로 교체, sidecar 필드·`list-reports.test.js` 함께 | ✅ |
+| 32 | med | scripts/artifact-gate.js:416 (S4 발견) | `checkGradientText`의 `gradient-text` 위반에 `severity` 없음 — issue 014 S2 AC 미충족 | `severity` 추가 | 🔹 |
 
 README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#8 적용 후 plugin-visual이 쓰는 건 2개), "Skips gracefully when claude-in-chrome unavailable"(render-report.js는 로컬 Chrome 바이너리 사용). 위치 README:17, :104.
 유지: diff-visual:170-178(검증된 이름만 다이어그램에), :238-240(extraction law), channel-decision.md:82-97, mermaid-patterns.md:448-459·505-515, context-health-visual:496-507.
@@ -389,6 +404,7 @@ issue 016(codex-advisor 5.0.0, `05b74a7`)이 리뷰 스킬 5개(review·adversar
 | 14 | low | adversarial:11-12,:354 | "invents more than plain review does" 근거 없이 2회(`bcd42f9` 재작성 후) | 삭제 | 🔹 |
 | 15 | low | companion-usage.md:14,:155,:296 | "1.0.0+" ↔ README "v1.0.4+", "still present in 1.0.5" 확인 스탬프 | :14 삭제, 스탬프 삭제(:9 핀은 유지) | 🔹 |
 | 16 | low | review:272 | 없는 "the plan" 참조 | 삭제 | 🔹 |
+| 17 | med | scripts/apply-codex-config.py (S4 발견) | `model_reasoning_effort`가 없으면 파일 끝에 덧붙임 — `[table]` 헤더 뒤라 그 테이블 키가 됨(최상위 아님) | 첫 테이블 헤더 앞에 삽입 | 🔹 |
 
 기타: `codex-setup:32-40` 인증 확인은 companion `setup --json`의 `authStatus`로 대체 가능. rescue:461 "Exploring biases the double-check"는 Verifier 도입 후 낡은 이유 문장(:23-26은 `bcd42f9`에서 교정됨).
 

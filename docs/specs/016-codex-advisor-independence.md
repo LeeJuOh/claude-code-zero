@@ -4,7 +4,7 @@
 > 구현 이슈: `docs/issues/016-codex-advisor-independence.md` (S1~S6, 2026-09-11 그릴 완료 후 작성). ADR 0012 작성됨. 그릴 확정 사항은 D1~D3에 "그릴 2026-09-11" 표기로 인라인. 최종 검수(이슈 F1~F9·I1~I3·N1·N2) 결정 반영 2026-09-14.
 > 대상 플러그인: `plugins/codex-advisor/` (현재 v4.7.1 → v5.0.0, major: `--no-preview`·verify/research `resume` 삭제로 기존 호출이 깨짐)
 > 용어집: `docs/context/codex-advisor.md` — **Double-check independence**, **Vendored prompt blocks**, **Six-way classification**(구 Five-way), **Provenance debt** 절이 대상.
-> ADR: 0004(prompt ownership)는 유지 — native path 불가침, task path는 우리 소유라는 결정이 이 스펙의 전제. ③은 ADR 후보(하단 §Further Notes).
+> ADR: 0004(prompt ownership)는 유지 — native path 불가침, task path는 우리 소유라는 결정이 이 스펙의 전제. ③은 ADR 후보(하단 §Further Notes) → ADR 0012로 확정(`3f5ec7b`).
 > 근거 원문: `llm-wiki/wiki/concepts/verification-layers.md`, `evidence-gates.md`, `summaries/dynamic-workflows-cc.md`, `summaries/openai-model-guidance-gpt56.md`, `docs/origin/Harness design for long-running application development .md`, OpenAI "Using GPT-5.6" / "Using GPT-6 Astra" (`developers.openai.com/api/docs/guides/latest-model`, 2026-09-11 수령), `references/compound-engineering-plugin/.../validator-template.md`, `references/gstack/cso/SKILL.md`.
 > **검증 상태**: 누수 3곳은 코드 대조로 확인된 사실. 처방 3개는 위키·references 원리에서 도출한 설계이며 실측 전.
 
@@ -181,7 +181,7 @@ verify/research: 판정 대상이 Codex의 verdict/리서치 결과이고 blind 
 
 ### D4 — `spark` 별칭 삭제
 
-`apply-codex-config.py`의 `MODEL_ALIASES`와 README·SKILL.md의 spark 언급 삭제. 스펙 012 D2가 "유지"로 남긴 유일한 모델 지식이며, 그때 근거는 "companion과 동일 별칭"이었다. 지금은 가리키는 모델이 캐시에 없다. 유저가 `spark`를 치면 그대로 config.toml에 쓰이고 Codex가 거부한다 — 012의 "판정하지 않는다" 원칙과 같은 결과.
+`apply-codex-config.py`의 `MODEL_ALIASES`와 README·SKILL.md의 spark 언급 삭제. 스펙 012 D2가 "유지"로 남긴 유일한 모델 지식이며, 그때 근거는 "단축어는 지우면 기능이 사라지고(유저가 19글자 슬러그를 다 침), 낡으면 codex가 실행 시점에 '그런 모델 없다'고 바로 알려준다"였다. 지금은 가리키는 모델이 캐시에 없다. 유저가 `spark`를 치면 그대로 config.toml에 쓰이고 Codex가 거부한다 — 012의 "판정하지 않는다" 원칙과 같은 결과.
 
 ### D5 — 용어집·문서 갱신
 
@@ -249,7 +249,7 @@ README: "How a call is translated" 4단계 double-check 설명을 판정자 구�
 
 ### ADR 후보
 
-③은 ADR 세 조건을 만족할 가능성이 높다. 되돌리기 어렵고(다섯 스킬의 Phase 4 구조), 나중 독자가 "왜 메인이 직접 안 하고 서브에이전트를 띄우나"를 물을 것이며, 대안(훅 강제 / 지시문 강화 / 현행 유지)이 실제로 있었다. 그릴에서 ③이 확정되면 ADR 0012 "double-check runs in a fresh subagent; enforcement by structure, not instruction"을 쓴다. ①②는 ADR 불필요 — 되돌리기 쉽다.
+③은 ADR 세 조건을 만족할 가능성이 높다. 되돌리기 어렵고(다섯 스킬의 Phase 4 구조), 나중 독자가 "왜 메인이 직접 안 하고 서브에이전트를 띄우나"를 물을 것이며, 대안(훅 강제 / 지시문 강화 / 현행 유지)이 실제로 있었다. 그릴에서 ③이 확정되면 ADR 0012 "double-check runs in a fresh subagent; enforcement by structure, not instruction"을 쓴다. ①②는 ADR 불필요 — 되돌리기 쉽다. → **ADR 0012로 확정**(`3f5ec7b`, `docs/adr/0012-double-check-runs-in-fresh-subagent.md`).
 
 ### 이 세션에서 기각한 것
 

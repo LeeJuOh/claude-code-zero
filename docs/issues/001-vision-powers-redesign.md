@@ -1,6 +1,6 @@
 # vision-powers 전체 재설계: 파이프라인 폐기 → 모델 직접작성
 
-> 상태: 구현 대기 · 생성: 2026-06-06
+> 상태: 완료 (`4252baf`) · eval AC 1건 + ADR 0002 범위 follow-up 잔여 · 생성: 2026-06-06
 > 플랜: 삭제됨 (2026-07-17, `docs/superpowers/` 트리 폐지) — 필요 시 git 히스토리에서 복구
 > (`git log --diff-filter=D -- docs/superpowers/plans/2026-06-03-doc-visual-artifact-redesign.md`)
 > ADR: `docs/adr/0002-doc-visual-direct-model-authoring.md`
@@ -175,7 +175,7 @@ After `artifact-gate.js` 3항목:
 - [x] 수정 항목 처리 (taste-gate.md → artifact-gate.md 리네임+재작성, taste-gate 참조 정리)
 - [x] 파이프라인 인프라 전부 삭제 — 30파일 + 빈 디렉토리 4개 정리
 - [ ] eval: 4개 스킬 각각 테스트 (아래 eval 방법론 참고)
-- [ ] `plugin validate .` 통과
+- [x] `plugin validate .` 통과
 
 ## Eval 방법론
 

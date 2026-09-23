@@ -3,7 +3,7 @@
 > 상태: **전체 슬라이스(S1~S14) 완료** — 2026-07-06 세션에서 S6 잔여 검증·S7·S8·S9·S10·S11·S12·S13을
 > 순서대로 구현·수동 테스트·커밋까지 마침(S12는 커밋 `14f1062`, S13은 커밋 `39763b0`, S9는 이번 커밋).
 > S9(정체성 재작성 + 3.0.0 범프)로 이슈의 마지막 슬라이스 종료 — 남은 작업은 슬라이스가 아니라
-> `docs/release-workflow.md`의 릴리즈 프로세스(태깅·머지)뿐 · 생성: 2026-06-21 · 확장:
+> `docs/release-workflow.md`의 릴리즈 프로세스(태깅·머지)뿐 → v1.76.0(`56e6138`)으로 릴리즈 완료 · 생성: 2026-06-21 · 확장:
 > 2026-07-04 (위키 그릴 — S10~S13 추가) · 수정: 2026-07-05 (S4 피벗 — ducking은 스킬 아닌 `engine.md`, ADR
 > 0003 참조 / S5 구현 중 S14 신설 — 덕 페르소나 대사 전면 영어화)
 > ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
@@ -17,9 +17,8 @@ confrontation, artifact-level vs code-level comprehension, shared ship budget).
 
 ### First Action
 
-이슈 자체는 슬라이스가 더 없다 — S9 완료로 S1~S14 전부 끝남. 다음 세션에서 할 일은 새 슬라이스가
-아니라 **릴리즈**: `docs/release-workflow.md`의 8단계 프로세스를 따라 `develop`→`main` 병합·
-`marketplace.json` 3.0.0 확인·태깅. (유저가 새 기능/버그를 더 요청하면 그건 새 이슈로 취급.)
+없음 — 이슈 종료. S9 완료로 S1~S14 전부 끝났고, 2026-07-06 시점의 다음 할 일이던 **릴리즈**도
+v1.76.0(`56e6138`, rubber-duck-tutor 3.0.0)으로 끝남. (유저가 새 기능/버그를 더 요청하면 그건 새 이슈로 취급.)
 
 ### Context
 
@@ -70,7 +69,7 @@ confrontation, artifact-level vs code-level comprehension, shared ship budget).
   `duck-orient`의 기존 retrieval check-in은 `recent-gaps.sh`를 그대로 쓰므로 미해소 필터는 자동 적용
   받지만, 거기서 유저가 gap을 해소해도 `resolve-gap.sh`를 안 부르므로 그 세션에서 해소된 gap은 여전히
   ship-point 사다리에서 재출제될 수 있음 — S13 acceptance criteria가 ship-point 사다리만 범위로
-  명시해 이번 슬라이스에서는 안 건드림(회귀 아님, 이전부터 있던 한계, 후속 후보).
+  명시해 이번 슬라이스에서는 안 건드림(회귀 아님, 이전부터 있던 한계, 후속 후보). → 해소: `d1ac06a`(3.1.1).
 
 무관한 변경(손대지 말 것): `plugins/vision-powers/skills/plugin-visual/SKILL.md`,
 `plugins/vision-powers/skills/context-health-visual/SKILL.md` — vision-powers 계열 작업, rubber-duck-tutor와 무관.
@@ -583,7 +582,8 @@ gap persistence 절에 resolved 기본값 교차참조 추가. 두 훅의 `addit
 유저가 gap을 해소해도 `resolve-gap.sh`를 호출하지 않음 — S13 acceptance criteria가 ship-point 사다리만
 범위로 명시하고 `duck-orient`는 언급하지 않아 이번 슬라이스에서는 손대지 않았음. 즉 `duck-orient`
 세션에서 설명한 gap은 여전히 미해소로 남아 다음 ship confrontation에서 재출제될 수 있음 — 후속
-슬라이스 후보(회귀 아님, 이번 슬라이스 이전부터 있던 한계).
+슬라이스 후보(회귀 아님, 이번 슬라이스 이전부터 있던 한계). **해소: `d1ac06a`** — `duck-orient`가 gap
+설명 시 `resolve-gap.sh`를 호출하도록 배선(3.1.1).
 
 수동 테스트(가짜 stdin JSON): 질문 모드 정상 발사 시 `additionalContext`에 `recent-gaps.sh 1`·
 `resolve-gap.sh` 참조 확인, 두 훅 모두 유효 JSON(`jq` 파싱 통과), scoreboard 모드(연속 무시 3회 시딩)는

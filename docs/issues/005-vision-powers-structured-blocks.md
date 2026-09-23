@@ -1,6 +1,6 @@
 # vision-powers diff-visual 구조화 블록: 실제 코드를 보여준다 (Builder.io 흡수)
 
-> 상태: 구현 대기 · 생성: 2026-06-27
+> 상태: Phase 1(S1+S2) 완료 `08f3ee1`(vision-powers 4.5.0) · S2 File Map은 ADR 0010(`761f101`, 4.8.0)에서 섹션째 삭제 · S3~S6 미착수 · 생성: 2026-06-27
 > 용어집: `docs/context/vision-powers.md` (신규 용어: **Structured block**, **Build-time grounding**)
 > 결정 근거: `docs/adr/0005-structured-block-grounding-via-extraction.md` (선행 `0002` 직접작성)
 > 비교 레퍼런스: `references/builderIO-skills` (`visual-recap` / `visual-plan`)
@@ -62,13 +62,13 @@ eval)을 **블록 1종으로 끝까지 입증**한다. 데모: "`diff-visual` �
 
 ### Acceptance criteria
 
-- [ ] `scripts/extract-hunks.js` 신규: `(scope, file, line-range)` → git에서 정확한 hunk를 **verbatim + HTML-escape**해 출력. 바이너리/존재하지 않는 파일/빈 diff 안전 처리.
-- [ ] `references/design-system/structured-blocks.md` 신규: split-diff HTML/CSS 패턴 + highlight.js CDN 셋업(테마 토글, 언어클래스) + 예산(3-8 / ≤150) + **build-time grounding 규칙**. 다른 스킬도 읽도록 범용 작성.
-- [ ] `diff-visual` SKILL.md에 "Key Changes" 배선: 의미 있는 코드 hunk **자동감지** 시 split-diff 렌더, 파일당 `<details>`(핵심 1-2 열림), 코드는 `extract-hunks.js`로 채우고 모델은 한 줄 summary + 소수 주석만.
-- [ ] `diff-visual` `description` 갱신 — "실제 바뀐 코드도 보여줌" 반영(트리거/기대 일치).
-- [ ] 네트워크 0(highlight.js 못 받음)이면 **단색 monospace로 degrade**, 깨지지 않음.
-- [ ] `artifact-gate.js` 통과 확인 — verbatim/escape는 `extract-hunks.js`가 보장하므로 게이트 추가검사 불필요한지 검증, 필요하면 코드블록 예산검사를 게이트 후보로 메모(강제 아님).
-- [ ] **eval**: 실제 diff 2-3개에 with-skill(신규) vs baseline(현 `diff-visual`) 벤치마크 + 뷰어. 코드 섹션이 리뷰 신호를 더하는지 정성+정량 확인 (skill-creator-pro 루프).
+- [x] `scripts/extract-hunks.js` 신규: `(scope, file, line-range)` → git에서 정확한 hunk를 **verbatim + HTML-escape**해 출력. 바이너리/존재하지 않는 파일/빈 diff 안전 처리.
+- [x] `references/design-system/structured-blocks.md` 신규: split-diff HTML/CSS 패턴 + highlight.js CDN 셋업(테마 토글, 언어클래스) + 예산(3-8 / ≤150) + **build-time grounding 규칙**. 다른 스킬도 읽도록 범용 작성.
+- [x] `diff-visual` SKILL.md에 "Key Changes" 배선: 의미 있는 코드 hunk **자동감지** 시 split-diff 렌더, 파일당 `<details>`(핵심 1-2 열림), 코드는 `extract-hunks.js`로 채우고 모델은 한 줄 summary + 소수 주석만.
+- [x] `diff-visual` `description` 갱신 — "실제 바뀐 코드도 보여줌" 반영(트리거/기대 일치).
+- [x] 네트워크 0(highlight.js 못 받음)이면 **단색 monospace로 degrade**, 깨지지 않음.
+- [x] `artifact-gate.js` 통과 확인 — verbatim/escape는 `extract-hunks.js`가 보장하므로 게이트 추가검사 불필요한지 검증, 필요하면 코드블록 예산검사를 게이트 후보로 메모(강제 아님).
+- [x] **eval**: 실제 diff 2-3개에 with-skill(신규) vs baseline(현 `diff-visual`) 벤치마크 + 뷰어. 코드 섹션이 리뷰 신호를 더하는지 정성+정량 확인 (skill-creator-pro 루프).
 
 ### Blocked by
 
@@ -78,6 +78,8 @@ eval)을 **블록 1종으로 끝까지 입증**한다. 데모: "`diff-visual` �
 
 ## S2 — File Map change-flags
 
+> **폐기:** S1과 병합 구현(`08f3ee1`)됐으나 ADR 0010(`761f101`, 4.8.0)이 File Map 섹션 자체를 삭제.
+
 ### What to build
 
 기존 File Map 다이어그램에 파일별 **변경 플래그**(added / removed / modified / renamed)를 색/표시로
@@ -86,8 +88,8 @@ eval)을 **블록 1종으로 끝까지 입증**한다. 데모: "`diff-visual` �
 
 ### Acceptance criteria
 
-- [ ] File Map이 파일별 change-flag를 표시. 색은 semantic-tokens 팔레트 내(금지 보라색 회피), 다크모드서도 읽힘.
-- [ ] 플래그는 `git ... --name-status`에서 **기계적으로 도출**(grounding) — 모델 추정 금지.
+- [x] File Map이 파일별 change-flag를 표시. 색은 semantic-tokens 팔레트 내(금지 보라색 회피), 다크모드서도 읽힘.
+- [x] 플래그는 `git ... --name-status`에서 **기계적으로 도출**(grounding) — 모델 추정 금지.
 - [ ] `artifact-gate.js` + 시각 self-audit 통과.
 - [ ] S1의 eval 하니스에 포함.
 

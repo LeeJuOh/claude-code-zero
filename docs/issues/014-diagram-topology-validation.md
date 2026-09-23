@@ -1,6 +1,6 @@
 # 이슈 014 — diff-visual 다이어그램 그라운딩 하드닝 구현 (슬라이스 S1~S4)
 
-> 상태: **구현 완료** — S1~S4 전부 구현, 실행 검증 2건만 남음 · 생성: 2026-08-30 · 갱신: 2026-09-05
+> 상태: **구현 완료** — S1~S4 전부 구현(`c865a28`, 4.9.0, 푸시됨), 실행 검증 2건 + S2 severity AC 1건(`gradient-text` 누락) 남음 · 생성: 2026-08-30 · 갱신: 2026-09-05
 > 스펙 (PRD): `docs/specs/014-diagram-topology-validation.md` — 문제 정의, 유저 스토리, 결정 D1~D11 전부 스펙 참조
 > 대상 플러그인: `plugins/vision-powers/` (v4.8.0 → v4.9.0)
 > Seam: `skills/diff-visual/SKILL.md` + `scripts/artifact-gate.js` + `references/design-system/*.md` 3개. 검증은 실제 diff 생성 + 게이트 순수함수 단위 확인 + 육안.
@@ -43,7 +43,7 @@
 **Acceptance criteria**:
 - [x] 엣지가 전부 선언 노드로 향하는 Mermaid → 통과 / 허공 endpoint 있는 Mermaid → `mermaid-topology` 위반
 - [x] 위상 검사가 풀 게이트에만, content-only엔 미포함 (Artifact `--content-only`·md 회귀 없음)
-- [x] 모든 violation 객체에 `severity` 존재, 기존 `rule`/`hint` 그대로 — 기존 소비 무파손
+- [ ] 모든 violation 객체에 `severity` 존재, 기존 `rule`/`hint` 그대로 — 기존 소비 무파손 (미충족: `checkGradientText`가 반환하는 `gradient-text` 위반에 `severity` 없음 — `artifact-gate.js:416`)
 - [x] `node -e` 단위 확인: 통과 케이스 1 + 거부 케이스 1
 
 **Blocked by**: None (S1과 독립, 병행 가능). 단 육안 검증은 S1 산출물과 함께.
@@ -81,11 +81,12 @@
 ### First Action
 
 **S1의 실행 검증 2건을 돈다** — 코드 작업은 S1~S4 전부 끝났고 커밋됐다. 남은 것은 실제 diff로
-`diff-visual`을 돌려 육안 확인하는 것뿐. 아래 "남은 작업" 참조.
+`diff-visual`을 돌려 육안 확인하는 것뿐. 아래 "남은 작업" 참조. (2026-09-24 정정: S2 severity AC가
+미충족으로 확인됨 — `gradient-text` 위반에 `severity` 없음. 코드 작업 1건 남음.)
 
 ### 리포 상태
 
-- 브랜치 `develop`. 구현 커밋 1건(아래) + 그 앞에 문서 커밋 `d85640a`. **미푸시**.
+- 브랜치 `develop`. 구현 커밋 1건(아래) + 그 앞에 문서 커밋 `d85640a`. ~~**미푸시**~~ → 푸시됨(`c865a28`·`d85640a` 모두 origin/develop·main에 있음).
 - 검증: `node --test plugins/vision-powers/scripts/artifact-gate.test.js` → 62/62 통과.
   `unset CLAUDECODE && claude plugin validate .` → 통과(경고 11건은 전부 로컬 플러그인의
   `plugin.json version 미지정`으로 AGENTS.md 규칙대로라 정상, 이 변경과 무관).
@@ -149,8 +150,8 @@
   아직 미체크 상태로 남겨 뒀다.
 - **`severity`가 전부 `'error'`다.** 어떤 위반이든 게이트를 실패시키므로 값이 하나뿐 — 필드의 정보량이 0이다.
   `warn`을 진짜 non-blocking으로 만들려면 `runArtifactGate`의 `ok` 판정을 바꿔야 하는데, 그건 스펙 밖이라
-  손대지 않았다. 이슈 AC("모든 violation에 severity 존재")는 충족. 판단이 필요하면 사용자에게 물을 것.
-- **미푸시.** AGENTS.md대로 사용자가 명시적으로 요청할 때만 푸시.
+  손대지 않았다. 이슈 AC("모든 violation에 severity 존재")는 충족. → 정정: 미충족 — `gradient-text` 위반에 `severity` 없음(S2 AC 참조). 판단이 필요하면 사용자에게 물을 것.
+- ~~**미푸시.** AGENTS.md대로 사용자가 명시적으로 요청할 때만 푸시.~~ → 푸시됨(`c865a28`이 origin/develop·main에 있음).
 
 ### 폐기된 핸드오프
 

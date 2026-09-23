@@ -1,6 +1,6 @@
 # 이슈 012 — codex-advisor 모델 지식 폐기 구현 (슬라이스 S1~S3)
 
-> 상태: **ready-for-agent** — 구현 착수 전 · 생성: 2026-07-17
+> 상태: **완료** — `92c01ce`(codex-advisor 4.7.0) · spark 별칭은 `4e80b17`(5.0.0)에서 제거 · 미체크 AC 3건은 문구대로는 미충족이거나 확인 불가(메모리) · 생성: 2026-07-17
 > 스펙 (PRD): `docs/specs/012-codex-advisor-drop-model-knowledge.md` — 문제 정의, 유저 스토리,
 > 구현/테스트 결정, 확정 사실표 전부 스펙 참조
 > 대상 플러그인: `plugins/codex-advisor/` (v4.6.2 → v4.7.0)
@@ -22,15 +22,15 @@ stdout 한 줄 포맷은 계약이므로 불변. 163줄 → 100줄 안팎(75줄 
 
 **Acceptance criteria** (seam은 positional — `apply-codex-config.py "<model>" "<effort>"`. 아래
 `--model`/`--effort`는 스킬 계층 표기이고, 스크립트 직접 검증 시 빈 문자열 인자 사용):
-- [ ] effort `ultra` (`apply-codex-config.py "" ultra`) — stderr 비어 있고 config.toml에 `model_reasoning_effort = "ultra"`
-- [ ] model `gpt-5.6-sol` (캐시에 없는 슬러그) — stderr 비어 있고 그대로 저장
-- [ ] model `spark` → `gpt-5.3-codex-spark`로 확장 저장 (별칭 회귀)
-- [ ] 캐시 파일을 심어둔 상태와 없는 상태의 출력이 **동일** — 캐시 의존 소멸 증명
-- [ ] `model_context_window` 등 기존 키 원문 보존 + 원자적 쓰기 유지
-- [ ] config.toml 없음 / 파손 / 빈 파일 — 크래시 없이 생성·저장
-- [ ] stdout `Model: <before> -> <after> | Effort: <before> -> <after>` 포맷 불변 (스킬이 verbatim relay)
-- [ ] 인자 개수 오류 시 기존대로 exit 2
-- [ ] `grep -rn 'models_cache\|STANDARD_EFFORTS' plugins/codex-advisor/` = 0건
+- [x] effort `ultra` (`apply-codex-config.py "" ultra`) — stderr 비어 있고 config.toml에 `model_reasoning_effort = "ultra"`
+- [x] model `gpt-5.6-sol` (캐시에 없는 슬러그) — stderr 비어 있고 그대로 저장
+- [x] model `spark` → `gpt-5.3-codex-spark`로 확장 저장 (별칭 회귀)
+- [x] 캐시 파일을 심어둔 상태와 없는 상태의 출력이 **동일** — 캐시 의존 소멸 증명
+- [x] `model_context_window` 등 기존 키 원문 보존 + 원자적 쓰기 유지
+- [x] config.toml 없음 / 파손 / 빈 파일 — 크래시 없이 생성·저장
+- [x] stdout `Model: <before> -> <after> | Effort: <before> -> <after>` 포맷 불변 (스킬이 verbatim relay)
+- [x] 인자 개수 오류 시 기존대로 exit 2
+- [x] `grep -rn 'models_cache\|STANDARD_EFFORTS' plugins/codex-advisor/` = 0건
 
 **Blocked by**: None — can start immediately.
 
@@ -47,11 +47,11 @@ Codex CLI 0.125" 삭제. **최소 요구 버전(companion 1.0.4+, `/codex-transf
 
 **Acceptance criteria**:
 - [ ] 세 문서에 모델/effort 목록 없음 — 대신 `/model` 조회 안내
-- [ ] 없어진 경고를 기술하는 문장이 남아 있지 않음
-- [ ] `grep -rn 'Tested against\|tested through' plugins/codex-advisor/` = 0건
-- [ ] README Prerequisites에 최소 요구 버전(1.0.4+, transfer 1.0.5+)이 **남아 있음** — ②만 지우고
+- [x] 없어진 경고를 기술하는 문장이 남아 있지 않음
+- [x] `grep -rn 'Tested against\|tested through' plugins/codex-advisor/` = 0건
+- [x] README Prerequisites에 최소 요구 버전(1.0.4+, transfer 1.0.5+)이 **남아 있음** — ②만 지우고
       ①을 같이 지우지 않았는지 확인
-- [ ] 예시 명령의 모델 슬러그가 고유값 1종(`gpt-5.6-sol`) — 등장 위치 여러 곳이어도 전부 같은 값
+- [x] 예시 명령의 모델 슬러그가 고유값 1종(`gpt-5.6-sol`) — 등장 위치 여러 곳이어도 전부 같은 값
 
 **Blocked by**: S1 — 문서가 S1 이후의 동작(경고 없음)을 기술하므로.
 
@@ -73,10 +73,10 @@ Codex CLI 0.125" 삭제. **최소 요구 버전(companion 1.0.4+, `/codex-transf
          버전 표기가 유효성 조건(스펙 D4 "②가 아닌 것")
       ③ `hooks/session-start.mjs`의 1.0.5 주석 — 특정 버전 실측 기록
       그 외 0건. (`gpt-5.3-codex-spark`는 이 패턴에 안 걸림 — 잔존 목록에 불필요)
-- [ ] `grep -rn 'developers\.openai\.com' . --exclude-dir=docs --exclude-dir=.git` = 0건
-- [ ] 용어집에 "판정하지 않는다" 원칙 존재; Provenance debt에 gpt-5.5 근거 없음
-- [ ] `marketplace.json` 버전 4.7.0
+- [x] `grep -rn 'developers\.openai\.com' . --exclude-dir=docs --exclude-dir=.git` = 0건
+- [x] 용어집에 "판정하지 않는다" 원칙 존재; Provenance debt에 gpt-5.5 근거 없음
+- [x] `marketplace.json` 버전 4.7.0
 - [ ] `feedback_audit_scope` 메모리에 D4 판례 반영됨
-- [ ] `unset CLAUDECODE && claude plugin validate .` 통과
+- [x] `unset CLAUDECODE && claude plugin validate .` 통과
 
 **Blocked by**: S1, S2.
