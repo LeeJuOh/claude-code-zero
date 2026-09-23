@@ -1,11 +1,15 @@
 # Context Map
 
-Each plugin in this marketplace is its own bounded context with its own vocabulary. Contexts get a
-`CONTEXT.md` lazily — only once their language has actually been debated and pinned down.
+Each plugin in this marketplace is its own bounded context with its own vocabulary. A context's
+glossary lives at `docs/context/<plugin-name>.md`, written lazily — only once its language has
+actually been debated and pinned down.
 
 ## Contexts
 
-- [rubber-duck-tutor](./plugins/rubber-duck-tutor/CONTEXT.md) — verifies (Duck) and builds (Coach) the user's understanding during AI-assisted coding
+- [codex-advisor](./docs/context/codex-advisor.md) — wraps Codex as a double-check peer, not an oracle, and survives its long jobs and fragile input parsing
+- [rubber-duck-tutor](./docs/context/rubber-duck-tutor.md) — verifies (Duck) and builds (Coach) the user's understanding during AI-assisted coding
+- [skill-creator-pro](./docs/context/skill-creator-pro.md) — re-baselines skill-creator-pro on the official Anthropic skill-creator, eval harness included
+- [vision-powers](./docs/context/vision-powers.md) — gives Claude visual expression through diagrams and structured HTML and markdown output
 
 ## Relationships
 

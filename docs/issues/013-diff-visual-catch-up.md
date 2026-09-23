@@ -1,6 +1,6 @@
 # 이슈 013 — diff-visual Catch-up 전환 구현 (슬라이스 S1~S4)
 
-> 상태: **ready-for-agent** — 구현 착수 전 · 생성: 2026-08-22
+> 상태: **S1~S3 구현 완료** — `761f101`(vision-powers 4.8.0) · S4(선택) 미실행 · 실제 산출물로 확인하는 AC는 실행 기록 없음 · 생성: 2026-08-22
 > 스펙 (PRD): `docs/specs/013-diff-visual-catch-up.md` — 문제 정의, 유저 스토리, 결정 D1~D12 전부 스펙 참조
 > 대상 플러그인: `plugins/vision-powers/` (v4.7.1 → v4.8.0)
 > Seam: `skills/diff-visual/SKILL.md` 단일. 스크립트(`extract-hunks.js`, `artifact-gate.js`, 사이드카)·디자인 레퍼런스 무변경. 검증은 실제 diff로 생성 + 게이트 + 육안.
@@ -30,7 +30,7 @@ fact sheet/게이트/발행/사이드카/PNG 자가점검) 절차 무변경 — 
 - [ ] 산문에 판단 어휘(should / bad / 좋다 / 나쁘다 / 권장) 0건 — 추출 코드 블록은 제외
 - [ ] 삭제 섹션 제목(Overview, File Map, Hot Spots, Change Classification, Dependency Shift, New Components, Architecture Impact) 0건 — SKILL.md와 산출물 모두
 - [ ] Quiz 5문항, 각 문항 보기 어절 수 ±1 이내, 클릭 시 정오답+보기별 설명, Artifact 페이지에서 동작
-- [ ] SKILL.md 상단에 When to run 두 줄 + Kleppmann 문체 한 줄
+- [x] SKILL.md 상단에 When to run 두 줄 + Kleppmann 문체 한 줄
 - [ ] `artifact-gate.js`(로컬 full / Artifact `--content-only`) 통과, 로컬 채널 PNG 자가점검 수행
 
 **Blocked by**: None — can start immediately.
@@ -59,9 +59,9 @@ SKILL.md frontmatter description 동일 취지로. README diff-visual 절을 "�
 
 **Acceptance criteria**:
 - [ ] 두 매니페스트 description 일치, "File Map change-flags"·"split-diff" 0건, "catch up"/"quiz" 포함
-- [ ] README diff-visual 절에 삭제 섹션 언급 0건, When to run 존재
-- [ ] `marketplace.json` 4.8.0
-- [ ] `unset CLAUDECODE && claude plugin validate .` 통과
+- [x] README diff-visual 절에 삭제 섹션 언급 0건, When to run 존재
+- [x] `marketplace.json` 4.8.0
+- [x] `unset CLAUDECODE && claude plugin validate .` 통과
 
 **Blocked by**: S1, S2 — 문서가 최종 동작을 기술.
 

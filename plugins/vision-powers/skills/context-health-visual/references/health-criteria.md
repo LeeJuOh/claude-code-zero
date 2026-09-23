@@ -279,7 +279,7 @@ flag:
 > duplicate triggers cause misfired invocations."
 
 **Architecture:** the orchestrator spawns a dedicated subagent
-(`agents/trigger-collision-inspector.md`) with the raw description inventory pasted
+(`vision-powers:trigger-collision-inspector`, the plugin's root `agents/`) with the raw description inventory pasted
 inline. The subagent performs the pairwise comparison entirely in its own LLM reasoning
 — no Jaccard/n-gram pre-filter, no separate LLM re-rank stage, no deterministic scoring
 code. This matches Waza's proven approach and keeps main-session context overhead low

@@ -81,6 +81,8 @@ is not the *diagram layer*, it is one *rendering technique*. The durable asset i
 - **Scope**: applies to the four skills that have a channel — `doc-visual`, `diff-visual`,
   `context-health-visual`, `plugin-visual`. `fact-check` has no artifact channel yet; making
   the policy uniform requires adding one (tracked as a gap).
+  *(Implemented: issue 010 S5, `b9d5ddf`, closed the gap as a republish, not a new channel —
+  fact-check republishes a published target to its same URL and leaves local targets local.)*
 - **Analytical charts (quadrant/scatter) and zoom/pan remain local-only advantages.** A
   capable user who needs them reaches for the force-local override. This, plus the already
   documented artifact-channel drops (PNG export, ✎ feedback widget), is the disclosed cost.

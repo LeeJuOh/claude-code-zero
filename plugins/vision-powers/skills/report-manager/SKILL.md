@@ -16,7 +16,7 @@ Manage vision-powers reports — every persisted output (`.html`, `.artifact.htm
 
 | Resource | Path |
 |----------|------|
-| Reports directory | `$CLAUDE_PLUGIN_DATA/reports/` (shell env var — use in Bash commands) |
+| Reports directory | `${CLAUDE_PLUGIN_DATA}/reports/` |
 | Plugin scripts | `${CLAUDE_SKILL_DIR}/../../scripts/` |
 
 ## Operation Detection
@@ -37,7 +37,7 @@ Default to `list` if ambiguous.
 
 Single call — returns structured JSON:
 ```
-node ${CLAUDE_SKILL_DIR}/../../scripts/list-reports.js
+node ${CLAUDE_SKILL_DIR}/../../scripts/list-reports.js --data-dir "${CLAUDE_PLUGIN_DATA}"
 ```
 
 Output contains `reports_dir`, `count`, and `reports[]` (each with `index`, `filename`, `path`, `type`, `size`, `date`, and `artifact_url` when a `<report>.artifact.json` sidecar exists — issue 007 S4.5).
@@ -55,7 +55,7 @@ Format as a numbered table with clickable links. Add an `Artifact` column only w
 
 1. **No argument**: open the most recent report
 2. **Number**: Nth from list output
-3. **Partial name**: glob match `$CLAUDE_PLUGIN_DATA/reports/*{arg}*.{html,md}`
+3. **Partial name**: glob match `${CLAUDE_PLUGIN_DATA}/reports/*{arg}*.{html,md}`
 
 ```bash
 open <resolved-absolute-path>
@@ -82,7 +82,7 @@ Steps:
 
 ## search
 
-1. **Filename**: Glob `$CLAUDE_PLUGIN_DATA/reports/*{query}*.{html,md}`
+1. **Filename**: Glob `${CLAUDE_PLUGIN_DATA}/reports/*{query}*.{html,md}`
 2. **Content**: Grep inside the reports for the query — in HTML focus on `<title>`, `<h1>`–`<h3>`,
    and text nodes; in markdown, headings and body text
 3. Display results with clickable `file://` links
@@ -107,7 +107,7 @@ Surgically edit a section of an existing report without full regeneration.
    **Markdown reports (`.md` / `.artifact.md`) skip this script entirely** — `artifact-gate.js` parses HTML only and would false-flag markdown's own `##`/`**` syntax as leakage. Give the edited markdown the generating skills' hand-check instead: no leftover `{{ }}`/`[STUB]`/lorem placeholder tokens, and every link resolves.
 7. **Visual self-audit (local HTML reports only)**: The gate reads the HTML as *text* — it never sees the rendered picture, so a re-authored section can pass the gate and still render as a tangled diagram, a clipped label, or a flat grey wall. Skip this step entirely for markdown reports (nothing to render) and for Artifact-channel fragments (step 1's sidecar case) — the fragment on disk is missing the `<head>`/theme wrapper claude.ai adds at publish time, so a local Chrome render of it wouldn't reflect what actually ships; the built-in `artifact-design` skill owns their visual quality, not this audit. For local HTML reports, after the gate passes, render the report and look at it:
    ```
-   node ${CLAUDE_SKILL_DIR}/../../scripts/render-report.js <report-path>
+   node ${CLAUDE_SKILL_DIR}/../../scripts/render-report.js <report-path> --data-dir "${CLAUDE_PLUGIN_DATA}"
    ```
    On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
    - **Density** — is the edited section a uniform grey wall, or a diagram past its budget and unreadable?
@@ -154,9 +154,6 @@ Harvesting is optional — always fall through to the conventional "ask what to 
 
 ## Gotchas
 
-- **`$CLAUDE_PLUGIN_DATA` is a shell env var**, not a SKILL.md substitution. It only works inside `Bash()` commands. Use `${CLAUDE_SKILL_DIR}` for relative paths to skill/plugin files.
-- **Don't call config.js before listing.** `list-reports.js` already checks config internally for custom `reports_dir`. Calling config.js separately wastes a tool call and exits 1 when the key doesn't exist.
-- **Don't call log-report.js for listing.** The log file may not exist. `list-reports.js` reads the filesystem directly — no log needed.
 - **Report type detection is filename-based**: `*-diff-visual` → diff-visual, `*-doc-visual` → doc-visual, `*-context-health-visual` → context-health-visual, `*-report` → plugin-visual.
 - **Refine edits must preserve `style="--i: N"`** on `<li>` and animated elements — these drive staggered CSS animations. Removing them makes items invisible (opacity: 0).
 - **A local report and its Artifact-channel fragment are two separate files** (e.g. `2026-07-06-x-doc-visual.html` vs `2026-07-06-x-doc-visual.artifact.html`) with independently designed content — refining one never touches the other. A partial-name match in step 1 of refine can hit both; if the resolved list has more than one candidate, ask which one rather than guessing (issue 007 S4.5).

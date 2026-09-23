@@ -10,10 +10,11 @@
  * Chrome or Chromium installed.
  *
  * Usage:
- *   node render-report.js <report.html> [--out <path>] [--width N] [--height N] [--wait MS]
+ *   node render-report.js <report.html> --data-dir <dir> [--out <path>] [--width N] [--height N] [--wait MS]
  *
  * Options:
- *   --out     Output PNG path. Defaults to $CLAUDE_PLUGIN_DATA/cache/audit-<ts>.png
+ *   --data-dir  Required. The plugin data dir; pass "${CLAUDE_PLUGIN_DATA}" from SKILL.md
+ *   --out     Output PNG path. Defaults to <data-dir>/cache/audit-<ts>.png
  *   --width   Viewport width (default 1440)
  *   --height  Viewport height (default 8000 — covers most reports)
  *   --wait    Virtual time budget in ms (default 12000 — lets Mermaid CDN load + render)
@@ -21,7 +22,7 @@
  * Exit codes:
  *   0 = success (absolute PNG path printed to stdout)
  *   1 = render failed (Chrome not found, crash, or no PNG produced)
- *   2 = usage / file error
+ *   2 = usage / file error (including a missing --data-dir)
  *
  * Chrome discovery:
  *   CHROME_BIN env var overrides auto-discovery.
@@ -31,8 +32,20 @@
 
 const fs = require("fs");
 const path = require("path");
-const os = require("os");
 const child_process = require("child_process");
+
+// The caller passes the plugin data dir: SKILL.md substitutes ${CLAUDE_PLUGIN_DATA}, but the
+// Bash tool's environment lacks that variable or holds another plugin's folder.
+function takeDataDir(argv) {
+  const i = argv.indexOf("--data-dir");
+  const dir = i === -1 ? "" : argv[i + 1] || "";
+  if (!dir || dir.startsWith("--")) {
+    console.error("Error: --data-dir <plugin data dir> is required");
+    process.exit(2);
+  }
+  argv.splice(i, 2);
+  return dir;
+}
 
 function findChrome() {
   if (process.env.CHROME_BIN && fs.existsSync(process.env.CHROME_BIN)) {
@@ -78,20 +91,20 @@ function parseArgs(argv) {
   return args;
 }
 
-function resolveOutPath(explicit) {
+function resolveOutPath(explicit, dataDir) {
   if (explicit) return path.resolve(explicit);
-  const dataDir = process.env.CLAUDE_PLUGIN_DATA
-    ? path.join(process.env.CLAUDE_PLUGIN_DATA, "cache")
-    : path.join(os.tmpdir(), "vision-powers");
-  fs.mkdirSync(dataDir, { recursive: true });
-  return path.join(dataDir, `audit-${Date.now()}.png`);
+  const cacheDir = path.join(dataDir, "cache");
+  fs.mkdirSync(cacheDir, { recursive: true });
+  return path.join(cacheDir, `audit-${Date.now()}.png`);
 }
 
 function main() {
-  const args = parseArgs(process.argv);
+  const argv = process.argv.slice();
+  const dataDir = takeDataDir(argv);
+  const args = parseArgs(argv);
 
   if (!args.reportPath) {
-    console.error("Usage: node render-report.js <report.html> [--out <path>] [--width N] [--height N] [--wait MS]");
+    console.error("Usage: node render-report.js <report.html> --data-dir <dir> [--out <path>] [--width N] [--height N] [--wait MS]");
     process.exit(2);
   }
 
@@ -110,7 +123,7 @@ function main() {
     process.exit(1);
   }
 
-  const outPath = resolveOutPath(args.out);
+  const outPath = resolveOutPath(args.out, dataDir);
 
   // --virtual-time-budget advances Chrome's internal clock so Mermaid/Chart.js
   // async render completes deterministically. Without it, screenshots fire

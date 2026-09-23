@@ -19,9 +19,9 @@ Run it after the gate passes, before delivering to the user.
 
 **1. Render.**
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <report.html>
+render-report.js <report.html> --data-dir <plugin data dir>
 ```
-On success it prints one absolute PNG path to stdout (default `$CLAUDE_PLUGIN_DATA/cache/audit-<ts>.png`) and exits `0`.
+The skill gives the full command. On success it prints one absolute PNG path to stdout (default `<data-dir>/cache/audit-<ts>.png`) and exits `0`.
 
 **2. See.** Read that PNG path. Claude reads images multimodally, so the rendered page comes back as something you can actually evaluate — not as markup.
 

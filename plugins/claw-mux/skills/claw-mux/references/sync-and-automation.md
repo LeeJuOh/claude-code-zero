@@ -42,7 +42,7 @@ cmux wait-for tests-done --timeout 300
 cmux send --surface surface:9 "npm run dev\n"
 
 # Wait for server to report ready (run_in_background: true)
-$SKILL_DIR/scripts/poll-screen.sh surface:9 "ready|listening on" --timeout 30
+poll-screen.sh surface:9 "ready|listening on" --timeout 30
 
 # After background notification confirms ready — open browser
 cmux browser open http://localhost:3000

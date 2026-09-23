@@ -11,7 +11,7 @@
     {
       "name": "notebooklm-connector",
       "source": "./plugins/notebooklm-connector",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
     },
     {
@@ -29,7 +29,7 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "4.9.0",
+      "version": "4.9.2",
       "description": "Analyze Claude Code plugins and visualize development artifacts as interactive HTML or diagram-enhanced markdown reports. On a capable account, HTML reports publish as claude.ai Artifacts by default (doc-visual, diff-visual, plugin-visual, context-health-visual); add --local for a local design-system + Mermaid file. Six skills: plugin-visual (local/installed/GitHub plugin audits with security + architecture), diff-visual (catch up on a git diff before you review it — background, intuition, a literate diff of the real extracted code, and a quiz), doc-visual (markdown docs with Mermaid diagrams), fact-check (claim verification against code + git history, republishing corrections to the same Artifact link), context-health-visual (environment health with skill-security scan and hook schema validation), report-manager (list/open/delete/search/refine, surfacing stored Artifact URLs and republishing to the same link). Every report supports --format md, --lang, and in-browser per-section feedback."
     },
     {
@@ -41,7 +41,7 @@
     {
       "name": "skill-creator-pro",
       "source": "./plugins/skill-creator-pro",
-      "version": "2.0.5",
+      "version": "2.0.6",
       "description": "Create, test, and iteratively improve Claude Code skills with the official lean coaching loop, an eval harness for benchmarking with variance analysis, and automated description-trigger optimization"
     },
     {
@@ -53,7 +53,7 @@
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "3.1.1",
+      "version": "3.1.2",
       "description": "Rubber duck tutor that keeps you engaged across the whole AI-coding lifecycle — before you ask AI to build (/duck-prebuild), once code is written and before you ship (/duck-verify, /duck-review), and when orienting to unfamiliar code (/duck-orient), plus /duck for auto-detect. /coach is its teaching sibling, manual-invocation only: /coach <topic> explains and drills a concept, /coach <file> or a bare /coach right after generating code dissects it section by section (what/why-this-way/where-it-breaks), and /coach alone surfaces an unresolved gap from a past duck session and teaches it — resolved only once you pass the exercise, not by saying you understand. Ship-point hooks triage what you just pushed against six risk categories and target the riskiest change you didn't actually discuss, fall back to retrieving an unresolved gap from a past session, or demote to a non-blocking scoreboard after three ignored confrontations in a row. Confrontation telemetry (fired/answered/ignored) is queryable from /duck-orient. Doesn't overlap /code-review or /grilling — duck only checks whether you understand, never whether the code or plan is good, and never teaches — that's coach's job."
     },
     {
@@ -72,7 +72,7 @@
     {
       "name": "claw-mux",
       "source": "./plugins/claw-mux",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "description": "cmux terminal integration: terminal I/O, topology control, browser automation, markdown viewer, notifications",
       "tags": ["cmux", "terminal", "browser-automation", "terminal-io"]
     }

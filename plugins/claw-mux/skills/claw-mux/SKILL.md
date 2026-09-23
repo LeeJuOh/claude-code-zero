@@ -95,11 +95,11 @@ cmux wait-for build-done --timeout 120 && cmux read-screen --surface surface:9 -
 
 ### Services / interactive programs → content poll
 
-Poll `read-screen` for expected text. Use the bundled helper with `run_in_background: true`:
+Poll `read-screen` for expected text. Use the bundled helper `${CLAUDE_SKILL_DIR}/scripts/poll-screen.sh` with `run_in_background: true` (references shorten it to `poll-screen.sh`):
 
 ```bash
 # run_in_background: true
-$SKILL_DIR/scripts/poll-screen.sh surface:9 "ready|listening|Claude Code" --timeout 60
+${CLAUDE_SKILL_DIR}/scripts/poll-screen.sh surface:9 "ready|listening|Claude Code" --timeout 60
 ```
 
 Common match patterns:
@@ -115,7 +115,7 @@ Server start → wait for ready → then batch work:
 ```bash
 cmux send --surface surface:9 "npm run dev\n"
 # run_in_background: true — poll for server ready
-$SKILL_DIR/scripts/poll-screen.sh surface:9 "ready on" --timeout 30
+${CLAUDE_SKILL_DIR}/scripts/poll-screen.sh surface:9 "ready on" --timeout 30
 
 # (after background notification confirms ready)
 cmux send --surface surface:9 "curl localhost:3000/health && cmux wait-for -S health-ok\n"
@@ -170,10 +170,10 @@ cmux log --level error "Test suite failed"
 
 | Reference | When to Use |
 |-----------|-------------|
-| [Terminal I/O]($SKILL_DIR/references/terminal-io.md) | Send commands, read output, server monitoring, E2E testing, build pipelines |
-| [Sync and Automation]($SKILL_DIR/references/sync-and-automation.md) | wait-for synchronization, buffers, cmux.json custom workspace commands |
-| [Handles and Identify]($SKILL_DIR/references/handles-and-identify.md) | Handle syntax, self-identify, caller targeting |
-| [Windows and Workspaces]($SKILL_DIR/references/windows-workspaces.md) | Window/workspace lifecycle and reorder/move |
-| [Panes and Surfaces]($SKILL_DIR/references/panes-surfaces.md) | Splits, surfaces, move/reorder, focus routing |
-| [Trigger Flash and Health]($SKILL_DIR/references/trigger-flash-and-health.md) | Visual flash confirmation and surface health checks |
-| [Notifications]($SKILL_DIR/references/notifications.md) | Notification CLI, sidebar metadata API, hook patterns |
+| [Terminal I/O](references/terminal-io.md) | Send commands, read output, server monitoring, E2E testing, build pipelines |
+| [Sync and Automation](references/sync-and-automation.md) | wait-for synchronization, buffers, cmux.json custom workspace commands |
+| [Handles and Identify](references/handles-and-identify.md) | Handle syntax, self-identify, caller targeting |
+| [Windows and Workspaces](references/windows-workspaces.md) | Window/workspace lifecycle and reorder/move |
+| [Panes and Surfaces](references/panes-surfaces.md) | Splits, surfaces, move/reorder, focus routing |
+| [Trigger Flash and Health](references/trigger-flash-and-health.md) | Visual flash confirmation and surface health checks |
+| [Notifications](references/notifications.md) | Notification CLI, sidebar metadata API, hook patterns |

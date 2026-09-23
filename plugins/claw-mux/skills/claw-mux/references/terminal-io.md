@@ -132,7 +132,7 @@ cmux new-split right  # → surface:9
 cmux send --surface surface:9 "claude\n"
 
 # 3. Wait for Claude to load (run_in_background: true)
-$SKILL_DIR/scripts/poll-screen.sh surface:9 "Claude Code|tips:" --timeout 60
+poll-screen.sh surface:9 "Claude Code|tips:" --timeout 60
 
 # (background notification confirms Claude is ready)
 
@@ -140,7 +140,7 @@ $SKILL_DIR/scripts/poll-screen.sh surface:9 "Claude Code|tips:" --timeout 60
 cmux send --surface surface:9 "fix the login bug in src/auth.ts\n"
 
 # 5. Monitor for completion (run_in_background: true)
-$SKILL_DIR/scripts/poll-screen.sh surface:9 "╭─|❯" --timeout 300 --interval 5 --lines 30
+poll-screen.sh surface:9 "╭─|❯" --timeout 300 --interval 5 --lines 30
 ```
 
 Claude Code shows `╭─` or returns to `❯` when a task finishes. Poll for these markers instead of guessing a fixed delay.
@@ -168,7 +168,7 @@ For servers and long-running processes. Poll `read-screen` for startup text.
 
 ```bash
 # run_in_background: true
-$SKILL_DIR/scripts/poll-screen.sh surface:9 "ready|listening on|started" --timeout 30
+poll-screen.sh surface:9 "ready|listening on|started" --timeout 30
 ```
 
 Common ready patterns: `ready on`, `listening on port`, `started`, `Server running`, `compiled successfully`.
@@ -179,7 +179,7 @@ For Claude Code, REPLs, shells. Poll for prompt markers.
 
 ```bash
 # run_in_background: true
-$SKILL_DIR/scripts/poll-screen.sh surface:9 "Claude Code|tips:|❯" --timeout 60
+poll-screen.sh surface:9 "Claude Code|tips:|❯" --timeout 60
 ```
 
 Task completion markers: `╭─`, `❯`, `$` (shell prompt returned).

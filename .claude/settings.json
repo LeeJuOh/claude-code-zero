@@ -11,9 +11,7 @@
       "mcp__claude-in-chrome__tabs_create_mcp",
       "mcp__claude-in-chrome__find",
       "mcp__claude-in-chrome__form_input",
-      "Bash(claude plugin validate *)",
-      "Bash(unset CLAUDECODE *)",
-      "Bash(unset CLAUDECODE)"
+      "Bash(claude plugin validate *)"
     ]
   }
 }

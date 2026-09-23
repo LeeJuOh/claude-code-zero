@@ -1,5 +1,11 @@
 # vision-powers Artifact 채널: claude.ai 퍼블리시를 전달 채널로 (공식 Artifacts 위임)
 
+> **기본값 대체됨 — 이슈 010 / ADR 0009 (결정 2026-07-08, 구현 `b9d5ddf` · 4.7.0).** 이 이슈는
+> 로컬 파일을 기본으로, `--artifact`를 opt-in 스위치로 두었다(아래 인터페이스 표). ADR 0009가 이를
+> 뒤집어 artifact 가능 계정의 HTML은 **Artifact 채널이 기본**이고, 로컬 강제는 `--local`, `--artifact`는
+> no-op 별칭으로 남았다. 디자인 위임·CDN 로컬 한정·그라운딩 불변식은 그대로 유효하다. 본문은 당시
+> 기록이며, 현행 채널 규칙은 `plugins/vision-powers/references/design-system/channel-decision.md`.
+
 > 상태: **완료** (S1~S5 전 슬라이스 구현·검증 완료, 이슈 종료) · 생성: 2026-07-05
 > 용어집: `docs/context/vision-powers.md` (신규 용어: **Artifact channel**)
 > 결정 근거: `docs/adr/0007-artifact-channel-delegates-visual-design.md` (선행 `0002` 직접작성 · `0005` grounding)
@@ -69,6 +75,8 @@ vision-powers의 **세 번째 전달 채널**로 흡수한다. 로컬 파일·�
 |---|---|---|
 | **html** | 우리 디자인, 로컬 파일 (현행) | 내장 artifact-design skill 페이지, claude.ai URL |
 | **md** | 채팅/PR 텍스트 (현행) | 생성된 md 파일 **그대로** 퍼블리시, URL |
+
+> 이 표의 기본값(`--artifact` 끔)은 이슈 010 / ADR 0009로 뒤집혔다 — 맨 위 배너 참고.
 
 **핵심 불변식 (절대 깨지 않음):**
 - **디자인 위임 = 스위치에 내포** (ADR 0007). artifact 채널에서 **design-brief 레버만** 내장 artifact-design skill로 넘어간다. source passthrough · build-time grounding · Gate 콘텐츠 검사는 스킬 소유 유지. `--design` 류 별도 인자 금지.

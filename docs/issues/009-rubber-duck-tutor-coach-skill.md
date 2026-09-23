@@ -1,7 +1,7 @@
 # rubber-duck-tutor `/coach`: never-teach 플러그인의 티칭 형제 스킬
 
 > 상태: **구현 완료, 커밋됨** — S1–S4 전부 완료·커밋 `40423bd` (2026-07-08) · 생성: 2026-07-08
-> 용어집: `plugins/rubber-duck-tutor/CONTEXT.md` (신규 용어: **Coach**)
+> 용어집: `docs/context/rubber-duck-tutor.md` (신규 용어: **Coach**. 당시 `plugins/rubber-duck-tutor/CONTEXT.md`는 S4에서 이리로 병합·삭제)
 > 결정 근거: `docs/adr/0008-coach-teaching-skill-inside-never-teach-plugin.md`
 > 공식 문서: `https://code.claude.com/docs/en/skills.md` (S1 세션에서 재확인 완료 — frontmatter 필드
 > 표 대조: name/description/disable-model-invocation/allowed-tools/argument-hint 전부 확인됨)
@@ -81,6 +81,8 @@ classifier가 "무관한 플러그인 데이터 디렉터리에 대한 되돌릴
   (검수 확정 — 수동 호출은 조용 모드 대상이 아님). S2/S3도 이 결정을 뒤집지 말 것.
 
 ### Current Progress
+
+> 커밋 전 스냅샷 — 이후 S4까지 `40423bd`로 커밋됨. 현재 상태는 상단 상태줄·First Action 참조.
 
 **S1·S2·S3 완료, 모두 미커밋** — `git status` 기준 `plugins/rubber-duck-tutor/skills/coach/`가
 untracked로 신설됨(다른 untracked 파일 4개는 이 이슈 작업 이전부터 있던 것 — `CONTEXT-MAP.md`,
@@ -252,7 +254,7 @@ S1–S3 전부.
 
 ## 스코프 밖 기존 결함 (검수 발견 · 코드로 확인됨)
 
-- `duck-orient`의 allowed-tools에 `resolve-gap.sh`가 빠져 있음 — engine.md(291–294행)는 duck-orient의 retrieval check-in이 갭 해소를 호출한다고 기술하는데 frontmatter가 이를 허용 안 해, 실행 시 권한 프롬프트가 뜬다. 추가로 duck-orient 본문 flow에도 resolve 호출이 배선돼 있지 않음. 별도 수정 후보(frontmatter 한 줄 + flow 한 문장).
+- `duck-orient`의 allowed-tools에 `resolve-gap.sh`가 빠져 있음 — engine.md(291–294행)는 duck-orient의 retrieval check-in이 갭 해소를 호출한다고 기술하는데 frontmatter가 이를 허용 안 해, 실행 시 권한 프롬프트가 뜬다. 추가로 duck-orient 본문 flow에도 resolve 호출이 배선돼 있지 않음. 별도 수정 후보(frontmatter 한 줄 + flow 한 문장). → **해소: `d1ac06a`**(3.1.1) — frontmatter·flow 둘 다 반영.
 
 ## 스코프 제외 (명시적 기각 — 그릴 기록)
 

@@ -56,7 +56,6 @@ Before changing anything, read and understand the target skill completely.
 4. Note any existing quality checks or anti-patterns already in the skill
 5. Read skill design principles to inform your mutations:
    - `${CLAUDE_SKILL_DIR}/../skill-creator-pro/SKILL.md` -- the "Skill Writing Guide", "Progressive Disclosure", and "Description Optimization" sections cover gotchas, progressive disclosure, and description-as-trigger
-   - If available in the project: `docs/reference/skill-lessons-from-anthropic.md` -- Anthropic's practical lessons from building hundreds of skills
    - If the skill uses platform features (hooks, allowed-tools, frontmatter) and something seems wrong, fetch `https://code.claude.com/docs/llms.txt` and the relevant page to verify against the latest spec
 
 Do NOT skip this. You need to understand both the skill AND what makes skills work before you can improve it.

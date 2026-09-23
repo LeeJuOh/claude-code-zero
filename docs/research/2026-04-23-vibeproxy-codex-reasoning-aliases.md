@@ -1,5 +1,7 @@
 # VibeProxy Codex Reasoning Aliases
 
+> **상태**: §10 적용됨(`f8b0785`, vibeproxy-kit payload.override). 이 문서는 그 설계 근거로 남긴다.
+
 > **작성일**: 2026-04-23 (검증·정정·실측·플러그인 적용 방안 2026-04-28)
 > **1줄 요약**: alias 이름만으로 reasoning level 차등 = **불가능**. 반드시 (a) client에서 모델명에 `(level)` suffix 부착하거나 (b) server config에 `payload.override` 박아야 함. 둘 다 byte-level 실측 확인. 현 `vibeproxy-kit` 플러그인은 (a)만 사용 — shell 거치는 caller에만 동작. (b) 추가 시 IDE/Cursor/직접 API 모두 차등 가능.
 > **출처**:

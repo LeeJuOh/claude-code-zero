@@ -4,38 +4,32 @@
  * Covers every persisted output: .html, .artifact.html, .md, .artifact.md.
  *
  * Usage:
- *   node list-reports.js [--limit N]
+ *   node list-reports.js --data-dir <dir> [--limit N]
  *
- * Uses $CLAUDE_PLUGIN_DATA/reports/ as the reports directory.
- * Falls back to config.json for custom reports_dir if set.
+ * --data-dir is required; pass "${CLAUDE_PLUGIN_DATA}" from SKILL.md.
+ * Lists <data-dir>/reports/, where every report skill saves its output.
  *
  * Output: JSON with reports_dir, count, and reports array.
  *
  * Exit codes:
  *   0 = success (even if 0 reports found)
+ *   2 = usage error (missing --data-dir)
  */
 
 const fs = require("fs");
 const path = require("path");
-const os = require("os");
 
-function getReportsDir() {
-  const pluginData = process.env.CLAUDE_PLUGIN_DATA;
-
-  // Check config for custom reports_dir
-  const configPath = pluginData
-    ? path.join(pluginData, "config.json")
-    : path.join(os.homedir(), ".claude-code-zero", "vision-powers", "config.json");
-
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    if (config.reports_dir) return config.reports_dir;
-  } catch {
-    // No config or invalid — use default
+// The caller passes the plugin data dir: SKILL.md substitutes ${CLAUDE_PLUGIN_DATA}, but the
+// Bash tool's environment lacks that variable or holds another plugin's folder.
+function takeDataDir(argv) {
+  const i = argv.indexOf("--data-dir");
+  const dir = i === -1 ? "" : argv[i + 1] || "";
+  if (!dir || dir.startsWith("--")) {
+    console.error("Error: --data-dir <plugin data dir> is required");
+    process.exit(2);
   }
-
-  if (pluginData) return path.join(pluginData, "reports");
-  return path.join(os.homedir(), ".claude-code-zero", "vision-powers", "reports");
+  argv.splice(i, 2);
+  return dir;
 }
 
 function detectType(filename) {
@@ -59,6 +53,7 @@ function formatDate(mtime) {
 
 function main() {
   const args = process.argv.slice(2);
+  const dataDir = takeDataDir(args);
   let limit = 50;
 
   for (let i = 0; i < args.length; i++) {
@@ -67,7 +62,7 @@ function main() {
     }
   }
 
-  const reportsDir = getReportsDir();
+  const reportsDir = path.join(dataDir, "reports");
 
   if (!fs.existsSync(reportsDir)) {
     console.log(JSON.stringify({ reports_dir: reportsDir, count: 0, reports: [] }));

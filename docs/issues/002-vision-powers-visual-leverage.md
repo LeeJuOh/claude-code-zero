@@ -1,6 +1,6 @@
 # vision-powers 시각 레버리지 강화: Kami/taste-skill 증명 패턴 흡수
 
-> 상태: 구현 대기 · 생성: 2026-06-20
+> 상태: 완료 — S1 `abb1db6` · S2 `7c80dc4` · S3~S6 `da66104`+`7590537` · 4.5.0 범프 대신 vision-powers 4.4.0(v1.72.0)에 합쳐 출시, README는 4.4.1(`0aebb0e`) · Slice 7 description 갱신은 안 함 · 생성: 2026-06-20
 > 용어집: `docs/context/vision-powers.md`
 > 근거 레퍼런스: `references/Kami`, `references/taste-skill`
 > 선행 이슈: `docs/issues/001-vision-powers-redesign.md` (파이프라인 폐기 → 모델 직접작성)
@@ -51,12 +51,12 @@ vision-powers의 사명(**장황한 AI 출력 → 한눈에 보이는 시각 산
 
 ### Acceptance criteria
 
-- [ ] 두 파일이 **`plugins/vision-powers/references/design-system/`** 안에 신설(최상위 gitignore된 `references/` 아님) — `git status`에 추적 대상으로 뜨는지 확인
-- [ ] 내부 일관 + 기존 design-system 파일과 cross-ref 정확
-- [ ] anti-slop-tells: 색/CSS 슬롭과 중복 0 (행동 슬롭만)
-- [ ] visual-self-audit: 결정론 측정 미채택 이유 + Chrome 부재 시 graceful skip + height 한계 명시
-- [ ] 디자인 강제 0 — 전부 "위임 유지 + 나쁜 디폴트 차단" 프레이밍
-- [ ] (정성 검토) 두 문서가 그 자체로 읽혀야 함 — 기계검증 대상 아님
+- [x] 두 파일이 **`plugins/vision-powers/references/design-system/`** 안에 신설(최상위 gitignore된 `references/` 아님) — `git status`에 추적 대상으로 뜨는지 확인
+- [x] 내부 일관 + 기존 design-system 파일과 cross-ref 정확
+- [x] anti-slop-tells: 색/CSS 슬롭과 중복 0 (행동 슬롭만)
+- [x] visual-self-audit: 결정론 측정 미채택 이유 + Chrome 부재 시 graceful skip + height 한계 명시
+- [x] 디자인 강제 0 — 전부 "위임 유지 + 나쁜 디폴트 차단" 프레이밍
+- [x] (정성 검토) 두 문서가 그 자체로 읽혀야 함 — 기계검증 대상 아님
 
 ### Blocked by
 
@@ -77,10 +77,10 @@ None — can start immediately.
 
 ### Acceptance criteria
 
-- [ ] doc-visual이 anti-slop-tells.md + visual-self-audit.md를 참조
-- [ ] 게이트 뒤 self-audit 스텝 명시 (render-report.js → PNG → Read → 수정 루프)
-- [ ] **실제 데모**: 샘플 md → 리포트 생성 → 게이트 통과 → PNG 렌더 → 모델이 읽고 밀도/위계/Mermaid 확인까지 한 바퀴 — **단 Chrome(또는 `CHROME_BIN`) 있을 때만 풀 데모**. 없으면 `render-report.js`가 exit 1 → self-audit 스텝은 graceful-skip 경로만 검증(배포 안 막힘). "demoable" 게이트를 Chrome 부재로 가짜 차단하지 말 것
-- [ ] 디자인 강제 0 (위임 유지)
+- [x] doc-visual이 anti-slop-tells.md + visual-self-audit.md를 참조
+- [x] 게이트 뒤 self-audit 스텝 명시 (render-report.js → PNG → Read → 수정 루프)
+- [x] **실제 데모**: 샘플 md → 리포트 생성 → 게이트 통과 → PNG 렌더 → 모델이 읽고 밀도/위계/Mermaid 확인까지 한 바퀴 — **단 Chrome(또는 `CHROME_BIN`) 있을 때만 풀 데모**. 없으면 `render-report.js`가 exit 1 → self-audit 스텝은 graceful-skip 경로만 검증(배포 안 막힘). "demoable" 게이트를 Chrome 부재로 가짜 차단하지 말 것
+- [x] 디자인 강제 0 (위임 유지)
 
 ### Blocked by
 
@@ -98,9 +98,9 @@ Slice 2에서 증명한 패턴을 diff-visual에 동일 적용 (A + B). diff-vis
 
 ### Acceptance criteria
 
-- [ ] diff-visual이 두 공유 ref 참조 + 게이트 뒤 self-audit 스텝
+- [x] diff-visual이 두 공유 ref 참조 + 게이트 뒤 self-audit 스텝
 - [ ] HTML·md 양쪽에서 일관 (self-audit는 HTML만)
-- [ ] 디자인 강제 0
+- [x] 디자인 강제 0
 
 ### Blocked by
 
@@ -122,10 +122,10 @@ A+B 적용 + plugin-visual에만 해당하는 C 2건. plugin-visual SKILL.md를 
 
 ### Acceptance criteria
 
-- [ ] plugin-visual HTML 모드가 두 ref 참조 + self-audit
-- [ ] "No templates" 문구 모순 해소 (md 스키마 유지)
-- [ ] md 경량 체크 가이드 추가
-- [ ] 디자인 강제 0
+- [x] plugin-visual HTML 모드가 두 ref 참조 + self-audit
+- [x] "No templates" 문구 모순 해소 (md 스키마 유지)
+- [x] md 경량 체크 가이드 추가
+- [x] 디자인 강제 0
 
 ### Blocked by
 
@@ -143,8 +143,8 @@ A+B 동일 적용. context-health-visual 고유(quadrant·timeline 대시보드)
 
 ### Acceptance criteria
 
-- [ ] context-health-visual이 두 ref 참조 + 게이트 뒤 self-audit
-- [ ] 디자인 강제 0
+- [x] context-health-visual이 두 ref 참조 + 게이트 뒤 self-audit
+- [x] 디자인 강제 0
 
 ### Blocked by
 
@@ -166,9 +166,9 @@ A+B 동일 적용. context-health-visual 고유(quadrant·timeline 대시보드)
 
 ### Acceptance criteria
 
-- [ ] report-manager refine: Tells 참조 + self-audit(`${CLAUDE_SKILL_DIR}/../..` 변수 일관) + MCP 실패 고지
-- [ ] fact-check: HTML 포맷 summary 삽입 후 게이트 재검 명시 (md 포맷은 스킵)
-- [ ] 디자인 강제 0
+- [x] report-manager refine: Tells 참조 + self-audit(`${CLAUDE_SKILL_DIR}/../..` 변수 일관) + MCP 실패 고지
+- [x] fact-check: HTML 포맷 summary 삽입 후 게이트 재검 명시 (md 포맷은 스킵)
+- [x] 디자인 강제 0
 
 ### Blocked by
 
@@ -188,9 +188,9 @@ A+B 동일 적용. context-health-visual 고유(quadrant·timeline 대시보드)
 
 - [ ] `marketplace.json` 버전 4.5.0 (local 플러그인 = 여기만)
 - [ ] `plugin.json` + `marketplace.json` description 갱신 (제거된 기능 없으니 추가만)
-- [ ] `README.md` 반영
-- [ ] `plugins/vision-powers/CHANGELOG.md` 4.5.0 항목 (기존 파일, 최신 4.4.0 위에 추가)
-- [ ] `unset CLAUDECODE && claude plugin validate .` 통과
+- [x] `README.md` 반영
+- [ ] ~~`plugins/vision-powers/CHANGELOG.md` 4.5.0 항목 (기존 파일, 최신 4.4.0 위에 추가)~~ — 무효: CHANGELOG는 `e4ea197`에서 삭제
+- [x] `unset CLAUDECODE && claude plugin validate .` 통과
 
 ### Blocked by
 

@@ -1,106 +1,140 @@
-# CONTEXT — rubber-duck-tutor
+# rubber-duck-tutor
 
-> rubber-duck-tutor의 유비쿼터스 언어. 용어집 전용 — 구현 없음.
-> 결정은 `docs/adr/`에 있음. 어휘는 그릴 세션(2026-06-21, 2026-07-04)에서 다듬음.
+rubber-duck-tutor keeps the user's understanding sharp during AI-assisted coding, so AI-generated
+work is not accepted without being understood. It works through two personas: one that verifies
+understanding (Duck) and one that builds it (Coach).
 
 ## Language
 
-**ducking**:
-이해-규율 엔진 — 모든 유저 대면 모드가 읽어 들이는 공유 콘텐츠(페르소나·질문법·세션 관리),
-`skills/ducking/engine.md`. 의도적으로 스킬이 아님 — 호출 대상이 아니라 참조 문서. 자동 confront는
-ship-point 훅이 담당(ADR 0003).
-_Avoid_: core, core.md, shared rules, auto-trigger, 감지하면 자동 작동, ducking 스킬
+### Purpose and personas
 
 **Rubber-stamping**:
-AI 생성 산출물(코드·계획·설계)을 이해 없이 수용하는 것. 플러그인이 막으려는 실패 모드.
+Accepting AI-generated output (code, plans, designs) without understanding it. The failure mode the
+plugin exists to prevent.
 _Avoid_: blind approval, glossing over
 
+**Duck**:
+The interrogator persona. Asks questions and waits — never solves, never hints, never teaches.
+_Avoid_: tutor, quizmaster, teacher
+
+**Coach**:
+The teaching persona. Explains, drills, and critiques the user's attempts like a senior engineer —
+never quizzes to test understanding, though it resolves a Gap when the user demonstrates
+understanding by passing an exercise (not by saying "I get it").
+_Avoid_: tutor, mentor, sensei
+
+**ducking**:
+The understanding-discipline engine: the shared persona, questioning technique, and session
+management that every user-facing mode reads. A reference document, deliberately not a skill —
+nothing invokes it, and automatic confrontation belongs to the ship-point hooks (ADR 0003).
+_Avoid_: core, core.md, shared rules, auto-trigger, auto-activates on detection, ducking skill
+
+**Complement (not substitute)**:
+Duck and no-numb are complements: a user who wants a hard gate installs both, and Duck does not
+absorb no-numb's forcing function. By the same principle Duck stays out of code review (code
+quality) and grilling (plan validation) — its axis is always the user's understanding.
+
+### Confrontation
+
 **Confrontation**:
-비차단·기본 켜짐 이해 질문. 작업을 드러내되 멈추지 않음 — 유저는 답하거나 넘어갈 수 있음.
-_Avoid_: nudge, prompt, reminder
+A non-blocking, default-on understanding question. It surfaces the work without stopping it — the
+user can answer or move on.
+_Avoid_: nudge, prompt, reminder, gate, quiz, checkpoint
 
 **Gate**:
-조건 충족까지 작업을 막는 차단형 강제 장치(예: 퀴즈 통과). 명시적으로 거부됨 — ADR 0003 참조.
+A blocking enforcement mechanism that holds work until a condition is met (e.g. passing a quiz).
+Explicitly rejected — see ADR 0003.
 _Avoid_: block, wall, checkpoint
 
 **Forcing function**:
-gate 뒤의 메커니즘 — 행동을 강제하려 의도적으로 넣은 마찰. no-numb의 모델이자 duck의 안티패턴.
+The mechanism behind a gate: friction deliberately added to compel a behavior. no-numb's model and
+Duck's anti-pattern.
+
+**Ship point**:
+The moment work leaves the machine — `git push`, `gh pr create`, `glab mr create`.
+_Avoid_: deploy, release
 
 **Ship-point confrontation**:
-배포 순간(`git push` / PR / MR 생성)에 방금 배포한 변경에 대해 발사되는 confrontation. duck의 주
-기본-켜짐 검증 레이어.
+A confrontation fired at the ship point about the change just shipped. Duck's primary default-on
+verification layer.
 _Avoid_: post-push nag
 
-**Artifact-level comprehension**:
-산출물이 *무엇을* 하고 *왜* 하는지를 출력 단위로 이해. 기본 검증 대상.
-_Avoid_: output review, high-level review
-
-**Code-level comprehension**:
-코드가 *어떻게* 동작하는지 한 줄씩 이해. 자발적 심층 레이어(`duck-verify`)이며 강제 기본값이 아님 —
-전수 검증은 비현실적.
-_Avoid_: line-by-line review
-
-**Before-build comprehension**:
-AI가 생성하기 *전에* 발휘하는 이해 — 자기 설계·계획을 먼저 예측한 뒤 AI 출력과 대조. `duck-prebuild`가
-담당.
-_Avoid_: pre-coding review
-
-**After-build comprehension**:
-코드·산출물이 존재한 *뒤에* 발휘하는 이해 — 생성된 것을 파악했는지 검증. `duck-verify`와 `duck-review`가
-담당.
-
-**Generation effect**:
-레퍼런스를 보기 전 자기 답을 먼저 만들 때 생기는 학습 부스트. before-build comprehension이 자리값을
-하는 이유.
-
 **Shared ship budget**:
-`{git push, gh pr create, glab mr create}`는 세션당 최대 한 번 ship-point confrontation을 발사 —
-먼저 발사한 게 이김. `git push`가 범용 폴백(웹 PR·Bitbucket·GitLab MR 모두 먼저 push)이라 CLI 훅이
-놓치는 플랫폼을 커버.
+The limit of one ship-point confrontation per session, shared by every ship point — whichever fires
+first wins. The push is the universal fallback, since web PRs, Bitbucket, and GitLab MRs all push
+first, so it covers PRs and MRs opened outside the CLI.
 
-**Complement (not substitute)**:
-duck과 no-numb은 보완재 — 하드 gate를 원하는 유저는 둘 다 설치. duck은 no-numb의 forcing function을
-흡수하지 않음. 같은 원리로 duck은 `/code-review`(코드 품질)·`/grilling`(계획 검증)도 침범하지 않음 —
-duck의 축은 항상 유저의 이해.
+**Retrieval confrontation**:
+A confrontation that re-asks an unresolved Gap from a past session, using the spacing effect. The
+middle rung of the fallback ladder (blind-spot target > Gap retrieval > generic artifact question).
+_Avoid_: quiz replay
+
+**Scoreboard**:
+The factual tally shown instead of a question once the ignore streak is exceeded ("M of N high-risk
+changes engaged", with the changes named). A low-intensity form of confrontation — still
+non-blocking, and it returns to question mode once the user answers again.
+_Avoid_: nag, warning banner
+
+**Ignore streak**:
+The number of confrontations ignored in a row, counted from confrontation telemetry. The condition
+for demoting to the scoreboard.
+
+**Confrontation telemetry**:
+The record of every confrontation fired, answered, or ignored. The observation layer that removes
+"we don't know whether it works".
+_Avoid_: analytics, usage stats
+
+### Targeting
 
 **Engagement**:
-유저가 세션 중 특정 변경을 열람·논의했다는 트랜스크립트 기반 객관 신호. blind-spot 판정의 한 축.
+An objective signal from the live conversation that the user discussed, questioned, or directed a
+specific change themselves — silence, agreement, or the AI writing it unprompted does not count.
+One axis of the blind-spot judgment.
 _Avoid_: attention, review status
 
 **Risk taxonomy**:
-변경 중요도 판정용 고정 분류 — 동시성, 보안, 성능, 데이터 스키마, 공개 API, 아키텍처 경계. 항상
-judgement call이지 하드 룰이 아님. blind-spot 판정의 다른 축.
+The fixed classification for judging how much a change matters — concurrency, security,
+performance, data schema, public API, architecture boundary. Always a judgment call, never a hard
+rule; the other axis of the blind-spot judgment.
 _Avoid_: severity levels
 
 **Blind spot**:
-고위험(risk taxonomy 상위)인데 engagement가 없는 변경 — confrontation의 1순위 표적. 파일 열람률
-지표가 아님: 저위험이면 안 봤어도 표적 아님.
+A high-risk change (top of the risk taxonomy) with no engagement — the first-priority target of a
+confrontation. Not a file-view-rate metric: a low-risk change is no target even if never seen.
 _Avoid_: unseen file, coverage gap
 
 **Interface-fact question**:
-변경의 invariant·에러 모드·순서 제약·트레이드오프를 묻는 질문 형태 — blind-spot 표적에 사용.
-검수자/아키텍트 수준 이해를 검증(코더 수준 암기가 아님).
+The question form that asks about a change's invariant, error mode, ordering constraint, or
+trade-off, used on blind-spot targets. It checks reviewer- or architect-level understanding, not
+coder-level recall.
 _Avoid_: did-you-read-it question
 
-**Confrontation telemetry**:
-confrontation의 발사·응답·무시 기록. "동작하는지 모름"을 없애는 관측 레이어. 발사 기록은 결정론(훅),
-outcome 기록만 모델 판단.
-_Avoid_: analytics, usage stats
+### Comprehension
 
-**Ignore streak**:
-연속 무시 횟수 — telemetry에서 셸이 결정론적으로 계산. scoreboard 강등 조건.
+**Artifact-level comprehension**:
+Understanding *what* an artifact does and *why*, one output at a time. The default verification
+target.
+_Avoid_: output review, high-level review
 
-**Scoreboard**:
-ignore streak 초과 시 질문 대신 표시하는 사실 수치("고위험 변경 N건 중 관여 M건", 이름 나열).
-confrontation의 저강도 형태 — 여전히 비차단, 응답 재개 시 질문 모드 복귀.
-_Avoid_: nag, warning banner
+**Code-level comprehension**:
+Understanding *how* the code works, line by line. An opt-in deeper layer, not an enforced default —
+verifying everything this way is impractical.
+_Avoid_: line-by-line review
 
-**Retrieval confrontation**:
-과거 미해소 gap을 재출제하는 confrontation — spacing effect 활용. 폴백 사다리의 중간 단(blind-spot
-표적 > gap retrieval > 범용 artifact 질문).
-_Avoid_: quiz replay
+**Before-build comprehension**:
+Understanding exercised *before* the AI generates anything — the user predicts their own design or
+plan first, then compares it with the AI's output.
+_Avoid_: pre-coding review
 
-## Recorded in
+**After-build comprehension**:
+Understanding exercised *after* the code or artifact exists — verifying that the user grasped what
+was generated.
 
-- ADR: `docs/adr/0003-duck-rejects-gates-confronts-at-ship-point.md`
-- Handoff / implementation directive: `docs/handoff/2026-06-21-rubber-duck-tutor-redesign.md`
+**Generation effect**:
+The learning boost from producing your own answer before seeing a reference. The reason
+before-build comprehension earns its place.
+
+**Gap**:
+A demonstrated hole in the user's understanding — something they could not explain when asked.
+Stays unresolved until the user later demonstrates they can explain it.
+_Avoid_: weakness, mistake, failure
