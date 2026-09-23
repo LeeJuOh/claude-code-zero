@@ -1,9 +1,59 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 수정 전** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
-> 줄 번호 기준: 커밋 `21a87ab` — 수정 전에 해당 줄을 다시 열어 확인할 것
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 수정 전** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
+> 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
+> 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
+
+## 핸드오프 (2026-09-23 → 다음 세션)
+
+**Goal** — 이 문서의 수정 목록을 실행해 레포 문서(1부)와 플러그인 문서(2부)를 정리한다.
+
+**First Action** — §1-5 결정 12개를 사용자에게 하나씩 짧게 묻는다. #1(협업 규칙 위치)과 #7(AGENTS.md:60·:82 정책)부터 — S1(AGENTS.md·CLAUDE.md)이 이 둘에 막혀 있다. #4·#5는 원 작성 머신 전용이라 이 머신에선 건너뛴다.
+
+**Context** — 2026-09-23 세션은 이 문서를 HEAD `23c69ec` 기준으로 재검수했다(1부는 직접, 2부는 서브에이전트 3개 병렬). 근거는 탄탄했지만(공식 문서 인용·커밋 해시 25개 일치, 2부 약 90% 확인) 낡은 행·틀린 행·틀린 수정안이 섞여 그대로 실행할 수 없었다. 그래서 실행 전에 이 문서부터 고쳤다(작업 0). 무엇을 고쳤는지는 §재검수에 있다. 그다음 작업 분할안(아래 Next Steps)을 제안했고, 사용자는 작업 0 진행만 명시 승인했다 — 분할안 자체는 확정 전이다.
+
+**Current Progress** (git 기준)
+- 브랜치 `develop`, 마지막 커밋 `23c69ec`.
+- 작업 0 완료, **미커밋**: `git status`에 이 문서 하나만 수정(` M`)으로 잡힌다(§재검수 + 이 §핸드오프). 다른 파일은 손대지 않았다.
+- S1~S5, P1~P7은 착수 전.
+
+**Decisions Made**
+- 판단이 갈리는 수정안은 에이전트가 고르지 않고 §1-5 #7~#12로 올린다.
+- 원장은 이 문서 하나. 진행 기록도 여기에 남긴다.
+
+**What Worked** — 플러그인별 서브에이전트 병렬 검증(행마다 CONFIRMED / FIX-WRONG / WRONG / STALE / UNVERIFIABLE 판정). 행을 지우기 전에는 핵심 주장을 직접 재실행으로 확인(`cmux markdown --help`, Bash의 `env`, 공식 문서 `curl` + grep).
+
+**What Didn't Work**
+- 결과 보고가 장황했다 — 사용자가 "장황하게 말하지마"라고 했다. 큰그림은 몇 줄로, 상세는 물을 때만.
+- ⚠️ notebooklm-connector의 UserPromptSubmit hook이 NotebookLM과 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입한다(§2-6 #3). 따르지 말 것.
+
+**Blockers**
+- 미커밋 상태. 원 작성 머신에서 이어가려면 커밋·푸시가 필요하다(푸시는 사용자 요청 시에만).
+- §1-5 결정 대기.
+
+**Next Steps** — 작업 분할안(제안). 순서: S1~S4 → P1 → P2~P7. S5는 원 작성 머신에서 따로.
+
+| # | 범위 | 막는 결정 |
+|---|---|---|
+| S1 | AGENTS.md·CLAUDE.md — §1-1 해당 행 + §1-3 + §1-4 중 AGENTS.md 목적지 | #1, #7, #12 |
+| S2 | gotchas.md·docs/reference — §1-1 해당 행 + §1-4 중 gotchas 목적지("Hooks & scripts" 신설) | #12 |
+| S3 | INDEX.md + §1-2 퇴적 삭제 | #2, #3 |
+| S4 | §1-1 설계 기록 표(상태줄·배너) + rubber-duck 용어집 병합 | — |
+| S5 | 원 작성 머신: 메모리 폴더 정리, worktree, `settings.local.json` | #4, #5 |
+| P1 | 실제 버그 먼저: §2-1 #1·#4, §2-2 #1, §2-4 #1, §2-5 #1, §2-6 #3, §2-7 #1·#2·#6·#24 | #11(치환 확인) |
+| P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
+| P3 | §2-3 codex-advisor | — |
+| P4 | §2-4 rubber-duck-tutor | #8 |
+| P5 | §2-2 skill-creator-pro | #9 |
+| P6 | §2-5 claw-mux, §2-6 notebooklm-connector | #11 |
+| P7 | §2-7 나머지 | — |
+
+- 플러그인을 고칠 때마다 `marketplace.json` 버전 범프를 함께 한다(AGENTS.md Versioning).
+- §1-5 #11(reference 파일 치환 확인)은 P1 전에 한다 — §2-5 #1, §2-7 #24 수정안이 그 결과에 달려 있다.
+- 각 작업 뒤 이 문서의 해당 행에 완료 커밋을 적는다. 끝나면 §1-1 INDEX 행의 handoff 수명 규칙대로 이 문서를 정리한다.
 
 ## 검수 기준
 
@@ -23,6 +73,15 @@
 | C10 | 포인터·description 품질 |
 | C11 | 확인 불가능한 완료 조건 |
 
+## 재검수 (2026-09-23)
+
+HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 016(codex-advisor 5.0.0)이 구현돼 codex 관련 행이 많이 바뀌었다.
+
+- **삭제한 행** — 이미 해결: 1부 설계 기록 5행, §2-3 머리말 spark 건, claw-mux 기타(설치 캐시). 틀림: claw-mux #8, notebooklm #9. 삭제 사유는 각 표 아래에 남겼다.
+- **수정안 교정** — 문제는 맞지만 수정안이 틀렸거나 범위가 모자란 행. 판단이 갈리는 것은 §1-5 #7~#12로 옮겼다.
+- **줄 번호 갱신** — §2-3(리뷰 스킬 5개 재작성), INDEX.md(1줄 밀림), 위치 오기.
+- **새 발견** — 2부 공통 관찰 "Bash 환경변수"·"reference 파일 치환(추측)", vision-powers #31, vibeproxy-kit #24, skill-creator-pro 기타.
+
 ---
 
 # 1부 — 레포 문서
@@ -39,25 +98,25 @@
 | AGENTS.md:11-12 | lab 목록 낡음 — `lab-harness-zero`는 `76a31f5`에서 제거, claw-mo·claw-mux는 `category: null` | 삭제(원본은 marketplace.json) | ✅ |
 | AGENTS.md:139 · gotchas.md:23 | `lab-` 접두사 규칙 — 쓰는 플러그인 0개, e2e-test-runner는 `"category": "lab"`만 | gotchas 한 곳에 "Mark experimental plugins with `\"category\": \"lab\"`", AGENTS 문구 삭제 | ✅ |
 | AGENTS.md:22 · :103 | `references/`를 gitignored라 함 — 실제는 git 추적 심링크 `references -> ../references` | "tracked symlink to shared `../references`. Read-only." | ✅ |
-| AGENTS.md:74 · gotchas.md:29 | 플러그인 settings.json 지원 키 — 공식 `plugins-reference.md:926`: `agent`, `subagentStatusLine` | gotchas:29 수정, AGENTS:74 삭제 | ✅ |
-| AGENTS.md:60 | "all plugin development work → `/skill-creator-pro`" — 그 스킬은 marketplace·validate·README를 안 다룸 | "Skill authoring and evals: `/skill-creator-pro`. Registration, README, validation: follow Workflow below." | 🔹 |
-| AGENTS.md:82 | "Read **only** those files" ↔ :43-45 공식 문서 필수 fetch, CLAUDE.md "read gotchas before structural change" | "Start from the files the user names; widen only to gotchas.md and the official pages required above." | 🔹 |
+| AGENTS.md:74 · gotchas.md:29 | 플러그인 settings.json 지원 키 — 공식 `plugins-reference.md:1004`: `agent`, `subagentStatusLine` | gotchas:29 수정, AGENTS:74 삭제 | ✅ |
+| AGENTS.md:60 | "all plugin development work → `/skill-creator-pro`" — 그 스킬은 marketplace·validate·README를 안 다룸 | 정책 변경 — §1-5 #7. 제안: "Skill authoring and evals: `/skill-creator-pro`. Registration, README, validation: follow Workflow below." | 🔹 |
+| AGENTS.md:82 | "Read **only** those files" ↔ :43-45 공식 문서 필수 fetch, CLAUDE.md "read gotchas before structural change" | 정책 변경 — §1-5 #7. 제안: "Start from the files the user names; widen only to gotchas.md and the official pages required above." | 🔹 |
 | AGENTS.md:3 · :36 | GEMINI.md 없음. issues 001-010은 짝 spec 없음 | :3 둘째 문장 삭제, :36 "paired by number from 011" | 🔹 |
 | CLAUDE.md:7 | 백틱 안 `` `@AGENTS.md` ``는 import 안 됨(memory.md) + 맵 목록이 AGENTS.md와 중복 | `@AGENTS.md` 한 줄만 남김 | ✅ |
-| .claude/settings.local.json:12,18,19 | `git push`·`git merge`·`git tag` allow — AGENTS "No auto-push"가 산문으로만 존재(C9) | `git push`를 `permissions.ask`로 옮길지 결정(§1-5 #5) | ✅ |
+| .claude/settings.local.json:12,18,19 | `git push`·`git merge`·`git tag` allow — AGENTS "No auto-push"가 산문으로만 존재(C9). gitignored, 원 작성 머신에만 있음 | `git push`를 `permissions.ask`로 옮길지 결정(§1-5 #5) | ✅ |
 | .claude/hooks/load-secrets.sh | settings 3곳(project·local·user) 어디에도 등록 안 됨 | 삭제 후보 | ✅ |
 
 ### docs/reference
 
 | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|
-| skill-lessons-from-anthropic.md:191 | "Reference other skills **by name**" ↔ gotchas:13 플러그인 독립성. 공식에 `dependencies` 필드 존재(`plugins-reference.md:553`) | :191 삭제, gotchas:13에 "hard dependency → `plugin.json` `dependencies`" 추가 | ✅ |
+| skill-lessons-from-anthropic.md:191 | "Reference other skills **by name**" ↔ gotchas:13 플러그인 독립성. 공식에 `dependencies` 필드 존재(`plugins-reference.md:583`) | :191 삭제, gotchas:13에 "hard dependency → `plugin.json` `dependencies`" 추가 | ✅ |
 | skill-lessons-from-anthropic.md:207-209 | `/skill-creator` 안내 ↔ 레포는 `/skill-creator-pro` | 삭제 또는 "In this repo use `/skill-creator-pro`." | 🔹 |
-| skill-building-guide.md:35-61, :417 | "Required Fields", "Under 1024 characters", "under 5,000 words" — 공식: 전부 선택(`skills.md:315`), 1,536자(:324), 500줄(:460) | 공식 frontmatter 참조 한 줄로 교체, :417 "under 500 lines" | ✅ |
+| skill-building-guide.md:35-61, :417 | "Required Fields", "Under 1024 characters", "under 5,000 words" — 공식: 전부 선택(`skills.md:329`), 1,536자(:338), 500줄(:475) | 공식 frontmatter 참조 한 줄로 교체, :417 "under 500 lines" | ✅ |
 | skill-building-guide.md:3, :50 | 없는 파일 3개 참조(`skill-supporting-files.md`, `skill-allowed-tools.md`, `command-proxy-pattern.md`) | 문장 삭제, :50 → "see gotchas.md 'Skill allowed-tools'" | ✅ |
 | skill-building-guide.md:198-219 | "Combat Model Laziness"·"CRITICAL:" ↔ skill-creator-pro SKILL.md:318 "ALWAYS/NEVER in all caps … yellow flag" | 삭제 | 🔹 |
 | skill-building-guide.md:21, :332-369, :403-410 | Claude.ai 업로드·API 배포 — 이 레포와 무관, 공식 `skills.md:351-358`과도 어긋남 | 삭제 | 🔹 |
-| gotchas.md:27 | 플러그인 에이전트 지원 필드 목록 불완전(`name`, `description`, `effort` 누락, `isolation`은 `"worktree"`만) — `plugins-reference.md:68` | 목록 빼고 "ignored: `permissionMode`, `hooks`, `mcpServers`"만 | ✅ |
+| gotchas.md:27 | 플러그인 에이전트 지원 필드 목록 불완전(`name`, `description`, `effort` 누락, `isolation`은 `"worktree"`만) — `plugins-reference.md:72-73` | 목록 빼고 "ignored: `permissionMode`, `hooks`, `mcpServers`"만 | ✅ |
 | gotchas.md:33 | ~200단어, 절반이 vision-powers 전용 artifact-design 논증 | 2줄로 축약("`allowed-tools` only pre-approves; declare `Skill(<name>)` for skills you load"), carve-out은 `docs/context/vision-powers.md`로 | 🔹 |
 
 ### docs/INDEX.md · 기타
@@ -70,9 +129,9 @@
 | INDEX.md:30-34 | `adr/`, `context/` 미등록 | 디렉터리 행 추가 | ✅ |
 | INDEX.md:36 | superpowers 폐지 이력 | 삭제 | 🔹 |
 | INDEX.md:5 | handoff 수명 규칙 없음 → 퇴적 원인 | "Handoffs are temporary: once absorbed into specs/issues/ADRs/commits, delete them." 추가 | 🔹 |
-| INDEX.md:45-62 | research·handoff 등록이 실제와 불일치 | §1-2 삭제 후 디렉터리 행으로 정리 | ✅ |
+| INDEX.md:46-63 | research·handoff 등록이 실제와 불일치 | §1-2 삭제 후 디렉터리 행으로 정리 | ✅ |
 | release-workflow.md:20 | 레포 태그 번호 기준 없음(SemVer는 플러그인 버전용) | 기준 한 줄 추가 — 기준 자체는 사용자 결정 | 🔹 |
-| `.claude/worktrees/remove-test-3` | 살아 있는 git worktree(브랜치 `worktree-remove-test-3`) — docs 사본이 레포 grep 오염 | `git worktree remove` 결정(§1-5 #4) | ✅ |
+| `.claude/worktrees/remove-test-3` | 살아 있는 git worktree(브랜치 `worktree-remove-test-3`) — docs 사본이 레포 grep 오염. 원 작성 머신에만 있음 | `git worktree remove` 결정(§1-5 #4) | ✅ |
 
 ### 설계 기록 (docs/specs · issues · adr · context)
 
@@ -88,11 +147,10 @@
 | issue 005 | 구현 대기, 체크박스 27개 `[ ]` | S1 출시 `08f3ee1`, S2(File Map)는 ADR 0010으로 폐기, S3~S6 미착수 | 상태 갱신 + S2 폐기 표시 | ✅ |
 | issue 009 | 헤더 "커밋 40423bd" ↔ 본문 :85-90 "모두 미커밋" | 커밋됨, :255 결함은 `d1ac06a`로 해소 | 본문 스냅샷 표시 | 🔹 |
 | issue 011 | ready-for-agent | 완료 `99ced96`(worktree-plus 3.1.0) | "완료" | ✅ |
-| issue 012 | ready-for-agent | 완료 `92c01ce`(codex-advisor 4.7.0) | "완료 · spark 유지는 spec 016 D4가 뒤집을 예정" | ✅ |
+| issue 012 | ready-for-agent | 완료 `92c01ce`(codex-advisor 4.7.0) | "완료 · spark 별칭은 `4e80b17`(5.0.0)에서 제거" | ✅ |
 | issue 013 | ready-for-agent | S1~S3 완료 `761f101`(4.8.0), S4 미실행 | 상태 갱신 + AC 체크 | ✅ |
 | issue 014 | "미푸시", :46 severity AC `[x]` | `c865a28`은 origin에 있음, `artifact-gate.js:416` gradient-text에 severity 없음 | :88·:153 "푸시됨", :46 `[ ]` | 🔹 |
-| issue 016:55 | "미커밋" | `21a87ab`로 커밋 | 문구 수정 | 🔹 |
-| spec 016:7, :225, :265, :301 | "ADR 후보", 핸드오프 "미커밋", 015 언급 | ADR 0012 존재(`3f5ec7b`), 015는 `4ec5c58`로 레포 밖 이동 | §핸드오프에 "종료됨" 배너 | 🔹 |
+| spec 016:7, :250-252 | "③은 ADR 후보", §ADR 후보 "ADR 0012를 쓴다" | ADR 0012 존재(`3f5ec7b`). §그릴 가이드·§핸드오프는 `085fc18`의 :265 역사 기록 배너로 해소 | :7·:250에 "ADR 0012로 확정" 표시 | 🔹 |
 
 **뒤집힌 결정인데 표시 없음**
 
@@ -108,18 +166,16 @@
 
 | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|
-| context/codex-advisor.md:57-99, :170 | 미구현 spec 016 설계(Verifier, Hypothesis exclusion, Autonomy policy)를 현재 동작처럼 기술 — 실제 `agents/` 없음, `codex-verify` `--no-preview` 존재 | "## Planned — spec 016 (not implemented)" 절로 분리 | ✅ |
-| context/codex-advisor.md:65-66 · issue 016:190 | "question ends the turn" — issue 016 Q10이 원인 설명을 반박 | "a question returns as a `completed` turn with the work undone" | 🔹 |
-| context/codex-advisor.md:21-22 | "landing via issue 006" — 출시됨 `a35c1b0` | "(issue 006)" | 🔹 |
-| issue 016:4 | "스펙과 이 문서가 다르면 스펙이 맞다" — 이슈 검수(Q6·Q17)가 스펙 D3 전제를 반박한 상태 | "§착수 전 결정의 열린 항목이 스펙 D절보다 우선" + 스펙 D3·D6에 미결 배너 | ✅ |
-| spec 016:249, :212 | §그릴 가이드가 확정 D2·D3와 모순 | 제목에 "(그릴 전 원안 — 확정은 D1~D3)" | 🔹 |
-| spec 016:158 | spec 012 D2 근거를 잘못 인용 | 012:84-90 실제 문장으로 | 🔹 |
+| context/codex-advisor.md:22 | "landing via issue 006" — 출시됨 `a35c1b0` | "(issue 006)" | 🔹 |
+| spec 016:184 | spec 012 D2 근거를 잘못 인용("companion과 동일 별칭") | 012:84-88 실제 문장으로 | 🔹 |
 | context/rubber-duck-tutor.md ↔ plugins/rubber-duck-tutor/CONTEXT.md | 용어집 2개, Confrontation·Gap·Engagement 정의 불일치. 루트 `CONTEXT-MAP.md`는 plugin 쪽 1개만 가리킴 | `docs/context/` 정본으로 병합, plugin CONTEXT.md 삭제, CONTEXT-MAP이 `docs/context/*.md` 4개를 가리키게 | ✅ |
 | context/rubber-duck-tutor.md:67 | Engagement = "트랜스크립트 기반 신호" ↔ engine.md:243-250 "live conversation, not re-parse transcript" | 대화 기반 정의로 교체 | 🔹 |
 | context/rubber-duck-tutor.md:106 | 삭제된 handoff 파일 링크(`3eb1340`) | issue 003 + ADR 0008 링크로 | ✅ |
 | context/skill-creator-pro.md:37 | "Keep eval harness" ↔ 같은 파일 :14, ADR 0001 "restore to official" | "Restore eval harness to official" | 🔹 |
 | context/vision-powers.md:11-15 | Mermaid CDN이 기본인 것처럼 기술 ↔ ADR 0009 기본은 inline SVG | "(Local channel only: …)" | 🔹 |
 | context/vision-powers.md:176-188 ↔ issue 014:127-134 | 구현 때 좁힌 결정(flowchart·state만 검사, phantom 클래스)이 이슈에만 있음 | 용어집에 반영 | 🔹 |
+
+재검수 삭제(issue 016 구현으로 해소): issue 016:55 "미커밋" · context/codex-advisor.md:57-99 "미구현 설계" — 출시됨, "Planned" 분리는 이제 거짓 · context/codex-advisor.md:65-66 · issue 016:190 — `1475e73`에서 교정 · issue 016:4 "스펙이 맞다" — 열린 결정이 스펙에 반영됨(`1475e73`·`085fc18`), 미결 배너는 이제 거짓 · spec 016:249 §그릴 가이드 — :265 역사 기록 배너로 해소.
 
 ## 1-2. 버릴 것 (퇴적)
 
@@ -163,7 +219,7 @@
 
 ## 1-4. 메모리 이관 맵
 
-메모리 위치: `~/.claude/projects/-Users-ljo-Desktop-project-zero-code-claude-code-zero/memory/` (27개). 레포 문서는 영어로 작성.
+메모리 위치: `~/.claude/projects/-Users-ljo-Desktop-project-zero-code-claude-code-zero/memory/` (27개, 원 작성 머신). 레포 문서는 영어로 작성. 아래 "살릴 내용" 요약만으로 레포 반영은 가능하고, 원문 대조와 폴더 정리는 원 작성 머신에서 한다. 다른 머신의 메모리(`/Users/leejuo/…`: `subagent-model-preference`, `wiki-is-symlink-to-llm-wiki`)는 이 맵에 없다(§1-5 #12).
 
 **살릴 것**
 
@@ -192,16 +248,22 @@
 1. 협업 규칙 4개(§1-4 마지막 행) 위치 — 전역 `~/.claude/CLAUDE.md`(프로젝트 무관) vs AGENTS.md
 2. handoff 중 살릴 것 — `claude-preset` 아이디어(삭제/spec), new-vibe Issue 7(`discover.sh:16` 경로 오염이 버그면 issue로)
 3. research 2개 llm-wiki 이동 — llm-wiki `raw/`는 사용자만 채우는 규칙. 삭제 or 사용자가 직접 드롭
-4. `.claude/worktrees/remove-test-3` 제거 여부
-5. `settings.local.json` `git push` allow → ask 전환 여부
+4. `.claude/worktrees/remove-test-3` 제거 여부 (원 작성 머신)
+5. `settings.local.json` `git push` allow → ask 전환 여부 (원 작성 머신)
 6. release-workflow 레포 태그 번호 기준
+7. AGENTS.md:60(모든 플러그인 작업 → `/skill-creator-pro`)·:82("Read **only** those files") — 사실 교정이 아니라 작업 방식 정책. 바꿀지, 제안 문구(§1-1)로 할지
+8. rubber-duck #2 수정안 — (a) 원안: 4번을 "already committed session edits"로 재정의 (b) 3·4번 순서 교환. (a)는 미커밋 세션 편집을 `/duck-review`로 보내 duck-verify:4("code just written")와 어긋나고, (b)는 Mode Map(:18-19) 순서와 맞는다
+9. skill-creator-pro #9 — `claude`/`anthropic` 예약 규칙 유지 여부. API·claude.ai 스킬엔 유효한 규칙이라 #11(Claude.ai 절 삭제, ADR 0001) 결정과 묶인다
+10. vision-powers #7 — doc-visual의 md 게시 예외를 인정하려면 channel-decision.md의 권위인 ADR 0009 §3 개정이 따라온다. 개정할지, doc-visual의 md 게시를 없앨지
+11. 실행 확인 필요(결정 아님): claw-mux #2(라이브 pane에서 `❯` 오판 재현), 2부 공통 "reference 파일 치환"(추측)
+12. 다른 머신 메모리 2개(`subagent-model-preference` → 전역 선호, `wiki-is-symlink-to-llm-wiki` → gotchas 후보) 이관 여부
 
 ## 1-6. 수정 순서
 
 1. 틀림·충돌·상태줄 수정 (§1-1)
 2. 퇴적 삭제 (§1-2, 결정 #2·#3 반영)
 3. AGENTS.md·CLAUDE.md 줄이기 + 메모리 이관 (§1-3, §1-4, 결정 #1 반영)
-4. 메모리 폴더 정리 (레포 밖)
+4. 메모리 폴더 정리 (레포 밖, 원 작성 머신)
 
 ---
 
@@ -209,93 +271,96 @@
 
 수정 시 플러그인마다 버전 범프가 따라온다. 공통 관찰:
 
-- **description 비용:** `disable-model-invocation: true` 스킬은 description이 컨텍스트에 안 들어간다(skills.md:494). 매 세션 비용은 모델 호출형만 해당 — codex-advisor 10개 1,974자, skill-creator-pro 2개 760자, vision-powers `diff-visual` 531자·`doc-visual` 399자가 큼.
+- **description 비용:** `disable-model-invocation: true` 스킬은 description이 컨텍스트에 안 들어간다(skills.md:509). 매 세션 비용은 모델 호출형만 해당 — codex-advisor 10개 1,974자, skill-creator-pro 2개 760자, vision-powers `diff-visual` 531자·`doc-visual` 399자가 큼.
 - **본문 길이:** 공식 팁 500줄 초과 — vision-powers `context-health-visual` 557·`plugin-visual` 553·`diff-visual` 543, `skill-creator-pro` 520, rubber-duck `engine.md` 375(모든 /duck-* 실행마다 로드).
 - **설치본 격리 위반 패턴:** 여러 플러그인이 레포 전용 경로(`docs/…`, `references/…`, research §번호)를 가리킴 — 설치본엔 없음(gotchas "Installed plugin isolation").
+- **Bash 환경변수 (재검수 추가):** `CLAUDE_PLUGIN_ROOT`·`CLAUDE_PLUGIN_DATA`는 Bash 도구 환경에 없다(plugins-reference.md:765). SKILL.md·에이전트 본문의 `${…}`는 치환되지만, Bash로 실행된 스크립트가 `process.env`/`os.environ`으로 읽으면 안 된다. 2026-09-23 세션 Bash엔 다른 플러그인 값 `CLAUDE_PLUGIN_DATA=~/.claude/plugins/data/codex-openai-codex`가 들어 있었다 ✅ — 비어 있는 게 아니라 **남의 폴더**를 가리킨다. 해당: vision-powers #4, vibeproxy-kit #24. 경로는 인자로 넘긴다.
+- **reference 파일 치환 (재검수 추가, 추측):** 공식은 치환 위치를 "the skill's markdown content"와 `allowed-tools`로만 적는다(skills.md:416). Read로 여는 references 파일의 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`·`${CLAUDE_SKILL_DIR}`는 치환되지 않을 가능성이 있다 — 그대로 Bash에 넣으면 빈 값이거나 위의 남의 값. 해당 파일: claw-mo `references/shared.md`, codex-advisor `references/companion-usage.md`·`evaluation.md`, rubber-duck `skills/ducking/engine.md`, vibeproxy-kit `references/model-selection.md`·`write-guide.md`, vision-powers `references/design-system/{channel-decision,structured-blocks,visual-self-audit}.md`·`plugin-visual/.../analysis-criteria.md`. 실행 확인 후(§1-5 #11) 공통 처리.
 
 ## 2-1. vision-powers
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
 | 1 | high | context-health-visual/SKILL.md:154-155 | `trigger-collision-inspector` 에이전트가 `skills/context-health-visual/agents/`에 있음 — 플러그인 에이전트는 루트 `agents/`만 로드, §5 호출 실패 | 루트 `agents/`로 이동, `vision-powers:trigger-collision-inspector`로 호출, :550·health-criteria:282 경로 수정 | ✅ |
-| 2 | high | plugin-visual/.../analysis-criteria.md:185, env-fit-diagnosis.md:66,87-91, report-template.md:121 | "2% of context window, 16,000 fallback" — 공식 1%(skills.md:1056), context-health-visual과도 충돌 | 1% + 오버라이드 설정으로 교체, 공유 파일 하나만 가리키게 | ✅ |
-| 3 | high | context-health-visual/SKILL.md:430,436-437, health-criteria.md:138-139 | "8,000-char fallback", "dynamically shortened" — 현 공식: 덜 쓰는 스킬 description부터 제거, 신규 설정(`skillListingMaxDescChars` 등) 미반영 | 현 공식 기준으로 교체 | 🔹 |
-| 4 | high | report-manager/SKILL.md:157(+:19,:57,:85) | "`$CLAUDE_PLUGIN_DATA` is a shell env var, not a SKILL.md substitution" — 공식 skills.md:401은 치환함 | gotcha 삭제, `${CLAUDE_PLUGIN_DATA}`로 통일 | ✅ |
-| 5 | high | report-manager:97,124-153, fact-check:66-87,260, marketplace desc | ✎ 섹션 피드백 UI를 심는 생성 스킬이 없음, ADR 0007이 Artifact에서 제거 → 수확 경로 전부 죽음 | 피드백 수확 절·감지 절·description 문구 삭제 | 🔹 |
-| 6 | high | context-health-visual/SKILL.md:412,492-495 | `sections-data.json`에서 `body` 제거하라는 프라이버시 가드 — 그 파일 없음(:247) | 스캔 스크립트가 본문 필드를 안 내게 보장, SKILL.md는 한 줄 | 🔹 |
-| 7 | high | channel-decision.md:32-34 ↔ doc-visual:76-77,132-162 | "md never changes / stays local" ↔ doc-visual은 md를 `--artifact`로 게시 | SSOT 표에 doc-visual 예외 행, doc-visual:76-77 삭제 | 🔹 |
+| 2 | high | plugin-visual/.../analysis-criteria.md:185,189-190, env-fit-diagnosis.md:66,87-91, report-template.md:121 | "2% of context window, 16,000 fallback" — 공식 1%(skills.md:1083), context-health-visual과도 충돌 | 1% + 오버라이드 설정으로 교체, 공유 파일 하나만 가리키게. #3 먼저(가리킬 health-criteria가 아직 틀림) | ✅ |
+| 3 | high | context-health-visual/SKILL.md:133,430,436-437, health-criteria.md:138-139,150-154,177, context-health-visual/scripts/env-health-scan.js:1152 | "8,000-char fallback", "dynamically shortened" — 현 공식: 덜 쓰는 스킬 description부터 제거, 신규 설정(`skillListingBudgetFraction`·`skillOverrides`·`skillListingMaxDescChars`) 미반영. 스캔 스크립트는 `SLASH_COMMAND_TOOL_CHAR_BUDGET`만 읽음 | 현 공식 기준으로 교체 + 스크립트가 세 설정도 읽게 | 🔹 |
+| 4 | high | report-manager/SKILL.md:157(+:19,:57,:85), scripts/config.js:44, list-reports.js:23, render-report.js:83, log-report.js:22 | "`$CLAUDE_PLUGIN_DATA` is a shell env var, not a SKILL.md substitution" — 공식 skills.md:414-416은 치환함. 반대로 스크립트 4개는 `process.env.CLAUDE_PLUGIN_DATA`를 읽는데 Bash 환경엔 이 변수가 없거나 남의 값(2부 공통 "Bash 환경변수") | gotcha 삭제, SKILL.md는 `${CLAUDE_PLUGIN_DATA}`로 통일 + 스크립트는 경로를 인자로 받게 | ✅ |
+| 5 | high | report-manager:97,124-153, fact-check:66-87,260, marketplace desc, README:86,106,108 | ✎ 섹션 피드백 UI를 심는 생성 스킬이 없음, ADR 0007이 Artifact에서 제거 → 수확 경로 전부 죽음 | 피드백 수확 절·감지 절·description·README 문구 삭제 | 🔹 |
+| 6 | high | context-health-visual/SKILL.md:412,492-495 | `sections-data.json`에서 `body` 제거하라는 프라이버시 가드 — 그 파일 없음(:247). 스캔은 `excerpt`(env-health-scan.js:1324)·`raw`(:1101)를 냄 | 스캔 스크립트가 본문 필드를 안 내게 보장, SKILL.md는 한 줄 | 🔹 |
+| 7 | high | channel-decision.md:32-34 ↔ doc-visual:43,76-77,132-162 | "md never changes / stays local" ↔ doc-visual은 md를 `--artifact`로 게시. channel-decision:9-10은 ADR 0009를 권위로 둠 | §1-5 #10 결정 후: 예외 인정이면 ADR 0009 §3 개정 + SSOT 표 예외 행 + doc-visual:43·76-77 삭제 | 🔹 |
 | 8 | high | plugin-visual:509, agents/coherence-reviewer.md | `--verify` 플래그·coherence-reviewer 호출이 어디에도 없음 — 에이전트 description 229자만 매 세션 비용 | :509 삭제, 에이전트 삭제(또는 호출 단계 명시) | 🔹 |
-| 9 | high | analysis-criteria.md:180-181,206, env-fit-diagnosis.md:69,76 | "MCP tool definitions load at session start, capped at 10%" — 공식: 기본 전부 deferred. MEMORY.md를 deferred로 분류 | health-criteria §2·§7 모델로 교체 | 🔹 |
-| 10 | high | fact-check/SKILL.md:46-47 | diff-visual 리포트 감지를 "Diff Visual" 제목으로 — 현재 제목은 "— Catch-up" | 파일명 접미사 규칙으로(report-manager:160과 동일) | 🔹 |
-| 11 | high | agents/security-auditor.md:94-119, plugin-visual:524 | "22 hook events as of 2026-03" — 현재 33개 | 이벤트 표 → 판단 기준(차단 가능/컨텍스트 주입/도구 출력 관찰) + hooks.md 포인터 | 🔹 |
-| 12 | high | analysis-criteria.md:149-158 ↔ plugin-visual:8,:531 | "All checks run in a single bash block" — `grep`/`ls`가 allowed-tools에 없어 권한 프롬프트로 멈춤(:531 스스로 185s 대기 관측) | `env-fit-scan.js --requirements` 인자로 이동 | 🔹 |
-| 13 | high | agents/security-auditor.md:40 | `security-rules.md` Context Modifiers 참조 — 에이전트는 경로를 못 받음, 9개 중 4개만 복제 | 프롬프트에 파일 경로 전달, 에이전트 내 중복 표 삭제 | 🔹 |
+| 9 | high | analysis-criteria.md:145,180-181,206, env-fit-diagnosis.md:69,76, report-template.md:122 | "MCP tool definitions load at session start, capped at 10%" — 공식: 기본 전부 deferred(mcp.md tool search). MEMORY.md를 deferred로 분류 | health-criteria §2·§7 모델로 교체(#3 이후) | 🔹 |
+| 10 | high | fact-check/SKILL.md:46-47 | diff-visual 리포트 감지를 "Diff Visual" 제목으로 — 현재 제목은 "— Catch-up". "Doc Visual"(:47)도 실제로 안 나옴 | 파일명 접미사 규칙으로(report-manager:160과 동일, `.artifact` 접미사 제거 포함) | 🔹 |
+| 11 | high | agents/security-auditor.md:94-119, plugin-visual:524 | "22 hook events as of 2026-03" — 현재 33개. :524가 가리키는 security-rules.md 이벤트 목록도 없음 | 이벤트 표 → 판단 기준(차단 가능/컨텍스트 주입/도구 출력 관찰). 에이전트 도구가 Read/Glob/Grep뿐이라 hooks.md URL 포인터는 못 따라감 — 필요한 목록은 호출 측이 넘긴다 | 🔹 |
+| 12 | high | analysis-criteria.md:149-158 ↔ plugin-visual:8,:531 | "All checks run in a single bash block" — `grep`/`ls`가 allowed-tools에 없어 권한 프롬프트로 멈춤(:531 스스로 185s 대기 관측). MCP 체크가 grep하는 `~/.claude/.mcp.json`은 공식 위치 아님(`~/.claude.json`, `.mcp.json`) | `env-fit-scan.js --requirements` 인자로 이동, MCP 경로 교정. 이후 `Bash(which *)`도 미사용(#30과 함께 삭제) | 🔹 |
+| 13 | high | agents/security-auditor.md:40 | `security-rules.md` Context Modifiers 참조 — 에이전트는 경로를 못 받음, 9개 중 4개만 복제 | 에이전트 본문에 `${CLAUDE_PLUGIN_ROOT}/…/security-rules.md` 직접 기재(에이전트 본문은 치환됨, plugins-reference.md:769), 에이전트 내 중복 표 삭제 | 🔹 |
 | 14 | med | mermaid-patterns.md:484, feature-architect:277, plugin-visual:359,:530 | 노드 한도 15-20/~15/25 ↔ density-rules 9(게이트 강제) | 포인터로 통일 | 🔹 |
 | 15 | med | agents/feature-architect.md:250 | violet classDef ↔ semantic-tokens.md:69 금지, 게이트는 4개 hex만 검사 | slate로 교체 | 🔹 |
 | 16 | med | mermaid-patterns.md:386,408 | "ELK default" ↔ :27 "Only import when needed", 템플릿은 ADR 0002로 삭제 | 절 삭제 | 🔹 |
-| 17 | med | context-health-visual:18 ↔ :344-345,:521-522 | observational 섹션 5개 vs 4개 | "6 graded + 5 observational"로 통일 | 🔹 |
+| 17 | med | context-health-visual:18 ↔ :344-345,:521-522 | observational 섹션 5개 vs 4개 | "6 graded + 5 observational"로 통일, :344 "10 diagnostic sections"도 11로 | 🔹 |
 | 18 | med | doc-visual:4-7, diff-visual:4-9, report-manager:4-5, plugin.json/marketplace | description 동의어 나열, diff-visual 531자는 본문 반복, plugin.json(676자)·marketplace(1004자) 불일치 | 짧게 재작성 + 두 매니페스트 동기화 | ✅(길이) |
-| 19 | med | doc-visual:94-121,319-355, diff-visual:354-398,491-519, plugin-visual:413-490, context-health-visual:326-407 | Artifact 채널 블록 ~70줄 × 4 복제 | `references/design-system/artifact-channel.md` 하나로 | 🔹 |
-| 20 | med | 5개 스킬 local 채널 규칙 | 로컬 규칙·CSS·self-audit 5곳 중복, 일부는 게이트가 이미 강제 | `local-channel.md` 포인터 | 🔹 |
-| 21 | med | 4개 스킬 "Config precedence" 7줄 | channel-decision.md 복제 | 삭제 또는 `config.js channel` 서브커맨드로 | 🔹 |
+| 19 | med | doc-visual:94-121,319-355, diff-visual:354-398,491-519, plugin-visual:413-490, context-health-visual:326-407 | Artifact 채널 블록 ~70줄 × 4 복제 | `references/design-system/artifact-channel.md` 하나로, channel-decision.md(ADR 0009 SSOT)에서 링크 | 🔹 |
+| 20 | med | 5개 스킬 local 채널 규칙 | 로컬 규칙·CSS·self-audit 5곳 중복, 일부는 게이트가 이미 강제 | `local-channel.md` 포인터, channel-decision.md에서 링크 | 🔹 |
+| 21 | med | 4개 스킬 "Config precedence" 7줄 | channel-decision.md 복제 | channel-decision.md 포인터로 삭제. (`config.js channel` 서브커맨드안은 channel-decision:77-80 "config.js는 단순 키-값"과 충돌해 뺌) | 🔹 |
 | 22 | med | context-health-visual:426-541 등 | Gotchas 115줄 대부분 health-criteria 중복·유지보수자 메모 | 런타임 사실은 criteria로, 유지보수 메모는 docs로 → 세 파일 500줄 미만 | 🔹 |
 | 23 | med | feature-architect:157-177,354-399 ↔ analysis-criteria:69-119 | 품질 기준 이중화, 체크리스트 14 vs 7로 갈라짐 | analysis-criteria SSOT | 🔹 |
 | 24 | med | 여러 스킬 | 개발 흔적("S2–S4", "issue 007 S4.5")과 설치본에 없는 경로(`docs/…`, `references/Kami/…`) | 삭제, 필요한 이유는 인라인 한 문장 | 🔹 |
 | 25 | med | fact-check:171-173, report-manager:100,161 | 템플릿 시절 클래스(`ve-card`, `--i`) | "match existing markup" 한 줄 | 🔹 |
-| 26 | low | 5개 스킬 | 8 Tells 재나열, 목록 갈라짐 | anti-slop-tells.md 포인터 | 🔹 |
+| 26 | low | 5개 스킬 | 8 Tells 재나열, 목록 갈라짐(report-manager:101은 7개, "borrowed costume" 누락) | anti-slop-tells.md 포인터 | 🔹 |
 | 27 | low | diff-visual:188,400-405 | "Use extended thinking", 측정 기록 — no-op | 삭제 | 🔹 |
-| 28 | low | env-fit-diagnosis.md:43 | "Six Diagnostic Analyses" — 실제 8개, `skills-lock.json` (추측: 없는 파일) | "Eight", 3G 축소 | 🔹 |
+| 28 | low | env-fit-diagnosis.md:43 | "Six Diagnostic Analyses" — 실제 8개, `skills-lock.json`은 공식 문서·디스크 어디에도 없음(실제 파일은 `~/.claude/plugins/installed_plugins.json`) | "Eight", 3G 축소 | 🔹 |
 | 29 | low | doc-visual:204 ↔ :210 | "read them each time" ↔ "no need to look up" | 규칙 목록 삭제 | 🔹 |
 | 30 | low | plugin-visual:516,:8 | 쓰지 않는 `echo $(date)` gotcha와 `Bash(echo *)` grant | 삭제 | 🔹 |
+| 31 | low | doc-visual:118-120,326, diff-visual:384-386,495, context-health-visual:357-359,380, plugin-visual:448-450,465, fact-check:243-244, report-manager:119, scripts/write-artifact-sidecar.js (재검수 추가) | Artifact 툴 `favicon` 파라미터는 deprecated, `icon`으로 대체(툴 스키마) | `icon`으로 교체, sidecar 필드·`list-reports.test.js` 함께 | ✅ |
 
-README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출), "Skips gracefully when claude-in-chrome unavailable"(render-report.js는 로컬 Chrome 바이너리 사용).
+README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#8 적용 후 plugin-visual이 쓰는 건 2개), "Skips gracefully when claude-in-chrome unavailable"(render-report.js는 로컬 Chrome 바이너리 사용). 위치 README:17, :104.
 유지: diff-visual:170-178(검증된 이름만 다이어그램에), :238-240(extraction law), channel-decision.md:82-97, mermaid-patterns.md:448-459·505-515, context-health-visual:496-507.
 
 ## 2-2. skill-creator-pro
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | skill-creator-pro/SKILL.md:446 | `python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py` — :17 `from scripts.quick_validate import`라 `ModuleNotFoundError`(공식은 `python -m`) | "from `${CLAUDE_SKILL_DIR}`: `python -m scripts.package_skill <path>`" | ✅(import 줄) 🔹(실행) |
+| 1 | high | skill-creator-pro/SKILL.md:446 (+:245, :406 같은 CWD 의존) | `python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py` — :17 `from scripts.quick_validate import`라 `ModuleNotFoundError`(공식은 `python -m`). 실행 재현됨. `-m`으로 가도 PyYAML 필요(quick_validate.py:9) | "from `${CLAUDE_SKILL_DIR}`: `python -m scripts.package_skill <path>`" | ✅(import 줄) 🔹(실행) |
 | 2 | high | auto-optimize/SKILL.md:70-71,337,340 | 작업 디렉터리를 스킬 옆 `autoresearch-*/`에 — 플러그인 스킬이면 배포본에 섞임, skill-creator-pro:181과 규칙 불일치 | `${CLAUDE_PLUGIN_DATA}/autoresearch-<name>/` | 🔹 |
 | 3 | high | auto-optimize:3 ↔ skill-creator-pro:3 | 트리거 4개 겹침 — "improve my skill"이 무인 제자리 수정 루프로 갈 수 있음 | auto-optimize는 "hands-off 요청 시에만", skill-creator-pro의 공식에 없는 "Also trigger on…" 삭제(472→~340자) | 🔹 |
 | 4 | high | auto-optimize:68 ↔ :109,:219 | 기준선 3-5회 vs 실험 N회 — max_score 비교 불가 | 기준선도 실험과 같은 횟수 | 🔹 |
 | 5 | med | skill-creator-pro:259,:300-304 | `kill $VIEWER_PID` — 셸 변수가 호출 간 유지 안 됨, 포트 충돌은 스크립트가 이미 처리 | PID를 echo 후 리터럴로 kill, 이유절 삭제 | 🔹 |
-| 6 | med | auto-optimize:121,128-130 | 대시보드가 file://에서 `results.json` fetch — 브라우저가 차단(추측, 미실측) | 결과 인라인 + meta refresh, 명세는 references로 | 🔹 |
+| 6 | med | auto-optimize:121,128-130 | 대시보드가 file://에서 `results.json` fetch — 브라우저가 차단(실측: headless Chrome `TypeError: Failed to fetch`) | 결과 인라인 + meta refresh, 명세는 references로 | 🔹 |
 | 7 | med | auto-optimize:72,:219 | 실행 주체 미명시 — eval을 아는 세션이 직접 돌리면 오염 | 매 실행 fresh subagent | 🔹 |
 | 8 | med | skill-creator-pro:96 | `${CLAUDE_PLUGIN_DATA}` 지시 — 사용자 스킬 대부분은 personal/project라 치환 안 됨 | 플러그인/개인 스킬 분기 | 🔹 |
-| 9 | med | skill-creator-pro:436,:438 | `claude`·`anthropic` 예약 이름, built-in 조용한 충돌 — 공식: 예약은 `synced`, 플러그인 스킬은 네임스페이스 | 공식 기준으로 교체 | 🔹 |
+| 9 | med | skill-creator-pro:436,:438 | Claude Code 기준 누락 — 예약 `synced`(skills.md:130), 이름 충돌 우선순위(skills.md:161-170, 플러그인 스킬은 네임스페이스). `claude`·`anthropic` 예약은 API·claude.ai 스킬엔 유효 | `synced`·우선순위 추가. `claude`/`anthropic` 규칙 유지 여부는 §1-5 #9 | 🔹 |
 | 10 | med | auto-optimize:351-363,:267,:335-347 | 예시·반복 문단·Output Files 중복 | 삭제, changelog 템플릿은 references로 | 🔹 |
 | 11 | med | skill-creator-pro/SKILL.md(520줄) | 자기 규칙(:108)과 공식 500줄 초과 | pro 추가분부터 삭제, Claude.ai 절 삭제는 ADR 0001과 부딪혀 결정 필요 | 🔹 |
 | 12 | low | auto-optimize:261 | "NEVER STOP" ↔ :215 "ALL CAPS 금지" | 이유 붙인 기준 문장으로 | 🔹 |
 | 13 | low | auto-optimize:58-59,:380 | 레포 전용 경로 참조, "step 2" 오기 | 삭제, "Step 3" | 🔹 |
 | 14 | low | README.md:23 | 없는 기능 "confidence scoring" | 삭제 | 🔹 |
 
-기타: agents 3개·schemas.md·scripts는 공식과 동일(ADR 0001 준수). 예외 `eval-viewer/generate_review.py:279-291` `</script>` 이스케이프는 기록 안 된 fork — ADR/README에 한 줄.
+기타: agents 3개·schemas.md·scripts는 공식과 동일(ADR 0001 준수). 기록 안 된 fork 2개 — `eval-viewer/generate_review.py:279-291` `</script>` 이스케이프, `eval-viewer/viewer.html`의 sandboxed iframe(.html 출력 실시간 렌더). 공식 `LICENSE.txt`(Apache-2.0) 누락. → ADR/README에 fork 기록, LICENSE 추가.
 
 ## 2-3. codex-advisor
 
-spec/issue 016이 이미 다루는 항목(Phase 4, `--no-preview`, rescue 3블록, evaluation.md, spark 등)은 제외. 단 `codex-review:73` "Alias `spark` auto-expands"는 016 S6 수용기준 grep에 안 걸리므로 S6에 추가 필요.
+issue 016(codex-advisor 5.0.0, `05b74a7`)이 리뷰 스킬 5개(review·adversarial·rescue·verify·research)를 다시 썼다. 이 절의 줄 번호는 `23c69ec` 기준이다. (재검수 삭제: 머리말의 `codex-review:73` spark 건 — `4e80b17`에서 해소.)
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | codex-verify:232,253,265, research:231,252,264, rescue:283,297, transfer:40→72 | `$CODEX_COMPANION`을 앞 Bash 호출에서 설정하고 뒤 호출에서 사용 — 셸 변수 비유지, verify/research는 Phase 1.5 질문이 끼어 반드시 다른 호출 | 매 블록 첫 줄에서 재해석(또는 #7 스크립트로 흡수) | 🔹 |
+| 1 | high | codex-verify:100→283,304,319, research:95→263,284,299, rescue:231→296,310, transfer:40→72 | `$CODEX_COMPANION`을 앞 Bash 호출에서 설정하고 뒤 호출에서 사용 — 셸 변수 비유지, verify/research는 Phase 1.5 질문이 끼어 반드시 다른 호출. rescue:285-286은 스스로 "shell variables do not survive across calls"라 적어 놓고 어김 | 매 블록 첫 줄에서 재해석(또는 #7 스크립트로 흡수) | 🔹 |
 | 2 | high | codex-status:19-21, result:19-21, cancel:28 | `status $ARGUMENTS` 따옴표 없이 전달 ↔ companion-usage.md:321 whitelist 규칙 | Phase 1 whitelist + 값별 따옴표 | ✅ |
-| 3 | med | codex-cancel:14-19,:37, status:55, result:56 | companion 실제 동작과 다른 설명(id 없으면 활성 job 1개일 때만 취소, `--all`은 상한만 해제) | 실제 동작으로 교체 | 🔹 |
-| 4 | med | companion-usage.md:351-353,:367 | 알 수 없는 플래그 "FATAL" ↔ 각 SKILL.md는 AskUserQuestion | AskUserQuestion으로 통일 | 🔹 |
-| 5 | med | rescue·review·adversarial·verify·research의 `:NNN` 줄 인용 | 핀(1.0.5)과 안 맞는 옛 번호, companion-usage.md와 값이 둘 | SKILL.md 인용 삭제, companion-usage.md §3 포인터 | 🔹 |
-| 6 | med | review:79, rescue:75, verify:134, research:134, adversarial:76 | "Advisory stderr warnings (slug not in cache)" — spec 012에서 삭제된 기능 | 절 삭제 | 🔹 |
-| 7 | med | rescue:253-262,283-298, verify, research, companion-usage.md | 실행·jobId 파싱·대기 루프 4파일 복사 + 관련 gotcha 7곳 반복 | `scripts/codex-task.sh launch/wait`로 이동 | 🔹 |
-| 8 | med | rescue:292, verify:260, research:259 | `/codex:status` 안내 — Official 플러그인 비활성 권장과 충돌, 플러그인명 지목 | `/codex-status` | 🔹 |
+| 3 | med | codex-cancel:14-19,:37, status:55, result:56 | companion 실제 동작과 다른 설명(id 없으면 활성 job 1개일 때만 취소 — companion 1.0.6 `job-control.mjs:281-305`, `--all`은 상한만 해제) | 실제 동작으로 교체 | 🔹 |
+| 4 | med | companion-usage.md:352,:367 | 알 수 없는 플래그 "FATAL" ↔ 각 SKILL.md는 AskUserQuestion | AskUserQuestion으로 통일 | 🔹 |
+| 5 | med | rescue:53,226,265,458-459, review:31,43,273, adversarial:30,41,184, verify:282,434, research:262,421 | companion `:NNN` 줄 인용 — 핀과 안 맞는 옛 번호, companion-usage.md와 값이 둘(rescue:226 `:758-790` ↔ companion-usage `:762-823`) | SKILL.md 인용 삭제, companion-usage.md §3 포인터 | 🔹 |
+| 6 | med | review:80, rescue:75, verify:173, research:162, adversarial:102 | "Advisory stderr warnings (slug not in cache)" — spec 012에서 삭제된 기능. 스크립트 stderr는 usage와 config 읽기 오류뿐 | 절 삭제 | 🔹 |
+| 7 | med | rescue:266-311, verify:283-320, research:263-300, companion-usage.md | 실행·jobId 파싱·대기 루프 복사 + 관련 gotcha 반복. 016의 prepare-verifier.py는 Phase 4만 다룸 | `scripts/codex-task.sh launch/wait`로 이동 | 🔹 |
+| 8 | med | rescue:305,321, verify:314, research:294, companion-usage.md:301 | `/codex:status` 안내 — Official 플러그인 비활성 권장과 충돌, 플러그인명 지목 | `/codex-status` | 🔹 |
 | 9 | med | companion-usage.md:309 | "enable the Official plugin" ↔ ADR 0006 자체 hook | 자체 hook 기준으로 | 🔹 |
 | 10 | med | codex-transfer:3 | description 361자, 모델이 스스로 호출할 흐름 아님 | `disable-model-invocation: true` + 짧은 description | ✅(길이) |
-| 11 | med | review:41-43, adversarial:39-41, rescue:377, setup:126 | `--model`/`--effort` 근거 4곳 + companion-usage 중복 | SKILL.md엔 한 줄 포인터 | 🔹 |
+| 11 | med | review:43-44, adversarial:41-42, rescue:457, setup:126 | `--model`/`--effort` 근거 4곳 + companion-usage 중복 | SKILL.md엔 한 줄 포인터 | 🔹 |
 | 12 | low | companion-usage.md:302 | effort 값 검증 — companion에 전달 안 됨, 용어집 "Do not reintroduce"와 충돌 | 행 삭제 | 🔹 |
 | 13 | low | codex-result:3, cancel:3 | 동의어 나열 | 한 문장 | 🔹 |
-| 14 | low | adversarial:11-13,:248-250 | "hallucinates more" 근거 없이 4회 | 삭제 | 🔹 |
+| 14 | low | adversarial:11-12,:354 | "invents more than plain review does" 근거 없이 2회(`bcd42f9` 재작성 후) | 삭제 | 🔹 |
 | 15 | low | companion-usage.md:14,:155,:296 | "1.0.0+" ↔ README "v1.0.4+", "still present in 1.0.5" 확인 스탬프 | :14 삭제, 스탬프 삭제(:9 핀은 유지) | 🔹 |
-| 16 | low | review:205-207 | 없는 "the plan" 참조 | 삭제 | 🔹 |
+| 16 | low | review:272 | 없는 "the plan" 참조 | 삭제 | 🔹 |
 
-기타: `codex-setup:33-40` 인증 확인은 companion `setup --json`의 `authStatus`로 대체 가능. ADR 0012 적용 시 rescue:23-25·:381 이유 문장도 S5a 정리 범위.
+기타: `codex-setup:32-40` 인증 확인은 companion `setup --json`의 `authStatus`로 대체 가능. rescue:461 "Exploring biases the double-check"는 Verifier 도입 후 낡은 이유 문장(:23-26은 `bcd42f9`에서 교정됨).
 
 ## 2-4. rubber-duck-tutor
 
@@ -304,19 +369,19 @@ ADR 0003·0008은 재논의하지 않음.
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
 | 1 | high | hooks/post-push.sh:66, post-pr.sh:66, engine.md:289 | `resolve-gap.sh "<the exact gap text recent-gaps.sh printed>"` — 출력이 `날짜<TAB>gap`이라 그대로 넘기면 no-op → ship-point gap이 영원히 해소 안 됨 | "gap text with the leading date and tab removed" | ✅(문구) 🔹(실행 재현) |
-| 2 | high | duck/SKILL.md:29-30 | 3번(미커밋)이 4번(세션 편집 미커밋)을 먼저 잡아 `/duck-verify`로 절대 라우팅 안 됨 | 4번을 "already committed session edits"로, 중복 Mode Map 표 삭제 | 🔹 |
+| 2 | high | duck/SKILL.md:29-30 | 3번(`git diff --stat` 미커밋)이 4번(세션 편집 미커밋)을 먼저 잡아 `/duck-verify`로 거의 라우팅 안 됨(새 untracked 파일만 있는 세션만 4번 도달) | §1-5 #8 결정 — (a) 4번 재정의 (b) 3·4번 교환. 중복 Mode Map 표 삭제는 공통 | 🔹 |
 | 3 | high | ducking/references/exercise-patterns.md:48 ↔ :176, engine.md:347 | "막히면 코드 보여줘라" ↔ "어느 단계에서도 코드 금지" | :48 삭제, 1-3줄 문법만 허용 | 🔹 |
 | 4 | high | engine.md:173 ↔ :188,:198 | 증명 안 된 hunch를 log-gap에 기록 → 다음에 틀린 gap으로 출제 | hunch는 별도 줄, log-gap 금지 | 🔹 |
 | 5 | high | engine.md:103,105 | 모델 재량 제안 지시 ↔ ADR 0003, "regardless" ↔ `enabled:false` 즉시 중단 | 재량 부분 삭제, config 체크 우선 | 🔹 |
-| 6 | high | references/orientation-guide.md:72 | 유저 레포에 `/duck orient refresh` 문구 기록 — 이 명령은 동작 안 함 | `/duck-orient refresh`, "main SKILL.md" → `engine.md` | 🔹 |
+| 6 | high | references/orientation-guide.md:3,72, log-gap.sh:7, exercise-patterns.md:3 | 유저 레포에 `/duck orient refresh` 문구 기록 — 이 명령은 동작 안 함. "main SKILL.md" 문구는 orientation-guide 아닌 exercise-patterns.md:3 등 | `/duck-orient refresh`, "main SKILL.md" → `engine.md` | 🔹 |
 | 7 | high | plugin CONTEXT.md ↔ docs/context/rubber-duck-tutor.md | 용어집 이중·정의 충돌 (1부 설계 기록 표와 동일 건) | 1부에서 처리 | ✅ |
 | 8 | med | engine.md:133,:163 | quick check "~30초" ↔ 필수 Confidence·Uncertainty 체크 | quick은 둘 다 생략 | 🔹 |
-| 9 | med | engine.md:337 ↔ :38,:64-69 | 한 메시지 질문 2개, "before anything else" 두 곳 | :337 삭제, 순서 한 줄 명시 | 🔹 |
-| 10 | med | engine.md:216-333 | ship-point 3절 118줄(engine의 31%) — 어떤 모드도 실행 안 함, hook은 engine 안 읽음. 슬라이스 이력 섞임 | 이력 제거 후 `references/ship-point.md`로 | 🔹 |
+| 9 | med | engine.md:337 ↔ :38,:64-69, duck-orient:19 | 한 메시지 질문 2개, "before anything else" 두 곳(engine·duck-orient:19) | :337 삭제, 순서 한 줄 명시 | 🔹 |
+| 10 | med | engine.md:216-333 | ship-point 3절 118줄(engine의 31%) — 어떤 모드도 실행 안 함, hook은 engine 안 읽음. 슬라이스 이력(:259, :279) 섞임 | 이력 제거 후 `references/ship-point.md`로. #12와 함께(포인터가 끊기지 않게) | 🔹 |
 | 11 | med | engine.md:227-233 ↔ post-push/post-pr:66 | "keep in sync" 사본 drift — hook엔 injection·N+1·hook contract 누락, tie-break는 hook에만 | `lib.sh` 함수 하나를 SSOT로, sync 주석은 grep 테스트로 | 🔹 |
 | 12 | med | post-push.sh:62, post-pr.sh:62 | 경로 없는 "see the plugin engine doc" 포인터 — ship 시점에 engine 읽기 유도(ADR 0003 근거와 충돌) | 괄호 정의 인라인, 포인터 삭제 | 🔹 |
-| 13 | med | engine.md:210-211 | `lib.sh duck__check_rate_limit`가 이미 강제하는 세션 한도 | 절 삭제 | 🔹 |
-| 14 | med | engine.md:340-361 | "wrong is wrong" 3회, 질문 1개 규칙 반복, exercise-patterns 복사 | 포인터 1줄 | 🔹 |
+| 13 | med | engine.md:210-211 | `lib.sh duck__check_rate_limit`(lib.sh:67)가 이미 강제하는 세션 한도 | :210-211만 삭제. :209(사용자 거절)·:214는 다른 곳에서 강제 안 되므로 유지 | 🔹 |
+| 14 | med | engine.md:340-361 | "wrong is wrong" 3회, 질문 1개 규칙 반복, exercise-patterns 복사 | 포인터 1줄. 단 :359("no general-knowledge questions")는 다른 곳에 없어 유지 | 🔹 |
 | 15 | med | engine.md:41 ↔ :90, verify:40 | "Never solve, never hint" ↔ 스스로 교정·설명 지시 | "답을 내놓은 뒤에만 한 문장으로 정답" | 🔹 |
 | 16 | med | duck-prebuild:102 | "Continue until all decisions are covered" — intensity 예산과 충돌 | 예산 소진까지 위험 순 | 🔹 |
 | 17 | med | duck/SKILL.md:36,:46,:50 | auto-detect 후 인라인 실행 vs 명령 안내 미정, 없는 "fallback" 섹션 | 한 규칙으로 | 🔹 |
@@ -330,33 +395,33 @@ ADR 0003·0008은 재논의하지 않음.
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | claw-mux/SKILL.md:102,118,173-179, terminal-io.md, sync-and-automation.md:45, cmux-browser:97-110, cmux-markdown:95-96 | `$SKILL_DIR` 25곳 — 공식 치환 변수는 `${CLAUDE_SKILL_DIR}`, 셸 env도 비어 `/scripts/…` 실행 실패 | `${CLAUDE_SKILL_DIR}`로 일괄 교체 | ✅ |
-| 2 | med | terminal-io.md:146, SKILL.md:107-108 | Claude Code 완료 감지를 `╭─`/`❯`로 — 작업 중에도 렌더돼 오판 (추측) | `cmux wait-for -S task-done` 방식 | 🔹 |
+| 1 | high | claw-mux/SKILL.md:102,118,173-179, terminal-io.md, sync-and-automation.md:45, cmux-browser:97-110, cmux-markdown:95-96 | `$SKILL_DIR` 25곳 — 공식 치환 변수는 `${CLAUDE_SKILL_DIR}`, 셸 env도 비어 `/scripts/…` 실행 실패 | SKILL.md 본문은 `${CLAUDE_SKILL_DIR}`로 교체. references(terminal-io.md 5곳, sync-and-automation.md:45)는 치환 안 될 수 있으므로(2부 공통 "reference 파일 치환") SKILL.md에 스크립트 경로를 한 번 제시하고 references는 상대 경로로 | ✅ |
+| 2 | med | terminal-io.md:146, SKILL.md:107-108 | Claude Code 완료 감지를 `╭─`/`❯`로 — 작업 중에도 렌더돼 오판 (추측 — poll-screen.sh:26-27이 스크롤백 어디든 `❯`를 매칭. 라이브 pane 확인 필요, §1-5 #11) | `cmux wait-for -S task-done` 방식 | 🔹 |
 | 3 | med | notifications.md:82-91 | Stop hook `stop_reason` 분기 — 공식 입력에 없음, 유저 settings 편집은 범위 밖 | 절 삭제 또는 `last_assistant_message` | 🔹 |
 | 4 | med | SKILL.md:62-69,71-125,127-144,13-21 | wait-for 줄 3회, 사이드바 명령 3회, 환경 체크 3회 | 전략 표 + 1줄, ~100줄로 | 🔹 |
 | 5 | med | SKILL.md:75,:162, terminal-io.md:150,:193 | "foreground sleep over 2 seconds 차단" 미확인 수치 3곳 + 서로 충돌 | "run_in_background 또는 Monitor" 한 곳 | 🔹 |
-| 6 | med | cmux-markdown:117 ↔ :41,:120 | atomic replace 지원 ↔ 재생성 시 재연결 안 됨 | 시간 기준 한 줄, 스킬 ~20줄로 축소 | 🔹 |
+| 6 | med | cmux-markdown:117 ↔ :44,:120 | atomic replace 지원 ↔ 재생성 시 재연결 안 됨(:44에 이미 시간 기준 규칙) | 시간 기준 한 줄, 스킬 ~20줄로 축소 | 🔹 |
 | 7 | med | cmux-browser:20-30,61-71,83-89,112-121 | 같은 워크플로 3회, Limits 중복 | Core Workflow 하나만 | 🔹 |
-| 8 | med | cmux-markdown:26,82-88, cmux-browser:39 | `--workspace`/`--window` 플래그 — `cmux help`(0.64.22)에 없음 | 실행 확인 후 삭제 | 🔹 |
-| 9 | low | SKILL.md:3, cmux-browser:3, README.md:44 | description에 트리거 없음, README가 disable-model-invocation과 충돌 | 트리거 문장, `/cmux-markdown` 안내 | 🔹 |
+| 9 | low | SKILL.md:3, README.md:37 | claw-mux description에 트리거 없음(cmux-browser:3엔 이미 "Use when…"), README가 disable-model-invocation과 충돌 | 트리거 문장, `/cmux-markdown` 안내 | 🔹 |
 
-기타: 설치 캐시 1.2.0 description이 레포와 다른데 버전 범프 없음(`566d51b`) — 기존 유저 미반영.
+재검수 삭제: #8 `--workspace`/`--window` — `cmux markdown --help`·`cmux browser --help`(0.64.25)에 있음, 최상위 `cmux help` 요약에만 없었다. 기타(설치 캐시 1.2.0 description 불일치) — 현재 캐시가 레포와 같음.
 
 ## 2-6. notebooklm-connector
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | agents/chrome-mcp-query.md:16-18 | `permissionMode: bypassPermissions` — 플러그인 에이전트에선 무시(plugins-reference:68), 작성자는 켜진 줄 앎 | 삭제, README에 allow 규칙 안내 | ✅ |
+| 1 | high | agents/chrome-mcp-query.md:16-18 | `permissionMode: bypassPermissions` — 플러그인 에이전트에선 무시(plugins-reference.md:73), 작성자는 켜진 줄 앎 | 삭제, README에 allow 규칙 안내 | ✅ |
 | 2 | high | notebooklm-manager/SKILL.md:18, references/gotchas.md:31 | "Chrome MCP tools aren't in allowed tool set — calling will error" — 공식: allowed-tools는 제한 아님 | 이유를 "에이전트가 탭·폴링·에러를 소유"로 교체, 중복 삭제 | 🔹 |
-| 3 | high | hooks/ensure-skill-loaded.sh:5,10 | regex `노트북`(=laptop)·`notebook.*list` 등 과매칭 + "MUST invoke" — **이번 세션에서 NotebookLM과 무관한 프롬프트에 실제 발동 관측** | `notebooklm` 중심으로 좁히고 조건부 문구 | ✅ |
-| 4 | med | hooks/hooks.json:27, SKILL.md:18,72,116 | matcher `Task` — 도구명은 `Agent`로 바뀜, hook matcher에 alias 적용 여부 미명시 (추측) | `"Agent\|Task"`, 본문 `Agent`로 | 🔹 |
-| 5 | med | follow-up-reminder.sh:21 ↔ SKILL.md:114 | hook이 `auto_coverage: false`를 무시하고 매번 강제 | "unless auto_coverage is false" | 🔹 |
-| 6 | med | agents/chrome-mcp-query.md:216,231-233,311 | textarea maxLength 분기 — gotchas:17 "no maxLength" → 절대 실행 안 됨 | 분기·출력 줄 삭제 | 🔹 |
+| 3 | high | hooks/ensure-skill-loaded.sh:5,10 | regex `노트북`(=laptop)·`notebook.*list` 등 과매칭 + "MUST invoke" — **이번 세션에서 NotebookLM과 무관한 프롬프트에 실제 발동 관측**. 2026-09-23 재검수 세션에서도 재현(서브에이전트 보고 메시지에 발동) | `notebooklm` 중심으로 좁히고 조건부 문구 | ✅ |
+| 4 | med | hooks/hooks.json:27, SKILL.md:18,72,116 | matcher `Task` — 도구명은 `Agent`로 바뀜. `Task` alias는 settings·에이전트 정의에만 명시(sub-agents.md:481), hook matcher는 `tool_name` 정확 매칭(hooks.md:287-291) (추측) | `"Agent\|Task"`, 본문 `Agent`로 — 어느 쪽이든 안전 | 🔹 |
+| 5 | med | follow-up-reminder.sh:21 ↔ SKILL.md:114 | hook이 config를 읽지 않음. 다만 "per Section 5" 문구가 :114 skip을 포함해 "매번 강제"는 과장 | "unless auto_coverage is false" | 🔹 |
+| 6 | med | agents/chrome-mcp-query.md:216,231-233,311, SKILL.md:97 | textarea maxLength 분기 — gotchas:17 "no maxLength" → 절대 실행 안 됨 | 분기·출력 줄 삭제, SKILL.md:97 함께 | 🔹 |
 | 7 | med | SKILL.md:166-193,197-200 | hook 내부 마이그레이션 설명 28줄, 모델 할 일 없음 | 한 줄 | 🔹 |
 | 8 | med | SKILL.md:101-108 ↔ agents:76-83 | 복구 6단계 동일 복제 | 에이전트 출력 SSOT | 🔹 |
-| 9 | med | agents:367,369 ↔ :373 | JS 에러 시 재시도 ↔ 추가 호출 금지 | 한 규칙으로 | 🔹 |
 | 10 | low | plugin.json ↔ marketplace.json | description 문구 다름 | 동기화 | 🔹 |
-| 11 | low | hooks/setup-data.sh:70 | PreToolUse `{"decision":"approve"}` deprecated | 현 형식으로 | 🔹 |
+| 11 | low | hooks/setup-data.sh:70 | PreToolUse `{"decision":"approve"}` deprecated(hooks.md:1848) | 현 형식으로 | 🔹 |
+
+재검수 삭제: #9 — agent:373은 추가 *javascript_tool* 호출만 금지. :367(tabs_context 재시도)·:369(스크린샷 폴백)와 충돌 없음.
 
 ## 2-7. claw-mo · toolbox · vibeproxy-kit · worktree-plus · e2e-test-runner
 
@@ -364,8 +429,8 @@ ADR 0003·0008은 재논의하지 않음.
 |---|---|---|---|---|---|
 | 1 | high | worktree-plus/skills/worktree-setup/SKILL.md:94 | "migration re-trigger by restarting" — `setup-check.sh:40-41` fast path가 migration 블록보다 먼저 exit | `git config --global` 수동 명령 안내, v3.0.0 migration 절 축소 검토 | 🔹 |
 | 2 | high | worktree-plus/.../SKILL.md:75 | "`dirBase`: no tilde expansion (stays literal)" — 실제 `worktree-create.sh:43-45`가 `exit 1` | "`~` values are rejected — write an absolute path" | ✅ |
-| 3 | high | e2e-test-runner/skills/e2e-test/SKILL.md:39 | `--resultsPath ./e2e-results` 고정 → 타임스탬프 하위 디렉터리 무력화, 매 실행 덮어씀, Quick Start `--baseline` 경로가 존재 불가 | 플래그 삭제, 출력된 경로 읽기 | 🔹 |
-| 4 | high | claw-mo/skills/claw-mo-open/SKILL.md:73-78 | 런타임은 파일만 watch하는데 config엔 `*.md` 저장 → 다음 `/claw-mo-up`이 drift로 `--clear` (추론) | 저장값을 실제 시작 형태와 일치 | 🔹 |
+| 3 | high | e2e-test-runner/skills/e2e-test/SKILL.md:39 | `--resultsPath ./e2e-results` 고정 → 기본값 `./e2e-results/${Date.now()}`(args.ts:22) 무력화, 매 실행 덮어씀, Quick Start `--baseline` 경로가 존재 불가 | 플래그 삭제, 출력된 경로 읽기. SKILL 5-6단계도 함께 | 🔹 |
+| 4 | high | claw-mo/skills/claw-mo-open/SKILL.md:73-78 | 런타임은 파일만 watch하는데 config엔 `*.md` 저장 → 다음 `/claw-mo-up`이 drift로 `--clear`(shared.md:98,134-135 패턴 비교). dir 모드도 `dir/*.md`로 drift (코드 읽기로 확인) | 저장값을 실제 시작 형태와 일치 | 🔹 |
 | 5 | high | vibeproxy-kit/skills/setup-aliases/SKILL.md:232 ↔ :291 ↔ :303 | merged-config 재생성 시점 "launch만" vs "launch or toggle" | 사실 하나로 확정, Phase 9 한 곳에 | 🔹 |
 | 6 | med | e2e-test-runner/hooks/hooks.json:9,14 | `timeout: 120000`·`5000` — 단위가 초(hooks.md:430) → 약 33시간 | `180`/`5` | ✅ |
 | 7 | med | e2e-test-runner SKILL.md:29-36,67-68 + hooks | 의존성 체크 3곳 | SKILL은 fallback 1줄 | 🔹 |
@@ -375,7 +440,7 @@ ADR 0003·0008은 재논의하지 않음.
 | 11 | med | claw-mo/references/shared.md:3 ↔ 스킬들 | "do not duplicate" 선언과 달리 스킬마다 복제 | 스킬 Gotchas 복제분 삭제, autosync는 references로 | 🔹 |
 | 12 | med | toolbox/skills/handoff/SKILL.md:105-116 | 검증 규칙 3회, Gotchas가 Principles 재진술 | Gotchas 절 삭제 | 🔹 |
 | 13 | med | toolbox/skills/secret-setup:177-208,234-244 | MCP 분기·중복 gotcha | references로, 중복 삭제 | 🔹 |
-| 14 | low | claw-mo-open:56-60 ↔ manage:137 | curl API vs "mo CLI 우선" | `mo -w`로 | 🔹 |
+| 14 | low | claw-mo-open:56-60 ↔ manage:98, shared.md:159,171 | curl API vs "mo CLI 우선" | `mo -w`로 | 🔹 |
 | 15 | low | claw-mo-up:3 ↔ claw-mo-open:3 | 트리거 겹침 | 분리 | 🔹 |
 | 16 | low | vibeproxy-kit setup-aliases:239 ↔ :153 | "Do not skip" ↔ Remove 경로 | 예외 명시 | 🔹 |
 | 17 | low | vibeproxy-kit references/effort-levels.md:9-31, model-selection.md:86 | 모델 표 노후 가능 (추측), 설치본에 없는 research §9.2 인용 | 확인일 명시, 인용 삭제 | 🔹 |
@@ -385,5 +450,6 @@ ADR 0003·0008은 재논의하지 않음.
 | 21 | low | vibeproxy-kit·notebooklm README | 모드 수·동작 불일치 | 수정 | 🔹 |
 | 22 | low | toolbox fetch-sitemap:87-93,107-112 | curl 플래그 설명·예시 중복 | 삭제 | 🔹 |
 | 23 | low | vibeproxy-kit plugin.json(151자) ↔ marketplace(198자) | description 불일치 | 동기화 | 🔹 |
+| 24 | med | vibeproxy-kit/skills/setup-aliases/scripts/write_user_config.py:62, references/write-guide.md:53-58 (재검수 추가) | 백업 경로 기본값을 `os.environ["CLAUDE_PLUGIN_DATA"]`에서 읽음 — Bash 환경엔 없거나 남의 값(2부 공통 "Bash 환경변수"). write-guide.md가 `"backup_dir": "${CLAUDE_PLUGIN_DATA}/backups"`를 넘기지만 references 파일이라 치환 안 될 수 있음 → 백업이 다른 플러그인 폴더로 | 백업 경로를 SKILL.md(치환됨)에서 명시적으로 넘기고, 스크립트는 env 폴백 삭제 | ✅(env) (추측)(치환) |
 
 유지: worktree-setup:172-173(개행 없는 append 병합, include·link 중복 시 link 무음 skip), notebooklm references/gotchas.md:7-11(form_input 무음 실패), vibeproxy-kit setup-aliases:304(name/alias 반전 시 merge no-op), claw-mo shared.md:75-83·117(`--clear` 입력 대기 hang, 경로 정규화 비교).
