@@ -54,7 +54,7 @@
 
 **Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 이 표에 해시 기록.
 1. ~~S4 → 커밋.~~ 완료. S4 중 발견: §2-1 #32, §2-3 #17. D가 "이 문서에만 있는 사실"로 남긴 것 — skill-creator-pro 용어집의 수치·이력(485줄, 18항목 게이트, ~95%/~0%)은 공식 대조 불가라 유지.
-2. 1부 남은 결정을 하나씩 묻기: ~~#16 load-secrets.sh~~ 삭제됨, #15 `feedback_audit_scope` 버림. #4·#12·S5는 원 작성 머신에서.
+2. 1부 남은 결정을 하나씩 묻기: ~~#16 load-secrets.sh~~ 삭제됨, ~~#15~~ 버림(S5에서 파일 삭제), `feedback_audit_scope` 버림. #4·#12·S5는 원 작성 머신에서.
 3. 푸시 여부를 사용자에게 묻기.
 4. 2부: P1 전에 §1-5 #11 실행 확인, 이후 P1→P7.
 5. 1부·2부가 끝나면 INDEX.md의 handoff 수명 규칙대로 이 문서를 정리.
@@ -65,7 +65,7 @@
 | S2 ✅ `1d9efd7` | gotchas.md — §1-1 해당 행 + §1-4 gotchas 목적지. §1-4의 context 목적지 3개도 여기서 | — |
 | S3 ✅ `d3c669c` | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13) + auto-optimize 참조 삭제, skill-creator-pro 2.0.6 | — |
 | S4 ✅ `b74fb20` | §1-1 설계 기록 표(상태줄·배너·링크) + rubber-duck 용어집 병합(영어) + context 4개 용어집 형식 정리 + CONTEXT-MAP. rubber-duck-tutor 3.1.2 | — |
-| S5 | 원 작성 머신: 메모리 폴더 정리, worktree | #4, #12, #15 |
+| S5 | 원 작성 머신: 메모리 폴더 정리(`feedback_audit_scope` 포함 삭제), worktree | #4, #12 |
 | P1~P7 | 2부 — 1부 뒤. 분할은 아래 표 | §1-5 #8~#11 |
 
 | # | 2부 범위 | 막는 결정 |
@@ -271,7 +271,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 | project_vision_powers_artifact_channel | 설치 캐시가 레포보다 오래되면 일반 세션의 Skill 툴이 구 로직 실행(`--plugin-dir`은 로컬 우선) | gotchas.md "Testing"(AGENTS:88-99 이동분과 한 항목) |
 | feedback_plugin_data_paths | 임시 파일·산출물도 `${CLAUDE_PLUGIN_DATA}`, CWD 금지 | gotchas.md:39 보강 |
 | (재검수 발견, 2부 공통) | Bash 도구 환경의 `CLAUDE_PLUGIN_DATA`는 비었거나 남의 플러그인 폴더 ✅ → 스크립트엔 경로를 인자로 | gotchas.md:39 같은 항목에(렌즈: 동일 위치) |
-| feedback_audit_scope | 최소 요구 버전은 유지, "tested against"는 재확인 절차 없으면 삭제. 릴리즈 노트 감사 때 억지 변경 금지 | (렌즈) gotcha 아님(조용한 실패가 아닌 드문 작업의 판단 규칙) → 버림 제안 |
+| feedback_audit_scope | 최소 요구 버전은 유지, "tested against"는 재확인 절차 없으면 삭제. 릴리즈 노트 감사 때 억지 변경 금지 | (렌즈) gotcha 아님(조용한 실패가 아닌 드문 작업의 판단 규칙) → **버림**(#15, 2026-09-24). S5에서 메모리 파일 삭제 |
 | feedback_verify_rules_against_references | 내부 문서의 FORBIDDEN 규칙도 코드로 강제 전 references와 대조 | gotchas.md:43 병합 |
 | feedback_deterministic_over_clever | 로직 배치는 프롬프트보다 hook/스크립트 고정 코드 우선, 가지 기각 전 최선 변형 검토 | (렌즈) 두 뜻 분리: 앞은 AGENTS Coding Style("Prefer deterministic code — hooks, scripts — over prompt instructions for anything checkable"), 뒤("기각 전 최선 변형")는 협업 규칙 → #1 묶음 |
 | feedback_plugin_scope | 플러그인엔 기능 범위에 해당하는 지식만 | (렌즈) gotchas:11(설치본 격리)·:13(독립성)과 같은 개념 → gotchas 신설 "Self-contained plugins" 한 제목 아래 셋 + `dependencies`(§1-1) |
@@ -298,7 +298,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 12. 다른 머신 메모리 2개 이관 여부 — `subagent-model-preference`(→ 전역 선호. 근거가 "세션이 Fable 5"라 지금도 유효한지 확인), `wiki-is-symlink-to-llm-wiki`(→ 전역 `~/.claude/CLAUDE.md` 후보: `wiki -> ../llm-wiki/wiki` 심링크가 claude-code-zero·excalidraw-architect·link-dive 3개 레포에 있음 ✅). 전역 CLAUDE.md는 이 머신에 아직 없음 ✅
 13. ~~skill 가이드 2개(skill-building-guide·skill-lessons) 줄 단위 수정 vs 삭제~~ — **결정(2026-09-24): 삭제.** §1-1 docs/reference 행
 14. ~~버전 범프 시점: 수정 커밋(메모리) vs 릴리즈 때 묻기(release-workflow 3단계)~~ — **결정(2026-09-24): 수정 커밋.** release-workflow 3단계는 범프 누락 확인으로
-15. `feedback_audit_scope` 메모리(최소 요구 버전 유지, "tested against"는 재확인 절차 없으면 삭제) — 렌즈 제안대로 버릴지. S5(메모리 정리) 전에
+15. ~~`feedback_audit_scope` 메모리(최소 요구 버전 유지, "tested against"는 재확인 절차 없으면 삭제) — 렌즈 제안대로 버릴지~~ — **결정(2026-09-24): 버림.** 파일 삭제는 S5(원 작성 머신)
 16. ~~`.claude/hooks/load-secrets.sh` 삭제 여부~~ — **결정(2026-09-24): 삭제.** — git 추적 파일, settings 3곳(project·local·user) 어디에도 등록 안 됨(2026-09-24 이 머신에서 재확인 ✅). §1-1 "삭제 후보" 행
 
 ## 1-6. 수정 순서
