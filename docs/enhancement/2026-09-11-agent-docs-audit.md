@@ -47,20 +47,20 @@
 |---|---|---|
 | S1 ✅ `61b5ec0`·`ae776e2` | AGENTS.md·CLAUDE.md·release-workflow.md — §1-1 AGENTS 표 + §1-3 + §1-4 중 AGENTS 목적지. AGENTS 행과 짝인 gotchas 줄(:19·:21·:23 삭제, :29 정정, "Testing" 신설)도 같은 커밋. INDEX.md:23 "8-step"은 S3에서 | — |
 | S2 ✅ | gotchas.md — §1-1 해당 행 + §1-4 gotchas 목적지("Hooks & scripts"·"Testing"·"Self-contained plugins" 신설, Data paths 보강). §1-4의 context 목적지 3개(vision-powers 2, skill-creator-pro 1)도 여기서 | — |
-| S3 | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13) | #2·#3은 `claude-preset`·new-vibe handoff, research 2개에만 |
+| S3 ✅ | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13). auto-optimize:59 참조 삭제 + skill-creator-pro 2.0.6 | — |
 | S4 | §1-1 설계 기록 표(상태줄·배너) + rubber-duck 용어집 병합 | — |
 | S5 | 원 작성 머신: 메모리 폴더 정리, worktree | #4 |
 | P1~P7 | 2부 — 1부 뒤. 분할은 아래 표 | §1-5 #8~#11 |
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그 먼저: §2-1 #1·#4, §2-2 #1, §2-4 #1, §2-5 #1, §2-6 #3, §2-7 #1·#2·#6·#24 | #11(치환 확인) |
+| P1 | 실제 버그 먼저: §2-1 #1·#4, §2-2 #1, §2-4 #1, §2-5 #1, §2-6 #3, §2-7 #1·#2·#6 | #11(치환 확인) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
 | P5 | §2-2 skill-creator-pro | #9 |
 | P6 | §2-5 claw-mux, §2-6 notebooklm-connector | #11 |
-| P7 | §2-7 나머지 | — |
+| P7 | §2-7 나머지. vibeproxy-kit 행(#24 포함)은 맨 끝 — 사용자가 안 쓰는 플러그인, 다시 쓸 때 수정(#2 결정) | — |
 
 - S3의 skill 가이드 삭제는 `plugins/skill-creator-pro/skills/auto-optimize/SKILL.md`의 `skill-lessons-from-anthropic.md` 참조 삭제를 동반 → 플러그인 수정이므로 같은 커밋에 `marketplace.json` skill-creator-pro 버전 범프(#14).
 - #12(다른 머신 메모리 2개 → 전역 `~/.claude/CLAUDE.md`)는 레포 밖 작업이라 1부를 막지 않는다. #1이 AGENTS.md로 정해져 #12는 따로 처리한다.
@@ -205,7 +205,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 
 | 파일 | 상태 근거 | 판정 |
 |---|---|---|
-| handoff/2026-05-05-claude-preset.md | 착수 안 함, 미확인 추정이 결정처럼 기재 | 삭제 또는 spec 이동(§1-5 #2) |
+| handoff/2026-05-05-claude-preset.md | 착수 안 함, 미확인 추정이 결정처럼 기재 | 삭제(#2 결정 2026-09-24) |
 | handoff/2026-06-03-skill-creator-pro-v2-rebaseline.md | 완료 `29d2849`, 문서엔 "커밋 0개" ✅ | 삭제 |
 | handoff/2026-06-06-doc-visual-artifact-redesign.md | 완료 `4252baf`, 잔여는 issue 001에 있음 | 삭제 |
 | handoff/2026-06-14-vision-powers-audit.md | 완료 `9884796`·`b63f8a6` | `node --test <dir>` 교훈 흡수 후 삭제 |
@@ -214,14 +214,14 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 | handoff/2026-06-27-vision-powers-structured-blocks.md | Phase 1 완료, 잔여 S3~S6은 issue 005 | 삭제 |
 | handoff/plugin-diet.md | 완료, 표가 현재 코드와 불일치 | 삭제 |
 | handoff/harness-zero/HANDOFF.md | 레포 떠남(`76a31f5`), 참조 문서 삭제됨 | 삭제 |
-| handoff/new-vibe/HANDOFF.md | 대부분 반영 `544ca16`, 일부 결정 뒤집힘. Issue 7(`discover.sh:16` 경로 오염)은 미반영 ✅ | Issue 7 처리 결정 후 삭제(§1-5 #2) |
+| handoff/new-vibe/HANDOFF.md | 대부분 반영 `544ca16`, 일부 결정 뒤집힘. Issue 7(`discover.sh:16` 경로 오염)은 미반영 ✅ | 삭제 — Issue 7은 §2-7 #24로 이동(#2 결정 2026-09-24) |
 | handoff/vision-powers/environment-health-v2.15.md | 완료 `8c958fd`, 스킬 개명됨 | 삭제 |
 | enhancement/2026-04-18-vision-powers-audit.md | 대상 파일·스킬 전부 없음 ✅ | 삭제 |
 | enhancement/2026-04-23-rubber-duck-git-hook-latency.md | 해결 `d0d3ba1` | hook `if` 좁히기 교훈 흡수 후 삭제 |
 | research/deeptutor-analysis.md | llm-wiki `summaries/deeptutor.md`가 더 새로움 ✅ | 삭제 |
 | research/career-ops-analysis.md | llm-wiki `summaries/career-ops.md`와 중복 ✅ | 삭제 |
-| research/ai-context-tools-comparison.md | 외부 도구 조사, 레포 무관 | llm-wiki 소관(§1-5 #3) |
-| research/token-efficiency-tools-comparison.md | 외부 도구 조사, AGENTS.md에 없는 문구를 사실로 인용 | llm-wiki 소관(§1-5 #3) |
+| research/ai-context-tools-comparison.md | 외부 도구 조사, 레포 무관 | 삭제(#3 결정 — llm-wiki `comparisons/code-understanding-tools.md`에 있음) |
+| research/token-efficiency-tools-comparison.md | 외부 도구 조사, AGENTS.md에 없는 문구를 사실로 인용 | 삭제(#3 결정 — llm-wiki에 있음) |
 | research/2026-04-23-vibeproxy-codex-reasoning-aliases.md | vibeproxy-kit payload.override 설계 근거(`f8b0785`) | 유지 + 상단에 "§10 적용됨" + INDEX 등록 |
 
 ## 1-3. AGENTS.md 줄이기 (153줄)
@@ -272,8 +272,8 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 ## 1-5. 결정 필요
 
 1. ~~협업 규칙(§1-4 마지막 행 4개 + `deterministic_over_clever` 뒷부분 "기각 전 최선 변형") 위치 — 전역 `~/.claude/CLAUDE.md` vs AGENTS.md~~ — **결정(2026-09-24): AGENTS.md.** 두 머신이 git으로 공유. 다른 레포엔 적용 안 됨을 감수
-2. handoff 중 살릴 것 — `claude-preset` 아이디어(삭제/spec), new-vibe Issue 7(`discover.sh:16` 경로 오염이 버그면 issue로)
-3. research 2개 llm-wiki 이동 — llm-wiki `raw/`는 사용자만 채우는 규칙. 삭제 or 사용자가 직접 드롭
+2. ~~handoff 중 살릴 것 — `claude-preset` 아이디어(삭제/spec), new-vibe Issue 7~~ — **결정(2026-09-24):** claude-preset 삭제. Issue 7은 실제 버그 → §2-7 #24에 합치고 vibeproxy-kit 작업은 2부 맨 끝(플러그인은 유지)
+3. ~~research 2개 llm-wiki 이동~~ — **결정(2026-09-24): 삭제.** 위키에 이미 있음
 4. `.claude/worktrees/remove-test-3` 제거 여부 (원 작성 머신)
 5. ~~`settings.local.json` `git push` allow → ask 전환 여부~~ — **종결(2026-09-24): 불필요.** push 금지는 하네스 기본 지시
 6. ~~release-workflow 레포 태그 번호 기준~~ — **결정(2026-09-24): 기존 관행 명문화.** 이번 릴리즈에 minor·major로 오른 플러그인이 있으면 태그 minor, patch만이면 태그 patch(v1.83.0 ← codex 5.0.0, v1.83.1 ← 5.0.2)
@@ -361,7 +361,7 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 | 10 | med | auto-optimize:351-363,:267,:335-347 | 예시·반복 문단·Output Files 중복 | 삭제, changelog 템플릿은 references로 | 🔹 |
 | 11 | med | skill-creator-pro/SKILL.md(520줄) | 자기 규칙(:108)과 공식 500줄 초과 | pro 추가분부터 삭제, Claude.ai 절 삭제는 ADR 0001과 부딪혀 결정 필요 | 🔹 |
 | 12 | low | auto-optimize:261 | "NEVER STOP" ↔ :215 "ALL CAPS 금지" | 이유 붙인 기준 문장으로 | 🔹 |
-| 13 | low | auto-optimize:58-59,:380 | 레포 전용 경로 참조, "step 2" 오기 | 삭제, "Step 3" | 🔹 |
+| 13 | low | auto-optimize:58-59,:380 | 레포 전용 경로 참조, "step 2" 오기 | 삭제, "Step 3". (:59는 S3에서 삭제됨, 2.0.6) | 🔹 |
 | 14 | low | README.md:23 | 없는 기능 "confidence scoring" | 삭제 | 🔹 |
 | 15 | med | skill-creator-pro(eval 절) | 공식은 플러그인에 실린 스킬의 동작 검증에 `claude plugin eval`을 권함(skills.md:831, v2.1.269+). skill-creator의 `evals/evals.json`과 형식 비호환(plugin-evals.md:15). 스킬은 이를 모름 | 플러그인 스킬이면 `claude plugin eval`로 안내하는 분기 추가(#7 결정). 500줄 초과(#11)와 함께 줄 수 관리 | ✅ |
 
@@ -480,6 +480,6 @@ ADR 0003·0008은 재논의하지 않음.
 | 21 | low | vibeproxy-kit·notebooklm README | 모드 수·동작 불일치 | 수정 | 🔹 |
 | 22 | low | toolbox fetch-sitemap:87-93,107-112 | curl 플래그 설명·예시 중복 | 삭제 | 🔹 |
 | 23 | low | vibeproxy-kit plugin.json(151자) ↔ marketplace(198자) | description 불일치 | 동기화 | 🔹 |
-| 24 | med | vibeproxy-kit/skills/setup-aliases/scripts/write_user_config.py:62, references/write-guide.md:53-58 (재검수 추가) | 백업 경로 기본값을 `os.environ["CLAUDE_PLUGIN_DATA"]`에서 읽음 — Bash 환경엔 없거나 남의 값(2부 공통 "Bash 환경변수"). write-guide.md가 `"backup_dir": "${CLAUDE_PLUGIN_DATA}/backups"`를 넘기지만 references 파일이라 치환 안 될 수 있음 → 백업이 다른 플러그인 폴더로 | 백업 경로를 SKILL.md(치환됨)에서 명시적으로 넘기고, 스크립트는 env 폴백 삭제 | ✅(env) (추측)(치환) |
+| 24 | med | vibeproxy-kit/skills/setup-aliases/scripts/write_user_config.py:62, references/write-guide.md:53-58 (재검수 추가), scripts/discover.sh:16(new-vibe handoff Issue 7 — 실제로 codex 폴더를 읽은 기록) | 백업·상태 경로 기본값을 `os.environ["CLAUDE_PLUGIN_DATA"]`에서 읽음 — Bash 환경엔 없거나 남의 값(2부 공통 "Bash 환경변수"). write-guide.md가 `"backup_dir": "${CLAUDE_PLUGIN_DATA}/backups"`를 넘기지만 references 파일이라 치환 안 될 수 있음 → 백업이 다른 플러그인 폴더로 | 백업 경로를 SKILL.md(치환됨)에서 명시적으로 넘기고, 스크립트는 env 폴백 삭제 | ✅(env) (추측)(치환) |
 
 유지: worktree-setup:172-173(개행 없는 append 병합, include·link 중복 시 link 무음 skip), notebooklm references/gotchas.md:7-11(form_input 무음 실패), vibeproxy-kit setup-aliases:304(name/alias 반전 시 merge no-op), claw-mo shared.md:75-83·117(`--clear` 입력 대기 hang, 경로 정규화 비교).

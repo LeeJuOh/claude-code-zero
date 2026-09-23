@@ -15,7 +15,7 @@ Re-baseline `skill-creator-pro` on the **official** Anthropic skill-creator (lea
 - **Trigger eval limit** — the single-turn trigger eval (`run_eval` / description optimization) is a poor fit for skills that auto-detect a situation mid-conversation (found on rubber-duck-tutor).
 - **autoresearch / auto-optimize** — the `auto-optimize` sub-skill, adapted from Andrej Karpathy's autoresearch methodology (refs: `references/autoresearch`, `references/andrej-karpathy-skills`). Pro's genuine net-new addition; a separate skill, not part of the main-skill drift. Out of scope for this redesign unless stated otherwise.
 - **Distill-not-dump** — graft rule. The 3 source docs enter as thin inline principles in the lean SKILL.md, NOT as 300–600 line reference files. Dumping them rebuilds the exact bloat being removed. (Aligns with the `plugin-scope-boundaries` memory: only plugin-scope knowledge, never whole docs.)
-- **The 3 source docs** —
+- **The 3 source docs** — (the two `docs/reference/` guides were deleted 2026-09-24 as conflicting with official docs; recover from git history) —
   - `docs/reference/skill-building-guide.md` — ~95% already in official spirit → distill only the gaps.
   - `docs/reference/skill-lessons-from-anthropic.md` — ~95% already in official spirit → distill only the gaps. (Source of the 9 categories.)
   - `harness-zero/wiki/summaries/cc-large-codebases.md` — ~0% absorbed → the **headline net-new** material (harness-as-extension-points philosophy).
