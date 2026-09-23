@@ -54,7 +54,7 @@
 
 **Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 이 표에 해시 기록.
 1. ~~S4 → 커밋.~~ 완료. S4 중 발견: §2-1 #32, §2-3 #17. D가 "이 문서에만 있는 사실"로 남긴 것 — skill-creator-pro 용어집의 수치·이력(485줄, 18항목 게이트, ~95%/~0%)은 공식 대조 불가라 유지.
-2. 1부 남은 결정을 하나씩 묻기: #16 `.claude/hooks/load-secrets.sh` 삭제, #15 `feedback_audit_scope` 버림. #4·#12·S5는 원 작성 머신에서.
+2. 1부 남은 결정을 하나씩 묻기: ~~#16 load-secrets.sh~~ 삭제됨, #15 `feedback_audit_scope` 버림. #4·#12·S5는 원 작성 머신에서.
 3. 푸시 여부를 사용자에게 묻기.
 4. 2부: P1 전에 §1-5 #11 실행 확인, 이후 P1→P7.
 5. 1부·2부가 끝나면 INDEX.md의 handoff 수명 규칙대로 이 문서를 정리.
@@ -64,7 +64,7 @@
 | S1 ✅ `61b5ec0`·`ae776e2` | AGENTS.md·CLAUDE.md·release-workflow.md — §1-1 AGENTS 표 + §1-3 + §1-4 중 AGENTS 목적지. AGENTS 행과 짝인 gotchas 줄(버전 2항목·kebab-case 삭제, settings.json 키 정정, "Testing" 신설)도 같은 커밋 | — |
 | S2 ✅ `1d9efd7` | gotchas.md — §1-1 해당 행 + §1-4 gotchas 목적지. §1-4의 context 목적지 3개도 여기서 | — |
 | S3 ✅ `d3c669c` | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13) + auto-optimize 참조 삭제, skill-creator-pro 2.0.6 | — |
-| S4 ✅ | §1-1 설계 기록 표(상태줄·배너·링크) + rubber-duck 용어집 병합(영어) + context 4개 용어집 형식 정리 + CONTEXT-MAP. rubber-duck-tutor 3.1.2 | — |
+| S4 ✅ `b74fb20` | §1-1 설계 기록 표(상태줄·배너·링크) + rubber-duck 용어집 병합(영어) + context 4개 용어집 형식 정리 + CONTEXT-MAP. rubber-duck-tutor 3.1.2 | — |
 | S5 | 원 작성 머신: 메모리 폴더 정리, worktree | #4, #12, #15 |
 | P1~P7 | 2부 — 1부 뒤. 분할은 아래 표 | §1-5 #8~#11 |
 
@@ -144,7 +144,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 | AGENTS.md:141 · :142 | (렌즈) Descriptions "Clear, concise" — 기본 행동(no-op), 실질은 Workflow 4단계. Line endings — `.gitattributes`(`* text=auto eol=lf`)가 이미 강제 | 둘 다 삭제 | ✅ |
 | CLAUDE.md:7 | 백틱 안 `` `@AGENTS.md` ``는 import 안 됨(memory.md) + 맵 목록이 AGENTS.md와 중복 | `@AGENTS.md` 한 줄만 남김. 단 CLAUDE.md:14의 gotchas 트리거("read before …")는 AGENTS 포인터로 옮긴다(§1-3) | ✅ |
 | .claude/settings.local.json:12,18,19 | `git push`·`git merge`·`git tag` allow. gitignored, 원 작성 머신에만 있음 | 변경 불필요(#5 종결) — push 금지는 하네스 기본 지시 | ✅ |
-| .claude/hooks/load-secrets.sh | settings 3곳(project·local·user) 어디에도 등록 안 됨 | 삭제 후보 | ✅ |
+| .claude/hooks/load-secrets.sh | settings 3곳(project·local·user) 어디에도 등록 안 됨 | **삭제**(#16, 2026-09-24). toolbox secret-setup의 같은 경로 언급은 유저 레포에 생성하는 파일이라 무관 | ✅ |
 
 ### docs/reference
 
@@ -299,7 +299,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 13. ~~skill 가이드 2개(skill-building-guide·skill-lessons) 줄 단위 수정 vs 삭제~~ — **결정(2026-09-24): 삭제.** §1-1 docs/reference 행
 14. ~~버전 범프 시점: 수정 커밋(메모리) vs 릴리즈 때 묻기(release-workflow 3단계)~~ — **결정(2026-09-24): 수정 커밋.** release-workflow 3단계는 범프 누락 확인으로
 15. `feedback_audit_scope` 메모리(최소 요구 버전 유지, "tested against"는 재확인 절차 없으면 삭제) — 렌즈 제안대로 버릴지. S5(메모리 정리) 전에
-16. `.claude/hooks/load-secrets.sh` 삭제 여부 — git 추적 파일, settings 3곳(project·local·user) 어디에도 등록 안 됨(2026-09-24 이 머신에서 재확인 ✅). §1-1 "삭제 후보" 행
+16. ~~`.claude/hooks/load-secrets.sh` 삭제 여부~~ — **결정(2026-09-24): 삭제.** — git 추적 파일, settings 3곳(project·local·user) 어디에도 등록 안 됨(2026-09-24 이 머신에서 재확인 ✅). §1-1 "삭제 후보" 행
 
 ## 1-6. 수정 순서
 
