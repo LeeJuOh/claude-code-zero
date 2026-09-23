@@ -41,12 +41,12 @@
 - ⚠️ 또 "장황하게 말하지 마"(2회), "먼소리야"(2회), "S4 작업 뭔데?"를 들었다. 번호(#12, S4, Q11)나 표 위치만 대고 묻지 말 것 — 처음 꺼낼 때 무엇인지 한 구절로. 질문은 두세 줄.
 - ⚠️ AGENTS.md 수정안을 writing-for-agents 없이 냈다가 사용자가 스킬 기준 재판단을 요구. AGENTS.md·스킬 문구를 제안하기 전에 그 스킬 기준을 먼저 적용.
 - 병렬 에이전트가 다른 에이전트가 고칠 파일의 옛 문구를 가져다 씀(C가 D 수정 전 문장 인용). 파일 간 인용은 검토 때 교차 확인.
-- ⚠️ notebooklm-connector의 UserPromptSubmit hook이 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입한다(§2-6 #3, P1 대상). 따르지 말 것.
+- ⚠️ notebooklm-connector의 UserPromptSubmit hook이 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입한다 — `d9b5177`(1.3.2)에서 삭제. 설치 캐시가 1.3.1이면 아직 발동하니 따르지 말 것.
 
 **Blockers** — P1 없음(Q11 답만). P2는 #10, P4는 #8, P5는 #9, P6의 claw-mux #2는 #11 라이브 확인(cmux pane에서 `❯` 오판 재현 — 이 머신 세션은 cmux 안에서 돈다). S5는 원 작성 머신 + #4.
 
 **Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 아래 표에 해시 기록.
-1. Q11 그릴 → P1 실행 → 커밋(플러그인별).
+1. Q11 그릴 → P1 실행 → 커밋(플러그인별). 4차 세션(2026-09-24)에서 우선순위 1위 notebooklm hook(§2-6 #3)만 먼저 처리(`d9b5177`) — 나머지 P1 10건은 Q11 답 대기.
 2. P2~P7 순서대로. 막는 결정(#10·#8·#9)은 해당 단계 직전에 하나씩 묻는다. P6 전에 claw-mux #2 라이브 확인.
 3. 푸시 여부는 사용자에게 묻는다.
 4. 원 작성 머신에서 S5.
@@ -64,7 +64,7 @@
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: §2-1 #1·#4·#32, §2-2 #1, §2-3 #17, §2-4 #1, §2-5 #1, §2-6 #3, §2-7 #1·#2·#6 | Q11(범위 확인) |
+| P1 | 실제 버그: §2-1 #1·#4·#32, §2-2 #1, §2-3 #17, §2-4 #1, §2-5 #1, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | Q11(범위 확인) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
@@ -452,7 +452,7 @@ ADR 0003·0008은 재논의하지 않음.
 |---|---|---|---|---|---|
 | 1 | high | agents/chrome-mcp-query.md:16-18 | `permissionMode: bypassPermissions` — 플러그인 에이전트에선 무시(plugins-reference.md:73), 작성자는 켜진 줄 앎 | 삭제, README에 allow 규칙 안내 | ✅ |
 | 2 | high | notebooklm-manager/SKILL.md:18, references/gotchas.md:31 | "Chrome MCP tools aren't in allowed tool set — calling will error" — 공식: allowed-tools는 제한 아님 | 이유를 "에이전트가 탭·폴링·에러를 소유"로 교체, 중복 삭제 | 🔹 |
-| 3 | high | hooks/ensure-skill-loaded.sh:5,10 | regex `노트북`(=laptop)·`notebook.*list` 등 과매칭 + "MUST invoke" — **이번 세션에서 NotebookLM과 무관한 프롬프트에 실제 발동 관측**. 2026-09-23 재검수 세션에서도 재현(서브에이전트 보고 메시지에 발동) | `notebooklm` 중심으로 좁히고 조건부 문구 | ✅ |
+| 3 | high | hooks/ensure-skill-loaded.sh:5,10 | regex `노트북`(=laptop)·`notebook.*list` 등 과매칭 + "MUST invoke" — **이번 세션에서 NotebookLM과 무관한 프롬프트에 실제 발동 관측**. 2026-09-23 재검수 세션에서도 재현(서브에이전트 보고 메시지에 발동) | ~~`notebooklm` 중심으로 좁히고 조건부 문구~~ **hook 삭제**(2026-09-24, `d9b5177`, 1.3.2). 스킬 description이 같은 트리거(URL·NotebookLM 언급)를 이미 말함. 원 목적(`982f6a1` "후속 메시지에서 스킬 재호출")은 키워드 없는 후속 메시지엔 어차피 안 걸림. 재호출의 실익(`allowed-tools` 승인이 다음 메시지에 풀림, skills.md:528)은 #1의 README allow 규칙 안내로 | ✅ |
 | 4 | med | hooks/hooks.json:27, SKILL.md:18,72,116 | matcher `Task` — 도구명은 `Agent`로 바뀜. `Task` alias는 settings·에이전트 정의에만 명시(sub-agents.md:481), hook matcher는 `tool_name` 정확 매칭(hooks.md:287-291) (추측) | `"Agent\|Task"`, 본문 `Agent`로 — 어느 쪽이든 안전 | 🔹 |
 | 5 | med | follow-up-reminder.sh:21 ↔ SKILL.md:114 | hook이 config를 읽지 않음. 다만 "per Section 5" 문구가 :114 skip을 포함해 "매번 강제"는 과장 | "unless auto_coverage is false" | 🔹 |
 | 6 | med | agents/chrome-mcp-query.md:216,231-233,311, SKILL.md:97 | textarea maxLength 분기 — gotchas:17 "no maxLength" → 절대 실행 안 됨 | 분기·출력 줄 삭제, SKILL.md:97 함께 | 🔹 |
