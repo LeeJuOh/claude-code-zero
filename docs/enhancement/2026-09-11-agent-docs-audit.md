@@ -443,7 +443,7 @@ ADR 0003·0008은 재논의하지 않음.
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | worktree-plus/skills/worktree-setup/SKILL.md:94 | "migration re-trigger by restarting" — `setup-check.sh:40-41` fast path가 migration 블록보다 먼저 exit | `git config --global` 수동 명령 안내, v3.0.0 migration 절 축소 검토 | ✅ **완료**(2026-09-24, `ebbdffa`, 3.1.1). 94줄만 교체 — `git config --global` 수동 안내 + 재시작이 안 되는 이유 + prefix `-` 규칙. 영향은 드문 경로(플래그 없는데 env var 남음). 마이그레이션 절 축소는 안 함 |
+| 1 | high | worktree-plus/skills/worktree-setup/SKILL.md:94 | "migration re-trigger by restarting" — `setup-check.sh:40-41` fast path가 migration 블록보다 먼저 exit | `git config --global` 수동 명령 안내, v3.0.0 migration 절 축소 검토 | ✅ **완료**(2026-09-24, `ebbdffa`, 3.1.1). 94줄만 교체 — `git config --global` 수동 안내 + 재시작이 안 되는 이유 + prefix `-` 규칙. 검수 eval(새 11/11, 옛 7/12)에서 빈 prefix에도 `-`를 붙이라는 문구 결함 발견 → 비어 있지 않을 때만 `-`, 빈 값은 `""`로 수정(3.1.2). 영향은 드문 경로(플래그 없는데 env var 남음). 마이그레이션 절 축소는 안 함 |
 | 2 | high | worktree-plus/.../SKILL.md:75 | "`dirBase`: no tilde expansion (stays literal)" — 실제 `worktree-create.sh:43-45`가 `exit 1` | "`~` values are rejected — write an absolute path" | ✅ **완료**(2026-09-24, `ebbdffa`, 3.1.1). README:110은 이미 "use an absolute path"라 그대로 |
 | 3 | high | e2e-test-runner/skills/e2e-test/SKILL.md:39 | `--resultsPath ./e2e-results` 고정 → 기본값 `./e2e-results/${Date.now()}`(args.ts:22) 무력화, 매 실행 덮어씀, Quick Start `--baseline` 경로가 존재 불가 | 플래그 삭제, 출력된 경로 읽기. SKILL 5-6단계도 함께 | 🔹 |
 | 4 | high | claw-mo/skills/claw-mo-open/SKILL.md:73-78 | 런타임은 파일만 watch하는데 config엔 `*.md` 저장 → 다음 `/claw-mo-up`이 drift로 `--clear`(shared.md:98,134-135 패턴 비교). dir 모드도 `dir/*.md`로 drift (코드 읽기로 확인) | 저장값을 실제 시작 형태와 일치 | 🔹 |

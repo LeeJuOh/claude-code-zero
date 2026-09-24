@@ -91,7 +91,7 @@ If the user mentions `WORKTREE_BASE_BRANCH` / `WORKTREE_BRANCH_PREFIX` env vars:
    ```
 4. Tell the user to remove the env vars from their shell profile — they're now dead weight.
 
-If the flag file is missing but env vars are still set, migrate by hand with `git config --global` (see [Change a setting](#change-a-setting)). Restarting Claude Code won't re-run the migration: the SessionStart hook exits before it whenever its hooks are already registered. Skip any key that already has a value, and add the `-` the old prefix variable inserted (`WORKTREE_BRANCH_PREFIX=feat` → `branchPrefix "feat-"`).
+If the flag file is missing but env vars are still set, migrate by hand with `git config --global` (see [Change a setting](#change-a-setting)). Restarting Claude Code won't re-run the migration: the SessionStart hook exits before it whenever its hooks are already registered. Skip any key that already has a value, and add the `-` the old prefix variable inserted to a non-empty prefix (`WORKTREE_BRANCH_PREFIX=feat` → `branchPrefix "feat-"`); an empty prefix stays `""`, meaning no prefix.
 
 ## Set up .worktreeinclude / .worktreelink
 
