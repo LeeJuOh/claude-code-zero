@@ -99,7 +99,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean effort from Phase 1 or empty>"
 ```
 
-Relay the `Model: ... | Effort: ...` stdout line verbatim, plus any stderr advisories. **config.toml is global** — the change affects every Codex invocation until changed again. Flag that to the user when values changed.
+Relay the `Model: ... | Effort: ...` stdout line verbatim. If it exits non-zero, relay its stderr and stop — launching Codex anyway would run it on settings the user didn't ask for. **config.toml is global** — the change affects every Codex invocation until changed again. Flag that to the user when values changed.
 
 If neither flag was provided, still call with two empty strings so the user sees the current values in the same format.
 

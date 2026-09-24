@@ -105,8 +105,10 @@ class ApplyCodexConfigTest(unittest.TestCase):
             self.assertEqual(tomllib.load(f), {"model": "b"})
         self.assertFalse(os.path.exists(self.config))
 
-    def test_unparseable_result_is_refused_and_file_untouched(self):
-        text = 'model = "a"\n[broken\n'
+    def test_misread_layout_is_refused_and_file_untouched(self):
+        # "  [3]" inside a multi-line array looks like a table header to the
+        # line scanner; the parse check has to catch the broken insert.
+        text = 'x = [\n  [1, 2],\n  [3]\n]\n\n[features]\na = true\n'
         self.write(text)
         env = dict(os.environ, HOME=self.home)
         r = subprocess.run([sys.executable, SCRIPT, "b", ""], capture_output=True, text=True, env=env)
@@ -114,6 +116,14 @@ class ApplyCodexConfigTest(unittest.TestCase):
         self.assertIn("config.toml", r.stderr)
         with open(self.config) as f:
             self.assertEqual(f.read(), text)
+
+    def test_toml_1_1_config_that_codex_accepts_is_still_written(self):
+        # Codex reads multi-line inline tables (TOML 1.1); tomllib doesn't.
+        self.write('model = "a"\ntui = {\n  theme = "dark",\n}\n')
+        out = self.run_script("", "high")
+        with open(self.config) as f:
+            self.assertEqual(f.read(), 'model = "a"\ntui = {\n  theme = "dark",\n}\nmodel_reasoning_effort = "high"\n')
+        self.assertIn("Effort: (unset) -> high", out)
 
 
 if __name__ == "__main__":

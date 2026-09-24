@@ -85,7 +85,7 @@ The script prints one line to stdout:
 Model: <before> -> <after> | Effort: <before> -> <after>
 ```
 
-Relay that line verbatim to the user — it shows before/after so they can confirm. If it exits 1, relay its stderr instead — the file was left untouched.
+Relay that line verbatim to the user — it shows before/after so they can confirm. If it exits non-zero, relay its stderr instead — the file was left untouched.
 
 **Model and effort handling**
 
@@ -93,7 +93,7 @@ The script writes both values as given and judges neither — Codex owns the lis
 
 So when a user asks which models or efforts they can use, don't answer from memory — availability is account-scoped and changes. Tell them to run `codex` and open its `/model` picker.
 
-The effort value lands on the `model_reasoning_effort` key (`none` is the exception — it belongs to `plan_mode_reasoning_effort`, which this plugin doesn't set). The script edits only the top-level keys (above the first `[table]` header), preserves everything else (e.g. `model_context_window`, `[projects.*]`), follows `CODEX_HOME`, and writes atomically via a temp file. On Python 3.11+ it parses the result first and refuses to write one that wouldn't load.
+The effort value lands on the `model_reasoning_effort` key (`none` is the exception — it belongs to `plan_mode_reasoning_effort`, which this plugin doesn't set). The script edits only the top-level keys (above the first `[table]` header), preserves everything else (e.g. `model_context_window`, `[projects.*]`), follows `CODEX_HOME`, and writes atomically via a temp file. On Python 3.11+ it parses the file before and after and refuses to write if anything other than the requested keys would change.
 
 If a value looks like an obvious typo, `AskUserQuestion` beats letting it through — config.toml is global, so a typo follows the user into every later session.
 

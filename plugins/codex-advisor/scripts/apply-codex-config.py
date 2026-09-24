@@ -93,21 +93,31 @@ def set_line(lines, key, value):
     lines[at:at] = new
 
 
-def check(lines, config_path, expected):
-    """Parse the result (tomllib, Python 3.11+) and confirm each requested key
-    reads back at the top level, so a layout this script misreads fails here
-    instead of being written. Older Pythons skip the check."""
+def check(original, lines, config_path, expected):
+    """Parse before and after (tomllib, Python 3.11+) and confirm the edit
+    changed nothing but the requested top-level keys, so a layout this script
+    misreads fails here instead of being written. Skipped when tomllib is
+    missing or can't read the original: Codex also accepts TOML 1.1 syntax
+    (multi-line inline tables) that tomllib rejects, and Codex is the judge."""
     try:
         import tomllib
     except ImportError:
         return
     try:
-        data = tomllib.loads("".join(lines))
-    except tomllib.TOMLDecodeError as e:
-        fail(f"{config_path} would not parse as TOML after the edit ({e}). Fix the file, then re-run")
-    for key, value in expected.items():
-        if data.get(key) != value:
-            fail(f"{key} did not land at the top level of {config_path}. Edit the file by hand")
+        before = tomllib.loads("".join(original))
+    except tomllib.TOMLDecodeError:
+        return
+    try:
+        after = tomllib.loads("".join(lines))
+    except tomllib.TOMLDecodeError:
+        after = None
+    if after != {**before, **expected}:
+        # The file itself is fine; this script's line scan misread its layout.
+        by_hand = "; ".join(f"{k} = {toml_string(v)}" for k, v in expected.items())
+        fail(
+            f"could not place the setting in {config_path} without disturbing its other contents. "
+            f"Add it by hand above the first [table] header: {by_hand}"
+        )
 
 
 def fail(message):
@@ -148,6 +158,7 @@ def main():
     _, before_model, _ = find_line(lines, "model")
     _, before_effort, _ = find_line(lines, "model_reasoning_effort")
 
+    original = list(lines)
     expected = {}
     if model:
         set_line(lines, "model", model)
@@ -157,7 +168,7 @@ def main():
         expected["model_reasoning_effort"] = effort_in
 
     if expected:
-        check(lines, config_path, expected)
+        check(original, lines, config_path, expected)
         fd, tmp = tempfile.mkstemp(dir=codex_home, prefix=".config.toml.")
         try:
             with os.fdopen(fd, "w") as f:

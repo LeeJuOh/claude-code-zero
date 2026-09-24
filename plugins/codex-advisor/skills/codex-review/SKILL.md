@@ -77,7 +77,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean effort from Phase 1 or empty>"
 ```
 
-The script writes one line to stdout: `Model: <before> -> <after> | Effort: <before> -> <after>`. Relay it verbatim. Advisory stderr warnings (slug not in local cache) pass through — keep them visible. **config.toml is global**: the change affects every Codex invocation (Official plugin, direct CLI, every codex-advisor skill) until the user changes it again. Say so when anything changed.
+The script writes one line to stdout: `Model: <before> -> <after> | Effort: <before> -> <after>`. Relay it verbatim. If it exits non-zero, relay its stderr and stop — launching Codex anyway would run it on settings the user didn't ask for. **config.toml is global**: the change affects every Codex invocation (Official plugin, direct CLI, every codex-advisor skill) until the user changes it again. Say so when anything changed.
 
 If the user passed *neither* flag, still call the script with two empty strings so the user sees the current values in the same format.
 
