@@ -1,23 +1,37 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차), 다음은 P2** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-25 11차 끝 → 12차)
+## 핸드오프 (2026-09-25 12차 끝 → 13차)
 
-**첫 행동:** 사용자에게 한 줄로 묻는다 — "`develop`의 미푸시 커밋 N개를 푸시할까요? 추천: 푸시(10차부터 쌓인 수정·원장 기록)." N은 `git rev-list --count origin/develop..develop`로 세서 넣는다(11차 끝 26개). 10·11차 모두 물었지만 답을 못 받았다(11차는 곧바로 핸드오프 요청). 승인 전엔 푸시하지 않는다.
+**다음 작업: P2(§2-1 vision-powers 나머지).** 12차 끝에 사용자가 정했다.
 
-**그다음 물을 것** (하나씩, 10차부터 미답)
-1. gotchas.md "Plugin variables in the Bash tool"에 한 줄 추가 제안: hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 `claude -p` 실측, §2부 공통)
-2. (선택) rubber-duck-tutor 3.1.3 검수의 빈 곳 두 개 — §2-4 #21 행 "미확인". 사용자가 "그냥 커밋해"로 넘긴 것이라 다시 권하지는 않는다
+**첫 행동:** 한 줄로 묻는다 — "P2 범위: vision-powers 남은 29개 중 high 11개만 할까요, 전부 할까요? 추천: high만(med·low는 대부분 중복·문구라 원장에 남김)." 12차에 2부 전체 기준(남은 114개 = high 25 + med·low 89)으로 두 번 물었지만 답 없이 배포·핸드오프로 넘어갔다 — 이번엔 P2로 좁혀 묻는다.
+- high 11: #2·#3·#9(컨텍스트 예산 수치 — #3 먼저, #2·#9가 health-criteria를 가리킴), #6(프라이버시 가드), #5·#10(report-manager·fact-check), #7(§1-5 #10 결정 필요), #8·#11·#12·#13(plugin-visual·에이전트)
+- med 12(#14~#25), low 6(#26~#31), §2-1 표 아래 README 충돌 2건
 
-**다음 작업:** 2부 P2~P7(아래 표). 막는 결정이 없는 것은 P3(§2-3 codex-advisor 나머지)·P7(§2-7 나머지, vibeproxy-kit 행은 맨 끝). P2·P4·P5는 §1-5 #10·#8·#9 결정, P6은 #11(claw-mux #2 라이브 확인)이 막는다. 어느 것부터 할지 사용자에게 묻는다 — 추천은 결정 없이 바로 갈 수 있는 P3.
+**그다음** (하나씩)
+1. 범위가 정해지면 P2를 2~3개로 나눠 하나씩(P2 행 "2~3개로 다시 나눔"). 제안 분할(미확정, 사용자에게 확인): P2a 예산·스캔 사실 #3→#2→#9·#6 / P2b plugin-visual·에이전트 #8·#11·#12·#13 / P2c 리포트 스킬 #5·#10·#7. 전부로 가면 med·low를 같은 파일끼리 붙인다(P2a +#17·#22, P2b +#14·#15·#23·#28·#30·README, P2c +#18~#21·#24~#27·#29·#31).
+2. §1-5 #10(#7만 막음): doc-visual의 md 게시 — ADR 0009 §3을 개정해 예외로 인정 vs doc-visual의 md 게시 삭제. #7에 닿을 때 묻는다.
+3. 10차부터 미답: gotchas.md "Plugin variables in the Bash tool"에 한 줄 추가 제안 — hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 `claude -p` 실측, §2부 공통). rubber-duck-tutor 3.1.3 빈 곳 두 개(§2-4 #21 "미확인")는 사용자가 넘긴 것이라 다시 권하지 않는다.
 
-**11차 요약:** worktree-plus §2-7 #28·#29 → `b451fb8`(3.2.1) + 원장 `1380906`. 사용자가 "먼소리야 버그 1부터"로 되묻자 `/grill-with-docs`로 버그 하나씩 "문제(재현 출력) → 선택지 → 추천 → 근거"를 물었고 둘 다 A로 확정. 확정·기각 사유는 §2-7 #28·#29 행.
+**P2 주의**
+- 행 줄 번호는 `21a87ab` 기준인데 vision-powers는 그 뒤 `5be2cec`(4.9.1)·`143aa9c`(4.9.2)로 바뀌었다 → 행마다 현재 파일을 다시 열어 확인. 현재 버전 4.9.2(`marketplace.json`).
+- 공식 수치가 걸린 행(#2·#3·#9·#11)은 AGENTS.md대로 `https://code.claude.com/docs/en/<page>.md`를 다시 받아 대조 — 표의 공식 문서 줄 번호는 2026-09-23 값.
+- 테스트: `node --test plugins/vision-powers/scripts/*.test.js`(P1 때 3파일 73개 통과).
+- 처리 기록은 §2-1 표 아래 "P1 처리" 절 뒤에 "P2 처리" 절로 같은 형식.
+
+**추천 스킬** (Skill 도구로 호출)
+- `grilling` — 범위·분할·§1-5 #10·버그별 방향을 하나씩 물을 때. 11차에 쓴 `/grill-with-docs`는 12차 세션 스킬 목록에 없다.
+- `skill-creator-pro:skill-creator-pro` — SKILL.md·references 수정과 옛/새 eval(AGENTS.md가 스킬 작성·eval에 지정).
+- `writing-for-agents` — 중복 정리(#19~#23)처럼 스킬 문구를 다시 쓸 때.
+
+**12차 요약:** 원장 리스트업 → 사용자가 "P1 다 고쳤으니 배포?" → v1.84.0 배포(merge `ee4f077`, 태그 `v1.84.0`): codex-advisor 5.1.0, worktree-plus 3.2.1, rubber-duck-tutor 3.1.3, skill-creator-pro 2.0.7, e2e-test-runner 삭제. `main`·`develop`·태그 푸시 완료(미푸시 0). ⚠️ 로컬 `main`이 `origin/main`보다 23커밋 뒤였다 — v1.83.2(`7a73980`, 09-24)는 다른 머신에서 배포됨. `git merge --ff-only origin/main`으로 맞춘 뒤 merge. 두 머신에서 작업하므로 release-workflow 1단계(fetch·비교)를 건너뛰지 않는다.
 
 **플러그인 하나 처리 절차** (8~11차에 굳힘)
 1. 현재 코드에서 재확인 → 짧게 보고 → 승인. ⚠️ 8차에 "개선하자"를 승인으로 읽고 고쳤다가 "누가 고치래?"를 들었다. 9·10차는 보고 뒤 사용자가 `/skill-creator-pro 고치자`·"ㅇㅇ"로 승인했다.
@@ -38,7 +52,7 @@
 - ⚠️ 모델은 한국어로 답한다(전역 CLAUDE.md) — 채점 정규식을 영어 단어로만 걸지 않는다. 스킬 흐름의 전제 조건도 맞춘다(9차 `/duck-orient`는 `.claude/orientation.md`가 있어야 gap을 확인하는데 없는 레포로 돌렸다).
 - ⚠️ macOS bash 3.2: `declare -A` 없음, `set -u`에서 빈 배열 `"${a[@]}"`는 오류(`${a[@]+"${a[@]}"}`), `timeout` 없음(`perl -e 'alarm shift; exec @ARGV' 600 …`).
 
-- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 10차: worktree-plus(§2-7 #25) `231504a`(3.2.0). 11차: worktree-plus(§2-7 #28·#29) `b451fb8`(3.2.1) — 그릴링으로 버그 하나씩 방향 확정. e2e-test-runner 플러그인 삭제 `e69be21` — §2-7 #6을 보고하자 사용자가 삭제를 물었고, 3월 이후 방치·옛 SDK(`@anthropic-ai/claude-code@^1.0.77`의 `query`, SDK는 지금 `@anthropic-ai/claude-agent-sdk`)·열린 버그 3건(#3·#6·#7)으로 삭제 추천 → 승인. README 두 곳의 Lab 절(이 플러그인뿐)도 삭제. 상세는 각 행.
+- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 10차: worktree-plus(§2-7 #25) `231504a`(3.2.0). 11차: worktree-plus(§2-7 #28·#29) `b451fb8`(3.2.1) — 그릴링으로 버그 하나씩 방향 확정. e2e-test-runner 플러그인 삭제 `e69be21` — §2-7 #6을 보고하자 사용자가 삭제를 물었고, 3월 이후 방치·옛 SDK(`@anthropic-ai/claude-code@^1.0.77`의 `query`, SDK는 지금 `@anthropic-ai/claude-agent-sdk`)·열린 버그 3건(#3·#6·#7)으로 삭제 추천 → 승인. README 두 곳의 Lab 절(이 플러그인뿐)도 삭제. 12차: v1.84.0 배포 `ee4f077`(P1 나머지). 상세는 각 행.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
