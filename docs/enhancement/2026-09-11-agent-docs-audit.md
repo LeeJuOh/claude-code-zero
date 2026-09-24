@@ -1,6 +1,6 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(9/11 + 새 P1 1건 §2-4 #21, worktree-plus `ebbdffa` 완료, 다음 rubber-duck-tutor 또는 e2e-test-runner)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(9/11 + 새 P1 1건 §2-4 #21 + 후보 §2-7 #25, worktree-plus `ebbdffa`·`6ad0cdd` 완료, 다음 rubber-duck-tutor)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
@@ -9,16 +9,28 @@
 
 ## 핸드오프 (2026-09-24 8차 → 다음 세션)
 
-**다음 순서** (2부 P1 남은 버그, 플러그인마다 수정 커밋 + 원장 기록 커밋)
+**첫 행동:** rubber-duck-tutor §2-4 #1·#21. 현재 코드에서 버그를 재확인하고 "증상 한 줄 + 질문 한 줄 + 추천 한 줄"로 보고한다. 수정은 사용자 승인 뒤에만(8차 끝에 사용자가 "오케이"로 rubber-duck-tutor 먼저를 받음).
+
+**다음 순서** (2부 P1 남은 버그)
 1. rubber-duck-tutor — §2-4 #1·#21
 2. e2e-test-runner — §2-7 #6
+3. worktree-plus §2-7 #25 — 8차에 새로 찾은 실제 버그(재현함). P1에 넣을지는 사용자에게 묻는다
 
-1·2의 순서는 정하지 않았다 — 세션 시작 때 묻는다. P1이 끝나면 P2~P7(아래 표).
+P1이 끝나면 P2~P7(아래 표).
 
-- codex-advisor(§2-3 #17)는 7차에 끝남: `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 상세는 §2-3 #17 행.
-- worktree-plus(§2-7 #1·#2)는 8차에 끝남: `ebbdffa`(3.1.1). 상세는 §2-7 #1·#2 행.
-- 미푸시 커밋 있음 — 푸시 여부는 사용자에게 묻는다.
-- ⚠️ 보고는 짧게, 한국어로: 버그 한 줄(사용자가 겪는 증상) + 질문 한 줄 + 추천 한 줄. 7차에도 "장황하게 말하지 마"를 들었다.
+**플러그인 하나 처리 절차** (8차에 사용자 반응으로 굳힘)
+1. 현재 코드에서 재확인 → 보고 → 승인. ⚠️ 8차에 `/skill-creator-pro`와 "개선하자"를 수정 승인으로 읽고 eval 없이 고쳐 커밋했다가 "누가 고치래? 제대로 고친거 맞는지 검수해"를 들었다.
+2. 스킬 문구 수정은 검수까지 한다: 스크립트를 격리 환경(`HOME`·`GIT_CONFIG_GLOBAL`을 scratchpad로)에서 직접 돌려 문구가 사실인지 확인하고, 옛/새 스킬 eval 비교(아래). 8차에 이 검수로 내가 새로 쓴 문구의 결함을 찾아 `6ad0cdd`로 고쳤다.
+3. 수정 커밋(버전 bump 포함) + 원장 기록.
+
+**eval 방식** (8차 worktree-plus에서 씀, 산출물 `plugins/worktree-plus/.evals/worktree-setup/`, gitignored)
+- 스냅샷: `git show <수정 전 커밋>:<SKILL.md 경로>` → `skill-snapshot/SKILL.md`. 서브에이전트에 스킬 경로 + 사용자 프롬프트 + "드라이런: 쓰기 금지, 실행할 쓰기 명령은 `commands.sh`, 답변은 `response.md`로 저장"을 준다.
+- `aggregate_benchmark`는 `iteration-N/eval-<i>-<name>/<config>/run-1/grading.json` 구조만 읽는다. 결과 표는 `old_skill`을 먼저 놓아 Delta 부호가 반대로 나온다.
+- 뷰어는 `generate_review.py … --static <iteration>/review.html`.
+
+- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + 검수 후속 `6ad0cdd`(3.1.2). 상세는 각 행.
+- 미푸시 커밋 있음(8차 끝 기준 14개 + 이 원장 커밋) — 푸시 여부는 사용자에게 묻는다.
+- ⚠️ 보고는 짧게, 한국어로: 버그 한 줄(사용자가 겪는 증상) + 질문 한 줄 + 추천 한 줄. 8차에도 "장황하게말하지마 다시보고해"를 들었다 — 검수 결과를 표·목록으로 길게 늘어놓은 뒤였다.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
@@ -467,5 +479,8 @@ ADR 0003·0008은 재논의하지 않음.
 | 22 | low | toolbox fetch-sitemap:87-93,107-112 | curl 플래그 설명·예시 중복 | 삭제 | 🔹 |
 | 23 | low | vibeproxy-kit plugin.json(151자) ↔ marketplace(198자) | description 불일치 | 동기화 | 🔹 |
 | 24 | med | vibeproxy-kit/skills/setup-aliases/scripts/write_user_config.py:62, references/write-guide.md:53-58 (재검수 추가), scripts/discover.sh:16(new-vibe handoff Issue 7 — 실제로 codex 폴더를 읽은 기록) | 백업·상태 경로 기본값을 `os.environ["CLAUDE_PLUGIN_DATA"]`에서 읽음 — Bash 환경엔 없거나 남의 값(2부 공통 "Bash 환경변수"). write-guide.md가 `"backup_dir": "${CLAUDE_PLUGIN_DATA}/backups"`를 넘기지만 references 파일이라 치환 안 될 수 있음 → 백업이 다른 플러그인 폴더로 | 백업 경로를 SKILL.md(치환됨)에서 명시적으로 넘기고, 스크립트는 env 폴백 삭제 | ✅(env) (추측)(치환) |
+| 25 | high | worktree-plus/hooks/scripts/worktree-create.sh:47,56 | 절대 경로 `dirBase`는 `<dirBase>/<name>`이라 레포 구분이 없다. 두 레포가 같은 worktree 이름을 쓰면 뒤 레포가 앞 레포의 worktree를 "Reusing existing worktree"로 받아, 다른 레포에서 작업하게 된다. worktree-setup 스킬은 전역 절대 경로 설정을 돕기까지 한다 | (미정) 재사용 전에 그 worktree가 같은 레포 것인지 확인(`git rev-parse --git-common-dir` 비교), 또는 절대 경로 아래 레포별 하위 폴더 | ✅ 8차 격리 실행으로 재현(레포 A·B, name=fix → B가 A의 worktree를 받음) |
+| 26 | low | worktree-plus/skills/worktree-setup/SKILL.md:94 | "exits before it whenever its hooks are already registered" — 정확히는 현재 plugin root로 등록됐을 때. 플러그인 업데이트 뒤 첫 세션엔 마이그레이션이 돈다. "재시작으로는 안 된다"는 결론은 맞음 | "registered for the installed version" | ✅ 8차 격리 실행 |
+| 27 | low | worktree-plus/skills/worktree-setup/SKILL.md Value validation | 빈 `branchPrefix`가 "접두사 없음"이라는 설명이 없다 — 코드는 `=""` → `<name>`(`worktree-create.sh` 주석). 8차 eval에서 두 실행이 모두 "확인 못 함"으로 적음 | Value validation에 한 줄 | ✅ |
 
 유지: worktree-setup:172-173(개행 없는 append 병합, include·link 중복 시 link 무음 skip), notebooklm references/gotchas.md:7-11(form_input 무음 실패), vibeproxy-kit setup-aliases:304(name/alias 반전 시 merge no-op), claw-mo shared.md:75-83·117(`--clear` 입력 대기 hang, 경로 정규화 비교).
