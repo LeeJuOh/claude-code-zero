@@ -147,20 +147,6 @@ npx skills add LeeJuOh/claude-code-zero
 
 ---
 
-## Lab 플러그인
-
-실험적 — 특정 환경이 필요하거나 안정성이 제한될 수 있습니다.
-
-### [e2e-test-runner](plugins/e2e-test-runner/README.md)
-
-**문제:** E2E 테스트는 취약한 셀렉터와 페이지 오브젝트가 필요합니다. UI가 바뀔 때마다 깨지고 작성에 시간이 오래 걸립니다.
-
-**해결:** 자연어 JSON으로 테스트를 작성합니다. Claude가 페이지를 읽고 무엇을 클릭할지 결정하고 결과를 검증합니다. 테스트별 비디오 녹화, 픽셀 diff 시각적 회귀, 개발 서버 자동 감지(Next / Vite / Remix / Astro 등).
-
-`e2e-test`
-
----
-
 ## 플러그인 관리
 
 ```shell
