@@ -9,29 +9,34 @@
 
 ## 핸드오프 (2026-09-25 9차 → 다음 세션)
 
-**첫 행동:** e2e-test-runner §2-7 #6. 현재 코드에서 버그를 재확인하고 "증상 한 줄 + 질문 한 줄 + 추천 한 줄"로 보고한다. 수정은 사용자 승인 뒤에만.
+**첫 행동:** e2e-test-runner §2-7 #6 — `plugins/e2e-test-runner/hooks/hooks.json`의 `timeout: 120000`·`5000`(단위가 초라 약 33시간). 현재 코드에서 재확인하고 "증상 한 줄 + 질문 한 줄 + 추천 한 줄"로 보고한다. 수정은 사용자 승인 뒤에만.
 
-**다음 순서** (2부 P1 남은 버그)
-1. e2e-test-runner — §2-7 #6
-2. worktree-plus §2-7 #25 — 8차에 새로 찾은 실제 버그(재현함). P1에 넣을지는 사용자에게 묻는다
+**다음 순서**
+1. e2e-test-runner §2-7 #6 — P1 마지막 행
+2. worktree-plus §2-7 #25 — 8차에 찾은 실제 버그(재현함). P1에 넣을지 사용자에게 묻는다
+3. P1이 끝나면 P2~P7(아래 표)
 
-**제안(미승인):** gotchas "Plugin variables in the Bash tool"에 한 줄 — hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 실측, §2부 공통). 사용자에게 묻는다.
+**사용자에게 물을 것** (9차 끝에 답을 못 받음)
+- 푸시 여부 — 미푸시 커밋 17개(9차 끝, 이 원장 커밋 전)
+- gotchas.md "Plugin variables in the Bash tool"에 한 줄 추가 제안: hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 `claude -p` 실측, §2부 공통)
+- (선택) rubber-duck-tutor 3.1.3 검수의 빈 곳 두 개 — §2-4 #21 행 "미확인". 사용자가 "그냥 커밋해"로 넘긴 것이라 다시 권하지는 않는다
 
-P1이 끝나면 P2~P7(아래 표).
+**플러그인 하나 처리 절차** (8·9차에 굳힘)
+1. 현재 코드에서 재확인 → 짧게 보고 → 승인. ⚠️ 8차에 "개선하자"를 승인으로 읽고 고쳤다가 "누가 고치래?"를 들었다. 9차는 보고 뒤 사용자가 `/skill-creator-pro 수정해`로 승인했다.
+2. 검수: 스크립트는 격리 환경(`HOME`·`GIT_CONFIG_GLOBAL`을 scratchpad로)에서 직접 돌리고, 옛/새 eval 비교. 검수 결과가 끝나기 전에 사용자가 커밋을 원하면 빈 곳을 원장 행에 적고 커밋한다(9차).
+3. 수정 커밋(버전 bump 포함) + 원장 기록은 별도 커밋.
+- ⚠️ 보고는 짧게, 한국어로. 8차 "장황하게말하지마". 9차 사용자 질문도 "어디까지햇음?"·"문제없엇어? 커밋하면 되는거야?" — 진행 보고는 결론부터 세 줄 안에.
 
-**플러그인 하나 처리 절차** (8차에 사용자 반응으로 굳힘)
-1. 현재 코드에서 재확인 → 보고 → 승인. ⚠️ 8차에 `/skill-creator-pro`와 "개선하자"를 수정 승인으로 읽고 eval 없이 고쳐 커밋했다가 "누가 고치래? 제대로 고친거 맞는지 검수해"를 들었다.
-2. 스킬 문구 수정은 검수까지 한다: 스크립트를 격리 환경(`HOME`·`GIT_CONFIG_GLOBAL`을 scratchpad로)에서 직접 돌려 문구가 사실인지 확인하고, 옛/새 스킬 eval 비교(아래). 8차에 이 검수로 내가 새로 쓴 문구의 결함을 찾아 `6ad0cdd`로 고쳤다.
-3. 수정 커밋(버전 bump 포함) + 원장 기록.
+**eval 방식**
+- 스킬 문구만 바꿀 때(8차): 서브에이전트 드라이런. 스냅샷은 `git show <수정 전 커밋>:<SKILL.md>`, "쓰기 금지, 쓰기 명령은 `commands.sh`, 답변은 `response.md`". 산출물 예 `plugins/worktree-plus/.evals/worktree-setup/`.
+- hook·`${CLAUDE_PLUGIN_*}` 치환이 걸린 수정(9차): 드라이런으로는 안 보인다 → 실제 `claude -p --plugin-dir <플러그인> --output-format stream-json --verbose --allowedTools …`, 옛 버전은 `git archive <커밋> plugins/<이름>`으로 푼 사본. 러너·채점·격리 테스트 예: `plugins/rubber-duck-tutor/.evals/ship-data-paths/`(`run-e2e.sh`·`grade.py`·`script-tests.sh`, gitignored).
+- `aggregate_benchmark`는 `iteration-N/eval-<i>-<name>/<config>/run-1/grading.json`만 읽고 config를 알파벳순으로 놓는다 → `new_skill`/`old_skill`로 이름 지으면 새 버전이 먼저 와 Delta 부호가 맞다(8차의 `with_skill`은 반대로 나왔다). 뷰어는 `generate_review.py … --static <iteration>/review.html`.
+- ⚠️ `--plugin-dir` 실행은 데이터 폴더 `~/.claude/plugins/data/<이름>-inline`을 옛/새가 같이 쓴다 → 순차 실행, 실행마다 비우기.
+- ⚠️ 세션 한도에 걸리면 결과가 "You've hit your session limit"로 끝난다 — 채점 전에 확인(9차 옛 버전 실행이 전부 무효).
+- ⚠️ 모델은 한국어로 답한다(전역 CLAUDE.md) — 채점 정규식을 영어 단어로만 걸지 않는다. 스킬 흐름의 전제 조건도 맞춘다(9차 `/duck-orient`는 `.claude/orientation.md`가 있어야 gap을 확인하는데 없는 레포로 돌렸다).
+- ⚠️ macOS bash 3.2: `declare -A` 없음, `set -u`에서 빈 배열 `"${a[@]}"`는 오류(`${a[@]+"${a[@]}"}`), `timeout` 없음(`perl -e 'alarm shift; exec @ARGV' 600 …`).
 
-**eval 방식** (8차 worktree-plus에서 씀, 산출물 `plugins/worktree-plus/.evals/worktree-setup/`, gitignored)
-- 스냅샷: `git show <수정 전 커밋>:<SKILL.md 경로>` → `skill-snapshot/SKILL.md`. 서브에이전트에 스킬 경로 + 사용자 프롬프트 + "드라이런: 쓰기 금지, 실행할 쓰기 명령은 `commands.sh`, 답변은 `response.md`로 저장"을 준다.
-- `aggregate_benchmark`는 `iteration-N/eval-<i>-<name>/<config>/run-1/grading.json` 구조만 읽는다. 결과 표는 `old_skill`을 먼저 놓아 Delta 부호가 반대로 나온다.
-- 뷰어는 `generate_review.py … --static <iteration>/review.html`.
-
-- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + 검수 후속 `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3). 상세는 각 행.
-- 미푸시 커밋 있음(9차 끝 기준 16개 + 이 원장 커밋) — 푸시 여부는 사용자에게 묻는다.
-- ⚠️ 보고는 짧게, 한국어로: 버그 한 줄(사용자가 겪는 증상) + 질문 한 줄 + 추천 한 줄. 8차에도 "장황하게말하지마 다시보고해"를 들었다 — 검수 결과를 표·목록으로 길게 늘어놓은 뒤였다.
+- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 상세는 각 행.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
