@@ -1,22 +1,22 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(7/11 + 새 P1 1건 §2-4 #21, codex-advisor `dae4f7f`·`85f10d5`·`a3cfba4` 완료, 다음 worktree-plus)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(9/11 + 새 P1 1건 §2-4 #21, worktree-plus `ebbdffa` 완료, 다음 rubber-duck-tutor 또는 e2e-test-runner)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-24 7차 → 다음 세션)
+## 핸드오프 (2026-09-24 8차 → 다음 세션)
 
 **다음 순서** (2부 P1 남은 버그, 플러그인마다 수정 커밋 + 원장 기록 커밋)
-1. **worktree-plus** — §2-7 #1·#2. 다음 세션은 여기부터.
-2. rubber-duck-tutor — §2-4 #1·#21
-3. e2e-test-runner — §2-7 #6
+1. rubber-duck-tutor — §2-4 #1·#21
+2. e2e-test-runner — §2-7 #6
 
-2·3의 순서는 정하지 않았다 — 1이 끝나면 묻는다. P1이 끝나면 P2~P7(아래 표).
+1·2의 순서는 정하지 않았다 — 세션 시작 때 묻는다. P1이 끝나면 P2~P7(아래 표).
 
 - codex-advisor(§2-3 #17)는 7차에 끝남: `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 상세는 §2-3 #17 행.
+- worktree-plus(§2-7 #1·#2)는 8차에 끝남: `ebbdffa`(3.1.1). 상세는 §2-7 #1·#2 행.
 - 미푸시 커밋 있음 — 푸시 여부는 사용자에게 묻는다.
 - ⚠️ 보고는 짧게, 한국어로: 버그 한 줄(사용자가 겪는 증상) + 질문 한 줄 + 추천 한 줄. 7차에도 "장황하게 말하지 마"를 들었다.
 
@@ -32,7 +32,7 @@
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, §2-4 #1·#21, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
+| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, §2-4 #1·#21, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, ~~§2-7 #1·#2~~ ✅ `ebbdffa`, §2-7 #6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
@@ -443,8 +443,8 @@ ADR 0003·0008은 재논의하지 않음.
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | worktree-plus/skills/worktree-setup/SKILL.md:94 | "migration re-trigger by restarting" — `setup-check.sh:40-41` fast path가 migration 블록보다 먼저 exit | `git config --global` 수동 명령 안내, v3.0.0 migration 절 축소 검토 | 🔹 |
-| 2 | high | worktree-plus/.../SKILL.md:75 | "`dirBase`: no tilde expansion (stays literal)" — 실제 `worktree-create.sh:43-45`가 `exit 1` | "`~` values are rejected — write an absolute path" | ✅ |
+| 1 | high | worktree-plus/skills/worktree-setup/SKILL.md:94 | "migration re-trigger by restarting" — `setup-check.sh:40-41` fast path가 migration 블록보다 먼저 exit | `git config --global` 수동 명령 안내, v3.0.0 migration 절 축소 검토 | ✅ **완료**(2026-09-24, `ebbdffa`, 3.1.1). 94줄만 교체 — `git config --global` 수동 안내 + 재시작이 안 되는 이유 + prefix `-` 규칙. 영향은 드문 경로(플래그 없는데 env var 남음). 마이그레이션 절 축소는 안 함 |
+| 2 | high | worktree-plus/.../SKILL.md:75 | "`dirBase`: no tilde expansion (stays literal)" — 실제 `worktree-create.sh:43-45`가 `exit 1` | "`~` values are rejected — write an absolute path" | ✅ **완료**(2026-09-24, `ebbdffa`, 3.1.1). README:110은 이미 "use an absolute path"라 그대로 |
 | 3 | high | e2e-test-runner/skills/e2e-test/SKILL.md:39 | `--resultsPath ./e2e-results` 고정 → 기본값 `./e2e-results/${Date.now()}`(args.ts:22) 무력화, 매 실행 덮어씀, Quick Start `--baseline` 경로가 존재 불가 | 플래그 삭제, 출력된 경로 읽기. SKILL 5-6단계도 함께 | 🔹 |
 | 4 | high | claw-mo/skills/claw-mo-open/SKILL.md:73-78 | 런타임은 파일만 watch하는데 config엔 `*.md` 저장 → 다음 `/claw-mo-up`이 drift로 `--clear`(shared.md:98,134-135 패턴 비교). dir 모드도 `dir/*.md`로 drift (코드 읽기로 확인) | 저장값을 실제 시작 형태와 일치 | 🔹 |
 | 5 | high | vibeproxy-kit/skills/setup-aliases/SKILL.md:232 ↔ :291 ↔ :303 | merged-config 재생성 시점 "launch만" vs "launch or toggle" | 사실 하나로 확정, Phase 9 한 곳에 | 🔹 |
