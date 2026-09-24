@@ -1,6 +1,6 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(6/11, skill-creator-pro #1 완료 — PyYAML 질문 남음)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(6/11 + 새 P1 1건 §2-4 #21, 다음 rubber-duck-tutor)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
@@ -58,7 +58,7 @@
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, §2-3 #17, §2-4 #1, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
+| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, §2-3 #17, §2-4 #1·#21, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
@@ -305,7 +305,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 - **description 비용:** `disable-model-invocation: true` 스킬은 description이 컨텍스트에 안 들어간다(skills.md:509). 매 세션 비용은 모델 호출형만 해당 — codex-advisor 10개 1,974자, skill-creator-pro 2개 760자, vision-powers `diff-visual` 531자·`doc-visual` 399자가 큼.
 - **본문 길이:** 공식 팁 500줄 초과 — vision-powers `context-health-visual` 557·`plugin-visual` 553·`diff-visual` 543, `skill-creator-pro` 520, rubber-duck `engine.md` 375(모든 /duck-* 실행마다 로드).
 - **설치본 격리 위반 패턴:** 여러 플러그인이 레포 전용 경로(`docs/…`, `references/…`, research §번호)를 가리킴 — 설치본엔 없음(gotchas "Installed plugin isolation").
-- **Bash 환경변수 (재검수 추가):** `CLAUDE_PLUGIN_ROOT`·`CLAUDE_PLUGIN_DATA`는 Bash 도구 환경에 없다(plugins-reference.md:765). SKILL.md·에이전트 본문의 `${…}`는 치환되지만, Bash로 실행된 스크립트가 `process.env`/`os.environ`으로 읽으면 안 된다. 2026-09-23 세션 Bash엔 다른 플러그인 값 `CLAUDE_PLUGIN_DATA=~/.claude/plugins/data/codex-openai-codex`가 들어 있었다 ✅ — 비어 있는 게 아니라 **남의 폴더**를 가리킨다. 해당: vision-powers #4, vibeproxy-kit #24. 경로는 인자로 넘긴다.
+- **Bash 환경변수 (재검수 추가):** `CLAUDE_PLUGIN_ROOT`·`CLAUDE_PLUGIN_DATA`는 Bash 도구 환경에 없다(plugins-reference.md:765). SKILL.md·에이전트 본문의 `${…}`는 치환되지만, Bash로 실행된 스크립트가 `process.env`/`os.environ`으로 읽으면 안 된다. 2026-09-23 세션 Bash엔 다른 플러그인 값 `CLAUDE_PLUGIN_DATA=~/.claude/plugins/data/codex-openai-codex`가 들어 있었다 ✅ — 비어 있는 게 아니라 **남의 폴더**를 가리킨다. 해당: vision-powers #4, vibeproxy-kit #24, rubber-duck-tutor #21. 경로는 인자로 넘긴다.
 - **reference 파일 치환 (재검수 추가, 2026-09-24 확인 ✅ — 치환 안 됨):** 설치본 `claw-mo/2.8.2/references/shared.md`에 `${CLAUDE_PLUGIN_DATA}`가 문자 그대로 있고 Read는 디스크 내용을 그대로 돌려준다. 같은 날 Bash 환경: `CLAUDE_PLUGIN_ROOT` 빈 값, `CLAUDE_PLUGIN_DATA`=`…/data/codex-openai-codex`(남의 폴더) 재현. 공식은 치환 위치를 "the skill's markdown content"와 `allowed-tools`로만 적는다(skills.md:416). Read로 여는 references 파일의 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`·`${CLAUDE_SKILL_DIR}`는 치환되지 않을 가능성이 있다 — 그대로 Bash에 넣으면 빈 값이거나 위의 남의 값. 해당 파일: claw-mo `references/shared.md`, codex-advisor `references/companion-usage.md`·`evaluation.md`, rubber-duck `skills/ducking/engine.md`, vibeproxy-kit `references/model-selection.md`·`write-guide.md`, vision-powers `references/design-system/{channel-decision,structured-blocks,visual-self-audit}.md`·`plugin-visual/.../analysis-criteria.md`. 실행 확인 후(§1-5 #11) 공통 처리.
 
 ## 2-1. vision-powers
@@ -359,7 +359,7 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | skill-creator-pro/SKILL.md:446 (+:245, :406 같은 CWD 의존) | `python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py` — :17 `from scripts.quick_validate import`라 `ModuleNotFoundError`(공식은 `python -m`). 실행 재현됨. `-m`으로 가도 PyYAML 필요(quick_validate.py:9) | ✅ `59eb822`(2.0.7) — "from `${CLAUDE_SKILL_DIR}`: `python -m scripts.package_skill <absolute/path>`"(cwd가 바뀌므로 절대 경로). PyYAML 있는 venv에서 패키징 성공 확인. PyYAML 없는 머신 문제는 미결(다음 질문) | ✅ |
+| 1 | high | skill-creator-pro/SKILL.md:446 (+:245, :406 같은 CWD 의존) | `python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py` — :17 `from scripts.quick_validate import`라 `ModuleNotFoundError`(공식은 `python -m`). 실행 재현됨. `-m`으로 가도 PyYAML 필요(quick_validate.py:9) | ✅ `59eb822`(2.0.7) — "from `${CLAUDE_SKILL_DIR}`: `python -m scripts.package_skill <absolute/path>`"(cwd가 바뀌므로 절대 경로). PyYAML 있는 venv에서 패키징 성공 확인. PyYAML 없는 머신은 **그대로 둠**(2026-09-24 결정: 에러가 드러나 `pip install`로 대응 가능, 이 절은 `present_files` 있는 Claude.ai·Cowork 전용, 공식도 동일) | ✅ |
 | 2 | high | auto-optimize/SKILL.md:70-71,337,340 | 작업 디렉터리를 스킬 옆 `autoresearch-*/`에 — 플러그인 스킬이면 배포본에 섞임, skill-creator-pro:181과 규칙 불일치 | `${CLAUDE_PLUGIN_DATA}/autoresearch-<name>/` | 🔹 |
 | 3 | high | auto-optimize:3 ↔ skill-creator-pro:3 | 트리거 4개 겹침 — "improve my skill"이 무인 제자리 수정 루프로 갈 수 있음 | auto-optimize는 "hands-off 요청 시에만", skill-creator-pro의 공식에 없는 "Also trigger on…" 삭제(472→~340자) | 🔹 |
 | 4 | high | auto-optimize:68 ↔ :109,:219 | 기준선 3-5회 vs 실험 N회 — max_score 비교 불가 | 기준선도 실험과 같은 횟수 | 🔹 |
@@ -429,6 +429,7 @@ ADR 0003·0008은 재논의하지 않음.
 | 18 | low | 6개 스킬 description | 전부 `disable-model-invocation`이라 모델 트리거 문구 무의미(coach 504자) | 120자 이하 메뉴 라벨 | ✅ |
 | 19 | low | engine.md:221,:239, hooks:66 | 외부 스킬(`code-review`) 이름 지목 | "out of scope for duck" | 🔹 |
 | 20 | low | README.md:45-47 | engine 동작과 다른 설명 3줄 | 실제 동작으로 | 🔹 |
+| 21 | high | ducking/scripts/ 7개(`log-gap`·`recent-gaps`·`resolve-gap`·`log-telemetry`·`ignore-streak`·`telemetry-summary`·`read-config`) + hooks/lib.sh (2026-09-24 발견) | 데이터 경로를 `${CLAUDE_PLUGIN_DATA:-~/.claude/data/rubber-duck-tutor}`로 env에서 읽음(2부 공통 "Bash 환경변수"). hook이 부르면 플러그인 폴더, 모델이 Bash로 부르면 폴백 폴더(또는 남의 플러그인 폴더)로 갈라짐. 예: `outcome` 기록(Bash) ↔ `ignore-streak`(hook)이 다른 파일을 읽어 streak이 늘 0 → scoreboard 모드가 안 켜짐(추측: 실행 재현 전, 코드 판독) | 경로를 인자로(P1 결정 패턴). 호출부: hook은 `${CLAUDE_PLUGIN_DATA}` 전달, SKILL.md·hook 주입문은 `${CLAUDE_PLUGIN_DATA}` 치환 | ✅(코드) |
 
 유지: engine.md:93-99(Skeptical Grading), coach:57(연습 통과로만 gap 해소), exercise-patterns.md:163,:180, duck-verify:12-16.
 
