@@ -1,47 +1,45 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(6/11 + 새 P1 1건 §2-4 #21, 다음 rubber-duck-tutor)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(6/11 + 새 P1 1건 §2-4 #21, 다음 codex-advisor)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-24 5차 → 다음 세션)
+## 핸드오프 (2026-09-24 6차 → 다음 세션)
 
-**Goal** — 2부(플러그인 수정) P1의 남은 버그 6건을 플러그인 하나씩 고친다. 다음은 skill-creator-pro(§2-2 #1). 1부는 S5(원 작성 머신의 메모리 폴더·worktree 정리)만 남았다.
+**Goal** — 2부 P1의 남은 버그를 플러그인 하나씩 고친다. 다음은 codex-advisor(§2-3 #17). 1부는 S5(원 작성 머신의 메모리 폴더·worktree 정리)만 남았다.
 
-**First Action** — `/grill-with-docs`로 skill-creator-pro §2-2 #1을 사용자에게 한 줄로 설명하고, 첫 결정 하나를 추천과 함께 묻는다. 버그: `plugins/skill-creator-pro/skills/skill-creator-pro/SKILL.md`의 "Package and Present" 절이 `python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path>`로 부르는데, `scripts/package_skill.py`가 `from scripts.quick_validate import validate_skill`이라 `ModuleNotFoundError: No module named 'scripts'`가 난다. 공식 skill-creator(설치 캐시 `~/.claude/plugins/cache/claude-plugins-official/skill-creator/…/SKILL.md`)는 `python -m scripts.package_skill <path>`. 추천: 공식 형태를 따라 스킬 폴더에서 `python -m`으로 부르게 고치기(CONTEXT-MAP상 skill-creator-pro는 공식 skill-creator를 기준선으로 삼는다). 함께 볼 것: `-m`으로 가도 `scripts/quick_validate.py`의 `import yaml`이 PyYAML 없는 머신에서 실패하고(공식도 같음), 같은 SKILL.md의 `python -m scripts.aggregate_benchmark`·`python -m scripts.run_loop`도 작업 디렉터리가 스킬 폴더여야 동작한다. 이 절은 "`present_files` 도구가 있을 때만"이라 Claude Code에선 거의 안 탄다. 답을 받으면 커밋 하나 + patch 범프(marketplace.json 2.0.6 → 2.0.7).
+**First Action** — 사용자에게 codex-advisor §2-3 #17을 "버그 한 줄 + 질문 한 줄 + 추천 한 줄"로 묻는다. 버그: `plugins/codex-advisor/scripts/apply-codex-config.py`의 `set_line()`은 키가 없으면 파일 끝에 붙이고, `find_line()`은 테이블 안의 같은 키도 잡는다. 6차에 임시 `HOME`으로 재현했다 ✅ — (1) `model_reasoning_effort`가 없고 끝에 `[profiles.fast]`가 있으면 그 테이블 키로 들어감, (2) 최상위 `model`이 없고 `[profiles.fast] model`만 있으면 그 프로필 값을 덮어씀. 추천: 두 함수가 첫 `[` 테이블 헤더 앞(최상위)만 보고, 없으면 그 앞에 삽입. 수정 전 AGENTS.md 규칙대로 `https://learn.chatgpt.com/docs/llms.txt`에서 config.toml 최상위 키(`model`, `model_reasoning_effort`)를 확인. 답을 받으면 커밋 하나 + patch 범프(marketplace.json 5.0.2 → 5.0.3) + 원장 기록 커밋.
 
-**Context** — 사용자는 P1을 "버그 하나씩 그릴 → 결정 → 수정" 흐름으로 진행한다. 5차 세션 끝에 남은 P1 5건을 영향 순으로 제시했다: 1 rubber-duck-tutor(§2-4 #1) · 2 codex-advisor(§2-3 #17) · 3 e2e-test-runner(§2-7 #6, 한 줄) · 4 worktree-plus(§2-7 #1·#2) · 5 skill-creator-pro(§2-2 #1). 사용자가 "다음 세션은 5번부터"라고 정했다. 그 뒤 순서는 정하지 않았다 — 끝나면 묻는다.
+**Context** — P1 남은 4개 플러그인(영향 순): 1 rubber-duck-tutor(§2-4 #1·#21) · 2 codex-advisor(§2-3 #17) · 3 e2e-test-runner(§2-7 #6, 한 줄) · 4 worktree-plus(§2-7 #1·#2). 사용자가 rubber-duck-tutor를 미루고 "다음 세션은 2번"으로 정했다. 그 뒤 순서는 정하지 않았다 — 끝나면 묻는다. 사용자의 실제 `~/.codex/config.toml`엔 최상위 `model`·`model_reasoning_effort`가 이미 있어 지금은 안 터진다(키가 없는 새 설정에서만).
 
 **Current Progress** (git 기준 — `repo_facts.sh`)
-- 브랜치 `develop`, 작업 트리 깨끗. origin/develop보다 12커밋 앞섬(미푸시) + 이 기록 커밋.
-- 5차 커밋: `5be2cec` vision-powers 4.9.1(§2-1 #1·#4·#32), `cbad384` 원장 기록, `143aa9c` vision-powers 4.9.2(`reports_dir` 삭제), `75ac548` 원장 기록. 내용은 §2-1 아래 "P1 처리".
-- 4차까지: `d9b5177` notebooklm-connector 1.3.2(§2-6 #3), `ca54ade` claw-mux 1.2.1(§2-5 #1). 1부 커밋은 아래 S1~S4·1부 결정 행.
-- P1 11건 중 5건 완료.
+- 브랜치 `develop`, 작업 트리 깨끗. origin/develop보다 3커밋 앞섬(미푸시) + 이 기록 커밋. 6차 시작 시점엔 origin과 같았다(5차까지 커밋은 푸시됨).
+- 6차 커밋: `59eb822` skill-creator-pro 2.0.7(§2-2 #1), `bab3309` 원장 기록, `bcf2415` PyYAML 결정 + rubber-duck-tutor §2-4 #21 발견 기록.
+- P1 11건 중 6건 완료 + 6차에 새 P1 1건(§2-4 #21) 추가.
 
-**Decisions Made** (이전 결정은 §1-5)
-- 5차 vision-powers 결정(에이전트 위치, `--data-dir` 필수 인자, `log-report.js`·`reports_dir` 삭제)은 §2-1 아래 "P1 처리".
-- references 파일의 스크립트 경로는 변수 대신 짧은 이름 + SKILL.md에서 전체 경로 한 번 제시(references는 치환 안 됨). 5차에서 vision-powers에도 적용.
-- 스크립트는 `CLAUDE_PLUGIN_DATA`를 환경에서 읽지 않고 인자로 받는다(gotchas "Plugin variables in the Bash tool"). 남은 플러그인에서 같은 패턴을 보면 같은 방식으로.
-- P1 진행: 우선순위 순으로 플러그인 하나씩, 플러그인마다 수정 커밋 + 원장 기록 커밋.
+**Decisions Made** (이전 결정은 §1-5, §2-1 "P1 처리")
+- skill-creator-pro 패키징: 스킬 폴더에서 `python -m scripts.package_skill <absolute/path>`. PyYAML 없는 머신 문제는 그대로 둠(§2-2 #1).
+- rubber-duck-tutor #1은 질문만 해 둠, 답 없음: 추천은 "`resolve-gap.sh`가 앞의 `날짜<TAB>`를 스스로 뗀다"(안내 문구만 고치는 것보다 확실, 호출부 3곳이 한 번에 고쳐짐).
+- 스크립트는 `CLAUDE_PLUGIN_DATA`를 환경에서 읽지 않고 인자로 받는다 — rubber-duck-tutor #21도 이 패턴으로.
+- P1 진행: 플러그인 하나씩, 플러그인마다 수정 커밋 + 원장 기록 커밋.
 
 **What Worked**
-- `/grill-with-docs`로 버그마다 한 질문씩. 수정 중 새로 나온 판단(`log-report.js` 삭제, `reports_dir`)도 따로 한 질문으로 묻고 나서 처리했다.
-- 사용자가 근거를 캐물을 때("로컬 문서 근거냐?", "우리 문제 아니지 않아?") 공식 문서 줄 번호와 실제 실행 결과로 답하니 바로 결정했다.
-- 실제 실행으로 확인: 실제 데이터 폴더로 스크립트 실행, `claude -p --model haiku --plugin-dir ./plugins/<name>`으로 에이전트 로드 확인(싸고 빠름).
+- 버그마다 실제 실행으로 재현한 뒤 묻기: scratchpad에 임시 데이터(`CLAUDE_PLUGIN_DATA=<scratch>`, `HOME=<scratch>`)를 만들어 스크립트를 돌림. 수정 확인도 같은 방식(PyYAML은 scratch venv).
+- `marketplace.json` 버전 범프는 해당 줄만 `sed`로. `jq`로 다시 쓰면 다른 항목의 한 줄 배열까지 재포맷된다.
 
 **What Didn't Work**
-- ⚠️ 4차·5차 모두 "장황하게 말하지 마"·"먼소리지"를 들었다. 배경 문단, 선택지 상세, 번호만 대는 것(예: "S5")이 원인이었다. 통한 형식: 버그 한 줄(무엇이 깨지나) + 질문 한 줄 + 추천 한 줄. 용어는 예시 명령이나 구체 예로 풀 것.
-- ⚠️ 이 머신의 Bash에서 `$CLAUDE_PLUGIN_DATA`는 openai-codex의 폴더다(codex hook이 export). 플러그인 데이터 경로가 필요하면 `~/.claude/plugins/data/<plugin>-<marketplace>/`를 직접 쓸 것.
-- ⚠️ 설치 캐시가 레포보다 오래됐다(notebooklm-connector 1.3.1, skill-creator-pro 2.0.5, vision-powers 4.9.0 — 푸시 전이라). notebooklm 1.3.1은 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입하니 따르지 말 것. 수정한 스킬을 실행해 보려면 `--plugin-dir`로 레포 사본을 띄울 것.
+- ⚠️ 6차에도 "장황하게 말하지 마"를 들었다. 버그 설명 여러 줄 + 선택지 (a)(b) + 이유 문단 + 새 발견 문단이 원인. 통한 형식: 버그 한 줄(사용자가 겪는 증상) + 질문 한 줄 + 추천 한 줄. 새 발견은 원장에만 적고 보고는 한 줄 이하.
+- ⚠️ 이 머신 Bash의 `CLAUDE_PLUGIN_DATA`는 세션마다 다르다(5차엔 codex 폴더, 6차엔 비어 있음). 플러그인 데이터 경로는 `~/.claude/plugins/data/<plugin>-<marketplace>/`를 직접 쓸 것.
+- ⚠️ 설치 캐시가 레포보다 오래됐다(푸시 전). 수정한 스킬을 돌려 보려면 `--plugin-dir`로 레포 사본을 띄울 것.
 
 **Blockers** — P1 없음. P2는 #10, P4는 #8, P5는 #9, P6의 claw-mux #2는 #11 라이브 확인. S5는 원 작성 머신 + #4.
 
 **Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 아래 표에 해시 기록.
-1. skill-creator-pro §2-2 #1(First Action) → 커밋 → 원장 기록.
-2. 남은 P1 4건: 순서를 사용자에게 묻는다(위 Context의 영향 순이 추천).
+1. codex-advisor §2-3 #17(First Action) → 커밋 → 원장 기록.
+2. 남은 P1 3개 플러그인 순서를 사용자에게 묻는다(rubber-duck-tutor #1은 위 추천으로 바로 물을 수 있음).
 3. P2~P7 순서대로. 막는 결정(#10·#8·#9)은 해당 단계 직전에 하나씩 묻는다.
 4. 푸시 여부는 사용자에게 묻는다.
 5. 원 작성 머신에서 S5. 1부·2부가 끝나면 INDEX.md의 handoff 수명 규칙대로 이 문서를 정리.
@@ -399,7 +397,7 @@ issue 016(codex-advisor 5.0.0, `05b74a7`)이 리뷰 스킬 5개(review·adversar
 | 14 | low | adversarial:11-12,:354 | "invents more than plain review does" 근거 없이 2회(`bcd42f9` 재작성 후) | 삭제 | 🔹 |
 | 15 | low | companion-usage.md:14,:155,:296 | "1.0.0+" ↔ README "v1.0.4+", "still present in 1.0.5" 확인 스탬프 | :14 삭제, 스탬프 삭제(:9 핀은 유지) | 🔹 |
 | 16 | low | review:272 | 없는 "the plan" 참조 | 삭제 | 🔹 |
-| 17 | med | scripts/apply-codex-config.py (S4 발견) | `model_reasoning_effort`가 없으면 파일 끝에 덧붙임 — `[table]` 헤더 뒤라 그 테이블 키가 됨(최상위 아님) | 첫 테이블 헤더 앞에 삽입 | 🔹 |
+| 17 | med | scripts/apply-codex-config.py (S4 발견) | `model_reasoning_effort`가 없으면 파일 끝에 덧붙임 — `[table]` 헤더 뒤라 그 테이블 키가 됨(최상위 아님). (6차 추가) `find_line()`도 테이블 안 키를 잡아 최상위 `model`이 없으면 `[profiles.*] model`을 덮어씀 | `find_line()`·`set_line()`이 첫 테이블 헤더 앞만 보고, 없으면 그 앞에 삽입 | ✅(임시 HOME 재현, 2026-09-24) |
 
 기타: `codex-setup:32-40` 인증 확인은 companion `setup --json`의 `authStatus`로 대체 가능. rescue:461 "Exploring biases the double-check"는 Verifier 도입 후 낡은 이유 문장(:23-26은 `bcd42f9`에서 교정됨).
 
