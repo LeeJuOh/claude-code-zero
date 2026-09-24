@@ -117,6 +117,8 @@ The effort value lands on the `model_reasoning_effort` key in `config.toml` (`no
 
 **The change is global and persistent.** config.toml is read by every Codex invocation — Official plugin, direct CLI, every codex-advisor skill — until you change it again. The skill tells you before/after whenever it mutates.
 
+**A project's own `.codex/config.toml` outranks it.** When the current project's file sets a value you asked for, the skill also passes it on the Codex command (`--model`, and `--effort` for rescue, verify, and research), which outranks every config file. Review and adversarial review have no effort flag, so there the skill tells you the project's effort still applies.
+
 ## How a call is translated
 
 You can type anything — English, Korean, flags, meta-instructions, emoji, typos.

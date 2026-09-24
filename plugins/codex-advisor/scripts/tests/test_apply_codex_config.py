@@ -25,11 +25,28 @@ class ApplyCodexConfigTest(unittest.TestCase):
         with open(self.config, "w") as f:
             f.write(text)
 
-    def run_script(self, model, effort):
+    def run_script(self, model, effort, *extra, cwd=None):
+        # cwd defaults to HOME, whose .codex/config.toml is the user config
+        # and must not be mistaken for a project one.
         env = dict(os.environ, HOME=self.home)
-        r = subprocess.run([sys.executable, SCRIPT, model, effort], capture_output=True, text=True, env=env)
+        r = subprocess.run(
+            [sys.executable, SCRIPT, model, effort, *extra],
+            capture_output=True, text=True, env=env, cwd=cwd or self.home,
+        )
         self.assertEqual(r.returncode, 0, r.stderr)
         return r.stdout.strip()
+
+    def project(self, *parts, config=None, git=False):
+        """Make a directory under HOME, optionally a git root, optionally with
+        a .codex/config.toml; return its path."""
+        d = os.path.join(self.home, *parts)
+        os.makedirs(os.path.join(d, ".codex") if config else d, exist_ok=True)
+        if git:
+            os.makedirs(os.path.join(d, ".git"), exist_ok=True)
+        if config:
+            with open(os.path.join(d, ".codex", "config.toml"), "w") as f:
+                f.write(config)
+        return d
 
     def parsed(self):
         with open(self.config, "rb") as f:
@@ -124,6 +141,39 @@ class ApplyCodexConfigTest(unittest.TestCase):
         with open(self.config) as f:
             self.assertEqual(f.read(), 'model = "a"\ntui = {\n  theme = "dark",\n}\nmodel_reasoning_effort = "high"\n')
         self.assertIn("Effort: (unset) -> high", out)
+
+    def test_project_override_prints_the_flag_the_caller_can_pass(self):
+        repo = self.project("repo", git=True, config='model_reasoning_effort = "low"\n')
+        out = self.run_script("b", "high", "--run-flags", "model,effort", cwd=repo)
+        self.assertEqual(out.splitlines()[1:], ["Run flags: --effort high"])
+
+    def test_project_override_without_a_flag_prints_a_note(self):
+        repo = self.project("repo", git=True, config='model = "p"\nmodel_reasoning_effort = "low"\n')
+        out = self.run_script("b", "high", "--run-flags", "model", cwd=repo)
+        lines = out.splitlines()
+        self.assertEqual(lines[1], "Run flags: --model b")
+        self.assertEqual(len(lines), 3)
+        self.assertIn(os.path.join(repo, ".codex", "config.toml"), lines[2])
+        self.assertIn('model_reasoning_effort = "low"', lines[2])
+
+    def test_closest_project_config_wins_and_unrequested_keys_are_ignored(self):
+        self.project("repo", git=True, config='model_reasoning_effort = "low"\nmodel = "root"\n')
+        sub = self.project("repo", "pkg", config='model_reasoning_effort = "minimal"\n')
+        out = self.run_script("", "high", cwd=sub)
+        lines = out.splitlines()
+        self.assertEqual(len(lines), 2)
+        self.assertIn(os.path.join(sub, ".codex", "config.toml"), lines[1])
+        self.assertIn('"minimal"', lines[1])
+
+    def test_config_above_the_project_root_is_ignored(self):
+        self.project("outer", config='model = "p"\n')
+        repo = self.project("outer", "repo", git=True)
+        self.assertEqual(len(self.run_script("b", "", "--run-flags", "model", cwd=repo).splitlines()), 1)
+
+    def test_no_project_config_prints_one_line(self):
+        self.write('model = "a"\n')
+        out = self.run_script("b", "high", "--run-flags", "model,effort")
+        self.assertEqual(out, "Model: a -> b | Effort: (unset) -> high")
 
 
 if __name__ == "__main__":

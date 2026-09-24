@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Update $CODEX_HOME/config.toml (default ~/.codex) with model and/or reasoning effort values.
 
-Usage: apply-codex-config.py <model> <effort>
+Usage: apply-codex-config.py <model> <effort> [--run-flags model,effort]
        Empty string for either argument means "no change".
+       --run-flags names the flags the caller's Codex command can take.
 
 Values are written verbatim. Codex owns the list of valid models and effort
 levels and judges them at runtime, so second-guessing here would only mean
@@ -14,13 +15,22 @@ table, so the script reads and writes only above the first header: a key
 appended at the end of the file would join the last table, and a same-named
 key inside one (a legacy [profiles.x] table) is not the global value.
 
-Stdout (one line): Model: <before> -> <after> | Effort: <before> -> <after>
+A project's own .codex/config.toml outranks the user config, so a value
+written here can be silently ignored in that project. For each requested key
+a project config sets, the script prints the run-time flag that outranks it
+(when the caller can pass that flag) or a note saying the project value wins.
+
+Stdout: Model: <before> -> <after> | Effort: <before> -> <after>
+        Run flags: --model <m> --effort <e>     (only keys a project overrides)
+        Note: <path> sets <key> = ... ...        (overrides no flag can beat)
 """
 import os
 import re
+import shlex
 import sys
 import tempfile
 
+RUN_FLAGS = {"model": "model", "effort": "model_reasoning_effort"}
 TABLE_HEADER = re.compile(r"^\s*\[\[?[^\[\]]+\]\]?\s*(#.*)?$")
 STRING_VALUE = re.compile(r"""^(?:"((?:[^"\\]|\\.)*)"|'([^']*)')(\s*#.*)?$""")
 
@@ -120,6 +130,60 @@ def check(original, lines, config_path, expected):
         )
 
 
+def root_markers(lines):
+    """project_root_markers from the user config (tomllib, Python 3.11+),
+    else Codex's default."""
+    try:
+        import tomllib
+
+        markers = tomllib.loads("".join(lines)).get("project_root_markers")
+    except Exception:
+        markers = None
+    if isinstance(markers, list) and all(isinstance(m, str) for m in markers):
+        return markers
+    return [".git"]
+
+
+def project_configs(cwd, markers, user_config):
+    """Project .codex/config.toml files, closest first. Codex walks up from the
+    working directory to the project root (the nearest directory holding a
+    root marker) and the closest file wins over the user config. Without a
+    marker, only the working directory counts."""
+    dirs, d = [], cwd
+    while markers:
+        dirs.append(d)
+        if any(os.path.exists(os.path.join(d, m)) for m in markers):
+            break
+        parent = os.path.dirname(d)
+        if parent == d:
+            dirs = []
+            break
+        d = parent
+    found = []
+    for d in dirs or [cwd]:
+        path = os.path.join(d, ".codex", "config.toml")
+        if os.path.isfile(path) and os.path.realpath(path) != os.path.realpath(user_config):
+            found.append(path)
+    return found
+
+
+def project_overrides(keys, paths):
+    """{key: (path, value)} for each key the closest project config sets."""
+    found = {}
+    for path in paths:
+        try:
+            with open(path) as f:
+                plines = f.readlines()
+        except (UnicodeDecodeError, OSError):
+            continue
+        for key in keys:
+            if key not in found:
+                _, value, _ = find_line(plines, key)
+                if value is not None:
+                    found[key] = (path, value)
+    return found
+
+
 def fail(message):
     print(f"Error: {message} — leaving it untouched.", file=sys.stderr)
     sys.exit(1)
@@ -134,12 +198,17 @@ def fmt(before, after, requested):
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: apply-codex-config.py <model> <effort>", file=sys.stderr)
+    args = sys.argv[1:]
+    run_flags = set()
+    if len(args) == 4 and args[2] == "--run-flags":
+        run_flags = {f for f in args[3].split(",") if f}
+        args = args[:2]
+    if len(args) != 2 or not run_flags <= RUN_FLAGS.keys():
+        print("Usage: apply-codex-config.py <model> <effort> [--run-flags model,effort]", file=sys.stderr)
         sys.exit(2)
 
-    model = sys.argv[1].strip()
-    effort_in = sys.argv[2].strip()
+    model = args[0].strip()
+    effort_in = args[1].strip()
 
     codex_home = os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
     config_path = os.path.join(codex_home, "config.toml")
@@ -188,6 +257,24 @@ def main():
         f"Model: {fmt(before_model, after_model, bool(model))} | "
         f"Effort: {fmt(before_effort, after_effort, bool(effort_in))}"
     )
+
+    overrides = project_overrides(
+        expected, project_configs(os.getcwd(), root_markers(original), config_path)
+    )
+    passable = {RUN_FLAGS[f] for f in run_flags}
+    flags = [
+        f"--{f} {shlex.quote(expected[k])}"
+        for f, k in RUN_FLAGS.items()
+        if k in overrides and k in passable
+    ]
+    if flags:
+        print("Run flags: " + " ".join(flags))
+    for key, (path, value) in overrides.items():
+        if key not in passable:
+            print(
+                f"Note: {path} sets {key} = {toml_string(value)}; Codex uses that instead "
+                "in this project (when the project is trusted), and this command has no flag to override it."
+            )
 
 
 if __name__ == "__main__":

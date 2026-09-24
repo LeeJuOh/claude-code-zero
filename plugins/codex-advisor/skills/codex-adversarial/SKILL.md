@@ -39,7 +39,7 @@ You are a translator. Use LM intelligence, not regex tables.
 
 `--model` and `--effort` route through `scripts/apply-codex-config.py` to update `~/.codex/config.toml` before the companion launches. Two reasons:
 1. **`--effort` is not a registered review flag** (`handleReviewCommand` `valueOptions = ["base", "scope", "model", "cwd"]` at `:714`). Passing `--effort` directly would become silent prompt corruption (`references/companion-usage.md §3`). Only the config.toml `model_reasoning_effort` key reaches the review path.
-2. **Consistency + persistence.** `--model` IS honored as a flag in v1.0.4+ (`startThread({ model })`, `lib/codex.mjs:1010-1015`), but routing it through config.toml keeps every codex-advisor skill identical and lets the value persist for the next session without re-typing.
+2. **Consistency + persistence.** `--model` IS honored as a flag in v1.0.4+ (`startThread({ model })`, `lib/codex.mjs:1010-1015`), but routing it through config.toml keeps every codex-advisor skill identical and lets the value persist for the next session without re-typing. A project's own `.codex/config.toml` outranks `config.toml`, so when it sets a model the script prints a `Run flags:` line and `--model` goes on the command too.
 
 Rules:
 
@@ -96,10 +96,11 @@ Run before Phase 2 so the companion sees the new `config.toml`:
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
-  "<literal clean effort from Phase 1 or empty>"
+  "<literal clean effort from Phase 1 or empty>" \
+  --run-flags model
 ```
 
-Relay the `Model: ... | Effort: ...` stdout line verbatim. If it exits non-zero, relay its stderr and stop — launching Codex anyway would run it on settings the user didn't ask for. **config.toml is global** — the change affects every Codex invocation until changed again. Flag that to the user when values changed.
+Relay its stdout verbatim. If it exits non-zero, relay its stderr and stop — launching Codex anyway would run it on settings the user didn't ask for. A `Run flags:` line means the project's own `.codex/config.toml` sets that value and outranks `config.toml`; add those flags, exactly as printed, to the `adversarial-review` command in Phase 2 (and to the command shown in the draft). A `Note:` line names a project value no flag can override — there is no effort flag for reviews — so say the requested value won't apply in this project. **config.toml is global** — the change affects every Codex invocation until changed again. Flag that to the user when values changed.
 
 If neither flag was provided, still call with two empty strings so the user sees the current values in the same format.
 
@@ -202,6 +203,7 @@ echo "ERR_FILE=$ERR_FILE"
 # for values the user did not provide. Focus text is a positional arg —
 # place it AFTER all flags, or omit if empty.
 node "$CODEX_COMPANION" adversarial-review --json \
+  <flags from the "Run flags:" line, if the apply step printed one> \
   --base "<literal clean base from Phase 1>" \
   --scope "<literal clean scope from Phase 1>" \
   "<literal clean focus text from Phase 1>" \

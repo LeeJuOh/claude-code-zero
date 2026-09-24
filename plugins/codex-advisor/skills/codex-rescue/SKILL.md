@@ -69,10 +69,11 @@ Run before Phase 2 so the companion sees the new `config.toml`:
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
-  "<literal clean effort from Phase 1 or empty>"
+  "<literal clean effort from Phase 1 or empty>" \
+  --run-flags model,effort
 ```
 
-Relay the `Model: ... | Effort: ...` stdout line verbatim. If it exits non-zero, relay its stderr and stop — launching Codex anyway would run it on settings the user didn't ask for. **config.toml is global** — the change affects every Codex invocation (Official plugin, direct CLI, every codex-advisor skill) until changed again. Flag that to the user when values changed.
+Relay its stdout verbatim. If it exits non-zero, relay its stderr and stop — launching Codex anyway would run it on settings the user didn't ask for. A `Run flags:` line means the project's own `.codex/config.toml` sets that value and outranks `config.toml`; add those flags, exactly as printed, to the `task` command in Phase 2 (and to the flags shown in the draft). **config.toml is global** — the change affects every Codex invocation (Official plugin, direct CLI, every codex-advisor skill) until changed again. Flag that to the user when values changed.
 
 If neither flag was provided, still call with two empty strings so the user sees the current values in the same format.
 
@@ -264,6 +265,7 @@ EOF
 # NEVER pass a positional arg — readTaskPrompt short-circuits on
 # positionalPrompt (:619), silently dropping stdin.
 cat "$PROMPT_FILE" | node "$CODEX_COMPANION" task --background --json \
+  <flags from the "Run flags:" line, if the apply step printed one> \
   --write \
   --resume-last \
   > "$JOB_JSON_FILE" 2> "${JOB_JSON_FILE}.stderr" \
