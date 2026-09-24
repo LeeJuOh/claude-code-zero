@@ -7,18 +7,21 @@
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-25 11차)
+## 핸드오프 (2026-09-25 11차 끝 → 12차)
 
-**첫 행동:** 아래 "사용자에게 물을 것"을 하나씩 묻는다(10차부터 답을 못 받음). 그다음 P2~P7(아래 표). P2는 §1-5 #10 결정이 막는다.
+**첫 행동:** 사용자에게 한 줄로 묻는다 — "`develop`의 미푸시 커밋 N개를 푸시할까요? 추천: 푸시(10차부터 쌓인 수정·원장 기록)." N은 `git rev-list --count origin/develop..develop`로 세서 넣는다(11차 끝 26개). 10·11차 모두 물었지만 답을 못 받았다(11차는 곧바로 핸드오프 요청). 승인 전엔 푸시하지 않는다.
 
-**사용자에게 물을 것**
-- 푸시 여부 — 미푸시 커밋 25개(11차 원장 커밋 포함)
-- gotchas.md "Plugin variables in the Bash tool"에 한 줄 추가 제안: hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 `claude -p` 실측, §2부 공통)
-- (선택) rubber-duck-tutor 3.1.3 검수의 빈 곳 두 개 — §2-4 #21 행 "미확인". 사용자가 "그냥 커밋해"로 넘긴 것이라 다시 권하지는 않는다
+**그다음 물을 것** (하나씩, 10차부터 미답)
+1. gotchas.md "Plugin variables in the Bash tool"에 한 줄 추가 제안: hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 `claude -p` 실측, §2부 공통)
+2. (선택) rubber-duck-tutor 3.1.3 검수의 빈 곳 두 개 — §2-4 #21 행 "미확인". 사용자가 "그냥 커밋해"로 넘긴 것이라 다시 권하지는 않는다
 
-**플러그인 하나 처리 절차** (8~10차에 굳힘)
+**다음 작업:** 2부 P2~P7(아래 표). 막는 결정이 없는 것은 P3(§2-3 codex-advisor 나머지)·P7(§2-7 나머지, vibeproxy-kit 행은 맨 끝). P2·P4·P5는 §1-5 #10·#8·#9 결정, P6은 #11(claw-mux #2 라이브 확인)이 막는다. 어느 것부터 할지 사용자에게 묻는다 — 추천은 결정 없이 바로 갈 수 있는 P3.
+
+**11차 요약:** worktree-plus §2-7 #28·#29 → `b451fb8`(3.2.1) + 원장 `1380906`. 사용자가 "먼소리야 버그 1부터"로 되묻자 `/grill-with-docs`로 버그 하나씩 "문제(재현 출력) → 선택지 → 추천 → 근거"를 물었고 둘 다 A로 확정. 확정·기각 사유는 §2-7 #28·#29 행.
+
+**플러그인 하나 처리 절차** (8~11차에 굳힘)
 1. 현재 코드에서 재확인 → 짧게 보고 → 승인. ⚠️ 8차에 "개선하자"를 승인으로 읽고 고쳤다가 "누가 고치래?"를 들었다. 9·10차는 보고 뒤 사용자가 `/skill-creator-pro 고치자`·"ㅇㅇ"로 승인했다.
-2. 설계 선택이 있으면 고치기 전에 하나씩 묻는다(10차: 레포 확인만 vs 레포 폴더 → 레포 폴더, 이어서 항상 vs 전역만 → 전역만).
+2. 설계 선택이 있으면 고치기 전에 하나씩 묻는다(10차: 레포 확인만 vs 레포 폴더 → 레포 폴더, 이어서 항상 vs 전역만 → 전역만). 버그가 여럿이면 버그 하나씩 묻는다(11차 `/grill-with-docs`).
 3. 검수: 스크립트는 격리 환경(`HOME`·`GIT_CONFIG_GLOBAL`을 scratchpad로, `GIT_CONFIG_NOSYSTEM=1`)에서 직접 돌리고, 옛/새 비교. 검수 결과가 끝나기 전에 사용자가 커밋을 원하면 빈 곳을 원장 행에 적고 커밋한다(9차).
 4. 수정 커밋(버전 bump 포함) + 원장 기록은 별도 커밋.
 5. 플러그인이 방치됐고 열린 버그가 많으면 삭제도 선택지(10차 e2e-test-runner — 사용자가 먼저 물었다).
@@ -488,6 +491,6 @@ ADR 0003·0008은 재논의하지 않음.
 | 26 | low | worktree-plus/skills/worktree-setup/SKILL.md:94 | "exits before it whenever its hooks are already registered" — 정확히는 현재 plugin root로 등록됐을 때. 플러그인 업데이트 뒤 첫 세션엔 마이그레이션이 돈다. "재시작으로는 안 된다"는 결론은 맞음 | "registered for the installed version" | ✅ 8차 격리 실행 |
 | 27 | low | worktree-plus/skills/worktree-setup/SKILL.md Value validation | 빈 `branchPrefix`가 "접두사 없음"이라는 설명이 없다 — 코드는 `=""` → `<name>`(`worktree-create.sh` 주석). 8차 eval에서 두 실행이 모두 "확인 못 함"으로 적음 | Value validation에 한 줄 | ✅ |
 | 28 | high | worktree-plus/hooks/scripts/worktree-remove.sh:56-93 (10차 발견) | create 훅이 만드는 `.worktree.log`가 untracked라 dirty 검사에 걸림 → gitignore에 없으면 remove가 항상 `BLOCKED`(`?? .worktree.log`) | ✅ `b451fb8`(3.2.1) 검사에서 `?? .worktree.log` 한 줄만 제외. 기각: create 때 exclude 등록 — worktree별 `info/exclude`는 안 먹고 본 레포 `.git/info/exclude`만 먹음(사용자 레포 수정 + 기존 worktree 미해결) ✅ 11차 실측. 로그를 worktree 밖으로 — 설계 변경(3.3.0) | ✅ `.evals/remove-hook/script-tests.sh` 옛 10/16(S1·S5 BLOCKED) · 새 16/16, S2~S4 변경·untracked·미푸시 차단 유지 |
-| 29 | med | worktree-plus/hooks/scripts/worktree-remove.sh:111 (10차 발견) | 삭제 성공 뒤 `log_entry "REMOVED"`가 지워진 폴더의 `.worktree.log`에 씀 → `No such file or directory`, `set -e`로 exit 1. 삭제는 된 채 훅은 실패로 끝남. 단 공식 `hooks.md` WorktreeRemove: non-zero여도 "폴더가 아직 있을 때만" 삭제 실패 → 실제 영향은 debug 로그 정도(추측, 문서 문구 기준). #28 수정 후엔 매 삭제마다 발생 | ✅ `b451fb8`(3.2.1) `REMOVED` 기록 줄 삭제 + 머리 주석·README "Audit trail"을 실제 동작(create 기록 + BLOCKED 사유)으로. 기각: 폴더 있을 때만 기록·삭제 전 기록(둘 다 결국 안 남음) | ✅ 같은 테스트 S6(log gitignore로 #28 우회): 옛 exit 1 + `No such file` · 새 exit 0 |
+| 29 | med | worktree-plus/hooks/scripts/worktree-remove.sh:111 (10차 발견) | 삭제 성공 뒤 `log_entry "REMOVED"`가 지워진 폴더의 `.worktree.log`에 씀 → `No such file or directory`, `set -e`로 exit 1. 삭제는 된 채 훅은 실패로 끝남. 단 공식 `hooks.md` WorktreeRemove: non-zero여도 "폴더가 아직 있을 때만" 삭제 실패 → 실제 영향은 debug 로그 정도(추측, 문서 문구 기준). #28 수정 후엔 매 삭제마다 발생 | ✅ `b451fb8`(3.2.1) `REMOVED` 기록 줄 삭제 + 머리 주석 "Logs all removal attempts" → "Logs blocked removals", README "Audit trail" "create/remove events" → "the create event"(나머지 BLOCKED 사유 등은 그대로). 기각: 폴더 있을 때만 기록·삭제 전 기록(둘 다 결국 안 남음) | ✅ 같은 테스트 S6(log gitignore로 #28 우회): 옛 exit 1 + `No such file` · 새 exit 0 |
 
 유지: worktree-setup:172-173(개행 없는 append 병합, include·link 중복 시 link 무음 skip), notebooklm references/gotchas.md:7-11(form_input 무음 실패), vibeproxy-kit setup-aliases:304(name/alias 반전 시 merge no-op), claw-mo shared.md:75-83·117(`--clear` 입력 대기 hang, 경로 정규화 비교).
