@@ -2,10 +2,10 @@
 # duck: append a confrontation telemetry event to the persistent log.
 #
 # Usage:
-#   log-telemetry.sh fire <trigger> [mode]
-#   log-telemetry.sh outcome <trigger> <answered|ignored>
+#   log-telemetry.sh --data-dir <dir> fire <trigger> [mode]
+#   log-telemetry.sh --data-dir <dir> outcome <trigger> <answered|ignored>
 #
-# Writes one JSON line per event to ${CLAUDE_PLUGIN_DATA}/telemetry.jsonl, so
+# Writes one JSON line per event to <dir>/telemetry.jsonl, so
 # telemetry-summary.sh (surfaced by duck-orient) can answer "is this plugin
 # actually doing anything?" A "fire" and its later "outcome" are NOT paired by
 # ID -- they're independent counters (fired / answered / ignored) rather than
@@ -22,11 +22,17 @@
 #
 # Silent on success, prints to stderr and exits 0 on failure -- telemetry must
 # never break or block a confrontation.
+#
+# --data-dir (absolute) is required: the Bash tool has no CLAUDE_PLUGIN_DATA, or
+# another plugin's, so callers pass the path -- SKILL.md substitutes it, hooks
+# export it. A relative value would drop files into the user's repo.
 
 set -uo pipefail
 
+[[ "${1:-}" == "--data-dir" && ( "${2:-}" == /* || "${2:-}" == [A-Za-z]:* ) ]] || { echo "log-telemetry: usage: log-telemetry.sh --data-dir <dir> fire|outcome ..." >&2; exit 2; }
+DATA_DIR="$2"; shift 2
+
 EVENT="${1:-}"
-DATA_DIR="${CLAUDE_PLUGIN_DATA:-${HOME}/.claude/data/rubber-duck-tutor}"
 LOG_FILE="$DATA_DIR/telemetry.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
@@ -50,7 +56,7 @@ case "$EVENT" in
     LINE=$(printf '{"ts":"%s","event":"outcome","trigger":"%s","outcome":"%s"}' "$TS" "$TRIGGER" "$OUTCOME")
     ;;
   *)
-    echo "log-telemetry: usage: log-telemetry.sh fire <trigger> [mode] | outcome <trigger> <answered|ignored>" >&2
+    echo "log-telemetry: usage: log-telemetry.sh --data-dir <dir> fire <trigger> [mode] | outcome <trigger> <answered|ignored>" >&2
     exit 0
     ;;
 esac

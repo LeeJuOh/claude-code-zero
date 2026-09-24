@@ -23,7 +23,7 @@ Topic Mode only, before anything else: size the topic. If it's course-sized — 
 1. `$ARGUMENTS` resolves to an existing file path → run **Anatomy Mode** on that file.
 2. `$ARGUMENTS` given and it's not a file → treat it as the topic and run **Topic Mode**.
 3. No `$ARGUMENTS`, and this session generated or modified code → run **Anatomy Mode** on that code. Check the conversation itself first — code coach or the user just produced is already visible there; only fall back to `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/session-edits.sh` if nothing in the conversation qualifies. Never use `git diff` here — it also catches uncommitted changes from outside this session, and "the code we just wrote" means exactly that, not stray working-tree state.
-4. No `$ARGUMENTS`, no session code, and `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh 1` returns a gap → run **Gap Mode** on it.
+4. No `$ARGUMENTS`, no session code, and `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/recent-gaps.sh --data-dir "${CLAUDE_PLUGIN_DATA}" 1` returns a gap → run **Gap Mode** on it.
 5. Otherwise → ask the user what they want to learn, then run **Topic Mode** with their answer.
 
 ## Topic Mode
@@ -54,11 +54,11 @@ Triggered by Routing step 4. `recent-gaps.sh` prints the gap as `YYYY-MM-DD<TAB>
 
 1. Open with the gap itself, not a generic offer: "🧢 Coach — last time, `<gap text>` was shaky. Want to close that out?" If they decline, fall back to Routing step 5 (ask what they want to learn instead) rather than pushing.
 2. If they accept, run **Topic Mode** with the gap text as the topic.
-3. **Resolving the gap** — only call `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/resolve-gap.sh "<bare gap text>"` once the Topic Mode critique judges their exercise attempt as sound, not merely attempted. Saying "I get it" or following along during the explanation doesn't resolve it — coaching your own student and then grading them yourself is only trustworthy when the grade is backed by something they actually did. If the attempt still misses the point, leave the gap unresolved, say so plainly, and don't call the script.
+3. **Resolving the gap** — only call `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/resolve-gap.sh --data-dir "${CLAUDE_PLUGIN_DATA}" "<bare gap text>"` once the Topic Mode critique judges their exercise attempt as sound, not merely attempted. Saying "I get it" or following along during the explanation doesn't resolve it — coaching your own student and then grading them yourself is only trustworthy when the grade is backed by something they actually did. If the attempt still misses the point, leave the gap unresolved, say so plainly, and don't call the script.
 
 ## Cross-mode: logging new gaps
 
-In any mode, if a critique surfaces a gap distinct from what's currently being taught — something they clearly can't do yet, unrelated to the exercise at hand — log it with `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh "<gap text>"` so a future duck or coach session can pick it up. Don't log the gap you're actively teaching in this same session — that would leave it logged-unresolved the instant you resolve it in Gap Mode step 3.
+In any mode, if a critique surfaces a gap distinct from what's currently being taught — something they clearly can't do yet, unrelated to the exercise at hand — log it with `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh --data-dir "${CLAUDE_PLUGIN_DATA}" "<gap text>"` so a future duck or coach session can pick it up. Don't log the gap you're actively teaching in this same session — that would leave it logged-unresolved the instant you resolve it in Gap Mode step 3.
 
 ## What this isn't
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # duck: print recent UNRESOLVED gaps for the current repo.
 #
-# Usage: recent-gaps.sh [count]
+# Usage: recent-gaps.sh --data-dir <dir> [count]
 #   count: max gaps to print (default 5)
 #
 # Outputs one gap per line in the format:
@@ -14,12 +14,18 @@
 # missing the field entirely (legacy lines logged before S13) is treated the
 # same as false, so nothing pre-existing silently vanishes from rotation.
 # See resolve-gap.sh for how a line flips to resolved.
+#
+# --data-dir (absolute) is required: the Bash tool has no CLAUDE_PLUGIN_DATA, or
+# another plugin's, so callers pass the path -- SKILL.md substitutes it, hooks
+# export it. A relative value would drop files into the user's repo.
 
 set -uo pipefail
 
+[[ "${1:-}" == "--data-dir" && ( "${2:-}" == /* || "${2:-}" == [A-Za-z]:* ) ]] || { echo "recent-gaps: usage: recent-gaps.sh --data-dir <dir> [count]" >&2; exit 2; }
+DATA_DIR="$2"; shift 2
+
 COUNT="${1:-5}"
 
-DATA_DIR="${CLAUDE_PLUGIN_DATA:-${HOME}/.claude/data/rubber-duck-tutor}"
 LOG_FILE="$DATA_DIR/gaps.log"
 
 [[ -f "$LOG_FILE" ]] || exit 0

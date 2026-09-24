@@ -9,6 +9,8 @@ allowed-tools: Read Grep Glob Bash(bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scr
 
 **Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Confidence Check (Plan Review row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
 
+**Paths** for engine.md's commands: `<scripts>` is `${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts`, `<data-dir>` is `${CLAUDE_PLUGIN_DATA}`.
+
 **Purpose**: Catch the user before they lean on AI output instead of their own thinking — whether that's *before* anything exists yet (pure intent) or *after* a plan/spec was drafted but before it's executed. Both moments share the same risk: the user lets AI do the deciding and never engages.
 
 ## Which flow
