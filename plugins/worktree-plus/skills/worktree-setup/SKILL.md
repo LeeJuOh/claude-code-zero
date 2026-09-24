@@ -20,7 +20,7 @@ If the user's ask is vague ("set up worktree-plus"), show the current settings f
 |---|---|---|
 | `worktreeplus.baseBranch` | `HEAD` | Per-repo typical (different repos have different default branches) |
 | `worktreeplus.branchPrefix` | `worktree-` | Global typical (personal naming convention); per-repo for team rules |
-| `worktreeplus.dirBase` | `.claude/worktrees` | Per-repo typical |
+| `worktreeplus.dirBase` | `.claude/worktrees` | Per-repo for a relative path; global works for an absolute one |
 | `worktree.guessRemote` | `true` (plugin override; git default is `false`) | Global typical |
 
 ## View current settings
@@ -72,7 +72,7 @@ git config [--local|--global] --remove-section worktreeplus
 Before writing, sanity-check the value:
 
 - **`branchPrefix`**: literal — `"feat-"` produces `feat-name`, `"feat"` produces `featname`. If user says "use feat prefix" they almost certainly want the `-`. Ask.
-- **`dirBase`**: `~` is rejected — a value of `~` or `~/foo` makes every worktree creation fail, so write the expanded absolute path. Relative paths resolve against the repo root. Trailing slash is stripped automatically. Empty value falls back to default.
+- **`dirBase`**: `~` is rejected — a value of `~` or `~/foo` makes every worktree creation fail, so write the expanded absolute path. Relative paths resolve against the repo root. An absolute path set with `--global` gets a folder per repo — worktrees land in `<dirBase>/<repo>/<name>` — so repos sharing it never collide; a `--local` one is used as-is (`<dirBase>/<name>`). Trailing slash is stripped automatically. Empty value falls back to default.
 - **`baseBranch`**: must be a resolvable ref. `git rev-parse --verify <value>` works? If not, warn.
 
 ## Migration check

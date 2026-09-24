@@ -108,6 +108,7 @@ git config --get-regexp '^worktreeplus\.|^worktree\.guessRemote'
 **Notes:**
 - `branchPrefix` is literal — `feat-` produces `feat-name`, `feat` produces `featname`.
 - `dirBase` does not expand `~`; use an absolute path if you want `$HOME`.
+- A `--global` absolute `dirBase` gets one folder per repo (`<dirBase>/<repo>/<name>`), so repos sharing it never collide; a `--local` one is used as-is. Worktrees made before 3.2.0 directly under a global `dirBase` still reopen by branch.
 - Changing `dirBase` does not move existing worktrees. Finish or remove pending worktrees first.
 
 ## How it works
