@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Update ~/.codex/config.toml with model and/or reasoning effort values.
+"""Update $CODEX_HOME/config.toml (default ~/.codex) with model and/or reasoning effort values.
 
 Usage: apply-codex-config.py <model> <effort>
        Empty string for either argument means "no change".
@@ -9,6 +9,11 @@ levels and judges them at runtime, so second-guessing here would only mean
 calling a brand-new model or an account-gated one wrong — and any model name
 this script knew would go stale the moment OpenAI ships the next one.
 
+Both keys are top-level. TOML assigns every key below a [table] header to that
+table, so the script reads and writes only above the first header: a key
+appended at the end of the file would join the last table, and a same-named
+key inside one (a legacy [profiles.x] table) is not the global value.
+
 Stdout (one line): Model: <before> -> <after> | Effort: <before> -> <after>
 """
 import os
@@ -16,27 +21,98 @@ import re
 import sys
 import tempfile
 
+TABLE_HEADER = re.compile(r"^\s*\[\[?[^\[\]]+\]\]?\s*(#.*)?$")
+STRING_VALUE = re.compile(r"""^(?:"((?:[^"\\]|\\.)*)"|'([^']*)')(\s*#.*)?$""")
 
-def find_line(lines, key):
-    pat = re.compile(rf'^\s*{re.escape(key)}\s*=\s*"([^"]*)"')
+
+def top_level(lines):
+    """Return (indices of top-level lines outside multi-line strings, index of
+    the first table header or len(lines)). Skipping string bodies keeps a
+    string that contains "[x]" or "model = ..." from reading as structure."""
+    structural = set()
+    delim = None
     for i, line in enumerate(lines):
+        if delim:
+            if line.count(delim) % 2:
+                delim = None
+            continue
+        if TABLE_HEADER.match(line):
+            return structural, i
+        structural.add(i)
         if line.lstrip().startswith("#"):
             continue
-        m = pat.match(line)
+        for q in ('"""', "'''"):
+            if line.count(q) % 2:
+                delim = q
+                break
+    return structural, len(lines)
+
+
+def find_line(lines, key):
+    """Return (index, value, trailing comment) of the top-level assignment."""
+    k = re.escape(key)
+    assign = re.compile(rf"""^\s*(?:{k}|"{k}"|'{k}')\s*=\s*(.*?)\s*$""")
+    structural, end = top_level(lines)
+    for i in sorted(structural):
+        m = assign.match(lines[i])
         if m:
-            return i, m.group(1)
-    return None, None
+            s = STRING_VALUE.match(m.group(1))
+            if s:
+                value = s.group(1) if s.group(1) is not None else s.group(2)
+                return i, value, s.group(3) or ""
+            return i, m.group(1), ""
+    return None, None, ""
+
+
+def toml_string(value):
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def set_line(lines, key, value):
-    i, _ = find_line(lines, key)
-    new_line = f'{key} = "{value}"\n'
+    i, _, comment = find_line(lines, key)
+    new_line = f"{key} = {toml_string(value)}{comment}\n"
     if i is not None:
         lines[i] = new_line
-    else:
-        if lines and not lines[-1].endswith("\n"):
-            lines[-1] += "\n"
-        lines.append(new_line)
+        return
+    structural, end = top_level(lines)
+    # Right after the last top-level setting, so a comment introducing the
+    # first table stays with it.
+    at = end
+    while at > 0 and at - 1 in structural and (
+        not lines[at - 1].strip() or lines[at - 1].lstrip().startswith("#")
+    ):
+        at -= 1
+    new = [new_line]
+    if at == 0:
+        # No top-level settings: below any leading comments (e.g. #:schema).
+        at = end
+        if end < len(lines):
+            new.append("\n")
+    if at > 0 and not lines[at - 1].endswith("\n"):
+        lines[at - 1] += "\n"
+    lines[at:at] = new
+
+
+def check(lines, config_path, expected):
+    """Parse the result (tomllib, Python 3.11+) and confirm each requested key
+    reads back at the top level, so a layout this script misreads fails here
+    instead of being written. Older Pythons skip the check."""
+    try:
+        import tomllib
+    except ImportError:
+        return
+    try:
+        data = tomllib.loads("".join(lines))
+    except tomllib.TOMLDecodeError as e:
+        fail(f"{config_path} would not parse as TOML after the edit ({e}). Fix the file, then re-run")
+    for key, value in expected.items():
+        if data.get(key) != value:
+            fail(f"{key} did not land at the top level of {config_path}. Edit the file by hand")
+
+
+def fail(message):
+    print(f"Error: {message} — leaving it untouched.", file=sys.stderr)
+    sys.exit(1)
 
 
 def fmt(before, after, requested):
@@ -55,8 +131,9 @@ def main():
     model = sys.argv[1].strip()
     effort_in = sys.argv[2].strip()
 
-    config_path = os.path.expanduser("~/.codex/config.toml")
-    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    codex_home = os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
+    config_path = os.path.join(codex_home, "config.toml")
+    os.makedirs(codex_home, exist_ok=True)
     try:
         with open(config_path) as f:
             lines = f.readlines()
@@ -66,24 +143,22 @@ def main():
         # Refuse rather than start from an empty file: the write below would
         # replace the whole config with two keys, and a config we cannot read
         # is precisely the one whose contents we have no right to discard.
-        print(
-            f"Error: cannot read {config_path} ({type(e).__name__}). "
-            "Repair or move it, then re-run — leaving it untouched.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        fail(f"cannot read {config_path} ({type(e).__name__}). Repair or move it, then re-run")
 
-    _, before_model = find_line(lines, "model")
-    _, before_effort = find_line(lines, "model_reasoning_effort")
+    _, before_model, _ = find_line(lines, "model")
+    _, before_effort, _ = find_line(lines, "model_reasoning_effort")
 
+    expected = {}
     if model:
         set_line(lines, "model", model)
+        expected["model"] = model
     if effort_in:
         set_line(lines, "model_reasoning_effort", effort_in)
+        expected["model_reasoning_effort"] = effort_in
 
-    if model or effort_in:
-        dir_ = os.path.dirname(config_path)
-        fd, tmp = tempfile.mkstemp(dir=dir_, prefix=".config.toml.")
+    if expected:
+        check(lines, config_path, expected)
+        fd, tmp = tempfile.mkstemp(dir=codex_home, prefix=".config.toml.")
         try:
             with os.fdopen(fd, "w") as f:
                 f.writelines(lines)
@@ -95,8 +170,8 @@ def main():
                 pass
             raise
 
-    _, after_model = find_line(lines, "model")
-    _, after_effort = find_line(lines, "model_reasoning_effort")
+    _, after_model, _ = find_line(lines, "model")
+    _, after_effort, _ = find_line(lines, "model_reasoning_effort")
 
     print(
         f"Model: {fmt(before_model, after_model, bool(model))} | "

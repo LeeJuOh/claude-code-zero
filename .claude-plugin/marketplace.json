@@ -47,7 +47,7 @@
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "5.0.2",
+      "version": "5.0.3",
       "description": "Get Codex's second opinion — and actually trust it: a different model reviews your code, plans, and research, and a fresh independent verifier subagent — never the session that wrote the work — judges every finding (Agreed/Disputed/Nuanced/Unverifiable, plus False Positive/Uncited from the citation script) before you act, catching hallucinated citations. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel, transfer. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Transfer hands the whole session off to a resumable Codex thread (v1.0.5+). Prompt-running skills accept --model/--effort via config.toml."
     },
     {
