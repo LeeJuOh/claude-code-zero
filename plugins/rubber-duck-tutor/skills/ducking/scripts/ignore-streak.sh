@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # duck: compute the current consecutive-ignore streak from telemetry.
 #
-# Usage: ignore-streak.sh
+# Usage: ignore-streak.sh --data-dir <dir>
 #
 # Prints a single integer: how many "outcome" events in a row, scanning
 # backwards from the most recent, came back "ignored" before hitting the
@@ -17,10 +17,15 @@
 # question mode (the less disruptive of the two ship-point modes), so a
 # telemetry hiccup degrades toward "ask like normal", never toward "assume
 # fatigue that isn't there."
+#
+# --data-dir (absolute) is required: the Bash tool has no CLAUDE_PLUGIN_DATA, or
+# another plugin's, so callers pass the path -- SKILL.md substitutes it, hooks
+# export it. A relative value would drop files into the user's repo.
 
 set -uo pipefail
 
-DATA_DIR="${CLAUDE_PLUGIN_DATA:-${HOME}/.claude/data/rubber-duck-tutor}"
+[[ "${1:-}" == "--data-dir" && ( "${2:-}" == /* || "${2:-}" == [A-Za-z]:* ) ]] || { echo "ignore-streak: usage: ignore-streak.sh --data-dir <dir>" >&2; exit 2; }
+DATA_DIR="$2"; shift 2
 LOG_FILE="$DATA_DIR/telemetry.jsonl"
 
 if [[ ! -f "$LOG_FILE" ]] || ! command -v jq &>/dev/null; then

@@ -68,7 +68,7 @@ Include the setup output in the status report.
 ### Read current config
 
 ```bash
-cat ~/.codex/config.toml 2>/dev/null || echo "NO_CONFIG"
+cat "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null || echo "NO_CONFIG"
 ```
 
 ### Set Model / Effort (`--model`, `--effort`)
@@ -79,13 +79,13 @@ Both flags are handled by one call. Empty string = no change for that field:
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" "<model or empty>" "<effort or empty>"
 ```
 
-The script prints one line to stdout:
+The script's first stdout line is:
 
 ```
 Model: <before> -> <after> | Effort: <before> -> <after>
 ```
 
-Relay that line verbatim to the user — it shows before/after so they can confirm.
+Relay that line verbatim to the user — it shows before/after so they can confirm. If it exits non-zero, relay its stderr instead — the file was left untouched. A `Note:` line means the current project's own `.codex/config.toml` sets the same key, which outranks `config.toml` in that project — relay it.
 
 **Model and effort handling**
 
@@ -93,7 +93,7 @@ The script writes both values as given and judges neither — Codex owns the lis
 
 So when a user asks which models or efforts they can use, don't answer from memory — availability is account-scoped and changes. Tell them to run `codex` and open its `/model` picker.
 
-The effort value lands on the `model_reasoning_effort` key (`none` is the exception — it belongs to `plan_mode_reasoning_effort`, which this plugin doesn't set). The script preserves other keys in `config.toml` (e.g. `model_context_window`) and writes atomically via a temp file.
+The effort value lands on the `model_reasoning_effort` key (`none` is the exception — it belongs to `plan_mode_reasoning_effort`, which this plugin doesn't set). The script edits only the top-level keys (above the first `[table]` header), preserves everything else (e.g. `model_context_window`, `[projects.*]`), follows `CODEX_HOME`, and writes atomically via a temp file. On Python 3.11+ it parses the file before and after and refuses to write if anything other than the requested keys would change.
 
 If a value looks like an obvious typo, `AskUserQuestion` beats letting it through — config.toml is global, so a typo follows the user into every later session.
 
@@ -123,5 +123,5 @@ To change: `/codex-setup --model gpt-5.6-sol --effort high`
 ## Gotchas
 
 - **config.toml applies globally.** Changes affect all Codex commands system-wide — Official plugin, direct CLI, and every codex-advisor skill. Warn the user when you mutate it.
-- **`--effort` is not a registered review/adversarial flag.** `handleReviewCommand` `valueOptions = [base, scope, model, cwd]` (`codex-companion.mjs:714`). The only path that reaches the review code is the config.toml `model_reasoning_effort` key. `--model` IS honored as a flag in companion 1.0.4+ (`startThread({ model })`, `lib/codex.mjs:1010-1015`), but codex-advisor still routes it through `config.toml` for **consistency across skills** and so the value persists for the next session — same call shape on review/adversarial/rescue/verify/research. Every skill (`review`, `adversarial`, `research`, `verify`, `rescue`) accepts `--model`/`--effort` and writes via `scripts/apply-codex-config.py` — so the user doesn't have to call `codex-setup` separately.
+- **`--effort` is not a registered review/adversarial flag.** `handleReviewCommand` `valueOptions = [base, scope, model, cwd]` (`codex-companion.mjs:714`). The only path that reaches the review code is the config.toml `model_reasoning_effort` key. `--model` IS honored as a flag in companion 1.0.4+ (`startThread({ model })`, `lib/codex.mjs:1010-1015`), but codex-advisor still routes it through `config.toml` for **consistency across skills** and so the value persists for the next session — same call shape on review/adversarial/rescue/verify/research. Every skill (`review`, `adversarial`, `research`, `verify`, `rescue`) accepts `--model`/`--effort` and writes via `scripts/apply-codex-config.py` — so the user doesn't have to call `codex-setup` separately. When a project's own `.codex/config.toml` sets a requested key, those skills also pass it on the Codex command (`--model`, plus `--effort` on `task`), since run-time values outrank every config file; review and adversarial have no effort flag, so the script prints a `Note:` instead.
 - **Don't create config.toml if the user only asked for status.** `apply-codex-config.py "" ""` is safe (no-op, prints current values) but avoid it when just reporting — `grep`/`cat` is enough.

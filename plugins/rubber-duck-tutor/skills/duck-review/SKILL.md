@@ -9,6 +9,8 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *
 
 **Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Confidence Check (PR/Change Review row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Gotchas. They apply here.
 
+**Paths** for engine.md's commands: `<scripts>` is `${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts`, `<data-dir>` is `${CLAUDE_PLUGIN_DATA}`.
+
 **Input**: Run `git diff` (or `git diff --staged`, or PR diff).
 
 ## Flow

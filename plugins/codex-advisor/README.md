@@ -97,7 +97,7 @@ Easy to conflate — they're opposites. **Rescue** is a subcontractor: Codex doe
 
 ## Model & effort
 
-**Every skill that sends Codex a prompt accepts `--model <slug>` and `--effort <level>`** (review, adversarial, rescue, verify, research; setup sets the persistent defaults). Job-management skills (status, result, cancel) and transfer have no model turn to steer. The flags route through `scripts/apply-codex-config.py` and update `~/.codex/config.toml` before the Codex CLI runs. Two reasons:
+**Every skill that sends Codex a prompt accepts `--model <slug>` and `--effort <level>`** (review, adversarial, rescue, verify, research; setup sets the persistent defaults). Job-management skills (status, result, cancel) and transfer have no model turn to steer. The flags route through `scripts/apply-codex-config.py` and update `config.toml` in `$CODEX_HOME` (default `~/.codex`) before the Codex CLI runs. Two reasons:
 
 1. **`--effort` is not a registered review/adversarial flag.** The companion's `handleReviewCommand` accepts `--base`, `--scope`, `--model`, `--cwd` only (`codex-companion.mjs:714`). Passing `--effort` directly would become silent prompt corruption. Only the `model_reasoning_effort` key in `config.toml` reaches the review code path.
 2. **Consistency + persistence.** `--model` IS honored as a flag in companion 1.0.4+ (`lib/codex.mjs:1010-1015`), but routing it through `config.toml` keeps every codex-advisor skill identical and lets the value carry into the next session without re-typing.
@@ -113,9 +113,11 @@ Examples:
 
 **Which slugs and efforts can you use?** Run `codex` and use its `/model` picker — that list is scoped to your account, so it's the only one that's right for you. Whatever you pass is written to `config.toml` as given; Codex decides at run time whether it's valid. The plugin keeps no model list of its own — any list it kept would go stale the moment OpenAI ships the next model, and then it would call a working value wrong.
 
-The effort value lands on the `model_reasoning_effort` key in `config.toml` (`none` is the one exception — it belongs to `plan_mode_reasoning_effort`, a key this plugin doesn't set).
+The effort value lands on the `model_reasoning_effort` key in `config.toml` (`none` is the one exception — it belongs to `plan_mode_reasoning_effort`, a key this plugin doesn't set). Only the top-level `model` and `model_reasoning_effort` change; tables such as `[projects.*]` or a legacy `[profiles.*]` are left alone.
 
 **The change is global and persistent.** config.toml is read by every Codex invocation — Official plugin, direct CLI, every codex-advisor skill — until you change it again. The skill tells you before/after whenever it mutates.
+
+**A project's own `.codex/config.toml` outranks it.** When the current project's file sets a value you asked for, the skill also passes it on the Codex command (`--model`, and `--effort` for rescue, verify, and research), which outranks every config file. Review and adversarial review have no effort flag, so there the skill tells you the project's effort still applies.
 
 ## How a call is translated
 

@@ -167,10 +167,11 @@ Run after payload assembly, before Phase 2, so the companion sees the new `confi
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
-  "<literal clean effort from Phase 1 or empty>"
+  "<literal clean effort from Phase 1 or empty>" \
+  --run-flags model,effort
 ```
 
-Relay the `Model: ... | Effort: ...` stdout line verbatim; pass stderr advisories through. **config.toml is global** — the change affects every Codex invocation until changed again. Flag that to the user when values changed.
+Relay its stdout verbatim. If it exits non-zero, relay its stderr and stop — launching Codex anyway would run it on settings the user didn't ask for. A `Run flags:` line means the project's own `.codex/config.toml` sets that value and outranks `config.toml`; add those flags, exactly as printed, to the `task` command in Phase 2. **config.toml is global** — the change affects every Codex invocation until changed again. Flag that to the user when values changed.
 
 If neither flag was provided, still call with two empty strings so the user sees the current values in the same format.
 
@@ -281,6 +282,7 @@ Use `AskUserQuestion` exactly once:
 # NEVER pass a positional arg — readTaskPrompt short-circuits on
 # positionalPrompt (:619), silently dropping the entire blind payload.
 cat "<literal PROMPT_FILE path>" | node "$CODEX_COMPANION" task --background --json \
+  <flags from the "Run flags:" line, if the apply step printed one> \
   > "<literal JOB_JSON_FILE path>" 2> "<literal JOB_JSON_FILE path>.stderr" \
   || { echo "task launch failed:" >&2; cat "<literal JOB_JSON_FILE path>.stderr" >&2; exit 1; }
 

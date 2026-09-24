@@ -147,20 +147,6 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
-## Lab Plugins
-
-Experimental. May require specific environments or have limited stability.
-
-### [e2e-test-runner](plugins/e2e-test-runner/README.md)
-
-**Problem:** E2E tests require brittle selectors and page objects. They break on every UI change and take forever to write.
-
-**Solution:** Write tests in natural language JSON. Claude reads the page, decides what to click, and validates outcomes. Video recording per test, visual regression via pixel-diff, and auto-detects your dev server (Next / Vite / Remix / Astro / and more).
-
-`e2e-test`
-
----
-
 ## Plugin Management
 
 ```shell

@@ -35,33 +35,26 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "3.1.0",
+      "version": "3.2.1",
       "description": "Replaces Claude Code's built-in worktree — aligns with native git worktree where CC diverges (HEAD base, origin/* auto-tracking) and adds layers native lacks: .worktreeinclude/.worktreelink for gitignored files with a /worktree-setup skill that scans and builds them, upstream-aware removal guard, idempotent re-entry."
     },
     {
       "name": "skill-creator-pro",
       "source": "./plugins/skill-creator-pro",
-      "version": "2.0.6",
+      "version": "2.0.7",
       "description": "Create, test, and iteratively improve Claude Code skills with the official lean coaching loop, an eval harness for benchmarking with variance analysis, and automated description-trigger optimization"
     },
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "5.0.2",
-      "description": "Get Codex's second opinion — and actually trust it: a different model reviews your code, plans, and research, and a fresh independent verifier subagent — never the session that wrote the work — judges every finding (Agreed/Disputed/Nuanced/Unverifiable, plus False Positive/Uncited from the citation script) before you act, catching hallucinated citations. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel, transfer. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Transfer hands the whole session off to a resumable Codex thread (v1.0.5+). Prompt-running skills accept --model/--effort via config.toml."
+      "version": "5.1.0",
+      "description": "Get Codex's second opinion — and actually trust it: a different model reviews your code, plans, and research, and a fresh independent verifier subagent — never the session that wrote the work — judges every finding (Agreed/Disputed/Nuanced/Unverifiable, plus False Positive/Uncited from the citation script) before you act, catching hallucinated citations. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel, transfer. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Transfer hands the whole session off to a resumable Codex thread (v1.0.5+). Prompt-running skills accept --model/--effort via config.toml, also passed at run time when a project's own .codex/config.toml would override them."
     },
     {
       "name": "rubber-duck-tutor",
       "source": "./plugins/rubber-duck-tutor",
-      "version": "3.1.2",
+      "version": "3.1.3",
       "description": "Rubber duck tutor that keeps you engaged across the whole AI-coding lifecycle — before you ask AI to build (/duck-prebuild), once code is written and before you ship (/duck-verify, /duck-review), and when orienting to unfamiliar code (/duck-orient), plus /duck for auto-detect. /coach is its teaching sibling, manual-invocation only: /coach <topic> explains and drills a concept, /coach <file> or a bare /coach right after generating code dissects it section by section (what/why-this-way/where-it-breaks), and /coach alone surfaces an unresolved gap from a past duck session and teaches it — resolved only once you pass the exercise, not by saying you understand. Ship-point hooks triage what you just pushed against six risk categories and target the riskiest change you didn't actually discuss, fall back to retrieving an unresolved gap from a past session, or demote to a non-blocking scoreboard after three ignored confrontations in a row. Confrontation telemetry (fired/answered/ignored) is queryable from /duck-orient. Doesn't overlap /code-review or /grilling — duck only checks whether you understand, never whether the code or plan is good, and never teaches — that's coach's job."
-    },
-    {
-      "name": "e2e-test-runner",
-      "source": "./plugins/e2e-test-runner",
-      "version": "0.2.0",
-      "description": "Run E2E browser tests using natural language test definitions powered by Claude Code SDK and agent-browser with video recording",
-      "category": "lab"
     },
     {
       "name": "claw-mo",

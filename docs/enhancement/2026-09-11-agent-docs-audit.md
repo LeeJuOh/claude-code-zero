@@ -1,50 +1,44 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(5/11, 다음 skill-creator-pro)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-24 5차 → 다음 세션)
+## 핸드오프 (2026-09-25 11차 끝 → 12차)
 
-**Goal** — 2부(플러그인 수정) P1의 남은 버그 6건을 플러그인 하나씩 고친다. 다음은 skill-creator-pro(§2-2 #1). 1부는 S5(원 작성 머신의 메모리 폴더·worktree 정리)만 남았다.
+**첫 행동:** 사용자에게 한 줄로 묻는다 — "`develop`의 미푸시 커밋 N개를 푸시할까요? 추천: 푸시(10차부터 쌓인 수정·원장 기록)." N은 `git rev-list --count origin/develop..develop`로 세서 넣는다(11차 끝 26개). 10·11차 모두 물었지만 답을 못 받았다(11차는 곧바로 핸드오프 요청). 승인 전엔 푸시하지 않는다.
 
-**First Action** — `/grill-with-docs`로 skill-creator-pro §2-2 #1을 사용자에게 한 줄로 설명하고, 첫 결정 하나를 추천과 함께 묻는다. 버그: `plugins/skill-creator-pro/skills/skill-creator-pro/SKILL.md`의 "Package and Present" 절이 `python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py <path>`로 부르는데, `scripts/package_skill.py`가 `from scripts.quick_validate import validate_skill`이라 `ModuleNotFoundError: No module named 'scripts'`가 난다. 공식 skill-creator(설치 캐시 `~/.claude/plugins/cache/claude-plugins-official/skill-creator/…/SKILL.md`)는 `python -m scripts.package_skill <path>`. 추천: 공식 형태를 따라 스킬 폴더에서 `python -m`으로 부르게 고치기(CONTEXT-MAP상 skill-creator-pro는 공식 skill-creator를 기준선으로 삼는다). 함께 볼 것: `-m`으로 가도 `scripts/quick_validate.py`의 `import yaml`이 PyYAML 없는 머신에서 실패하고(공식도 같음), 같은 SKILL.md의 `python -m scripts.aggregate_benchmark`·`python -m scripts.run_loop`도 작업 디렉터리가 스킬 폴더여야 동작한다. 이 절은 "`present_files` 도구가 있을 때만"이라 Claude Code에선 거의 안 탄다. 답을 받으면 커밋 하나 + patch 범프(marketplace.json 2.0.6 → 2.0.7).
+**그다음 물을 것** (하나씩, 10차부터 미답)
+1. gotchas.md "Plugin variables in the Bash tool"에 한 줄 추가 제안: hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 `claude -p` 실측, §2부 공통)
+2. (선택) rubber-duck-tutor 3.1.3 검수의 빈 곳 두 개 — §2-4 #21 행 "미확인". 사용자가 "그냥 커밋해"로 넘긴 것이라 다시 권하지는 않는다
 
-**Context** — 사용자는 P1을 "버그 하나씩 그릴 → 결정 → 수정" 흐름으로 진행한다. 5차 세션 끝에 남은 P1 5건을 영향 순으로 제시했다: 1 rubber-duck-tutor(§2-4 #1) · 2 codex-advisor(§2-3 #17) · 3 e2e-test-runner(§2-7 #6, 한 줄) · 4 worktree-plus(§2-7 #1·#2) · 5 skill-creator-pro(§2-2 #1). 사용자가 "다음 세션은 5번부터"라고 정했다. 그 뒤 순서는 정하지 않았다 — 끝나면 묻는다.
+**다음 작업:** 2부 P2~P7(아래 표). 막는 결정이 없는 것은 P3(§2-3 codex-advisor 나머지)·P7(§2-7 나머지, vibeproxy-kit 행은 맨 끝). P2·P4·P5는 §1-5 #10·#8·#9 결정, P6은 #11(claw-mux #2 라이브 확인)이 막는다. 어느 것부터 할지 사용자에게 묻는다 — 추천은 결정 없이 바로 갈 수 있는 P3.
 
-**Current Progress** (git 기준 — `repo_facts.sh`)
-- 브랜치 `develop`, 작업 트리 깨끗. origin/develop보다 12커밋 앞섬(미푸시) + 이 기록 커밋.
-- 5차 커밋: `5be2cec` vision-powers 4.9.1(§2-1 #1·#4·#32), `cbad384` 원장 기록, `143aa9c` vision-powers 4.9.2(`reports_dir` 삭제), `75ac548` 원장 기록. 내용은 §2-1 아래 "P1 처리".
-- 4차까지: `d9b5177` notebooklm-connector 1.3.2(§2-6 #3), `ca54ade` claw-mux 1.2.1(§2-5 #1). 1부 커밋은 아래 S1~S4·1부 결정 행.
-- P1 11건 중 5건 완료.
+**11차 요약:** worktree-plus §2-7 #28·#29 → `b451fb8`(3.2.1) + 원장 `1380906`. 사용자가 "먼소리야 버그 1부터"로 되묻자 `/grill-with-docs`로 버그 하나씩 "문제(재현 출력) → 선택지 → 추천 → 근거"를 물었고 둘 다 A로 확정. 확정·기각 사유는 §2-7 #28·#29 행.
 
-**Decisions Made** (이전 결정은 §1-5)
-- 5차 vision-powers 결정(에이전트 위치, `--data-dir` 필수 인자, `log-report.js`·`reports_dir` 삭제)은 §2-1 아래 "P1 처리".
-- references 파일의 스크립트 경로는 변수 대신 짧은 이름 + SKILL.md에서 전체 경로 한 번 제시(references는 치환 안 됨). 5차에서 vision-powers에도 적용.
-- 스크립트는 `CLAUDE_PLUGIN_DATA`를 환경에서 읽지 않고 인자로 받는다(gotchas "Plugin variables in the Bash tool"). 남은 플러그인에서 같은 패턴을 보면 같은 방식으로.
-- P1 진행: 우선순위 순으로 플러그인 하나씩, 플러그인마다 수정 커밋 + 원장 기록 커밋.
+**플러그인 하나 처리 절차** (8~11차에 굳힘)
+1. 현재 코드에서 재확인 → 짧게 보고 → 승인. ⚠️ 8차에 "개선하자"를 승인으로 읽고 고쳤다가 "누가 고치래?"를 들었다. 9·10차는 보고 뒤 사용자가 `/skill-creator-pro 고치자`·"ㅇㅇ"로 승인했다.
+2. 설계 선택이 있으면 고치기 전에 하나씩 묻는다(10차: 레포 확인만 vs 레포 폴더 → 레포 폴더, 이어서 항상 vs 전역만 → 전역만). 버그가 여럿이면 버그 하나씩 묻는다(11차 `/grill-with-docs`).
+3. 검수: 스크립트는 격리 환경(`HOME`·`GIT_CONFIG_GLOBAL`을 scratchpad로, `GIT_CONFIG_NOSYSTEM=1`)에서 직접 돌리고, 옛/새 비교. 검수 결과가 끝나기 전에 사용자가 커밋을 원하면 빈 곳을 원장 행에 적고 커밋한다(9차).
+4. 수정 커밋(버전 bump 포함) + 원장 기록은 별도 커밋.
+5. 플러그인이 방치됐고 열린 버그가 많으면 삭제도 선택지(10차 e2e-test-runner — 사용자가 먼저 물었다).
+- ⚠️ 보고는 짧게, 한국어로. 8차 "장황하게말하지마", 9차 "어디까지햇음?", 10차 "장황하게말하지마 다시보고해"(선택지 두 개 + 장단점 + 부수 발견을 한 번에 늘어놓았다). 형식: 결론 한 줄 + 질문 하나 + 추천 한 줄, 부수 발견은 괄호 한 줄. 11차 "먼소리야 버그 1부터"(버그 두 개의 A/B/C를 한 번에 냈다) → 버그 하나씩 "문제(재현 출력) → 선택지 → 추천 → 근거"로 물었더니 바로 답이 왔다.
+- ⚠️ "먼소리지? 이유는 머고"(10차) — 추상 설명이 안 통했고 구체 경로 예시(`--local` `/wt/proj` → `/wt/proj/proj/fix`)로 통했다. 과장 금지: "예전 권장대로"라고 했다가 정정(옛 스킬은 "Per-repo typical"뿐, `--local` 절대 경로 우회책은 eval 에이전트가 지어낸 것).
 
-**What Worked**
-- `/grill-with-docs`로 버그마다 한 질문씩. 수정 중 새로 나온 판단(`log-report.js` 삭제, `reports_dir`)도 따로 한 질문으로 묻고 나서 처리했다.
-- 사용자가 근거를 캐물을 때("로컬 문서 근거냐?", "우리 문제 아니지 않아?") 공식 문서 줄 번호와 실제 실행 결과로 답하니 바로 결정했다.
-- 실제 실행으로 확인: 실제 데이터 폴더로 스크립트 실행, `claude -p --model haiku --plugin-dir ./plugins/<name>`으로 에이전트 로드 확인(싸고 빠름).
+**eval 방식**
+- 스킬 문구만 바꿀 때(8·10차): 서브에이전트 드라이런. 옛 스냅샷은 `git archive <수정 전 커밋> plugins/<이름>`으로 푼 사본, 프롬프트는 "그 SKILL.md만 읽기, 쓰기 금지, 쓰기 명령은 `commands.sh`, 답변은 `response.md`". 산출물 예 `plugins/worktree-plus/.evals/dirbase-repo-scope/iteration-1/`.
+- 훅 스크립트 로직(10차): stdin JSON을 직접 먹이는 시나리오 테스트 — `plugins/worktree-plus/.evals/dirbase-repo-scope/script-tests.sh <스크립트> <new|old>`. remove 훅(11차): `.evals/remove-hook/script-tests.sh` — 실제 create 훅으로 worktree를 만든 뒤 삭제. ⚠️ 옛 버전에서 뒤 버그(#29)가 앞 버그(#28)에 가려 안 드러났다 → 앞 버그를 우회하는 시나리오(S6 `.worktree.log` gitignore)를 따로 둔다. ⚠️ 시나리오들이 샌드박스 하나를 같이 쓰므로 worktree 이름·레포 폴더명을 시나리오마다 다르게(10차 S7이 S3의 `app/fix`와 부딪혀 가짜 FAIL).
+- hook·`${CLAUDE_PLUGIN_*}` 치환이 걸린 수정(9차): 드라이런으로는 안 보인다 → 실제 `claude -p --plugin-dir <플러그인> --output-format stream-json --verbose --allowedTools …`. 러너·채점 예: `plugins/rubber-duck-tutor/.evals/ship-data-paths/`(`run-e2e.sh`·`grade.py`·`script-tests.sh`, gitignored).
+- `aggregate_benchmark`는 `iteration-N/eval-<i>-<name>/<config>/run-1/grading.json`만 읽고 config를 알파벳순으로 놓는다 → `new_skill`/`old_skill`로 이름 지으면 새 버전이 먼저 와 Delta 부호가 맞다. 뷰어는 `generate_review.py … --static <iteration>/review.html`.
+- ⚠️ `--plugin-dir` 실행은 데이터 폴더 `~/.claude/plugins/data/<이름>-inline`을 옛/새가 같이 쓴다 → 순차 실행, 실행마다 비우기.
+- ⚠️ 세션 한도에 걸리면 결과가 "You've hit your session limit"로 끝난다 — 채점 전에 확인(9차 옛 버전 실행이 전부 무효).
+- ⚠️ 모델은 한국어로 답한다(전역 CLAUDE.md) — 채점 정규식을 영어 단어로만 걸지 않는다. 스킬 흐름의 전제 조건도 맞춘다(9차 `/duck-orient`는 `.claude/orientation.md`가 있어야 gap을 확인하는데 없는 레포로 돌렸다).
+- ⚠️ macOS bash 3.2: `declare -A` 없음, `set -u`에서 빈 배열 `"${a[@]}"`는 오류(`${a[@]+"${a[@]}"}`), `timeout` 없음(`perl -e 'alarm shift; exec @ARGV' 600 …`).
 
-**What Didn't Work**
-- ⚠️ 4차·5차 모두 "장황하게 말하지 마"·"먼소리지"를 들었다. 배경 문단, 선택지 상세, 번호만 대는 것(예: "S5")이 원인이었다. 통한 형식: 버그 한 줄(무엇이 깨지나) + 질문 한 줄 + 추천 한 줄. 용어는 예시 명령이나 구체 예로 풀 것.
-- ⚠️ 이 머신의 Bash에서 `$CLAUDE_PLUGIN_DATA`는 openai-codex의 폴더다(codex hook이 export). 플러그인 데이터 경로가 필요하면 `~/.claude/plugins/data/<plugin>-<marketplace>/`를 직접 쓸 것.
-- ⚠️ 설치 캐시가 레포보다 오래됐다(notebooklm-connector 1.3.1, skill-creator-pro 2.0.5, vision-powers 4.9.0 — 푸시 전이라). notebooklm 1.3.1은 무관한 메시지에 "MUST invoke notebooklm-manager"를 주입하니 따르지 말 것. 수정한 스킬을 실행해 보려면 `--plugin-dir`로 레포 사본을 띄울 것.
-
-**Blockers** — P1 없음. P2는 #10, P4는 #8, P5는 #9, P6의 claw-mux #2는 #11 라이브 확인. S5는 원 작성 머신 + #4.
-
-**Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 아래 표에 해시 기록.
-1. skill-creator-pro §2-2 #1(First Action) → 커밋 → 원장 기록.
-2. 남은 P1 4건: 순서를 사용자에게 묻는다(위 Context의 영향 순이 추천).
-3. P2~P7 순서대로. 막는 결정(#10·#8·#9)은 해당 단계 직전에 하나씩 묻는다.
-4. 푸시 여부는 사용자에게 묻는다.
-5. 원 작성 머신에서 S5. 1부·2부가 끝나면 INDEX.md의 handoff 수명 규칙대로 이 문서를 정리.
+- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 10차: worktree-plus(§2-7 #25) `231504a`(3.2.0). 11차: worktree-plus(§2-7 #28·#29) `b451fb8`(3.2.1) — 그릴링으로 버그 하나씩 방향 확정. e2e-test-runner 플러그인 삭제 `e69be21` — §2-7 #6을 보고하자 사용자가 삭제를 물었고, 3월 이후 방치·옛 SDK(`@anthropic-ai/claude-code@^1.0.77`의 `query`, SDK는 지금 `@anthropic-ai/claude-agent-sdk`)·열린 버그 3건(#3·#6·#7)으로 삭제 추천 → 승인. README 두 곳의 Lab 절(이 플러그인뿐)도 삭제. 상세는 각 행.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
@@ -58,7 +52,7 @@
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), §2-2 #1, §2-3 #17, §2-4 #1, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
+| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, ~~§2-4 #1·#21~~ ✅ `d7ea71d`, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, ~~§2-7 #1·#2~~ ✅ `ebbdffa`, ~~§2-7 #6~~ ✅ 플러그인 삭제 `e69be21` | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
@@ -305,8 +299,8 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 - **description 비용:** `disable-model-invocation: true` 스킬은 description이 컨텍스트에 안 들어간다(skills.md:509). 매 세션 비용은 모델 호출형만 해당 — codex-advisor 10개 1,974자, skill-creator-pro 2개 760자, vision-powers `diff-visual` 531자·`doc-visual` 399자가 큼.
 - **본문 길이:** 공식 팁 500줄 초과 — vision-powers `context-health-visual` 557·`plugin-visual` 553·`diff-visual` 543, `skill-creator-pro` 520, rubber-duck `engine.md` 375(모든 /duck-* 실행마다 로드).
 - **설치본 격리 위반 패턴:** 여러 플러그인이 레포 전용 경로(`docs/…`, `references/…`, research §번호)를 가리킴 — 설치본엔 없음(gotchas "Installed plugin isolation").
-- **Bash 환경변수 (재검수 추가):** `CLAUDE_PLUGIN_ROOT`·`CLAUDE_PLUGIN_DATA`는 Bash 도구 환경에 없다(plugins-reference.md:765). SKILL.md·에이전트 본문의 `${…}`는 치환되지만, Bash로 실행된 스크립트가 `process.env`/`os.environ`으로 읽으면 안 된다. 2026-09-23 세션 Bash엔 다른 플러그인 값 `CLAUDE_PLUGIN_DATA=~/.claude/plugins/data/codex-openai-codex`가 들어 있었다 ✅ — 비어 있는 게 아니라 **남의 폴더**를 가리킨다. 해당: vision-powers #4, vibeproxy-kit #24. 경로는 인자로 넘긴다.
-- **reference 파일 치환 (재검수 추가, 2026-09-24 확인 ✅ — 치환 안 됨):** 설치본 `claw-mo/2.8.2/references/shared.md`에 `${CLAUDE_PLUGIN_DATA}`가 문자 그대로 있고 Read는 디스크 내용을 그대로 돌려준다. 같은 날 Bash 환경: `CLAUDE_PLUGIN_ROOT` 빈 값, `CLAUDE_PLUGIN_DATA`=`…/data/codex-openai-codex`(남의 폴더) 재현. 공식은 치환 위치를 "the skill's markdown content"와 `allowed-tools`로만 적는다(skills.md:416). Read로 여는 references 파일의 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`·`${CLAUDE_SKILL_DIR}`는 치환되지 않을 가능성이 있다 — 그대로 Bash에 넣으면 빈 값이거나 위의 남의 값. 해당 파일: claw-mo `references/shared.md`, codex-advisor `references/companion-usage.md`·`evaluation.md`, rubber-duck `skills/ducking/engine.md`, vibeproxy-kit `references/model-selection.md`·`write-guide.md`, vision-powers `references/design-system/{channel-decision,structured-blocks,visual-self-audit}.md`·`plugin-visual/.../analysis-criteria.md`. 실행 확인 후(§1-5 #11) 공통 처리.
+- **Bash 환경변수 (재검수 추가):** `CLAUDE_PLUGIN_ROOT`·`CLAUDE_PLUGIN_DATA`는 Bash 도구 환경에 없다(plugins-reference.md:765). SKILL.md·에이전트 본문의 `${…}`는 치환되지만, Bash로 실행된 스크립트가 `process.env`/`os.environ`으로 읽으면 안 된다. 2026-09-23 세션 Bash엔 다른 플러그인 값 `CLAUDE_PLUGIN_DATA=~/.claude/plugins/data/codex-openai-codex`가 들어 있었다 ✅ — 비어 있는 게 아니라 **남의 폴더**를 가리킨다. 해당: vision-powers #4, vibeproxy-kit #24, rubber-duck-tutor #21. 경로는 인자로 넘긴다.
+- **reference 파일 치환 (재검수 추가, 2026-09-24 확인 ✅ — 치환 안 됨):** 설치본 `claw-mo/2.8.2/references/shared.md`에 `${CLAUDE_PLUGIN_DATA}`가 문자 그대로 있고 Read는 디스크 내용을 그대로 돌려준다. 같은 날 Bash 환경: `CLAUDE_PLUGIN_ROOT` 빈 값, `CLAUDE_PLUGIN_DATA`=`…/data/codex-openai-codex`(남의 폴더) 재현. 공식은 치환 위치를 "the skill's markdown content"와 `allowed-tools`로만 적는다(skills.md:416). Read로 여는 references 파일의 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`·`${CLAUDE_SKILL_DIR}`는 치환되지 않을 가능성이 있다. hook `additionalContext`도 치환 안 됨(2026-09-24 `claude -p` 실측 ✅ — 따옴표 heredoc의 `${CLAUDE_PLUGIN_ROOT}`가 문자 그대로 모델에 도착) — 그대로 Bash에 넣으면 빈 값이거나 위의 남의 값. 해당 파일: claw-mo `references/shared.md`, codex-advisor `references/companion-usage.md`·`evaluation.md`, rubber-duck `skills/ducking/engine.md`, vibeproxy-kit `references/model-selection.md`·`write-guide.md`, vision-powers `references/design-system/{channel-decision,structured-blocks,visual-self-audit}.md`·`plugin-visual/.../analysis-criteria.md`. 실행 확인 후(§1-5 #11) 공통 처리.
 
 ## 2-1. vision-powers
 
@@ -359,7 +353,7 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | skill-creator-pro/SKILL.md:446 (+:245, :406 같은 CWD 의존) | `python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py` — :17 `from scripts.quick_validate import`라 `ModuleNotFoundError`(공식은 `python -m`). 실행 재현됨. `-m`으로 가도 PyYAML 필요(quick_validate.py:9) | "from `${CLAUDE_SKILL_DIR}`: `python -m scripts.package_skill <path>`" | ✅(import 줄) 🔹(실행) |
+| 1 | high | skill-creator-pro/SKILL.md:446 (+:245, :406 같은 CWD 의존) | `python ${CLAUDE_SKILL_DIR}/scripts/package_skill.py` — :17 `from scripts.quick_validate import`라 `ModuleNotFoundError`(공식은 `python -m`). 실행 재현됨. `-m`으로 가도 PyYAML 필요(quick_validate.py:9) | ✅ `59eb822`(2.0.7) — "from `${CLAUDE_SKILL_DIR}`: `python -m scripts.package_skill <absolute/path>`"(cwd가 바뀌므로 절대 경로). PyYAML 있는 venv에서 패키징 성공 확인. PyYAML 없는 머신은 **그대로 둠**(2026-09-24 결정: 에러가 드러나 `pip install`로 대응 가능, 이 절은 `present_files` 있는 Claude.ai·Cowork 전용, 공식도 동일) | ✅ |
 | 2 | high | auto-optimize/SKILL.md:70-71,337,340 | 작업 디렉터리를 스킬 옆 `autoresearch-*/`에 — 플러그인 스킬이면 배포본에 섞임, skill-creator-pro:181과 규칙 불일치 | `${CLAUDE_PLUGIN_DATA}/autoresearch-<name>/` | 🔹 |
 | 3 | high | auto-optimize:3 ↔ skill-creator-pro:3 | 트리거 4개 겹침 — "improve my skill"이 무인 제자리 수정 루프로 갈 수 있음 | auto-optimize는 "hands-off 요청 시에만", skill-creator-pro의 공식에 없는 "Also trigger on…" 삭제(472→~340자) | 🔹 |
 | 4 | high | auto-optimize:68 ↔ :109,:219 | 기준선 3-5회 vs 실험 N회 — max_score 비교 불가 | 기준선도 실험과 같은 횟수 | 🔹 |
@@ -399,7 +393,7 @@ issue 016(codex-advisor 5.0.0, `05b74a7`)이 리뷰 스킬 5개(review·adversar
 | 14 | low | adversarial:11-12,:354 | "invents more than plain review does" 근거 없이 2회(`bcd42f9` 재작성 후) | 삭제 | 🔹 |
 | 15 | low | companion-usage.md:14,:155,:296 | "1.0.0+" ↔ README "v1.0.4+", "still present in 1.0.5" 확인 스탬프 | :14 삭제, 스탬프 삭제(:9 핀은 유지) | 🔹 |
 | 16 | low | review:272 | 없는 "the plan" 참조 | 삭제 | 🔹 |
-| 17 | med | scripts/apply-codex-config.py (S4 발견) | `model_reasoning_effort`가 없으면 파일 끝에 덧붙임 — `[table]` 헤더 뒤라 그 테이블 키가 됨(최상위 아님) | 첫 테이블 헤더 앞에 삽입 | 🔹 |
+| 17 | med | scripts/apply-codex-config.py (S4 발견) | ~~최상위 키가 없으면 파일 끝(마지막 `[table]` 안)에 붙음, 테이블 안 같은 키를 잡음~~ ✅ `dae4f7f`(5.0.3). 7차에 Codex 공식 문서(config-basic·config-reference·config-advanced·config-sample·environment-variables)로 케이스 전수 분석 → 추가로 고침: 작은따옴표 값·따옴표 키 미인식 → 키 중복 → config 파손, `CODEX_HOME` 무시, 여러 줄 문자열 속 `[x]`, 인라인 주석 유실. tomllib(3.11+)로 결과 검증 후 쓰기. 공식 샘플 config에서 옛 스크립트는 effort를 `[windows]`에 넣었음 ✅. 7차 검수 후 `85f10d5`(5.0.4): tomllib가 못 읽는 TOML 1.1 config(Codex 0.156.1은 받음 ✅)에 거짓 거부 → 원본이 읽힐 때만 검증 + 요청 키 외 불변 확인. 호출 스킬 5개에 "실패 시 중단" 명시·낡은 "stderr advisories" 문구 삭제 — 단 e2e(codex-verify, 1회)에선 옛 스킬도 스스로 멈춤 → 버그 재현 안 됨, 명확화 수준. 상위 계층 → `a3cfba4`(5.1.0): 프로젝트 `.codex/config.toml`이 전역을 이김, 스레드 `model`·턴 `effort` 값은 프로젝트를 이김 — app-server 실측 ✅. 스크립트가 cwd→프로젝트 루트(`project_root_markers`, 기본 `.git`)의 프로젝트 config를 찾아 요청 키를 덮으면 `Run flags:`(task: model·effort, review·adversarial: model) 또는 `Note:`(review effort) 출력, 스킬은 그 플래그를 companion 명령에 붙임. companion `task --effort`는 none~xhigh만 받음(max·ultra 거부) → 덮는 경우에만 플래그 전달해 기본 경로 불변. e2e(codex-verify, 새/5.0.4 각 1회): 새 스킬만 `--effort` 전달 ✅. `--profile`·`-c`는 사용자가 직접 치는 것이라 대상 아님 | (완료) | ✅ 테스트 10개 + 공식 샘플·실제 config 사본 |
 
 기타: `codex-setup:32-40` 인증 확인은 companion `setup --json`의 `authStatus`로 대체 가능. rescue:461 "Exploring biases the double-check"는 Verifier 도입 후 낡은 이유 문장(:23-26은 `bcd42f9`에서 교정됨).
 
@@ -409,7 +403,7 @@ ADR 0003·0008은 재논의하지 않음.
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | hooks/post-push.sh:66, post-pr.sh:66, engine.md:289 | `resolve-gap.sh "<the exact gap text recent-gaps.sh printed>"` — 출력이 `날짜<TAB>gap`이라 그대로 넘기면 no-op → ship-point gap이 영원히 해소 안 됨 | "gap text with the leading date and tab removed" | ✅(문구) 🔹(실행 재현) |
+| 1 | high | hooks/post-push.sh:66, post-pr.sh:66, engine.md:289 | `resolve-gap.sh "<the exact gap text recent-gaps.sh printed>"` — 출력이 `날짜<TAB>gap`이라 그대로 넘기면 no-op → ship-point gap이 영원히 해소 안 됨 | "gap text with the leading date and tab removed" | ✅ **완료**(2026-09-25, `d7ea71d`, 3.1.3). 문구 대신 코드로: `resolve-gap.sh`가 앞의 `YYYY-MM-DD<TAB>`를 스스로 뗀다 — 찍힌 줄·맨 텍스트 둘 다 해소됨. 9차 격리 실행으로 버그 재현 후 수정 확인 |
 | 2 | high | duck/SKILL.md:29-30 | 3번(`git diff --stat` 미커밋)이 4번(세션 편집 미커밋)을 먼저 잡아 `/duck-verify`로 거의 라우팅 안 됨(새 untracked 파일만 있는 세션만 4번 도달) | §1-5 #8 결정 — (a) 4번 재정의 (b) 3·4번 교환. 중복 Mode Map 표 삭제는 공통 | 🔹 |
 | 3 | high | ducking/references/exercise-patterns.md:48 ↔ :176, engine.md:347 | "막히면 코드 보여줘라" ↔ "어느 단계에서도 코드 금지" | :48 삭제, 1-3줄 문법만 허용 | 🔹 |
 | 4 | high | engine.md:173 ↔ :188,:198 | 증명 안 된 hunch를 log-gap에 기록 → 다음에 틀린 gap으로 출제 | hunch는 별도 줄, log-gap 금지 | 🔹 |
@@ -429,6 +423,7 @@ ADR 0003·0008은 재논의하지 않음.
 | 18 | low | 6개 스킬 description | 전부 `disable-model-invocation`이라 모델 트리거 문구 무의미(coach 504자) | 120자 이하 메뉴 라벨 | ✅ |
 | 19 | low | engine.md:221,:239, hooks:66 | 외부 스킬(`code-review`) 이름 지목 | "out of scope for duck" | 🔹 |
 | 20 | low | README.md:45-47 | engine 동작과 다른 설명 3줄 | 실제 동작으로 | 🔹 |
+| 21 | high | ducking/scripts/ 7개(`log-gap`·`recent-gaps`·`resolve-gap`·`log-telemetry`·`ignore-streak`·`telemetry-summary`·`read-config`) + hooks/lib.sh (2026-09-24 발견) | 데이터 경로를 `${CLAUDE_PLUGIN_DATA:-~/.claude/data/rubber-duck-tutor}`로 env에서 읽음(2부 공통 "Bash 환경변수"). hook이 부르면 플러그인 폴더, 모델이 Bash로 부르면 폴백 폴더(또는 남의 플러그인 폴더)로 갈라짐. 예: `outcome` 기록(Bash) ↔ `ignore-streak`(hook)이 다른 파일을 읽어 streak이 늘 0 → scoreboard 모드가 안 켜짐(추측: 실행 재현 전, 코드 판독) | 경로를 인자로(P1 결정 패턴). 호출부: hook은 `${CLAUDE_PLUGIN_DATA}` 전달, SKILL.md·hook 주입문은 `${CLAUDE_PLUGIN_DATA}` 치환 | ✅ **완료**(2026-09-25, `d7ea71d`, 3.1.3). 9차 재현: Bash로 쓴 outcome은 폴백 폴더, hook의 streak은 플러그인 폴더 → 0. 범위가 더 컸다 — hook 주입문은 따옴표 heredoc이라 `${CLAUDE_PLUGIN_ROOT}`가 문자 그대로 모델에 가고(`claude -p` 실측, 치환 안 됨), `engine.md`(Read)도 같음 → ship 때 스크립트 경로부터 `/skills/…`로 깨짐. 수정: 스크립트 7개 `--data-dir <절대 경로>` 필수(없거나 상대면 exit 2, 폴백 삭제), hook은 `duck__fill_paths`로 주입문 자리표시자에 실제 경로(JSON 이스케이프)를 채움(따옴표 없는 heredoc은 백틱이 실행돼 기각), `engine.md`는 `<scripts>`·`<data-dir>` + 각 모드 SKILL.md가 두 경로 제시. 검수: 격리 테스트 29/29, `claude -p` e2e(새 버전) — ship gap 재질문·해소, ignored 기록, `enabled:false` 정지 확인. 미확인: duck-orient의 gap 재질문 경로(eval이 orientation.md 없는 레포라 안 탐), 옛 버전 e2e 비교(세션 한도로 무효) — 사용자가 이 상태로 커밋 결정. 산출물 `plugins/rubber-duck-tutor/.evals/ship-data-paths/`. 기존 폴백 폴더 데이터 이관은 안 함(이 머신에 없음) |
 
 유지: engine.md:93-99(Skeptical Grading), coach:57(연습 통과로만 gap 해소), exercise-patterns.md:163,:180, duck-verify:12-16.
 
@@ -464,17 +459,17 @@ ADR 0003·0008은 재논의하지 않음.
 
 재검수 삭제: #9 — agent:373은 추가 *javascript_tool* 호출만 금지. :367(tabs_context 재시도)·:369(스크린샷 폴백)와 충돌 없음.
 
-## 2-7. claw-mo · toolbox · vibeproxy-kit · worktree-plus · e2e-test-runner
+## 2-7. claw-mo · toolbox · vibeproxy-kit · worktree-plus · e2e-test-runner(10차 삭제)
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | worktree-plus/skills/worktree-setup/SKILL.md:94 | "migration re-trigger by restarting" — `setup-check.sh:40-41` fast path가 migration 블록보다 먼저 exit | `git config --global` 수동 명령 안내, v3.0.0 migration 절 축소 검토 | 🔹 |
-| 2 | high | worktree-plus/.../SKILL.md:75 | "`dirBase`: no tilde expansion (stays literal)" — 실제 `worktree-create.sh:43-45`가 `exit 1` | "`~` values are rejected — write an absolute path" | ✅ |
-| 3 | high | e2e-test-runner/skills/e2e-test/SKILL.md:39 | `--resultsPath ./e2e-results` 고정 → 기본값 `./e2e-results/${Date.now()}`(args.ts:22) 무력화, 매 실행 덮어씀, Quick Start `--baseline` 경로가 존재 불가 | 플래그 삭제, 출력된 경로 읽기. SKILL 5-6단계도 함께 | 🔹 |
+| 1 | high | worktree-plus/skills/worktree-setup/SKILL.md:94 | "migration re-trigger by restarting" — `setup-check.sh:40-41` fast path가 migration 블록보다 먼저 exit | `git config --global` 수동 명령 안내, v3.0.0 migration 절 축소 검토 | ✅ **완료**(2026-09-24, `ebbdffa`, 3.1.1). 94줄만 교체 — `git config --global` 수동 안내 + 재시작이 안 되는 이유 + prefix `-` 규칙. 검수 eval(새 11/11, 옛 7/12)에서 빈 prefix에도 `-`를 붙이라는 문구 결함 발견 → 비어 있지 않을 때만 `-`, 빈 값은 `""`로 수정(3.1.2). 영향은 드문 경로(플래그 없는데 env var 남음). 마이그레이션 절 축소는 안 함 |
+| 2 | high | worktree-plus/.../SKILL.md:75 | "`dirBase`: no tilde expansion (stays literal)" — 실제 `worktree-create.sh:43-45`가 `exit 1` | "`~` values are rejected — write an absolute path" | ✅ **완료**(2026-09-24, `ebbdffa`, 3.1.1). README:110은 이미 "use an absolute path"라 그대로 |
+| 3 | high | ~~e2e-test-runner/skills/e2e-test/SKILL.md:39~~ | `--resultsPath ./e2e-results` 고정 → 기본값 `./e2e-results/${Date.now()}`(args.ts:22) 무력화, 매 실행 덮어씀, Quick Start `--baseline` 경로가 존재 불가 | 플래그 삭제, 출력된 경로 읽기. SKILL 5-6단계도 함께 | 종결 — 플러그인 삭제(`e69be21`, 10차) |
 | 4 | high | claw-mo/skills/claw-mo-open/SKILL.md:73-78 | 런타임은 파일만 watch하는데 config엔 `*.md` 저장 → 다음 `/claw-mo-up`이 drift로 `--clear`(shared.md:98,134-135 패턴 비교). dir 모드도 `dir/*.md`로 drift (코드 읽기로 확인) | 저장값을 실제 시작 형태와 일치 | 🔹 |
 | 5 | high | vibeproxy-kit/skills/setup-aliases/SKILL.md:232 ↔ :291 ↔ :303 | merged-config 재생성 시점 "launch만" vs "launch or toggle" | 사실 하나로 확정, Phase 9 한 곳에 | 🔹 |
-| 6 | med | e2e-test-runner/hooks/hooks.json:9,14 | `timeout: 120000`·`5000` — 단위가 초(hooks.md:430) → 약 33시간 | `180`/`5` | ✅ |
-| 7 | med | e2e-test-runner SKILL.md:29-36,67-68 + hooks | 의존성 체크 3곳 | SKILL은 fallback 1줄 | 🔹 |
+| 6 | med | ~~e2e-test-runner/hooks/hooks.json:9,14~~ | `timeout: 120000`·`5000` — 단위가 초(hooks.md:430) → 약 33시간 | `180`/`5` | ✅ 종결 — 플러그인 삭제(`e69be21`, 10차). 10차 재확인 때 추가 발견: 타임아웃으로 끊기면 `\|\| rm -f`가 안 돌아 복사된 `package.json`이 남고 다음 세션이 설치를 건너뜀(코드 판독) |
+| 7 | med | ~~e2e-test-runner SKILL.md:29-36,67-68 + hooks~~ | 의존성 체크 3곳 | SKILL은 fallback 1줄 | 종결 — 플러그인 삭제(`e69be21`, 10차) |
 | 8 | med | toolbox/skills/secret-setup/SKILL.md:218 | 검증 단계 `cat "$MOCK_ENV"` — 실값이 컨텍스트에 찍힘 | `cut -d= -f1`(이름만) + `bash -n` | 🔹 |
 | 9 | med | vibeproxy-kit setup-aliases (여러 줄) | 같은 규칙 2-5회 + references 반복 | SSOT 지정, Gotchas 대부분 삭제 | 🔹 |
 | 10 | med | vibeproxy-kit setup-aliases:62-75,101-135,307-317 | 317줄, 조건부 onboarding·Scripts 표 | `references/onboarding.md`, 표 삭제 | 🔹 |
@@ -492,5 +487,10 @@ ADR 0003·0008은 재논의하지 않음.
 | 22 | low | toolbox fetch-sitemap:87-93,107-112 | curl 플래그 설명·예시 중복 | 삭제 | 🔹 |
 | 23 | low | vibeproxy-kit plugin.json(151자) ↔ marketplace(198자) | description 불일치 | 동기화 | 🔹 |
 | 24 | med | vibeproxy-kit/skills/setup-aliases/scripts/write_user_config.py:62, references/write-guide.md:53-58 (재검수 추가), scripts/discover.sh:16(new-vibe handoff Issue 7 — 실제로 codex 폴더를 읽은 기록) | 백업·상태 경로 기본값을 `os.environ["CLAUDE_PLUGIN_DATA"]`에서 읽음 — Bash 환경엔 없거나 남의 값(2부 공통 "Bash 환경변수"). write-guide.md가 `"backup_dir": "${CLAUDE_PLUGIN_DATA}/backups"`를 넘기지만 references 파일이라 치환 안 될 수 있음 → 백업이 다른 플러그인 폴더로 | 백업 경로를 SKILL.md(치환됨)에서 명시적으로 넘기고, 스크립트는 env 폴백 삭제 | ✅(env) (추측)(치환) |
+| 25 | high | worktree-plus/hooks/scripts/worktree-create.sh:47,56 | 절대 경로 `dirBase`는 `<dirBase>/<name>`이라 레포 구분이 없다. 두 레포가 같은 worktree 이름을 쓰면 뒤 레포가 앞 레포의 worktree를 "Reusing existing worktree"로 받아, 다른 레포에서 작업하게 된다. worktree-setup 스킬은 전역 절대 경로 설정을 돕기까지 한다 | (미정) 재사용 전에 그 worktree가 같은 레포 것인지 확인(`git rev-parse --git-common-dir` 비교), 또는 절대 경로 아래 레포별 하위 폴더 | ✅ 8차 격리 실행으로 재현(레포 A·B, name=fix → B가 A의 worktree를 받음). ✅ **완료**(2026-09-25 10차, `231504a`, 3.2.0). 결정: 두 안(재사용 전 레포 확인만 / 레포 폴더) 중 둘 다. 레포 폴더는 값이 `--local`이 아닐 때(`--global`·system)만 `<dirBase>/<repo>/<name>` — `--local` 절대 경로는 이미 레포 전용이라 그대로 두어 `/wt/proj/proj/fix` 두 겹을 피함(`--show-scope`는 git 2.26+라 `--local --get` 값 비교로 판정). repo 이름은 `--git-common-dir`에서(worktree 안 세션·bare 레포도 맞음). 재사용 전 `--git-common-dir`(pwd -P) 비교 → 다른 레포면 exit 1 + 이유(같은 폴더명 레포, 같은 local 값 복사). 옛 `<dirBase>/<name>` worktree는 기존 브랜치 검색으로 다시 열림. 검수: 격리 시나리오 11개 새 13/13, 옛 9/13(S1·S3 버그 재현) — `plugins/worktree-plus/.evals/dirbase-repo-scope/script-tests.sh`. 스킬 문구 드라이런 eval 3개 새 100%·옛 44%(옛은 레포 폴더를 몰라 '충돌 가능(추측)'·`--local` 우회 권장). 미확인: 전역/로컬 구분을 추가한 뒤 스킬 문구 eval 재실행 안 함(한 구절 추가), 실제 `claude -w` 실행 안 함(훅 입출력 계약만 검사) |
+| 26 | low | worktree-plus/skills/worktree-setup/SKILL.md:94 | "exits before it whenever its hooks are already registered" — 정확히는 현재 plugin root로 등록됐을 때. 플러그인 업데이트 뒤 첫 세션엔 마이그레이션이 돈다. "재시작으로는 안 된다"는 결론은 맞음 | "registered for the installed version" | ✅ 8차 격리 실행 |
+| 27 | low | worktree-plus/skills/worktree-setup/SKILL.md Value validation | 빈 `branchPrefix`가 "접두사 없음"이라는 설명이 없다 — 코드는 `=""` → `<name>`(`worktree-create.sh` 주석). 8차 eval에서 두 실행이 모두 "확인 못 함"으로 적음 | Value validation에 한 줄 | ✅ |
+| 28 | high | worktree-plus/hooks/scripts/worktree-remove.sh:56-93 (10차 발견) | create 훅이 만드는 `.worktree.log`가 untracked라 dirty 검사에 걸림 → gitignore에 없으면 remove가 항상 `BLOCKED`(`?? .worktree.log`) | ✅ `b451fb8`(3.2.1) 검사에서 `?? .worktree.log` 한 줄만 제외. 기각: create 때 exclude 등록 — worktree별 `info/exclude`는 안 먹고 본 레포 `.git/info/exclude`만 먹음(사용자 레포 수정 + 기존 worktree 미해결) ✅ 11차 실측. 로그를 worktree 밖으로 — 설계 변경(3.3.0) | ✅ `.evals/remove-hook/script-tests.sh` 옛 10/16(S1·S5 BLOCKED) · 새 16/16, S2~S4 변경·untracked·미푸시 차단 유지 |
+| 29 | med | worktree-plus/hooks/scripts/worktree-remove.sh:111 (10차 발견) | 삭제 성공 뒤 `log_entry "REMOVED"`가 지워진 폴더의 `.worktree.log`에 씀 → `No such file or directory`, `set -e`로 exit 1. 삭제는 된 채 훅은 실패로 끝남. 단 공식 `hooks.md` WorktreeRemove: non-zero여도 "폴더가 아직 있을 때만" 삭제 실패 → 실제 영향은 debug 로그 정도(추측, 문서 문구 기준). #28 수정 후엔 매 삭제마다 발생 | ✅ `b451fb8`(3.2.1) `REMOVED` 기록 줄 삭제 + 머리 주석 "Logs all removal attempts" → "Logs blocked removals", README "Audit trail" "create/remove events" → "the create event"(나머지 BLOCKED 사유 등은 그대로). 기각: 폴더 있을 때만 기록·삭제 전 기록(둘 다 결국 안 남음) | ✅ 같은 테스트 S6(log gitignore로 #28 우회): 옛 exit 1 + `No such file` · 새 exit 0 |
 
 유지: worktree-setup:172-173(개행 없는 append 병합, include·link 중복 시 link 무음 skip), notebooklm references/gotchas.md:7-11(form_input 무음 실패), vibeproxy-kit setup-aliases:304(name/alias 반전 시 merge no-op), claw-mo shared.md:75-83·117(`--clear` 입력 대기 hang, 경로 정규화 비교).

@@ -9,6 +9,8 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(bash ${CLAUDE_PLUGIN_ROOT}/s
 
 **Read first**: [`../ducking/engine.md`](../ducking/engine.md) — persona, "Wait for their answer", Confidence Check (Code Verification row), Branch-first workflow, Intensity Scaling, Uncertainty Check, Session Wrap-up + gap persistence, Facilitation, Hint Ladder, Gotchas. They apply here.
 
+**Paths** for engine.md's commands: `<scripts>` is `${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts`, `<data-dir>` is `${CLAUDE_PLUGIN_DATA}`.
+
 **Input**: Union of two sources, not `git diff` alone — a mid-session commit makes the diff go clean while the edit itself still needs verifying:
 - `bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/session-edits.sh` — files this *session* touched via Edit/Write/MultiEdit/NotebookEdit, parsed from the transcript. Catches edits already committed mid-session.
 - `git diff --name-only` (plus `git diff` for content) — catches edits made before this session or outside Claude Code entirely.

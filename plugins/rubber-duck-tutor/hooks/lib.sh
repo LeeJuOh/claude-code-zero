@@ -127,3 +127,25 @@ duck__is_enabled() {
   [[ "$val" == "false" ]] && return 1
   return 0
 }
+
+# --- Script paths in hook context ---
+# additionalContext reaches the model verbatim (no ${CLAUDE_PLUGIN_ROOT}
+# substitution there) and the Bash tool has neither plugin variable, so a
+# template names the paths __DUCK_SCRIPTS__ / __DUCK_DATA__ and this fills in
+# the real ones, JSON-escaped. Reads the template on stdin. Callers check both
+# variables are set first.
+duck__json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  printf '%s' "${s//\"/\\\"}"
+}
+
+duck__fill_paths() {
+  shopt -u patsub_replacement 2>/dev/null || true  # bash 5.2+: keep & in paths literal
+  local text scripts data
+  text=$(cat)
+  scripts=$(duck__json_escape "${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts")
+  data=$(duck__json_escape "$CLAUDE_PLUGIN_DATA")
+  text="${text//__DUCK_SCRIPTS__/$scripts}"
+  printf '%s\n' "${text//__DUCK_DATA__/$data}"
+}

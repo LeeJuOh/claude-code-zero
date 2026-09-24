@@ -27,7 +27,7 @@ worktree-plus fixes all of these, and applies everywhere Claude Code creates wor
 | Branch prefix | `worktree-` (fixed) | Configurable via `worktreeplus.branchPrefix` |
 | Gitignored files | Not copied | `.worktreeinclude` copy / `.worktreelink` symlink |
 | Re-entry behavior | Fails if directory/branch exists | Reuses existing worktree (idempotent) |
-| Audit trail | None | Per-worktree `.worktree.log` with create/remove events, base branch, include/link outcomes, and BLOCKED reasons |
+| Audit trail | None | Per-worktree `.worktree.log` with the create event, base branch, include/link outcomes, and BLOCKED reasons |
 | Cleanup protection | None | Blocks removal if uncommitted changes, untracked files, or unpushed commits; only deletes branches with upstream |
 | Setup help | N/A | Bundled `/worktree-setup` skill: view/set/reset settings, and scan your gitignored files to build `.worktreeinclude` / `.worktreelink` |
 
@@ -108,6 +108,7 @@ git config --get-regexp '^worktreeplus\.|^worktree\.guessRemote'
 **Notes:**
 - `branchPrefix` is literal — `feat-` produces `feat-name`, `feat` produces `featname`.
 - `dirBase` does not expand `~`; use an absolute path if you want `$HOME`.
+- A `--global` absolute `dirBase` gets one folder per repo (`<dirBase>/<repo>/<name>`), so repos sharing it never collide; a `--local` one is used as-is. Worktrees made before 3.2.0 directly under a global `dirBase` still reopen by branch.
 - Changing `dirBase` does not move existing worktrees. Finish or remove pending worktrees first.
 
 ## How it works

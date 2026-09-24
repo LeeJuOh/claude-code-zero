@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
 # duck: summarize confrontation telemetry over a trailing window.
 #
-# Usage: telemetry-summary.sh [days]
+# Usage: telemetry-summary.sh --data-dir <dir> [days]
 #   days: window size in days (default 30)
 #
 # Prints one line, e.g.: "Last 30 days: 5 fired, 3 answered, 1 ignored"
 #
-# Reads ${CLAUDE_PLUGIN_DATA}/telemetry.jsonl (written by log-telemetry.sh).
+# Reads <dir>/telemetry.jsonl (written by log-telemetry.sh).
 # Missing/unreadable log -> all-zero counts, not an error: absence of
 # telemetry means "no confrontations yet", never a crash. Without jq, real
 # date-window filtering isn't feasible, so this falls back to an all-time
 # count labeled as such rather than silently mislabeling it as a windowed one.
+#
+# --data-dir (absolute) is required: the Bash tool has no CLAUDE_PLUGIN_DATA, or
+# another plugin's, so callers pass the path -- SKILL.md substitutes it, hooks
+# export it. A relative value would drop files into the user's repo.
 
 set -uo pipefail
 
+[[ "${1:-}" == "--data-dir" && ( "${2:-}" == /* || "${2:-}" == [A-Za-z]:* ) ]] || { echo "telemetry-summary: usage: telemetry-summary.sh --data-dir <dir> [days]" >&2; exit 2; }
+DATA_DIR="$2"; shift 2
+
 DAYS="${1:-30}"
-DATA_DIR="${CLAUDE_PLUGIN_DATA:-${HOME}/.claude/data/rubber-duck-tutor}"
 LOG_FILE="$DATA_DIR/telemetry.jsonl"
 
 if [[ ! -f "$LOG_FILE" ]]; then

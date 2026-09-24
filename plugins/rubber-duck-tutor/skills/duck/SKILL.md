@@ -9,6 +9,8 @@ allowed-tools: Read Grep Glob Bash(git diff *) Bash(git log *) Bash(git status *
 
 Auto-detects which mode fits the user's current state and routes to the matching mode skill. Read [`../ducking/engine.md`](../ducking/engine.md) for shared persona, principles, and session-management rules — they apply to every mode.
 
+**Paths** for engine.md's commands: `<scripts>` is `${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts`, `<data-dir>` is `${CLAUDE_PLUGIN_DATA}`.
+
 ## Mode Map
 
 | Trigger phrase / state | Mode skill |

@@ -41,10 +41,10 @@ accepted by `parseArgs` but not printed in usage.
 |------|------|--------|----------|
 | `--base <ref>` | value | documented | yes |
 | `--scope <auto\|working-tree\|branch>` | value | documented | yes |
-| `--model <m>` | value | parser-only | **yes** — `executeReviewRun :358-371` → `runAppServerReview` (`lib/codex.mjs:1002`) → `startThread({ model })` (`lib/codex.mjs:1010-1015`). codex-advisor still routes `--model` through `apply-codex-config.py` for **consistency across skills** and so the value persists for the next session — not because the flag is ignored. |
+| `--model <m>` | value | parser-only | **yes** — `executeReviewRun :358-371` → `runAppServerReview` (`lib/codex.mjs:1002`) → `startThread({ model })` (`lib/codex.mjs:1010-1015`). codex-advisor still routes `--model` through `apply-codex-config.py` for **consistency across skills** and so the value persists for the next session — not because the flag is ignored. It also passes `--model` when a project `.codex/config.toml` sets a model (the script's `Run flags:` line), since that file outranks `config.toml`. |
 | `--cwd <path>` | value | parser-only | yes |
 | `--json` | bool | parser-only | yes |
-| `--effort <level>` | — | **NOT REGISTERED** | `valueOptions` at `:714` is `["base", "scope", "model", "cwd"]`. `--effort` becomes silent prompt corruption (§3). codex-advisor sets it via `~/.codex/config.toml` (`model_reasoning_effort`). |
+| `--effort <level>` | — | **NOT REGISTERED** | `valueOptions` at `:714` is `["base", "scope", "model", "cwd"]`. `--effort` becomes silent prompt corruption (§3). codex-advisor sets it via `~/.codex/config.toml` (`model_reasoning_effort`); a project `.codex/config.toml` that sets it wins for reviews, and the script prints a `Note:` saying so. |
 | `--background` | bool | documented in `:80` | **NO — silent no-op** (see §3) |
 | `--wait` | bool | documented in `:80` | **NO — silent no-op** (see §3) |
 | (positional focus text) | — | — | **rejected** by `validateNativeReviewRequest` (`:271-284`) |
@@ -69,7 +69,7 @@ review a specific commit, use `--base <sha>~1 --scope branch`.
 | `--fresh` | bool | documented | opposite of resume; mutually exclusive (`:778-780`) |
 | `--json` | bool | parser-only | structured output |
 | `--model <m>` | value | documented | accepts `spark` alias (`:72`) |
-| `--effort <level>` | value | documented | one of `{none, minimal, low, medium, high, xhigh}` (`:71`, `:114-125`) |
+| `--effort <level>` | value | documented | one of `{none, minimal, low, medium, high, xhigh}` (`:71`, `:114-125`) The companion rejects other values. codex-advisor passes `--model`/`--effort` on `task` only when a project `.codex/config.toml` would override `config.toml` (the script's `Run flags:` line). |
 | `--cwd <path>` | value | parser-only | |
 | `--prompt-file <path>` | value | **parser-only** (not in `:82` usage) | reads file at `:644-646` |
 | `--wait` | — | **NOT REGISTERED** | silently pushed to positionals → **prompt corruption**, see §3 |

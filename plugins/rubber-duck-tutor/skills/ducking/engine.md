@@ -12,15 +12,20 @@ The user wants to stay sharp while using AI coding tools. AI-assisted workflows 
 
 This plugin breaks the trap by making the user explain things to a duck. The mechanism is simple: **explaining forces understanding**. When you can't explain something clearly, you've found a gap.
 
+## Script paths
+
+Commands in this file write `<scripts>` and `<data-dir>`; the mode SKILL.md that sent you here
+gives both paths. Plugin variables aren't substituted in this file, and the Bash tool doesn't have them.
+
 ## Config Check (run first, every mode)
 
 Before anything else — before the opening line — check whether the user has switched duck off:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh enabled true
+bash <scripts>/read-config.sh --data-dir "<data-dir>" enabled true
 ```
 
-If the result is exactly `false` (the user set `enabled: false` in `${CLAUDE_PLUGIN_DATA}/config.json`
+If the result is exactly `false` (the user set `enabled: false` in `<data-dir>/config.json`
 — typically to go quiet ahead of a deadline), reply with one line and stop. No opening line, no
 questions, no gap logging:
 
@@ -137,10 +142,10 @@ Wait for the rating before delivering the follow-up. The rating is metacognitive
 The starting level is configurable — read it once per session, right after the Config Check:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/read-config.sh defaultIntensity standard
+bash <scripts>/read-config.sh --data-dir "<data-dir>" defaultIntensity standard
 ```
 
-Falls back to `standard` if `${CLAUDE_PLUGIN_DATA}/config.json` is missing, malformed, or doesn't set
+Falls back to `standard` if `<data-dir>/config.json` is missing, malformed, or doesn't set
 `defaultIntensity`. Valid values: `quick`, `standard`, `deep`. Start the session at whatever level this
 returns, then escalate or de-escalate based on responses.
 
@@ -195,7 +200,7 @@ Rules:
 Right after printing the gap line, persist it so future `/duck-orient` sessions can re-surface it for spaced retrieval:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/skills/ducking/scripts/log-gap.sh "<the same gap text>"
+bash <scripts>/log-gap.sh --data-dir "<data-dir>" "<the same gap text>"
 ```
 
 Use the exact gap sentence as the argument. Skip the call when no gap was spotted. The script is
@@ -270,7 +275,7 @@ The full ship-point priority ladder, in order:
 1. **Blind-spot target** (Risk Taxonomy above) — a high-risk, low-engagement artifact from *this*
    ship, if one stands out.
 2. **Unresolved gap retrieval** (this section) — only reached if (1) found nothing. Run
-   `skills/ducking/scripts/recent-gaps.sh 1` to check for one unresolved gap logged in a past session
+   `<scripts>/recent-gaps.sh --data-dir "<data-dir>" 1` to check for one unresolved gap logged in a past session
    for this repo. If it prints one, ask about that instead of anything from the current ship: "Last
    time your understanding of [gap] was shaky — can you explain that now?" This is the one place a
    ship-point question is allowed to be about something other than what just shipped.
@@ -286,7 +291,7 @@ sharper Risk Taxonomy target is absent.
 Wrap-up, above) writes every new line with `"resolved":false`, and `recent-gaps.sh` treats a missing
 `resolved` key (gaps logged before this field existed) the same as `false`, so nothing pre-existing
 silently drops out of rotation. If the user demonstrates during a retrieval confrontation that they
-can now explain the gap, call `skills/ducking/scripts/resolve-gap.sh "<the exact gap text>"` — this
+can now explain the gap, call `<scripts>/resolve-gap.sh --data-dir "<data-dir>" "<the exact gap text>"` — this
 flips that gap's `resolved` field to `true` in `gaps.log` so it stops resurfacing, in both the
 ship-point ladder and `duck-orient`'s retrieval check-in, which reads the same log. If they still
 can't explain it, don't call the script — leaving it unresolved is correct, it stays eligible for next
