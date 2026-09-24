@@ -1,6 +1,6 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(6/11 + 새 P1 1건 §2-4 #21, 다음 codex-advisor)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(7/11 + 새 P1 1건 §2-4 #21, codex-advisor `dae4f7f` 완료)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
@@ -56,7 +56,7 @@
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, §2-3 #17, §2-4 #1·#21, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
+| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`, §2-4 #1·#21, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
@@ -397,7 +397,7 @@ issue 016(codex-advisor 5.0.0, `05b74a7`)이 리뷰 스킬 5개(review·adversar
 | 14 | low | adversarial:11-12,:354 | "invents more than plain review does" 근거 없이 2회(`bcd42f9` 재작성 후) | 삭제 | 🔹 |
 | 15 | low | companion-usage.md:14,:155,:296 | "1.0.0+" ↔ README "v1.0.4+", "still present in 1.0.5" 확인 스탬프 | :14 삭제, 스탬프 삭제(:9 핀은 유지) | 🔹 |
 | 16 | low | review:272 | 없는 "the plan" 참조 | 삭제 | 🔹 |
-| 17 | med | scripts/apply-codex-config.py (S4 발견) | `model_reasoning_effort`가 없으면 파일 끝에 덧붙임 — `[table]` 헤더 뒤라 그 테이블 키가 됨(최상위 아님). (6차 추가) `find_line()`도 테이블 안 키를 잡아 최상위 `model`이 없으면 `[profiles.*] model`을 덮어씀 | `find_line()`·`set_line()`이 첫 테이블 헤더 앞만 보고, 없으면 그 앞에 삽입 | ✅(임시 HOME 재현, 2026-09-24) |
+| 17 | med | scripts/apply-codex-config.py (S4 발견) | ~~최상위 키가 없으면 파일 끝(마지막 `[table]` 안)에 붙음, 테이블 안 같은 키를 잡음~~ ✅ `dae4f7f`(5.0.3). 7차에 Codex 공식 문서(config-basic·config-reference·config-advanced·config-sample·environment-variables)로 케이스 전수 분석 → 추가로 고침: 작은따옴표 값·따옴표 키 미인식 → 키 중복 → config 파손, `CODEX_HOME` 무시, 여러 줄 문자열 속 `[x]`, 인라인 주석 유실. tomllib(3.11+)로 결과 검증 후 쓰기. 공식 샘플 config에서 옛 스크립트는 effort를 `[windows]`에 넣었음 ✅. 남은 결정: 상위 계층(프로젝트 `.codex/config.toml`·`--profile` 파일·`-c`)이 같은 키를 덮으면 사용자 설정이 조용히 무시됨 — 경고 여부 | (완료) | ✅ 테스트 10개 + 공식 샘플·실제 config 사본 |
 
 기타: `codex-setup:32-40` 인증 확인은 companion `setup --json`의 `authStatus`로 대체 가능. rescue:461 "Exploring biases the double-check"는 Verifier 도입 후 낡은 이유 문장(:23-26은 `bcd42f9`에서 교정됨).
 
