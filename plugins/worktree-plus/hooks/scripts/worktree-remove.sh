@@ -6,7 +6,8 @@ set -eu
 # Output: none (no decision control)
 #
 # Safety: refuses removal when the worktree has uncommitted changes,
-# untracked files, or unpushed commits. Logs all removal attempts.
+# untracked files, or unpushed commits. Logs blocked removals (a successful
+# removal deletes the log along with the worktree).
 
 INPUT=$(cat)
 WORKTREE_PATH=$(echo "$INPUT" | jq -r '.worktree_path')
@@ -57,7 +58,9 @@ log_entry() {
 DIRTY_REASONS=""
 
 # 1. Uncommitted changes (staged + unstaged + untracked)
-CHANGES=$(git -C "$WORKTREE_PATH" status --porcelain 2>/dev/null || true)
+# Skip the untracked .worktree.log the create hook writes — otherwise every
+# hook-made worktree would count as dirty and could never be removed.
+CHANGES=$(git -C "$WORKTREE_PATH" status --porcelain 2>/dev/null | grep -vx '?? \.worktree\.log' || true)
 if [ -n "$CHANGES" ]; then
   STAGED=$(echo "$CHANGES" | grep -c '^[MADRC]' || true)
   UNSTAGED=$(echo "$CHANGES" | grep -c '^.[MADRC]' || true)
@@ -108,5 +111,4 @@ else
   echo "Preserved branch: ${BRANCH:-<detached>}" >&2
 fi
 
-log_entry "REMOVED" ""
 exit 0

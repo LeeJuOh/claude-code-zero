@@ -35,7 +35,7 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "description": "Replaces Claude Code's built-in worktree — aligns with native git worktree where CC diverges (HEAD base, origin/* auto-tracking) and adds layers native lacks: .worktreeinclude/.worktreelink for gitignored files with a /worktree-setup skill that scans and builds them, upstream-aware removal guard, idempotent re-entry."
     },
     {
