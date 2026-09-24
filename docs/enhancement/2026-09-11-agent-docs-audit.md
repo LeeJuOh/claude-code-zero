@@ -1,48 +1,24 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(7/11 + 새 P1 1건 §2-4 #21, codex-advisor `dae4f7f`·`85f10d5`·`a3cfba4` 완료)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(7/11 + 새 P1 1건 §2-4 #21, codex-advisor `dae4f7f`·`85f10d5`·`a3cfba4` 완료, 다음 worktree-plus)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-24 6차 → 다음 세션)
+## 핸드오프 (2026-09-24 7차 → 다음 세션)
 
-**Goal** — 2부 P1의 남은 버그를 플러그인 하나씩 고친다. 다음은 codex-advisor(§2-3 #17). 1부는 S5(원 작성 머신의 메모리 폴더·worktree 정리)만 남았다.
+**다음 순서** (2부 P1 남은 버그, 플러그인마다 수정 커밋 + 원장 기록 커밋)
+1. **worktree-plus** — §2-7 #1·#2. 다음 세션은 여기부터.
+2. rubber-duck-tutor — §2-4 #1·#21
+3. e2e-test-runner — §2-7 #6
 
-**First Action** — 사용자에게 codex-advisor §2-3 #17을 "버그 한 줄 + 질문 한 줄 + 추천 한 줄"로 묻는다. 버그: `plugins/codex-advisor/scripts/apply-codex-config.py`의 `set_line()`은 키가 없으면 파일 끝에 붙이고, `find_line()`은 테이블 안의 같은 키도 잡는다. 6차에 임시 `HOME`으로 재현했다 ✅ — (1) `model_reasoning_effort`가 없고 끝에 `[profiles.fast]`가 있으면 그 테이블 키로 들어감, (2) 최상위 `model`이 없고 `[profiles.fast] model`만 있으면 그 프로필 값을 덮어씀. 추천: 두 함수가 첫 `[` 테이블 헤더 앞(최상위)만 보고, 없으면 그 앞에 삽입. 수정 전 AGENTS.md 규칙대로 `https://learn.chatgpt.com/docs/llms.txt`에서 config.toml 최상위 키(`model`, `model_reasoning_effort`)를 확인. 답을 받으면 커밋 하나 + patch 범프(marketplace.json 5.0.2 → 5.0.3) + 원장 기록 커밋.
+2·3의 순서는 정하지 않았다 — 1이 끝나면 묻는다. P1이 끝나면 P2~P7(아래 표).
 
-**Context** — P1 남은 4개 플러그인(영향 순): 1 rubber-duck-tutor(§2-4 #1·#21) · 2 codex-advisor(§2-3 #17) · 3 e2e-test-runner(§2-7 #6, 한 줄) · 4 worktree-plus(§2-7 #1·#2). 사용자가 rubber-duck-tutor를 미루고 "다음 세션은 2번"으로 정했다. 그 뒤 순서는 정하지 않았다 — 끝나면 묻는다. 사용자의 실제 `~/.codex/config.toml`엔 최상위 `model`·`model_reasoning_effort`가 이미 있어 지금은 안 터진다(키가 없는 새 설정에서만).
-
-**Current Progress** (git 기준 — `repo_facts.sh`)
-- 브랜치 `develop`, 작업 트리 깨끗. origin/develop보다 3커밋 앞섬(미푸시) + 이 기록 커밋. 6차 시작 시점엔 origin과 같았다(5차까지 커밋은 푸시됨).
-- 6차 커밋: `59eb822` skill-creator-pro 2.0.7(§2-2 #1), `bab3309` 원장 기록, `bcf2415` PyYAML 결정 + rubber-duck-tutor §2-4 #21 발견 기록.
-- P1 11건 중 6건 완료 + 6차에 새 P1 1건(§2-4 #21) 추가.
-
-**Decisions Made** (이전 결정은 §1-5, §2-1 "P1 처리")
-- skill-creator-pro 패키징: 스킬 폴더에서 `python -m scripts.package_skill <absolute/path>`. PyYAML 없는 머신 문제는 그대로 둠(§2-2 #1).
-- rubber-duck-tutor #1은 질문만 해 둠, 답 없음: 추천은 "`resolve-gap.sh`가 앞의 `날짜<TAB>`를 스스로 뗀다"(안내 문구만 고치는 것보다 확실, 호출부 3곳이 한 번에 고쳐짐).
-- 스크립트는 `CLAUDE_PLUGIN_DATA`를 환경에서 읽지 않고 인자로 받는다 — rubber-duck-tutor #21도 이 패턴으로.
-- P1 진행: 플러그인 하나씩, 플러그인마다 수정 커밋 + 원장 기록 커밋.
-
-**What Worked**
-- 버그마다 실제 실행으로 재현한 뒤 묻기: scratchpad에 임시 데이터(`CLAUDE_PLUGIN_DATA=<scratch>`, `HOME=<scratch>`)를 만들어 스크립트를 돌림. 수정 확인도 같은 방식(PyYAML은 scratch venv).
-- `marketplace.json` 버전 범프는 해당 줄만 `sed`로. `jq`로 다시 쓰면 다른 항목의 한 줄 배열까지 재포맷된다.
-
-**What Didn't Work**
-- ⚠️ 6차에도 "장황하게 말하지 마"를 들었다. 버그 설명 여러 줄 + 선택지 (a)(b) + 이유 문단 + 새 발견 문단이 원인. 통한 형식: 버그 한 줄(사용자가 겪는 증상) + 질문 한 줄 + 추천 한 줄. 새 발견은 원장에만 적고 보고는 한 줄 이하.
-- ⚠️ 이 머신 Bash의 `CLAUDE_PLUGIN_DATA`는 세션마다 다르다(5차엔 codex 폴더, 6차엔 비어 있음). 플러그인 데이터 경로는 `~/.claude/plugins/data/<plugin>-<marketplace>/`를 직접 쓸 것.
-- ⚠️ 설치 캐시가 레포보다 오래됐다(푸시 전). 수정한 스킬을 돌려 보려면 `--plugin-dir`로 레포 사본을 띄울 것.
-
-**Blockers** — P1 없음. P2는 #10, P4는 #8, P5는 #9, P6의 claw-mux #2는 #11 라이브 확인. S5는 원 작성 머신 + #4.
-
-**Next Steps** — 작업마다 커밋 하나(영어 1~2문장), 아래 표에 해시 기록.
-1. codex-advisor §2-3 #17(First Action) → 커밋 → 원장 기록.
-2. 남은 P1 3개 플러그인 순서를 사용자에게 묻는다(rubber-duck-tutor #1은 위 추천으로 바로 물을 수 있음).
-3. P2~P7 순서대로. 막는 결정(#10·#8·#9)은 해당 단계 직전에 하나씩 묻는다.
-4. 푸시 여부는 사용자에게 묻는다.
-5. 원 작성 머신에서 S5. 1부·2부가 끝나면 INDEX.md의 handoff 수명 규칙대로 이 문서를 정리.
+- codex-advisor(§2-3 #17)는 7차에 끝남: `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 상세는 §2-3 #17 행.
+- 미푸시 커밋 있음 — 푸시 여부는 사용자에게 묻는다.
+- ⚠️ 보고는 짧게, 한국어로: 버그 한 줄(사용자가 겪는 증상) + 질문 한 줄 + 추천 한 줄. 7차에도 "장황하게 말하지 마"를 들었다.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
@@ -56,7 +32,7 @@
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`, §2-4 #1·#21, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
+| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, §2-4 #1·#21, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, §2-7 #1·#2·#6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
