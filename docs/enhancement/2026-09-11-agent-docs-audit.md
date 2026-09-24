@@ -1,6 +1,6 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결), 후보 §2-7 #25 편입 여부 미정** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a`. 새 후보 §2-7 #28·#29(worktree-plus remove 훅)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
@@ -9,14 +9,14 @@
 
 ## 핸드오프 (2026-09-25 10차 → 다음 세션)
 
-**첫 행동:** worktree-plus §2-7 #25 — 8차에 찾은 실제 버그(재현함). P1에 넣을지 사용자에게 묻는다. 넣으면 현재 코드에서 재확인하고 "증상 한 줄 + 질문 한 줄 + 추천 한 줄"로 보고한다. 수정은 사용자 승인 뒤에만.
+**첫 행동:** worktree-plus §2-7 #28·#29 — 10차 검수 중 찾은 remove 훅 버그(격리 실행으로 재현, 옛 버전도 같음). P1에 넣을지 사용자에게 묻는다. 넣으면 "증상 한 줄 + 질문 한 줄 + 추천 한 줄"로 보고한다. 수정은 사용자 승인 뒤에만.
 
 **다음 순서**
-1. worktree-plus §2-7 #25 — P1 편입 여부부터
+1. worktree-plus §2-7 #28·#29 — P1 편입 여부부터
 2. P2~P7(아래 표)
 
 **사용자에게 물을 것** (10차 끝에 답을 못 받음)
-- 푸시 여부 — 미푸시 커밋 19개(10차 끝, 이 원장 커밋 전)
+- 푸시 여부 — 미푸시 커밋 21개(10차 끝, 이 원장 커밋 전)
 - gotchas.md "Plugin variables in the Bash tool"에 한 줄 추가 제안: hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 `claude -p` 실측, §2부 공통)
 - (선택) rubber-duck-tutor 3.1.3 검수의 빈 곳 두 개 — §2-4 #21 행 "미확인". 사용자가 "그냥 커밋해"로 넘긴 것이라 다시 권하지는 않는다
 
@@ -24,7 +24,7 @@
 1. 현재 코드에서 재확인 → 짧게 보고 → 승인. ⚠️ 8차에 "개선하자"를 승인으로 읽고 고쳤다가 "누가 고치래?"를 들었다. 9차는 보고 뒤 사용자가 `/skill-creator-pro 수정해`로 승인했다.
 2. 검수: 스크립트는 격리 환경(`HOME`·`GIT_CONFIG_GLOBAL`을 scratchpad로)에서 직접 돌리고, 옛/새 eval 비교. 검수 결과가 끝나기 전에 사용자가 커밋을 원하면 빈 곳을 원장 행에 적고 커밋한다(9차).
 3. 수정 커밋(버전 bump 포함) + 원장 기록은 별도 커밋.
-- ⚠️ 보고는 짧게, 한국어로. 8차 "장황하게말하지마". 9차 사용자 질문도 "어디까지햇음?"·"문제없엇어? 커밋하면 되는거야?" — 진행 보고는 결론부터 세 줄 안에.
+- ⚠️ 보고는 짧게, 한국어로. 8차 "장황하게말하지마". 9차 사용자 질문도 "어디까지햇음?"·"문제없엇어? 커밋하면 되는거야?" — 진행 보고는 결론부터 세 줄 안에. 10차에도 "장황하게말하지마 다시보고해" — 선택지 두 개 + 장단점 + 부수 발견을 한 번에 늘어놓았다. 질문 하나만, 부수 발견은 괄호 한 줄. 그다음 "먼소리지? 이유는 머고" — 추상 설명 대신 구체 경로 예시(`/wt/proj` → `/wt/proj/proj/fix`)로 답했더니 통했다. 과장 금지: "예전 권장대로"라고 했다가 정정(옛 스킬은 "Per-repo typical"뿐, `--local` 절대 경로 우회책은 eval 에이전트가 지어낸 것).
 
 **eval 방식**
 - 스킬 문구만 바꿀 때(8차): 서브에이전트 드라이런. 스냅샷은 `git show <수정 전 커밋>:<SKILL.md>`, "쓰기 금지, 쓰기 명령은 `commands.sh`, 답변은 `response.md`". 산출물 예 `plugins/worktree-plus/.evals/worktree-setup/`.
@@ -35,7 +35,7 @@
 - ⚠️ 모델은 한국어로 답한다(전역 CLAUDE.md) — 채점 정규식을 영어 단어로만 걸지 않는다. 스킬 흐름의 전제 조건도 맞춘다(9차 `/duck-orient`는 `.claude/orientation.md`가 있어야 gap을 확인하는데 없는 레포로 돌렸다).
 - ⚠️ macOS bash 3.2: `declare -A` 없음, `set -u`에서 빈 배열 `"${a[@]}"`는 오류(`${a[@]+"${a[@]}"}`), `timeout` 없음(`perl -e 'alarm shift; exec @ARGV' 600 …`).
 
-- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 10차: e2e-test-runner 플러그인 삭제 `e69be21` — §2-7 #6을 보고하자 사용자가 삭제를 물었고, 3월 이후 방치·옛 SDK(`@anthropic-ai/claude-code@^1.0.77`의 `query`, SDK는 지금 `@anthropic-ai/claude-agent-sdk`)·열린 버그 3건(#3·#6·#7)으로 삭제 추천 → 승인. README 두 곳의 Lab 절(이 플러그인뿐)도 삭제. 상세는 각 행.
+- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 10차: worktree-plus(§2-7 #25) `231504a`(3.2.0). e2e-test-runner 플러그인 삭제 `e69be21` — §2-7 #6을 보고하자 사용자가 삭제를 물었고, 3월 이후 방치·옛 SDK(`@anthropic-ai/claude-code@^1.0.77`의 `query`, SDK는 지금 `@anthropic-ai/claude-agent-sdk`)·열린 버그 3건(#3·#6·#7)으로 삭제 추천 → 승인. README 두 곳의 Lab 절(이 플러그인뿐)도 삭제. 상세는 각 행.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
@@ -484,8 +484,10 @@ ADR 0003·0008은 재논의하지 않음.
 | 22 | low | toolbox fetch-sitemap:87-93,107-112 | curl 플래그 설명·예시 중복 | 삭제 | 🔹 |
 | 23 | low | vibeproxy-kit plugin.json(151자) ↔ marketplace(198자) | description 불일치 | 동기화 | 🔹 |
 | 24 | med | vibeproxy-kit/skills/setup-aliases/scripts/write_user_config.py:62, references/write-guide.md:53-58 (재검수 추가), scripts/discover.sh:16(new-vibe handoff Issue 7 — 실제로 codex 폴더를 읽은 기록) | 백업·상태 경로 기본값을 `os.environ["CLAUDE_PLUGIN_DATA"]`에서 읽음 — Bash 환경엔 없거나 남의 값(2부 공통 "Bash 환경변수"). write-guide.md가 `"backup_dir": "${CLAUDE_PLUGIN_DATA}/backups"`를 넘기지만 references 파일이라 치환 안 될 수 있음 → 백업이 다른 플러그인 폴더로 | 백업 경로를 SKILL.md(치환됨)에서 명시적으로 넘기고, 스크립트는 env 폴백 삭제 | ✅(env) (추측)(치환) |
-| 25 | high | worktree-plus/hooks/scripts/worktree-create.sh:47,56 | 절대 경로 `dirBase`는 `<dirBase>/<name>`이라 레포 구분이 없다. 두 레포가 같은 worktree 이름을 쓰면 뒤 레포가 앞 레포의 worktree를 "Reusing existing worktree"로 받아, 다른 레포에서 작업하게 된다. worktree-setup 스킬은 전역 절대 경로 설정을 돕기까지 한다 | (미정) 재사용 전에 그 worktree가 같은 레포 것인지 확인(`git rev-parse --git-common-dir` 비교), 또는 절대 경로 아래 레포별 하위 폴더 | ✅ 8차 격리 실행으로 재현(레포 A·B, name=fix → B가 A의 worktree를 받음) |
+| 25 | high | worktree-plus/hooks/scripts/worktree-create.sh:47,56 | 절대 경로 `dirBase`는 `<dirBase>/<name>`이라 레포 구분이 없다. 두 레포가 같은 worktree 이름을 쓰면 뒤 레포가 앞 레포의 worktree를 "Reusing existing worktree"로 받아, 다른 레포에서 작업하게 된다. worktree-setup 스킬은 전역 절대 경로 설정을 돕기까지 한다 | (미정) 재사용 전에 그 worktree가 같은 레포 것인지 확인(`git rev-parse --git-common-dir` 비교), 또는 절대 경로 아래 레포별 하위 폴더 | ✅ 8차 격리 실행으로 재현(레포 A·B, name=fix → B가 A의 worktree를 받음). ✅ **완료**(2026-09-25 10차, `231504a`, 3.2.0). 결정: 두 안(재사용 전 레포 확인만 / 레포 폴더) 중 둘 다. 레포 폴더는 값이 `--local`이 아닐 때(`--global`·system)만 `<dirBase>/<repo>/<name>` — `--local` 절대 경로는 이미 레포 전용이라 그대로 두어 `/wt/proj/proj/fix` 두 겹을 피함(`--show-scope`는 git 2.26+라 `--local --get` 값 비교로 판정). repo 이름은 `--git-common-dir`에서(worktree 안 세션·bare 레포도 맞음). 재사용 전 `--git-common-dir`(pwd -P) 비교 → 다른 레포면 exit 1 + 이유(같은 폴더명 레포, 같은 local 값 복사). 옛 `<dirBase>/<name>` worktree는 기존 브랜치 검색으로 다시 열림. 검수: 격리 시나리오 11개 새 13/13, 옛 9/13(S1·S3 버그 재현) — `plugins/worktree-plus/.evals/dirbase-repo-scope/script-tests.sh`. 스킬 문구 드라이런 eval 3개 새 100%·옛 44%(옛은 레포 폴더를 몰라 '충돌 가능(추측)'·`--local` 우회 권장). 미확인: 전역/로컬 구분을 추가한 뒤 스킬 문구 eval 재실행 안 함(한 구절 추가), 실제 `claude -w` 실행 안 함(훅 입출력 계약만 검사) |
 | 26 | low | worktree-plus/skills/worktree-setup/SKILL.md:94 | "exits before it whenever its hooks are already registered" — 정확히는 현재 plugin root로 등록됐을 때. 플러그인 업데이트 뒤 첫 세션엔 마이그레이션이 돈다. "재시작으로는 안 된다"는 결론은 맞음 | "registered for the installed version" | ✅ 8차 격리 실행 |
 | 27 | low | worktree-plus/skills/worktree-setup/SKILL.md Value validation | 빈 `branchPrefix`가 "접두사 없음"이라는 설명이 없다 — 코드는 `=""` → `<name>`(`worktree-create.sh` 주석). 8차 eval에서 두 실행이 모두 "확인 못 함"으로 적음 | Value validation에 한 줄 | ✅ |
+| 28 | high | worktree-plus/hooks/scripts/worktree-remove.sh:60-94 (10차 발견) | create 훅이 만드는 `.worktree.log`가 untracked라 dirty 검사에 걸림 → gitignore에 없으면 remove가 항상 `BLOCKED`(`?? .worktree.log`) | 검사에서 `.worktree.log` 제외, 또는 create 때 worktree의 `info/exclude`에 추가 | ✅ 10차 격리 실행(옛·새 동일) |
+| 29 | med | worktree-plus/hooks/scripts/worktree-remove.sh:113 (10차 발견) | 삭제 성공 뒤 `log_entry "REMOVED"`가 지워진 폴더의 `.worktree.log`에 씀 → `No such file or directory`, `set -e`로 exit 1. 삭제는 된 채 훅은 실패로 끝남 | 삭제 전에 기록하거나, 폴더가 없으면 기록 생략 | ✅ 10차 격리 실행(옛·새 동일) |
 
 유지: worktree-setup:172-173(개행 없는 append 병합, include·link 중복 시 link 무음 skip), notebooklm references/gotchas.md:7-11(form_input 무음 실패), vibeproxy-kit setup-aliases:304(name/alias 반전 시 merge no-op), claw-mo shared.md:75-83·117(`--clear` 입력 대기 hang, 경로 정규화 비교).
