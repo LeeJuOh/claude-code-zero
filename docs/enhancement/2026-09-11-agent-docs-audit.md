@@ -1,20 +1,21 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(9/11 + 새 P1 1건 §2-4 #21 + 후보 §2-7 #25, worktree-plus `ebbdffa`·`6ad0cdd` 완료, 다음 rubber-duck-tutor)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 진행 중(9/11 + 새 P1 1건 §2-4 #21 + 후보 §2-7 #25, worktree-plus `ebbdffa`·`6ad0cdd`, rubber-duck-tutor `d7ea71d` 완료, 다음 e2e-test-runner)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-24 8차 → 다음 세션)
+## 핸드오프 (2026-09-25 9차 → 다음 세션)
 
-**첫 행동:** rubber-duck-tutor §2-4 #1·#21. 현재 코드에서 버그를 재확인하고 "증상 한 줄 + 질문 한 줄 + 추천 한 줄"로 보고한다. 수정은 사용자 승인 뒤에만(8차 끝에 사용자가 "오케이"로 rubber-duck-tutor 먼저를 받음).
+**첫 행동:** e2e-test-runner §2-7 #6. 현재 코드에서 버그를 재확인하고 "증상 한 줄 + 질문 한 줄 + 추천 한 줄"로 보고한다. 수정은 사용자 승인 뒤에만.
 
 **다음 순서** (2부 P1 남은 버그)
-1. rubber-duck-tutor — §2-4 #1·#21
-2. e2e-test-runner — §2-7 #6
-3. worktree-plus §2-7 #25 — 8차에 새로 찾은 실제 버그(재현함). P1에 넣을지는 사용자에게 묻는다
+1. e2e-test-runner — §2-7 #6
+2. worktree-plus §2-7 #25 — 8차에 새로 찾은 실제 버그(재현함). P1에 넣을지는 사용자에게 묻는다
+
+**제안(미승인):** gotchas "Plugin variables in the Bash tool"에 한 줄 — hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 실측, §2부 공통). 사용자에게 묻는다.
 
 P1이 끝나면 P2~P7(아래 표).
 
@@ -28,8 +29,8 @@ P1이 끝나면 P2~P7(아래 표).
 - `aggregate_benchmark`는 `iteration-N/eval-<i>-<name>/<config>/run-1/grading.json` 구조만 읽는다. 결과 표는 `old_skill`을 먼저 놓아 Delta 부호가 반대로 나온다.
 - 뷰어는 `generate_review.py … --static <iteration>/review.html`.
 
-- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + 검수 후속 `6ad0cdd`(3.1.2). 상세는 각 행.
-- 미푸시 커밋 있음(8차 끝 기준 14개 + 이 원장 커밋) — 푸시 여부는 사용자에게 묻는다.
+- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + 검수 후속 `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3). 상세는 각 행.
+- 미푸시 커밋 있음(9차 끝 기준 16개 + 이 원장 커밋) — 푸시 여부는 사용자에게 묻는다.
 - ⚠️ 보고는 짧게, 한국어로: 버그 한 줄(사용자가 겪는 증상) + 질문 한 줄 + 추천 한 줄. 8차에도 "장황하게말하지마 다시보고해"를 들었다 — 검수 결과를 표·목록으로 길게 늘어놓은 뒤였다.
 
 | # | 범위 | 막는 결정 |
@@ -44,7 +45,7 @@ P1이 끝나면 P2~P7(아래 표).
 
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
-| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, §2-4 #1·#21, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, ~~§2-7 #1·#2~~ ✅ `ebbdffa`, §2-7 #6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
+| P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, ~~§2-4 #1·#21~~ ✅ `d7ea71d`, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, ~~§2-7 #1·#2~~ ✅ `ebbdffa`, §2-7 #6 | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
@@ -292,7 +293,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 - **본문 길이:** 공식 팁 500줄 초과 — vision-powers `context-health-visual` 557·`plugin-visual` 553·`diff-visual` 543, `skill-creator-pro` 520, rubber-duck `engine.md` 375(모든 /duck-* 실행마다 로드).
 - **설치본 격리 위반 패턴:** 여러 플러그인이 레포 전용 경로(`docs/…`, `references/…`, research §번호)를 가리킴 — 설치본엔 없음(gotchas "Installed plugin isolation").
 - **Bash 환경변수 (재검수 추가):** `CLAUDE_PLUGIN_ROOT`·`CLAUDE_PLUGIN_DATA`는 Bash 도구 환경에 없다(plugins-reference.md:765). SKILL.md·에이전트 본문의 `${…}`는 치환되지만, Bash로 실행된 스크립트가 `process.env`/`os.environ`으로 읽으면 안 된다. 2026-09-23 세션 Bash엔 다른 플러그인 값 `CLAUDE_PLUGIN_DATA=~/.claude/plugins/data/codex-openai-codex`가 들어 있었다 ✅ — 비어 있는 게 아니라 **남의 폴더**를 가리킨다. 해당: vision-powers #4, vibeproxy-kit #24, rubber-duck-tutor #21. 경로는 인자로 넘긴다.
-- **reference 파일 치환 (재검수 추가, 2026-09-24 확인 ✅ — 치환 안 됨):** 설치본 `claw-mo/2.8.2/references/shared.md`에 `${CLAUDE_PLUGIN_DATA}`가 문자 그대로 있고 Read는 디스크 내용을 그대로 돌려준다. 같은 날 Bash 환경: `CLAUDE_PLUGIN_ROOT` 빈 값, `CLAUDE_PLUGIN_DATA`=`…/data/codex-openai-codex`(남의 폴더) 재현. 공식은 치환 위치를 "the skill's markdown content"와 `allowed-tools`로만 적는다(skills.md:416). Read로 여는 references 파일의 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`·`${CLAUDE_SKILL_DIR}`는 치환되지 않을 가능성이 있다 — 그대로 Bash에 넣으면 빈 값이거나 위의 남의 값. 해당 파일: claw-mo `references/shared.md`, codex-advisor `references/companion-usage.md`·`evaluation.md`, rubber-duck `skills/ducking/engine.md`, vibeproxy-kit `references/model-selection.md`·`write-guide.md`, vision-powers `references/design-system/{channel-decision,structured-blocks,visual-self-audit}.md`·`plugin-visual/.../analysis-criteria.md`. 실행 확인 후(§1-5 #11) 공통 처리.
+- **reference 파일 치환 (재검수 추가, 2026-09-24 확인 ✅ — 치환 안 됨):** 설치본 `claw-mo/2.8.2/references/shared.md`에 `${CLAUDE_PLUGIN_DATA}`가 문자 그대로 있고 Read는 디스크 내용을 그대로 돌려준다. 같은 날 Bash 환경: `CLAUDE_PLUGIN_ROOT` 빈 값, `CLAUDE_PLUGIN_DATA`=`…/data/codex-openai-codex`(남의 폴더) 재현. 공식은 치환 위치를 "the skill's markdown content"와 `allowed-tools`로만 적는다(skills.md:416). Read로 여는 references 파일의 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`·`${CLAUDE_SKILL_DIR}`는 치환되지 않을 가능성이 있다. hook `additionalContext`도 치환 안 됨(2026-09-24 `claude -p` 실측 ✅ — 따옴표 heredoc의 `${CLAUDE_PLUGIN_ROOT}`가 문자 그대로 모델에 도착) — 그대로 Bash에 넣으면 빈 값이거나 위의 남의 값. 해당 파일: claw-mo `references/shared.md`, codex-advisor `references/companion-usage.md`·`evaluation.md`, rubber-duck `skills/ducking/engine.md`, vibeproxy-kit `references/model-selection.md`·`write-guide.md`, vision-powers `references/design-system/{channel-decision,structured-blocks,visual-self-audit}.md`·`plugin-visual/.../analysis-criteria.md`. 실행 확인 후(§1-5 #11) 공통 처리.
 
 ## 2-1. vision-powers
 
@@ -395,7 +396,7 @@ ADR 0003·0008은 재논의하지 않음.
 
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
-| 1 | high | hooks/post-push.sh:66, post-pr.sh:66, engine.md:289 | `resolve-gap.sh "<the exact gap text recent-gaps.sh printed>"` — 출력이 `날짜<TAB>gap`이라 그대로 넘기면 no-op → ship-point gap이 영원히 해소 안 됨 | "gap text with the leading date and tab removed" | ✅(문구) 🔹(실행 재현) |
+| 1 | high | hooks/post-push.sh:66, post-pr.sh:66, engine.md:289 | `resolve-gap.sh "<the exact gap text recent-gaps.sh printed>"` — 출력이 `날짜<TAB>gap`이라 그대로 넘기면 no-op → ship-point gap이 영원히 해소 안 됨 | "gap text with the leading date and tab removed" | ✅ **완료**(2026-09-25, `d7ea71d`, 3.1.3). 문구 대신 코드로: `resolve-gap.sh`가 앞의 `YYYY-MM-DD<TAB>`를 스스로 뗀다 — 찍힌 줄·맨 텍스트 둘 다 해소됨. 9차 격리 실행으로 버그 재현 후 수정 확인 |
 | 2 | high | duck/SKILL.md:29-30 | 3번(`git diff --stat` 미커밋)이 4번(세션 편집 미커밋)을 먼저 잡아 `/duck-verify`로 거의 라우팅 안 됨(새 untracked 파일만 있는 세션만 4번 도달) | §1-5 #8 결정 — (a) 4번 재정의 (b) 3·4번 교환. 중복 Mode Map 표 삭제는 공통 | 🔹 |
 | 3 | high | ducking/references/exercise-patterns.md:48 ↔ :176, engine.md:347 | "막히면 코드 보여줘라" ↔ "어느 단계에서도 코드 금지" | :48 삭제, 1-3줄 문법만 허용 | 🔹 |
 | 4 | high | engine.md:173 ↔ :188,:198 | 증명 안 된 hunch를 log-gap에 기록 → 다음에 틀린 gap으로 출제 | hunch는 별도 줄, log-gap 금지 | 🔹 |
@@ -415,7 +416,7 @@ ADR 0003·0008은 재논의하지 않음.
 | 18 | low | 6개 스킬 description | 전부 `disable-model-invocation`이라 모델 트리거 문구 무의미(coach 504자) | 120자 이하 메뉴 라벨 | ✅ |
 | 19 | low | engine.md:221,:239, hooks:66 | 외부 스킬(`code-review`) 이름 지목 | "out of scope for duck" | 🔹 |
 | 20 | low | README.md:45-47 | engine 동작과 다른 설명 3줄 | 실제 동작으로 | 🔹 |
-| 21 | high | ducking/scripts/ 7개(`log-gap`·`recent-gaps`·`resolve-gap`·`log-telemetry`·`ignore-streak`·`telemetry-summary`·`read-config`) + hooks/lib.sh (2026-09-24 발견) | 데이터 경로를 `${CLAUDE_PLUGIN_DATA:-~/.claude/data/rubber-duck-tutor}`로 env에서 읽음(2부 공통 "Bash 환경변수"). hook이 부르면 플러그인 폴더, 모델이 Bash로 부르면 폴백 폴더(또는 남의 플러그인 폴더)로 갈라짐. 예: `outcome` 기록(Bash) ↔ `ignore-streak`(hook)이 다른 파일을 읽어 streak이 늘 0 → scoreboard 모드가 안 켜짐(추측: 실행 재현 전, 코드 판독) | 경로를 인자로(P1 결정 패턴). 호출부: hook은 `${CLAUDE_PLUGIN_DATA}` 전달, SKILL.md·hook 주입문은 `${CLAUDE_PLUGIN_DATA}` 치환 | ✅(코드) |
+| 21 | high | ducking/scripts/ 7개(`log-gap`·`recent-gaps`·`resolve-gap`·`log-telemetry`·`ignore-streak`·`telemetry-summary`·`read-config`) + hooks/lib.sh (2026-09-24 발견) | 데이터 경로를 `${CLAUDE_PLUGIN_DATA:-~/.claude/data/rubber-duck-tutor}`로 env에서 읽음(2부 공통 "Bash 환경변수"). hook이 부르면 플러그인 폴더, 모델이 Bash로 부르면 폴백 폴더(또는 남의 플러그인 폴더)로 갈라짐. 예: `outcome` 기록(Bash) ↔ `ignore-streak`(hook)이 다른 파일을 읽어 streak이 늘 0 → scoreboard 모드가 안 켜짐(추측: 실행 재현 전, 코드 판독) | 경로를 인자로(P1 결정 패턴). 호출부: hook은 `${CLAUDE_PLUGIN_DATA}` 전달, SKILL.md·hook 주입문은 `${CLAUDE_PLUGIN_DATA}` 치환 | ✅ **완료**(2026-09-25, `d7ea71d`, 3.1.3). 9차 재현: Bash로 쓴 outcome은 폴백 폴더, hook의 streak은 플러그인 폴더 → 0. 범위가 더 컸다 — hook 주입문은 따옴표 heredoc이라 `${CLAUDE_PLUGIN_ROOT}`가 문자 그대로 모델에 가고(`claude -p` 실측, 치환 안 됨), `engine.md`(Read)도 같음 → ship 때 스크립트 경로부터 `/skills/…`로 깨짐. 수정: 스크립트 7개 `--data-dir <절대 경로>` 필수(없거나 상대면 exit 2, 폴백 삭제), hook은 `duck__fill_paths`로 주입문 자리표시자에 실제 경로(JSON 이스케이프)를 채움(따옴표 없는 heredoc은 백틱이 실행돼 기각), `engine.md`는 `<scripts>`·`<data-dir>` + 각 모드 SKILL.md가 두 경로 제시. 검수: 격리 테스트 29/29, `claude -p` e2e(새 버전) — ship gap 재질문·해소, ignored 기록, `enabled:false` 정지 확인. 미확인: duck-orient의 gap 재질문 경로(eval이 orientation.md 없는 레포라 안 탐), 옛 버전 e2e 비교(세션 한도로 무효) — 사용자가 이 상태로 커밋 결정. 산출물 `plugins/rubber-duck-tutor/.evals/ship-data-paths/`. 기존 폴백 폴더 데이터 이관은 안 함(이 머신에 없음) |
 
 유지: engine.md:93-99(Skeptical Grading), coach:57(연습 통과로만 gap 해소), exercise-patterns.md:163,:180, duck-verify:12-16.
 
