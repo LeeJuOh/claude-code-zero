@@ -1,37 +1,39 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차), 다음은 P2** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 결정 완료(13차), 다음은 P2 구현 1단계** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-09-25 12차 끝 → 13차)
+## 핸드오프 (2026-09-30 13차 끝 → 14차)
 
-**다음 작업: P2(§2-1 vision-powers 나머지).** 12차 끝에 사용자가 정했다.
+**목표:** P2(§2-1 vision-powers 나머지 29개)를 구현한다. 결정은 13차에 모두 끝났다 — §2-1 표 아래 "P2 결정"(할 일 체크리스트)과 "P2 구현 단계"(7단계 표).
 
-**첫 행동:** 한 줄로 묻는다 — "P2 범위: vision-powers 남은 29개 중 high 11개만 할까요, 전부 할까요? 추천: high만(med·low는 대부분 중복·문구라 원장에 남김)." 12차에 2부 전체 기준(남은 114개 = high 25 + med·low 89)으로 두 번 물었지만 답 없이 배포·핸드오프로 넘어갔다 — 이번엔 P2로 좁혀 묻는다.
-- high 11: #2·#3·#9(컨텍스트 예산 수치 — #3 먼저, #2·#9가 health-criteria를 가리킴), #6(프라이버시 가드), #5·#10(report-manager·fact-check), #7(§1-5 #10 결정 필요), #8·#11·#12·#13(plugin-visual·에이전트)
-- med 12(#14~#25), low 6(#26~#31), §2-1 표 아래 README 충돌 2건
+**첫 행동:** P2 구현 1단계(삭제)를 바로 한다 — 사용자가 13차 끝에 7단계 분할을 승인했다("오케이 그렇게 가자"), 다시 묻지 않는다. `/skill-creator-pro`로 시작.
+1. `git rm -r plugins/vision-powers/skills/context-health-visual plugins/vision-powers/agents/trigger-collision-inspector.md plugins/vision-powers/agents/coherence-reviewer.md`
+2. 참조 정리 — 13차 grep 결과: `scripts/list-reports.js` 타입 감지(`-context-health-visual`), `skills/report-manager/SKILL.md` 파일명 감지 gotcha, `references/design-system/channel-decision.md`(채널 스킬 목록)·`diagram-type-selection.md`(스킬 행), `README.md`(스킬 표·Artifact 절·"4 specialized agents"), `skills/plugin-visual/SKILL.md`의 `--verify` 줄(#8), `plugin.json`·`marketplace.json` description. 고친 뒤 `grep -rn "context-health\|trigger-collision\|coherence-reviewer\|health-criteria" plugins .claude-plugin`가 비어야 한다.
+3. `marketplace.json` vision-powers 4.9.2 → 5.0.0, `node --test plugins/vision-powers/scripts/*.test.js`, `claude plugin validate .`, `claude -p --plugin-dir ./plugins/vision-powers`로 로드 확인 → 커밋 → 원장 체크박스·"P2 처리" 기록은 별도 커밋.
 
-**그다음** (하나씩)
-1. 범위가 정해지면 P2를 2~3개로 나눠 하나씩(P2 행 "2~3개로 다시 나눔"). 제안 분할(미확정, 사용자에게 확인): P2a 예산·스캔 사실 #3→#2→#9·#6 / P2b plugin-visual·에이전트 #8·#11·#12·#13 / P2c 리포트 스킬 #5·#10·#7. 전부로 가면 med·low를 같은 파일끼리 붙인다(P2a +#17·#22, P2b +#14·#15·#23·#28·#30·README, P2c +#18~#21·#24~#27·#29·#31).
-2. §1-5 #10(#7만 막음): doc-visual의 md 게시 — ADR 0009 §3을 개정해 예외로 인정 vs doc-visual의 md 게시 삭제. #7에 닿을 때 묻는다.
-3. 10차부터 미답: gotchas.md "Plugin variables in the Bash tool"에 한 줄 추가 제안 — hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 `claude -p` 실측, §2부 공통). rubber-duck-tutor 3.1.3 빈 곳 두 개(§2-4 #21 "미확인")는 사용자가 넘긴 것이라 다시 권하지 않는다.
+**그다음:** 2~7단계를 표 순서대로, 단계마다 커밋 + 검증. 원장 수정안대로 하되 **수정안과 달라질 때만 묻는다**(13차 합의 "중요한 것만 판단").
+- 행 줄 번호는 `21a87ab` 기준이라 낡았다 — 파일을 다시 열어 확인. "P2 결정"에 적은 줄 번호는 13차(`694f452`)에 grep으로 확인한 값.
+- 공식 문서는 scratchpad에 받아 뒀던 것이 세션과 함께 사라진다 → 2·4단계 전에 `curl -sL https://code.claude.com/docs/en/{hooks,skills,mcp,settings-reference,plugins-reference}.md` 다시 받기.
+- 7단계 eval의 옛 버전 기준: 4.9.2 스냅샷 `~/.claude/plugins/data/skill-creator-pro-claude-code-zero/vision-powers-p2/skill-snapshot/`(13차, 수정 전 복사) 또는 `git archive 694f452 plugins/vision-powers`.
+- 추천 스킬: `/skill-creator-pro`(스킬 수정·옛/새 eval), `writing-for-agents`(7단계 문구 재작성), 막히는 설계 선택은 `/grill-with-docs`로 한 질문씩.
+- 10차부터 미답(급하지 않음): gotchas.md "Plugin variables in the Bash tool"에 한 줄 — hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 실측).
 
-**P2 주의**
-- 행 줄 번호는 `21a87ab` 기준인데 vision-powers는 그 뒤 `5be2cec`(4.9.1)·`143aa9c`(4.9.2)로 바뀌었다 → 행마다 현재 파일을 다시 열어 확인. 현재 버전 4.9.2(`marketplace.json`).
-- 공식 수치가 걸린 행(#2·#3·#9·#11)은 AGENTS.md대로 `https://code.claude.com/docs/en/<page>.md`를 다시 받아 대조 — 표의 공식 문서 줄 번호는 2026-09-23 값.
-- 테스트: `node --test plugins/vision-powers/scripts/*.test.js`(P1 때 3파일 73개 통과).
-- 처리 기록은 §2-1 표 아래 "P1 처리" 절 뒤에 "P2 처리" 절로 같은 형식.
+**13차 요약:** 범위를 "high 11개만"으로 추천했다가 철회 → 29개 전부. 한 질문씩 결정(`/grill-with-docs`): context-health-visual 삭제(본업이 `/doctor`·`/skill-doctor`·`/context`와 겹치고 수치가 자주 바뀜), 에이전트 2개 삭제, #11은 사용자 제안(공식 hooks 문서로 판정)으로 교체, #7은 "md 기본 로컬·요청하면 게시(묻지 않음)". 코드 변경 없음 — 원장만 수정(미커밋).
 
-**추천 스킬** (Skill 도구로 호출)
-- `grilling` — 범위·분할·§1-5 #10·버그별 방향을 하나씩 물을 때. 11차에 쓴 `/grill-with-docs`는 12차 세션 스킬 목록에 없다.
-- `skill-creator-pro:skill-creator-pro` — SKILL.md·references 수정과 옛/새 eval(AGENTS.md가 스킬 작성·eval에 지정).
-- `writing-for-agents` — 중복 정리(#19~#23)처럼 스킬 문구를 다시 쓸 때.
+**13차 교훈**
+- ⚠️ 29개를 high/med/low로 나눠 "med·low는 문서 정리라 안 고쳐도 동작 같다"고 했다 → "문서정리가 뭔소리야? 스킬 고치는 거 아니었어?" 전부 스킬 수정이고, med에도 지침 충돌(C1 최우선)이 있었다. 심각도 라벨을 "안 고쳐도 됨"으로 번역하지 않는다.
+- ⚠️ 또 장황("장황하게말하지마 다시보고해 뭐라고?") — 불릿 4개 + 실측 방법 설명을 한 번에 냈다. 추상 표현("판단 기준으로 바꾼다", "예산 추정 절")은 "먼소리야"를 불렀고, 구체 예(`exit 2`면 차단형, `curl`이면 유출)로 바로 통했다.
+- ✅ 사용자가 더 나은 안을 냈다(#11 공식 문서 참조, #7 자연어 요청 우선 — "사용자는 귀찮아서 자연어로 할텐데"). 제안을 받으면 강한 형태로 검토하고 내 안의 빈틈을 먼저 인정했더니 바로 합의됐다.
+- ✅ "중요한 것만 판단하면 안될까?" → 결정이 필요한 것(#7·#5)만 묻고 나머지는 원장 수정안대로 — 이후 결정이 빨라졌다.
+- 미해결 사실: 스킬 목록 예산 "창의 1%"가 글자인지 토큰(×4)인지 공식 문서에 없다. #2 수정 때 "추정"으로 표시하기로 했다(실측 안 함).
+- handoff 스킬 설정(`toolbox` config)은 `docs/handoff/vision-powers`를 가리키지만, 이 원장이 handoff다(§1-2에서 handoff 파일 퇴적을 정리함) — 별도 파일을 만들지 않는다.
 
-**12차 요약:** 원장 리스트업 → 사용자가 "P1 다 고쳤으니 배포?" → v1.84.0 배포(merge `ee4f077`, 태그 `v1.84.0`): codex-advisor 5.1.0, worktree-plus 3.2.1, rubber-duck-tutor 3.1.3, skill-creator-pro 2.0.7, e2e-test-runner 삭제. `main`·`develop`·태그 푸시 완료(미푸시 0). ⚠️ 로컬 `main`이 `origin/main`보다 23커밋 뒤였다 — v1.83.2(`7a73980`, 09-24)는 다른 머신에서 배포됨. `git merge --ff-only origin/main`으로 맞춘 뒤 merge. 두 머신에서 작업하므로 release-workflow 1단계(fetch·비교)를 건너뛰지 않는다.
+**12차에서 이어지는 주의:** 두 머신에서 작업한다 — 배포 때 release-workflow 1단계(fetch·`origin/main` 비교)를 건너뛰지 않는다(12차 로컬 `main`이 23커밋 뒤였음).
 
 **플러그인 하나 처리 절차** (8~11차에 굳힘)
 1. 현재 코드에서 재확인 → 짧게 보고 → 승인. ⚠️ 8차에 "개선하자"를 승인으로 읽고 고쳤다가 "누가 고치래?"를 들었다. 9·10차는 보고 뒤 사용자가 `/skill-creator-pro 고치자`·"ㅇㅇ"로 승인했다.
@@ -67,7 +69,7 @@
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
 | P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, ~~§2-4 #1·#21~~ ✅ `d7ea71d`, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, ~~§2-7 #1·#2~~ ✅ `ebbdffa`, ~~§2-7 #6~~ ✅ 플러그인 삭제 `e69be21` | — (Q11은 "우선순위 순 하나씩"으로 대체) |
-| P2 | §2-1 vision-powers 나머지 — 2~3개로 다시 나눔 | #10 |
+| P2 | §2-1 vision-powers 나머지 — 13차에 결정 완료, 7단계로 나눔(§2-1 "P2 결정"·"P2 구현 단계") | ~~#10~~ 13차 결정 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
 | P5 | §2-2 skill-creator-pro(#15 `claude plugin eval` 분기 포함) | #9 |
@@ -362,6 +364,35 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 - #4 ✅ `5be2cec` — `config.js`·`list-reports.js`·`render-report.js`는 `--data-dir <경로>` 필수(없으면 exit 2), env·`~/.claude-code-zero` fallback 삭제. SKILL.md 호출부는 `--data-dir "${CLAUDE_PLUGIN_DATA}"`, report-manager의 `$CLAUDE_PLUGIN_DATA`는 `${…}`로, 틀린 gotcha 삭제. references 2곳(channel-decision·visual-self-audit)은 짧은 이름 + `<plugin data dir>`. 호출부 없던 `log-report.js` 삭제. Bash의 `CLAUDE_PLUGIN_DATA`가 codex 폴더였던 원인: openai-codex 1.0.6 `scripts/session-lifecycle-hook.mjs`가 SessionStart에서 `CLAUDE_ENV_FILE`에 자기 경로를 export — codex가 없어도 Bash엔 원래 없으므로 우리 버그는 그대로. codex 폴더에 쌓였던 `audit-*.png` 6장 삭제.
 - #32 ✅ `5be2cec` — `severity: 'error'` + 테스트 조건. 테스트 3파일 73개 통과.
 - 추가 발견 ✅ `143aa9c`(4.9.2) — `reports_dir` 설정은 list-reports만 따르고 생성 스킬은 무시 → 키 삭제("스킬 7곳이 설정을 읽게"안은 기각: 문서 안내·사용자 없음).
+
+**P2 결정 (2026-09-30 13차, 한 질문씩 — 구현은 결정이 끝난 뒤)**
+- 범위: 29개 전부, 3묶음(1 context-health·예산 #3·#2·#9·#6·#17·#22 / 2 plugin-visual·에이전트 #8·#11·#12·#13·#14·#15·#23·#28·#30·README / 3 리포트 스킬 #5·#10·#7·#18~#21·#24~#27·#29·#31).
+- [ ] `context-health-visual` 스킬 삭제 — 본업(목록 예산·컨텍스트 비용)이 `/doctor`·`/skill-doctor`·`/context`와 겹치고 수치가 자주 바뀜. #3·#6·#17·#22는 삭제로 종결. 재확인 때 본 사실: 공식 skills.md에서 8,000자 fallback은 사라졌고, 초과 시 "덜 쓰는 스킬의 description을 뺌", 새 설정 `skillListingBudgetFraction`(기본 0.01)·`skillListingMaxDescChars`(기본 1536)·`skillOverrides`(플러그인 스킬엔 미적용).
+- [ ] `agents/trigger-collision-inspector.md` 함께 삭제 — 호출자가 context-health-visual뿐.
+- [ ] 삭제에 따라 참조 정리: README, plugin.json·marketplace description, `list-reports.js`, report-manager, `references/design-system/{channel-decision,diagram-type-selection}.md`. docs/issues·adr의 역사 기록은 그대로.
+- [ ] #2·#9: plugin-visual의 설치 전 컨텍스트 비용 추정은 유지하고 수치만 공식대로 — 목록 예산 1%(`skillListingBudgetFraction`·`SLASH_COMMAND_TOOL_CHAR_BUDGET`·`skillListingMaxDescChars` 반영, 16K fallback 삭제), MCP는 기본 deferred(tool search, 이름·서버 instructions만 시작 시 로드; `ENABLE_TOOL_SEARCH`·비공식 `ANTHROPIC_BASE_URL`이면 upfront), "10% cap" 삭제. 공식이 밝히지 않은 환산(글자/토큰)은 "추정"으로 표시.
+- [ ] #8: `agents/coherence-reviewer.md` 삭제 + plugin-visual:509 `--verify` 줄 삭제 — 호출처 없음(13차 grep 재확인).
+- [ ] #11: security-auditor의 hook 이벤트 표(22개, 공식 33개) 삭제 → 에이전트 `tools`에 WebFetch 추가, hook이 쓰는 이벤트마다 공식 hooks.md의 "Exit code 2 behavior per event"·"Decision control" 표에서 그 행을 찾아 판정(exit 2 효과가 이벤트마다 달라 스크립트만 보면 오판). 못 가져오면 "미확인". plugin-visual:524 "22 hook events" gotcha 삭제. (처음 안 "스크립트 행동만으로 판정"은 사용자 제안으로 교체)
+- [ ] #12: 의존성 확인(bash 한 블록의 `which`·`grep`·`ls`·`test`)을 `env-fit-scan.js --requirements`로 이동, MCP 경로는 `~/.claude.json`·프로젝트 `.mcp.json`. 이후 안 쓰는 `Bash(which *)`는 #30과 함께 삭제.
+- [ ] #13: security-auditor 본문에 `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/security-rules.md` 경로 기재(에이전트 본문 치환 — plugins-reference.md:530), 복제한 Context Modifier 4개 삭제.
+- [ ] #14: 노드 한도를 게이트(`artifact-gate.js:8` 9 nodes/12 arrows)로 통일 — mermaid-patterns:484(15-20)·feature-architect:277(~15)·plugin-visual:359·:530(25) 숫자 삭제, 게이트 한도 포인터로.
+- [ ] #7(§1-5 #10 종결): md는 "기본 로컬, 요청하면 Artifact 게시" — 플래그든 자연어든 요청이면 묻지 않고 게시, 답변에 "Mermaid는 코드로 보인다" 한 줄. channel-decision.md md 행·:32-34 문구, ADR 0009 §3 개정 기록, doc-visual:43·:76-77("md stays local")·:60-66(자연어면 한 번 묻기) 수정.
+- [ ] #5: ✎ 피드백 수확 기능 삭제 — UI를 심는 스킬 없음(13차 grep: README·report-manager에만 남음). report-manager 수확·감지 절, fact-check 해당 절, description·README 문구.
+- 버전: 스킬·에이전트 삭제는 인터페이스 제거 → vision-powers 5.0.0.
+- 안 함: 게이트의 보라 hex 목록(4개) 확대 — 사용자가 "중요한 것만"으로 좁힘.
+
+**P2 구현 단계** (13차 합의 — 단계마다 커밋 1개 + 검증, 끝나면 다음. 원장 기록은 별도 커밋)
+
+| 단계 | 내용 | 검증 |
+|---|---|---|
+| 1 | 삭제: `context-health-visual`·`agents/trigger-collision-inspector.md`·`agents/coherence-reviewer.md`(#8 포함) + 참조 정리 → 5.0.0 | 남은 참조 grep, `claude -p --plugin-dir ./plugins/vision-powers` 로드 |
+| 2 | security-auditor #11·#13 (+plugin-visual "22 hook events" gotcha) | 샘플 플러그인(hook 있는 것)으로 옛/새 비교 |
+| 3 | 의존성 확인 스크립트화 #12 + #30 | `env-fit-scan.js` 단위 테스트, 권한 프롬프트 없음 |
+| 4 | plugin-visual 수치·색 #2·#9·#14·#15·#23·#28 + README 2건 | grep, `node --test` |
+| 5 | md 게시 규칙 #7 (ADR 0009 §3 개정 + channel-decision + doc-visual) | 문구 대조 |
+| 6 | 리포트 스킬 오류 #5·#10·#25·#27·#29·#31 | `node --test`, fact-check 감지 |
+| 7 | 중복 통합 #19~#21·#24·#26 + #18 description | 옛/새 eval |
+- [ ] 나머지(#15·#23·#28·#30·README 2건, #10·#18~#21·#24~#27·#29·#31)는 원장 수정안대로 처리, 수정안과 달라질 때만 묻는다(13차 사용자 합의 "중요한 것만 판단"). #15는 예시 3줄을 :275 규칙(반투명 8자리 hex)대로, builtin은 slate.
 
 ## 2-2. skill-creator-pro
 
