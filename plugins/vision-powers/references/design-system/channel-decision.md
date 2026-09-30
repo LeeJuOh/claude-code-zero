@@ -1,8 +1,8 @@
 # Channel Decision — Where a Report Lands (SSOT)
 
 The single place that decides **which channel a visual report ships on** — a published claude.ai
-Artifact, or a local design-system file — plus what each flag and config key means. The four
-channel skills (`doc-visual`, `diff-visual`, `context-health-visual`, `plugin-visual`) cite this
+Artifact, or a local design-system file — plus what each flag and config key means. The three
+channel skills (`doc-visual`, `diff-visual`, `plugin-visual`) cite this
 file instead of each re-deriving the rule, so the policy can't drift skill-to-skill. `fact-check`
 does not author reports and does not use this table — see its own SKILL.md and ADR 0009 §Scope.
 
@@ -69,7 +69,7 @@ link", "share as a URL") don't break. Semantics:
 - **`artifact` absent** → interpret as **artifact-first** (the default; the table applies unchanged).
   This is the flipped interpretation — pre-0009, an absent key meant off.
 - **`artifact: false`** → **persistent force-local**: the config twin of `--local`, for a user who
-  wants local as their standing default. All four channel skills must respect it exactly as they'd
+  wants local as their standing default. All three channel skills must respect it exactly as they'd
   respect a typed `--local`. A this-turn `--artifact` (explicit signal, precedence rule 1) still
   overrides it for that one run.
 - **`artifact: true`** → explicitly artifact-first (same as absent; harmless to set).

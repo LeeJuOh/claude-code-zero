@@ -36,7 +36,6 @@ function detectType(filename) {
   if (filename.includes("-diff-visual")) return "diff-visual";
   if (filename.includes("-doc-visual")) return "doc-visual";
   if (filename.includes("-report")) return "plugin-visual";
-  if (filename.includes("-context-health-visual")) return "context-health-visual";
   return "unknown";
 }
 

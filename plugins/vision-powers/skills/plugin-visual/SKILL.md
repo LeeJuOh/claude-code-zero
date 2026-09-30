@@ -506,7 +506,6 @@ Bash(rm -rf /tmp/plugin-visual-{dirname})
 After cleanup, suggest optional next steps:
 - `/fact-check` — verify the report's factual accuracy against the actual codebase
 - `/report-manager refine` — refine specific sections based on feedback
-- `--verify` — if not used this time, mention that coherence review is available for future runs
 
 This is informational — just a brief suggestion, not an automatic invocation.
 

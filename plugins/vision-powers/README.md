@@ -14,11 +14,10 @@ The thesis behind this plugin echoes what Thariq Shihipar (Anthropic, Claude Cod
 
 | Skill | Description |
 |-------|-------------|
-| `plugin-visual` | Claude Code plugin deep analysis — 4 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
+| `plugin-visual` | Claude Code plugin deep analysis — 2 specialized agents, security audit, environment fit diagnosis, skill design quality, architecture diagrams. Supports local paths, installed plugins, and GitHub URLs |
 | `diff-visual` | Catch up on a change before you review it — background on the system it lands in, the idea behind it, a literate walkthrough of the real (extraction-grounded) code, and a five-question quiz to check you actually got it. Reads *before* judgement — it never says whether the change is good |
 | `doc-visual` | Visualize any markdown document (research, spec, RFC, ADR, design doc) as a diagram-enhanced HTML or markdown report with Mermaid diagrams matched to section intent |
 | `fact-check` | Verify document accuracy against the actual codebase and git history — corrects claims in place and, when the target is a published Artifact, republishes the fix to the same claude.ai link |
-| `context-health-visual` | Diagnose Claude Code context and environment health — context budget, description obesity (3-axis), trigger collisions, hook/MCP overhead, skill security scan (prompt injection, data exfil, destructive, credentials, obfuscation, safety override), hook schema validation, plugin components, CLAUDE.md & memory health. 6 graded areas + 5 observational, each threshold cited to official docs |
 | `report-manager` | List, open, delete, search, and refine generated reports — surfaces stored Artifact URLs and republishes a refined report to the same claude.ai link, even across sessions |
 
 ## diff-visual — catch up before you review
@@ -85,7 +84,7 @@ analyze ./plugins/my-plugin --lang ko                     # output in Korean (IS
 
 **Output formats.** Every report skill accepts `--format html` (default) or `--format md`. HTML reports go to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback. Markdown reports are delivered in the chat response — suitable for pasting into PR descriptions, Slack, or any non-browser context — and a copy is saved to the same reports directory, so `report-manager` can list, search, and refine them later.
 
-**Artifact publishing — the default for HTML.** On a capable account, `doc-visual`, `diff-visual`, `plugin-visual` (`analyze` mode), and `context-health-visual` publish HTML reports as a claude.ai link out of the box — no flag. Add `--local` (or say "keep it local") to get a local design-system + Mermaid file instead — reach for it when you need an analytical chart type the Artifact channel degrades to a table, or Mermaid's zoom/pan/PNG export:
+**Artifact publishing — the default for HTML.** On a capable account, `doc-visual`, `diff-visual`, and `plugin-visual` (`analyze` mode) publish HTML reports as a claude.ai link out of the box — no flag. Add `--local` (or say "keep it local") to get a local design-system + Mermaid file instead — reach for it when you need an analytical chart type the Artifact channel degrades to a table, or Mermaid's zoom/pan/PNG export:
 
 | Format | Channel | Rendering |
 |---|---|---|

@@ -60,4 +60,3 @@ Match against section headers and body keywords. Interpret these semantically an
 | `doc-visual` | All types possible — depends on the source document's topic |
 | `diff-visual` | architecture, tree (file map), pyramid (change classification), quadrant (hot spots) |
 | `plugin-visual` | architecture (component map), sequence (invocation flow), tree |
-| `context-health-visual` | quadrant (skill density vs trigger collisions), timeline |
