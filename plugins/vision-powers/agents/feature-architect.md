@@ -573,7 +573,7 @@ Machine-parseable list for automated environment fit diagnosis.
 \`\`\`requirements
 name|type|required|help
 gh|CLI|required|Install: brew install gh
-claude-in-chrome|MCP|optional|Configure in ~/.claude/.mcp.json
+claude-in-chrome|MCP|optional|Add with claude mcp add
 GITHUB_TOKEN|ENV|optional|export GITHUB_TOKEN=<your-token>
 some-plugin|Plugin|optional|claude plugin add some-plugin
 \`\`\`

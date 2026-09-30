@@ -146,16 +146,16 @@ Comprehensive assessment of whether a plugin should be installed in the user's c
 
 ### Dependency Check
 
-Cross-reference external requirements against the user's environment:
+Cross-reference external requirements against the user's environment. `env-fit-scan.js --requirement <type>:<name>` checks each one (see `env-fit-diagnosis.md` Step 2):
 
 | Requirement Type | Check Method |
 |-----------------|-------------|
-| CLI tools | `which {tool}` |
-| MCP servers | `grep` in `~/.claude/.mcp.json` |
-| Environment variables | `test -n` |
-| Plugin dependencies | `ls ~/.claude/plugins/cache/` |
+| CLI tools | executable on PATH |
+| MCP servers | server name in `~/.claude.json` (user/local scope), project `.mcp.json`, or an enabled plugin |
+| Environment variables | set and non-empty |
+| Plugin dependencies | enabled in settings |
 
-All checks run in a single bash block. Each requirement has a required/optional classification and actionable help text from feature-architect.
+Each requirement has a required/optional classification and actionable help text from feature-architect.
 
 Dependency verdict:
 

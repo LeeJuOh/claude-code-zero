@@ -27,18 +27,12 @@ Extract these from the feature-architect output:
 ## Step 2: Run Environment Scan
 
 ```
-Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name})
+Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name} --requirement CLI:gh --requirement MCP:claude-in-chrome ...)
 ```
 
-Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. The script merges `enabledPlugins` across all three settings scopes (user → project → local) with later scopes overriding earlier ones, then filters all scan results to only include plugins enabled for the current project context. It outputs JSON with: `install_status`, `installed_plugins` (enabled only), `installed_skills` (with `total_desc_chars`, `disabled_count`), `installed_commands` (with `total_desc_chars`, `disabled_count`), `local_skills` (includes both skills and commands), `hook_inventory` (with `total`, `type_counts`; plugin hooks filtered by enabled), `context_metrics` (with `mcp_servers` from all 3 settings scopes), and `disabled_plugins` (list of explicitly disabled plugin names from merged settings).
+Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. Add one `--requirement <type>:<name>` per row of the `requirements` block from Step 1 (type is CLI, MCP, ENV, or Plugin); omit the flag when there is no block. Keep every check inside this one call — separate `which`/`grep`/`test` Bash calls are not in `allowed-tools` and stop the run on a permission prompt. The script merges `enabledPlugins` across all three settings scopes (user → project → local) with later scopes overriding earlier ones, then filters all scan results to only include plugins enabled for the current project context. It outputs JSON with: `install_status`, `installed_plugins` (enabled only), `installed_skills` (with `total_desc_chars`, `disabled_count`), `installed_commands` (with `total_desc_chars`, `disabled_count`), `local_skills` (includes both skills and commands), `hook_inventory` (with `total`, `type_counts`; plugin hooks filtered by enabled), `context_metrics` (with `mcp_servers`: user and local scope in `~/.claude.json`, project `.mcp.json`, and enabled plugins' MCP servers), `disabled_plugins` (list of explicitly disabled plugin names from merged settings), and `requirements` (`[{type, name, status}]`, one per `--requirement`).
 
-If the plugin has external requirements (from Step 1), also check them with simple commands:
-
-| Type | Check pattern | Status values |
-|------|--------------|---------------|
-| CLI | `which {name} >/dev/null 2>&1` | AVAILABLE / MISSING |
-| MCP | `grep -q '"{name}"' ~/.claude/.mcp.json 2>/dev/null` | AVAILABLE / MISSING |
-| ENV | `[ -n "${name}" ]` | SET / UNSET |
+Requirement status values: CLI → AVAILABLE / MISSING (executable on PATH); MCP → AVAILABLE / MISSING (server name in the same MCP locations); ENV → SET / UNSET; Plugin → AVAILABLE / MISSING (enabled in settings); UNKNOWN_TYPE for any other type.
 
 ## Step 3: Six Diagnostic Analyses
 

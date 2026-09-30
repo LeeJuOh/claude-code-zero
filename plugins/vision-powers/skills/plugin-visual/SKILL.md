@@ -5,7 +5,7 @@ description: >
   and architecture diagrams. Use when asked to analyze, audit, or document a plugin.
   Triggers on GitHub plugin URLs or local plugin paths.
 argument-hint: "path-or-url [--format html|md] [--lang code] [--local (force a local file instead of publishing)]"
-allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Artifact, Skill(artifact-design), Bash(gh repo clone *), Bash(rm -rf /tmp/plugin-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *), Bash(which *), Bash(echo *)
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion, Artifact, Skill(artifact-design), Bash(gh repo clone *), Bash(rm -rf /tmp/plugin-visual-*), Bash(git branch *), Bash(git log *), Bash(git rev-parse *), Bash(open *), Bash(node *)
 ---
 
 # Agent Extension Visual
@@ -257,7 +257,7 @@ Diagnose whether this plugin is a good fit for the user's current environment �
 
 **Full procedure**: Read `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/env-fit-diagnosis.md` for the detailed 5-step process covering:
 1. Extract plugin characteristics from feature-architect output (including rules, CLAUDE.md @imports, bundle source)
-2. Run the environment scan script (`env-fit-scan.js`) — collects installed plugins, skills, commands, hooks, MCP servers, context metrics
+2. Run the environment scan script (`env-fit-scan.js`) — collects installed plugins, skills, commands, hooks, MCP servers, context metrics, and the status of each external requirement
 3. Perform eight diagnostic analyses:
    - **Via script data** (steps 3A-3E, 3H): installation status, dependency check, context budget, functional overlap, hook impact, component dependencies
    - **Via orchestrator** (steps 3C extras, 3F, 3G): rules context cost (from feature-architect's rules analysis), CLAUDE.md @import chain, scope impact analysis, bundle source detection (from Phase 1 source context and plugin cache inspection)
@@ -266,7 +266,7 @@ Diagnose whether this plugin is a good fit for the user's current environment �
 
 The environment scan script provides baseline data:
 ```
-Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name})
+Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name} [--requirement <type>:<name> ...])
 ```
 
 The orchestrator then supplements with:
@@ -512,7 +512,6 @@ This is informational — just a brief suggestion, not an automatic invocation.
 ### Gotchas
 
 - **GitHub URL analysis requires `gh` CLI**: `gh repo clone` is used for source acquisition from GitHub URLs. If `gh` is not installed or not authenticated, GitHub URL analysis will fail. Local path and installed plugin analysis work without `gh`.
-- **`$()` command substitution triggers security prompt**: The `Bash(echo $(date))` pattern causes Claude Code to show a separate permission dialog regardless of `allowed-tools`. Use literal values or `Bash(date)` with separate processing instead.
 - **GitHub rate limiting**: `gh repo clone` and `gh api` calls can fail silently with HTTP 403 when the user's token is rate-limited. If clone fails, check `gh auth status` before retrying.
 - **Plugin cache has multiple versions**: `~/.claude/plugins/cache/` stores every installed version (e.g., `2.6.0/`, `2.7.1/`). Phase 4.5 uses the session context directly (not cache scanning), but if you ever need to inspect the cache manually, always pick the latest version per plugin to avoid counting stale entries.
 - **Large plugin batching threshold**: The 15-component threshold for splitting feature-architect is approximate. Plugins with many small commands but few skills may not need splitting, while plugins with 10 dense skills might. Use judgment — the goal is keeping each agent under context limits.
