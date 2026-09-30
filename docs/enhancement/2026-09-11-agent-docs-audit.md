@@ -7,37 +7,35 @@
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-10-01 14차 끝 → 15차)
+## 핸드오프 (2026-10-01 15차 끝 → 16차)
 
-> 15차 진행: 4단계 ✅ `00422aa`(#16 편입). 다음은 5단계. 아래 "첫 행동"은 14차 기준 기록.
+**목표:** P2(§2-1 vision-powers)를 끝내고 vision-powers 5.0.0을 배포한다. 7단계 중 1~4단계 완료, 5~7단계 남음 — §2-1 "P2 결정"(체크리스트)·"P2 구현 단계"(표).
 
-**목표:** P2(§2-1 vision-powers)를 끝낸다. 7단계 중 1~3단계는 14차에 끝났다. 남은 것은 4~7단계다 — §2-1 표 아래 "P2 결정"(체크리스트)과 "P2 구현 단계"(표).
+**첫 행동:** 먼저 한 줄로 묻는다 — "develop이 origin보다 11커밋 앞(`98dc130`부터 이 handoff 커밋까지, 양끝 포함), 지금 푸시할까요? 추천: 푸시(두 머신 작업)". 15차 끝에 물었으나 답을 못 받았다. 답을 받은 뒤 P2 5단계(#7 md 게시 규칙)를 `/skill-creator-pro`로 시작한다. 수정 방향은 §2-1 "P2 결정"의 #7 줄 — md는 "기본 로컬, 요청하면 Artifact 게시", 요청이면 플래그든 자연어든 묻지 않고 게시, 답변에 "Mermaid는 코드로 보인다" 한 줄. 고칠 곳(15차 grep, 줄 번호 대신 문구로 찾을 것):
+1. `plugins/vision-powers/references/design-system/channel-decision.md` — 채널 표의 `md` 행("Local (chat body + saved copy)")과 "`md` never changes … so md stays local" 문장.
+2. `docs/adr/0009-artifact-first-default-diagram-selection-channel-agnostic.md` — Decision 3의 "MD output (any account)" 항목. 개정 기록을 남긴다(ADR에 "§3" 제목은 없다 — Decision 번호 3).
+3. `plugins/vision-powers/skills/doc-visual/SKILL.md` — "Artifact intent expressed in natural language … ask once before publishing" 항목, "stays local either way" 문장, "Markdown format — Artifact channel" 절.
+4. 검증: 문구 대조(grep으로 "md stays local"·"ask once" 0건) → 커밋, 원장 체크박스는 별도 커밋.
 
-**첫 행동:** P2 4단계(plugin-visual 수치·색)를 바로 한다 — 사용자가 14차 끝에 "4단계는 다음 세션에서 이어서"라고 했다, 다시 묻지 않는다. `/skill-creator-pro`로 시작. 14차 끝에 grep으로 찾은 위치(줄 번호는 다시 확인):
-1. #2·#9 — `skills/plugin-visual/references/platforms/claude-code/analysis-criteria.md`의 "Skill Description Budget"(2%·16,000)·"MCP Tool Surface"("capped at 10%")·verdict 규칙 6("10% cap"), `env-fit-diagnosis.md`의 3C 예산 인용(2%·16,000)·verdict 규칙 6, `report-template.md` Context Budget 표의 `{16K}`·`{~80K}`·`{~20K}`·`{~100K}`. 수정 방향은 "P2 결정" #2·#9 줄 — 1% + `skillListingBudgetFraction`·`SLASH_COMMAND_TOOL_CHAR_BUDGET`·`skillListingMaxDescChars`, MCP 기본 deferred, 글자/토큰 환산은 "추정" 표시. 공식 skills.md·mcp.md는 `curl -sL https://code.claude.com/docs/en/{skills,mcp}.md`로 받아 수치를 확인한다.
-2. #14 — 노드 한도를 게이트(`scripts/artifact-gate.js`의 budget, SKILL.md "Max 9 nodes, 12 arrows")로 통일: `references/design-system/mermaid-patterns.md`("Max 15-20 nodes"), `agents/feature-architect.md`("~15 nodes max"), `skills/plugin-visual/SKILL.md`("keep under 25 nodes" 규칙과 Gotchas의 "Architecture diagrams with large plugins").
-3. #15(feature-architect violet classDef → slate), #23(feature-architect 품질 기준 → analysis-criteria SSOT), #28(`env-fit-diagnosis.md` "Six Diagnostic Analyses" → Eight, `skills-lock.json` 언급은 SKILL.md Gotchas·env-fit-diagnosis 3G·analysis-criteria bundle 표 세 곳).
-4. README는 1건만 남았다 — `README.md`의 "Skips gracefully when `claude-in-chrome` is unavailable"(render-report.js는 로컬 Chrome 사용). "4 specialized agents"는 1단계에서 2로 고쳤다.
-5. ⚠️ #16(mermaid-patterns "ELK default" 절 삭제)은 7단계 표 어디에도 없다 — 같은 파일이므로 4단계에 넣을 것을 제안한다(사용자에게 한 줄로 확인).
-6. 검증: grep(옛 수치가 0건), `node --test plugins/vision-powers/scripts/*.test.js`, `claude plugin validate .` → 커밋, 원장 체크박스는 별도 커밋.
-
-**그다음:** 5~7단계를 표 순서대로, 단계마다 커밋 + 검증. 원장 수정안대로 하되 **수정안과 달라질 때만 묻는다**(13차 합의). 7단계가 끝나면 vision-powers 5.0.0 배포(`docs/release-workflow.md`, 1단계 fetch·`origin/main` 비교 필수).
-- 버전: P2 단계들은 5.0.0 하나로 묶었다(14차 내 결정 — 배포 전이라 단계마다 bump 안 함). 사용자에게 따로 묻지 않았다.
+**그다음:** 6단계(#5·#10·#25·#27·#29·#31) → 7단계(#18~#21·#24·#26, 옛/새 eval) → vision-powers 5.0.0 배포(`docs/release-workflow.md`, 1단계 fetch·`origin/main` 비교 필수). 원장 수정안대로 하되 **수정안과 달라질 때만 묻는다**(13차 합의).
+- 버전: P2 단계들은 5.0.0 하나로 묶는다(배포 전이라 단계마다 bump 안 함).
 - 7단계 eval의 옛 버전 기준: `git archive 694f452 plugins/vision-powers`(P2 전) 또는 13차 스냅샷 `~/.claude/plugins/data/skill-creator-pro-claude-code-zero/vision-powers-p2/skill-snapshot/`.
-- 미푸시: develop이 `origin/develop`보다 7커밋 앞(`98dc130`~`16aba53`). 14차에 푸시 여부를 묻지 않았다 — 15차 시작 보고에 한 줄로 물을 것.
 - 10차부터 미답(급하지 않음): gotchas.md "Plugin variables in the Bash tool"에 한 줄 — hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 실측).
 - P3 후보(14차 부수 발견): security-auditor 실행 3번 모두 codex-advisor 스킬 10개의 bare `Bash` allowed-tools를 CRITICAL로 보고.
+- P2 뒤 순서: P3 codex-advisor → P4 rubber-duck-tutor → P5 skill-creator-pro → P6 claw-mux·notebooklm → P7 나머지(vibeproxy-kit 맨 끝). S5는 원 작성 머신에서만.
 
-**14차 요약:** P2 1~3단계. 1단계 `3abe3ee` — context-health-visual·trigger-collision-inspector·coherence-reviewer 삭제 + 참조 정리 + 5.0.0. 2단계 `10686fd` — security-auditor가 hook 이벤트를 공식 hooks.md에서 WebFetch로 판정, Context Modifiers는 security-rules.md를 경로로 읽음. 3단계 `d156085` — 의존성 확인을 `env-fit-scan.js --requirement TYPE:NAME`로, MCP 위치 교정, `Bash(which *)`·`Bash(echo *)` 삭제. 상세·검증은 §2-1 "P2 결정" 아래 14차 줄.
+**15차 요약:** P2 4단계 `00422aa` + 원장 `70417be`. #2·#9 예산을 공식 수치로(목록 1%, 항목당 1,536자, MCP는 tool search로 기본 deferred), #14 노드 한도 → `diagram-density-rules.md` 포인터, #15 slate, #16 ELK 절 삭제(사용자 승인으로 4단계에 편입), #23 품질 기준 → analysis-criteria SSOT, #28 "Eight"·`installed_plugins.json`, README Chrome 문구. 상세는 §2-1 "P2 구현 단계" 표 아래 15차 줄.
 
-**14차 교훈**
-- ⚠️ auto mode 분류기가 `git rm -r`(스킬 폴더 삭제)을 "Irreversible Local Destruction"으로 막았고, 이어서 참조를 찾는 grep까지 "같은 결과 추구"로 막았다. 사용자에게 직접 실행을 부탁했더니 "너가 해 걍 못하겟어?" → 사용자의 명시 지시 뒤 재시도는 통과. 막히면 우회하지 말고 바로 멈춰 한 줄로 묻는다.
-- ⚠️ 2단계 시작에 "공식 hooks 문서를 다시 받는다"고 했다가 "왜 공식 후크문서를 다시받아? 스킬 하면 모델이 공식문서 보도록 유도하도록 수정하는거 아니었음?" — 13차 결정(런타임에 모델이 공식 문서를 보게)을 잊은 것처럼 들렸다. 실제 목적은 에이전트에 적을 절 제목이 원문에 있는지 확인(grep 한 번)이었다. 무엇을 왜 받는지 먼저 말한다.
-- ⚠️ 3단계에 plugin-visual 실제 실행(1회 10분+)을 걸었다가 "저건 오래걸리는데 굳이 해야햇나" → 취소. 이 머신은 `permissions.defaultMode: auto`라 `claude -p`에서 권한 프롬프트 검증은 원래 불가능했다. 긴 e2e는 무엇을 판별하는지 먼저 따지고, 단위 테스트로 충분하면 생략한다.
-- ⚠️ `claude -p … --allowedTools "A B" "프롬프트"`는 `--allowedTools`가 가변 인자라 프롬프트를 삼킨다("Input must be provided") → 프롬프트는 stdin으로(`printf %s "$PROMPT" | claude -p …`). 부모의 `--allowedTools`에 WebFetch가 없어도 서브에이전트의 WebFetch(code.claude.com)는 막히지 않았다.
-- ⚠️ 테스트에서 PATH를 샌드박스로 바꾸면 `execFileSync('node', …)`가 ENOENT → `process.execPath`.
-- ✅ 13차 합의("수정안과 달라질 때만 묻는다")대로 단계마다 "결론 + 질문 하나 + 추천"으로 보고하니 "가자"·"ㅇㅇ"로 바로 진행됐다.
-- 13차에서 이어지는 것: 심각도 라벨(med·low)을 "안 고쳐도 됨"으로 번역하지 않는다. 추상 표현 대신 구체 예로 말한다. 스킬 목록 예산 "1%"가 글자인지 토큰인지 공식 문서에 없다 — #2에서 "추정"으로 표시. 이 원장이 handoff다(toolbox handoff 설정은 `docs/handoff/vision-powers`를 가리키지만 별도 파일을 만들지 않는다).
+**15차 결정**
+- 원장 수정안과 다르게 `env-fit-scan.js`가 `context_metrics.skill_listing`(`budget_fraction`·`char_budget_override`·`max_desc_chars`)과 `mcp_tool_loading`을 낸다 — 문서만 고치면 모델이 사용자 설정(예: `skillListingBudgetFraction: 0.02`)을 볼 길이 없다. 사용자가 "추천대로"로 유지 승인.
+- "8,000자 fallback"은 적지 않는다 — 공식 skills.md에는 없고 env-vars.md의 `SLASH_COMMAND_TOOL_CHAR_BUDGET` 행에만 남아 있다(두 문서 불일치).
+
+**15차 교훈**
+- ⚠️ 수정안과 다른 점을 "예산 설정 3개와 MCP 로딩 방식을 결과에 넣게 했어요"·"env-vars.md에 fallback이 있어요"로 보고했더니 "먼소리여". 구체 예(`"skillListingBudgetFraction": 0.02`면 예산 2%인데 모델이 못 봄)로 다시 설명하니 바로 "추천대로". 처음부터 예시로 말한다.
+- ⚠️ 수정안과 다른 설계(스크립트 확장)는 묻지 않고 해 버렸다 — 결과는 승인됐지만 합의("달라질 때만 묻는다")대로라면 고치기 전에 한 줄로 물었어야 한다.
+- ⚠️ 한국어가 든 python을 `python3 - <<'EOF'`로 넘기면 "Non-UTF-8 code" SyntaxError가 났다 → scratchpad에 `.py` 파일로 쓰고(`# -*- coding: utf-8 -*-`, `open(..., encoding='utf-8')`) 실행.
+- ✅ 4단계는 grep + `node --test` + validate로 검증했고 긴 e2e는 돌리지 않았다(14차 교훈대로) — 문제 없었다.
+- 14차에서 이어지는 것: auto mode 분류기가 막으면 우회하지 말고 바로 한 줄로 묻는다. 무엇을 왜 받는지(공식 문서 fetch 등) 먼저 말한다. `claude -p … --allowedTools`는 프롬프트를 삼키므로 stdin으로. 테스트에서 PATH를 바꾸면 `process.execPath`. 심각도 라벨(med·low)을 "안 고쳐도 됨"으로 번역하지 않는다. 이 원장이 handoff다(toolbox handoff 설정은 `docs/handoff/vision-powers`를 가리키지만 별도 파일을 만들지 않는다).
 
 **12차에서 이어지는 주의:** 두 머신에서 작업한다 — 배포 때 release-workflow 1단계(fetch·`origin/main` 비교)를 건너뛰지 않는다(12차 로컬 `main`이 23커밋 뒤였음).
 
@@ -60,7 +58,7 @@
 - ⚠️ 모델은 한국어로 답한다(전역 CLAUDE.md) — 채점 정규식을 영어 단어로만 걸지 않는다. 스킬 흐름의 전제 조건도 맞춘다(9차 `/duck-orient`는 `.claude/orientation.md`가 있어야 gap을 확인하는데 없는 레포로 돌렸다).
 - ⚠️ macOS bash 3.2: `declare -A` 없음, `set -u`에서 빈 배열 `"${a[@]}"`는 오류(`${a[@]+"${a[@]}"}`), `timeout` 없음(`perl -e 'alarm shift; exec @ARGV' 600 …`).
 
-- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 10차: worktree-plus(§2-7 #25) `231504a`(3.2.0). 11차: worktree-plus(§2-7 #28·#29) `b451fb8`(3.2.1) — 그릴링으로 버그 하나씩 방향 확정. e2e-test-runner 플러그인 삭제 `e69be21` — §2-7 #6을 보고하자 사용자가 삭제를 물었고, 3월 이후 방치·옛 SDK(`@anthropic-ai/claude-code@^1.0.77`의 `query`, SDK는 지금 `@anthropic-ai/claude-agent-sdk`)·열린 버그 3건(#3·#6·#7)으로 삭제 추천 → 승인. README 두 곳의 Lab 절(이 플러그인뿐)도 삭제. 12차: v1.84.0 배포 `ee4f077`(P1 나머지). 13차: P2 결정(원장만). 14차: P2 1~3단계 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 미배포). 상세는 각 행.
+- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 10차: worktree-plus(§2-7 #25) `231504a`(3.2.0). 11차: worktree-plus(§2-7 #28·#29) `b451fb8`(3.2.1) — 그릴링으로 버그 하나씩 방향 확정. e2e-test-runner 플러그인 삭제 `e69be21` — §2-7 #6을 보고하자 사용자가 삭제를 물었고, 3월 이후 방치·옛 SDK(`@anthropic-ai/claude-code@^1.0.77`의 `query`, SDK는 지금 `@anthropic-ai/claude-agent-sdk`)·열린 버그 3건(#3·#6·#7)으로 삭제 추천 → 승인. README 두 곳의 Lab 절(이 플러그인뿐)도 삭제. 12차: v1.84.0 배포 `ee4f077`(P1 나머지). 13차: P2 결정(원장만). 14차: P2 1~3단계 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 미배포). 15차: P2 4단계 `00422aa`. 상세는 각 행.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
@@ -75,7 +73,7 @@
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
 | P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, ~~§2-4 #1·#21~~ ✅ `d7ea71d`, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, ~~§2-7 #1·#2~~ ✅ `ebbdffa`, ~~§2-7 #6~~ ✅ 플러그인 삭제 `e69be21` | — (Q11은 "우선순위 순 하나씩"으로 대체) |
-| P2 | §2-1 vision-powers 나머지 — 13차에 결정 완료, 7단계로 나눔(§2-1 "P2 결정"·"P2 구현 단계"). 14차 1~3단계 ✅, 4~7단계 남음 | ~~#10~~ 13차 결정 |
+| P2 | §2-1 vision-powers 나머지 — 13차에 결정 완료, 7단계로 나눔(§2-1 "P2 결정"·"P2 구현 단계"). 14차 1~3단계 ✅, 15차 4단계 ✅, 5~7단계 남음 | ~~#10~~ 13차 결정 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
 | P5 | §2-2 skill-creator-pro(#15 `claude plugin eval` 분기 포함) | #9 |
