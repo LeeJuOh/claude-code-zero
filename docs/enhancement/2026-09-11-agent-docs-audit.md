@@ -11,7 +11,7 @@
 
 **목표:** P2(§2-1 vision-powers)를 끝내고 vision-powers 5.0.0을 배포한다. 7단계 중 1~4단계 완료, 5~7단계 남음 — §2-1 "P2 결정"(체크리스트)·"P2 구현 단계"(표).
 
-**첫 행동:** 먼저 한 줄로 묻는다 — "develop이 origin보다 11커밋 앞(`98dc130`부터 이 handoff 커밋까지, 양끝 포함), 지금 푸시할까요? 추천: 푸시(두 머신 작업)". 15차 끝에 물었으나 답을 못 받았다. 답을 받은 뒤 P2 5단계(#7 md 게시 규칙)를 `/skill-creator-pro`로 시작한다. 수정 방향은 §2-1 "P2 결정"의 #7 줄 — md는 "기본 로컬, 요청하면 Artifact 게시", 요청이면 플래그든 자연어든 묻지 않고 게시, 답변에 "Mermaid는 코드로 보인다" 한 줄. 고칠 곳(15차 grep, 줄 번호 대신 문구로 찾을 것):
+**첫 행동:** 15차 끝에 사용자가 develop을 푸시했다(`694f452..0de0cf2`). P2 5단계(#7 md 게시 규칙)를 `/skill-creator-pro`로 시작한다. 수정 방향은 §2-1 "P2 결정"의 #7 줄 — md는 "기본 로컬, 요청하면 Artifact 게시", 요청이면 플래그든 자연어든 묻지 않고 게시, 답변에 "Mermaid는 코드로 보인다" 한 줄. 고칠 곳(15차 grep, 줄 번호 대신 문구로 찾을 것):
 1. `plugins/vision-powers/references/design-system/channel-decision.md` — 채널 표의 `md` 행("Local (chat body + saved copy)")과 "`md` never changes … so md stays local" 문장.
 2. `docs/adr/0009-artifact-first-default-diagram-selection-channel-agnostic.md` — Decision 3의 "MD output (any account)" 항목. 개정 기록을 남긴다(ADR에 "§3" 제목은 없다 — Decision 번호 3).
 3. `plugins/vision-powers/skills/doc-visual/SKILL.md` — "Artifact intent expressed in natural language … ask once before publishing" 항목, "stays local either way" 문장, "Markdown format — Artifact channel" 절.
