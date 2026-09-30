@@ -113,3 +113,32 @@ test('ENV, Plugin, and unknown-type requirements', () => {
     assert.ok(!JSON.stringify(result).includes('secret'));
   });
 });
+
+test('context_metrics reports official defaults when nothing is set', () => {
+  withSandbox((box) => {
+    const { context_metrics: m } = runScan(box, []);
+    assert.deepStrictEqual(m.skill_listing, { budget_fraction: 0.01, char_budget_override: null, max_desc_chars: 1536 });
+    assert.strictEqual(m.mcp_tool_loading, 'deferred');
+  });
+});
+
+test('context_metrics merges skill listing settings user → project → local and reads the char budget env var', () => {
+  withSandbox((box) => {
+    writeJson(path.join(box.home, '.claude', 'settings.json'), { skillListingBudgetFraction: 0.02, skillListingMaxDescChars: 1000 });
+    writeJson(path.join(box.project, '.claude', 'settings.local.json'), { skillListingMaxDescChars: 2048 });
+    const { context_metrics: m } = runScan(box, [], { SLASH_COMMAND_TOOL_CHAR_BUDGET: '12000' });
+    assert.deepStrictEqual(m.skill_listing, { budget_fraction: 0.02, char_budget_override: 12000, max_desc_chars: 2048 });
+  });
+});
+
+test('mcp_tool_loading follows ENABLE_TOOL_SEARCH and ANTHROPIC_BASE_URL', () => {
+  withSandbox((box) => {
+    const mode = (env) => runScan(box, [], env).context_metrics.mcp_tool_loading;
+    assert.strictEqual(mode({ ENABLE_TOOL_SEARCH: 'false' }), 'upfront');
+    assert.strictEqual(mode({ ENABLE_TOOL_SEARCH: 'auto:5' }), 'threshold');
+    assert.strictEqual(mode({ ANTHROPIC_BASE_URL: 'https://proxy.example.com' }), 'upfront');
+    assert.strictEqual(mode({ ANTHROPIC_BASE_URL: 'https://api.anthropic.com' }), 'deferred');
+    assert.strictEqual(mode({ ANTHROPIC_BASE_URL: 'https://proxy.example.com', ENABLE_TOOL_SEARCH: 'true' }), 'deferred');
+    assert.strictEqual(mode({ CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: '1', ENABLE_TOOL_SEARCH: 'true' }), 'upfront');
+  });
+});

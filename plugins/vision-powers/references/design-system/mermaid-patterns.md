@@ -381,28 +381,6 @@ document.addEventListener('keydown', function(e) {
 }
 ```
 
-## ELK Layout
-
-All templates use ELK (Eclipse Layout Kernel) as the default renderer for flowcharts. ELK produces cleaner vertical layouts than dagre, especially for complex graphs with 10+ nodes and subgraphs.
-
-The ELK module is imported alongside Mermaid in the template:
-
-```html
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs';
-  mermaid.registerLayoutLoaders(elkLayouts);
-  mermaid.initialize({
-    startOnLoad: true, theme: 'base', look: 'classic',
-    securityLevel: 'loose',
-    flowchart: { defaultRenderer: 'elk' },
-    themeVariables: { /* ... */ }
-  });
-</script>
-```
-
-ELK only applies to flowchart/graph diagrams. Other diagram types (sequence, ER, state, etc.) use their own renderers and are unaffected.
-
 ## Click Events
 
 Mermaid nodes can be made clickable to enable in-report navigation. Templates use `securityLevel: 'loose'` which enables this.
@@ -481,7 +459,7 @@ Prefer `TD` (top-down) over `LR` (left-to-right). LR spreads horizontally and sc
 
 ### Node Count
 
-Max 15-20 nodes per diagram. Beyond that, use `subgraph` blocks or split into multiple diagrams.
+Follow the per-type budget in `diagram-density-rules.md` — the artifact gate fails a flowchart over 9 nodes or 12 arrows. Over budget, split into an overview plus detail diagrams.
 
 ### Special Characters
 

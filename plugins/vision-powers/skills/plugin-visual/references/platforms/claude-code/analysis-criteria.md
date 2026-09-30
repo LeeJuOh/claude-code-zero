@@ -80,17 +80,17 @@ PASS/FAIL items — objective checks only:
 
 Classify each active skill into one of the 9 functional categories. This reveals the plugin's purpose and capability spread.
 
-| Category | Icon | Purpose |
-|----------|------|---------|
-| Library & API Reference | `scope-badge--info` | Knowledge about how to use libraries, CLIs, SDKs |
-| Product Verification | `scope-badge--success` | Testing and verifying code output |
-| Data Fetching & Analysis | `scope-badge--info` | Connecting to data and monitoring stacks |
-| Business Process & Team Automation | `scope-badge--warning` | Automating repetitive team workflows |
-| Code Scaffolding & Templates | `scope-badge--info` | Generating framework boilerplate |
-| Code Quality & Review | `scope-badge--success` | Enforcing code quality standards |
-| CI/CD & Deployment | `scope-badge--warning` | Fetching, pushing, and deploying code |
-| Runbooks | `scope-badge--danger` | Multi-tool investigation from symptoms to reports |
-| Infrastructure Operations | `scope-badge--danger` | Routine maintenance and operational procedures |
+| Category | Icon | Purpose | Detection heuristics | Examples |
+|----------|------|---------|---------------------|----------|
+| Library & API Reference | `scope-badge--info` | Knowledge about how to use libraries, CLIs, SDKs | Pure knowledge/guidance; description mentions "how to use", "conventions", "patterns", "gotchas"; has `references/` with API docs or code snippets | billing-lib, frontend-design |
+| Product Verification | `scope-badge--success` | Testing and verifying code output | Description mentions "test", "verify", "validate", "assert", "check"; uses Bash with test runners (playwright, jest, tmux); has scripts/ with test helpers | signup-flow-driver, checkout-verifier |
+| Data Fetching & Analysis | `scope-badge--info` | Connecting to data and monitoring stacks | Description mentions "query", "data", "metrics", "dashboard", "analytics"; uses Bash with data tools (bq, psql, curl to APIs); references datasource IDs or table names | funnel-query, grafana |
+| Business Process & Team Automation | `scope-badge--warning` | Automating repetitive team workflows | Description mentions "standup", "ticket", "recap", "post", "notify", "workflow"; integrates with Slack, Linear, Jira, GitHub Issues; saves log files for history | standup-post, weekly-recap |
+| Code Scaffolding & Templates | `scope-badge--info` | Generating framework boilerplate | Description mentions "scaffold", "generate", "create", "new", "template", "boilerplate"; has `templates/` or `assets/` with template files; produces new files | new-migration, create-app |
+| Code Quality & Review | `scope-badge--success` | Enforcing code quality standards | Description mentions "review", "lint", "style", "quality", "refactor"; may spawn review subagents; uses Git diff patterns; has style rules or checklists | adversarial-review, code-style |
+| CI/CD & Deployment | `scope-badge--warning` | Fetching, pushing, and deploying code | Description mentions "deploy", "build", "release", "merge", "PR", "pipeline"; uses gh/git CLI heavily; monitors CI status | babysit-pr, deploy-service |
+| Runbooks | `scope-badge--danger` | Multi-tool investigation from symptoms to reports | Description mentions "debug", "investigate", "diagnose", "incident", "alert", "oncall"; multi-tool investigation workflow; produces structured reports | service-debugging, oncall-runner |
+| Infrastructure Operations | `scope-badge--danger` | Routine maintenance and operational procedures | Description mentions "cleanup", "orphan", "cost", "dependency", "maintenance"; involves destructive actions with guardrails; uses cloud/container CLIs | resource-orphans, cost-investigation |
 
 Use the distribution to characterize the plugin: a plugin with mostly "Library & API Reference" skills is a knowledge-focused library; one with "CI/CD" + "Runbooks" is an operations toolkit.
 
@@ -138,7 +138,7 @@ Comprehensive assessment of whether a plugin should be installed in the user's c
 3. DUPLICATE skill with HIGH trigger collision → at least REDUNDANT
 4. Multiple OVERLAP findings covering > 50% of plugin's skills → at least REDUNDANT
 5. Skill description budget exceeded in the user's context scenario → at least CONDITIONAL; exceeded in both 200K and 1M → CONFLICTING
-6. MCP tool surface would exceed 10% cap in the user's context scenario → at least CONDITIONAL; exceeded in both → CONFLICTING
+6. MCP tools load upfront (`mcp_tool_loading` is `upfront`, or the plugin's server sets `alwaysLoad: true`) and the projected upfront tool tokens exceed 10% of the context window in the user's scenario → at least CONDITIONAL; exceeded in both → CONFLICTING. With tool search deferring them (the default), MCP tools do not affect the verdict
 7. Cross-plugin component dependency MISSING → at least CONDITIONAL
 8. Projected hooks > 15 or hook context injection HIGH → at least CONDITIONAL
 9. Scope conflicts: plugin hooks/MCP collide with project-level configs on same event/name → at least CONDITIONAL
@@ -178,20 +178,26 @@ Evaluate the plugin's impact on the Claude Code context window using the **alway
 | Category | Loading | Examples |
 |----------|---------|----------|
 | **Always-loaded** | Injected at session start, consumes tokens immediately | Skill/command descriptions, Rules (without `paths:`), CLAUDE.md + @imports, agent/command definitions |
-| **Deferred** | Reserved but loaded on-demand | MCP tool schemas (~90% of MCP tokens), memory files, Rules with `paths:`, skills with `disable-model-invocation` |
+| **Deferred** | Loaded on demand | MCP tool definitions (tool search, the default — only tool names and server instructions load at session start), Rules with `paths:`, skills with `disable-model-invocation` |
 
 #### Skill Description Budget (Always-Loaded)
 
-Claude loads all skill and command descriptions (from those without `disable-model-invocation: true`) at session start. Official budget (source: [Skills docs](https://code.claude.com/docs/en/skills#troubleshooting)): **2% of context window, with 16,000 character fallback** when context window size cannot be determined. Overridable via `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var.
+Claude sees a listing of every skill and command name with its description (items without `disable-model-invocation: true`). Official rules (source: [Skills docs](https://code.claude.com/docs/en/skills#skill-descriptions-are-cut-short)):
 
-| Window | Budget | Derivation | Threshold (HIGH) | Threshold (MEDIUM) |
+- The listing's character budget is **1% of the context window** by default. `skillListingBudgetFraction` changes the fraction; the `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var sets a fixed character count.
+- Each entry's `description` + `when_to_use` text is cut at **1,536 characters** (`skillListingMaxDescChars`), regardless of budget.
+- Over budget, every name stays but the descriptions of the least-used skills are dropped — Claude can still invoke those skills but is less likely to pick them on its own.
+
+`env-fit-scan.js` reports the values in effect as `context_metrics.skill_listing` (`budget_fraction`, `char_budget_override`, `max_desc_chars`). The docs do not say how the 1% maps from tokens to characters; the ~4 chars/token conversion below is an **estimate** — label it so in the report.
+
+| Window | Budget (default 1%) | Derivation (estimate) | Threshold (HIGH) | Threshold (MEDIUM) |
 |--------|--------|------------|-------------------|---------------------|
-| 200K | ~16,000 chars | 2% × 200K tokens × ~4 chars/token (coincides with fallback) | Projected > 14,000 chars (87%) | Projected > 10,000 chars (62%) |
-| 1M | ~80,000 chars | 2% × 1M tokens × ~4 chars/token | Projected > 70,000 chars (87%) | Projected > 50,000 chars (62%) |
+| 200K | ~8,000 chars | 1% × 200K tokens × ~4 chars/token | Projected > 87% of budget | Projected > 62% of budget |
+| 1M | ~40,000 chars | 1% × 1M tokens × ~4 chars/token | Projected > 87% of budget | Projected > 62% of budget |
 
-Skills and commands with `disable-model-invocation: true` have zero always-on cost — exclude from calculation.
+Scale the budget by `budget_fraction / 0.01`; when `char_budget_override` is set, use it for both windows. Count each entry at most `max_desc_chars`. Skills and commands with `disable-model-invocation: true` have zero always-on cost — exclude them.
 
-> **Note**: Both skills (`skills/*/SKILL.md`) and commands (`commands/*.md`) consume context budget. The env-fit-scan.js script counts both. If `SLASH_COMMAND_TOOL_CHAR_BUDGET` is set, use that value instead of the calculated budget.
+> **Note**: Both skills (`skills/*/SKILL.md`) and commands (`commands/*.md`) consume the listing budget. The env-fit-scan.js script counts both.
 
 #### Rules Context Cost (Always-Loaded / Deferred)
 
@@ -201,16 +207,19 @@ Rules without `paths:` frontmatter load their full content at session start (alw
 
 If the plugin includes a CLAUDE.md, trace `@import` directives (up to 5 hops). Each imported file is always-loaded. Report total files in chain and estimated token cost (`total_bytes / 4`).
 
-#### MCP Tool Surface (Deferred)
+#### MCP Tool Surface
 
-MCP tool definitions load at session start, capped at 10% of context. Excess tools are deferred until needed.
+Official rule (source: [MCP docs](https://code.claude.com/docs/en/mcp#scale-with-mcp-tool-search)): tool search is on by default — MCP tool definitions are deferred, and only tool names and server instructions load at session start. `env-fit-scan.js` reports the mode in effect as `context_metrics.mcp_tool_loading`:
 
-| Window | Budget | Threshold (HIGH) | Threshold (MEDIUM) |
-|--------|--------|-------------------|---------------------|
-| 200K | ~20,000 tokens | Projected > 18,000 tokens | Projected > 12,000 tokens |
-| 1M | ~100,000 tokens | Projected > 90,000 tokens | Projected > 60,000 tokens |
+| Mode | When | Context cost |
+|------|------|--------------|
+| `deferred` | Default | Tool names + server instructions only — minimal |
+| `upfront` | `ENABLE_TOOL_SEARCH=false`, `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` set, or `ANTHROPIC_BASE_URL` pointing to a non-first-party host | Every tool definition at session start |
+| `threshold` | `ENABLE_TOOL_SEARCH=auto[:N]` | Upfront while definitions stay under N% (default 10%) of the context window, then deferred |
 
-Estimation heuristic (not from official docs): ~200 tokens per tool definition, ~25 tools per MCP server. Actual values vary by server — treat as rough approximation.
+A server with `alwaysLoad: true` in its config loads its tools upfront in every mode — check the plugin's `.mcp.json`.
+
+Upfront cost estimate (not from official docs): ~200 tokens per tool definition, ~25 tools per MCP server. Compare the upfront total against 10% of the context window (~20,000 tokens at 200K, ~100,000 at 1M) — the same line `auto` mode uses. Label the numbers as estimates.
 
 #### Hook Context Injection (Per-Event)
 
@@ -294,7 +303,7 @@ Identify the plugin's installation provenance for transparency.
 
 | Source | Detection | Badge |
 |--------|-----------|-------|
-| Marketplace | `skills-lock.json` entry with marketplace identifier, or cache path pattern | `scope-badge--info` |
+| Marketplace | `name@marketplace` key in `~/.claude/plugins/installed_plugins.json`, or cache path pattern | `scope-badge--info` |
 | Local | Symlinked cache entry, or source in current working directory | `scope-badge--success` |
 | GitHub | `repository` field in plugin.json pointing to github.com | `scope-badge--warning` |
 | Unknown | No definitive signal | `scope-badge--low` |

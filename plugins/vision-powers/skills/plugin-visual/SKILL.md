@@ -356,7 +356,7 @@ Key diagram rules (always apply):
 3. No `rgba()` or `color:` in Mermaid classDef — parser breaks
 4. No violet/fuchsia "AI purple" hexes (`#8b5cf6`/`#7c3aed`/`#a78bfa`/`#d946ef`) — the gate fails on these
 5. Always `theme: 'base'` with themeVariables from semantic-tokens
-6. Architecture diagrams with 15+ components → show 3-5 representatives per layer with total counts, keep under 25 nodes
+6. Architecture diagrams with 15+ components → show 3-5 representatives per layer with total counts, or split into an overview plus per-layer diagrams, so each stays within rule 1
 
 The gate also fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders.
 
@@ -524,11 +524,10 @@ This is informational — just a brief suggestion, not an automatic invocation.
 - **Instruction layer analysis false positives**: Step 10 of the security-auditor analyzes SKILL.md body text for adversarial patterns (env var exfiltration, obfuscation, undeclared URLs). Setup/config skills that reference env var names as documentation, API skills with endpoint URLs, and encoding skills with base64 examples will trigger pattern matches. Context Modifiers handle common cases, but review flagged findings carefully — a MEDIUM on a config skill's env var reference is usually informational, not a real threat.
 - **Mermaid node labels with special chars**: Node labels containing `:`, `/`, `<`, `>` must be double-quoted in Mermaid code (`C1["gsd:new-project"]` not `C1[gsd:new-project]`). Unquoted special chars cause Mermaid parsing errors.
 - **Command-based plugins and empty Skill Design Quality**: Plugins built on `commands/` instead of `skills/` will have empty skill_design_quality data. Adapt analysis for command-based plugins rather than leaving sections empty.
-- **Architecture diagrams with large plugins**: Plugins with 15+ components → show 3-5 representatives per architectural layer with total counts, keep under 25 nodes per diagram.
 - **Discovery phase must use Glob only, never Bash**: Phase 2 file discovery must use Glob calls exclusively. Bash calls like `ls` or `find` are not in `allowed-tools` and trigger a user permission prompt that blocks execution (observed: 185s wait). All file listing needs are covered by Glob patterns — there is no case where Bash is needed for discovery.
 - **Rules with `paths:` frontmatter are deferred**: Rules that have a `paths:` field in frontmatter are NOT always-loaded — they only activate when matching file paths are in context. Treat them as zero always-on cost in context budget analysis. Rules WITHOUT `paths:` load their full content at session start.
 - **Plugin settings.json only supports `agent` field**: A plugin's `settings.json` at the root level only supports the `agent` field for setting a default agent. It does NOT support `permissions`, `hooks`, or other settings — these are silently ignored. Don't report unsupported settings as features.
-- **Bundle source detection is best-effort**: `skills-lock.json` may not exist in older installations, and cache path patterns can vary. Always fall back to plugin.json `repository` field or mark as `unknown`. Don't report missing provenance as a security issue.
+- **Bundle source detection is best-effort**: `~/.claude/plugins/installed_plugins.json` has no entry for a plugin loaded with `--plugin-dir`, and cache path patterns can vary. Always fall back to plugin.json `repository` field or mark as `unknown`. Don't report missing provenance as a security issue.
 - **Scope impact for marketplace plugins**: All marketplace-installed plugins operate at the global scope. Their hooks fire for every project. If the plugin is highly framework-specific (e.g., React, Django), note this as a scope appropriateness concern — the user may want to conditionally disable it for non-matching projects.
 - **Context budget empirical grounding**: Context budget recommendations reference empirical estimates of ~20% structural waste in production sessions (unused tools, duplicates, stale results). Use this as motivation for context-aware recommendations, but note it's a general finding — individual plugin impact varies.
 

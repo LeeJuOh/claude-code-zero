@@ -496,6 +496,45 @@ function collectMcpServerNames(enabledPlugins, activeInstallPaths) {
   return names;
 }
 
+/** Skill listing budget and MCP loading mode, from the official settings and
+ *  env vars (skills.md "Skill descriptions are cut short", mcp.md "Configure
+ *  tool search"). Settings merge user → project → local; env vars reach this
+ *  script through the Bash tool's environment. */
+function readContextSettings() {
+  const settings = {};
+  for (const sf of [expandHome("~/.claude/settings.json"), ".claude/settings.json", ".claude/settings.local.json"]) {
+    try {
+      const data = JSON.parse(fs.readFileSync(sf, "utf-8"));
+      for (const key of ["skillListingBudgetFraction", "skillListingMaxDescChars"]) {
+        if (typeof data[key] === "number") settings[key] = data[key];
+      }
+    } catch { /* skip */ }
+  }
+  const charBudget = Number.parseInt(process.env.SLASH_COMMAND_TOOL_CHAR_BUDGET, 10);
+
+  // Tool search defers MCP tool definitions by default. It is off when
+  // ENABLE_TOOL_SEARCH=false, when experimental betas are disabled, or (unless
+  // ENABLE_TOOL_SEARCH is set) when ANTHROPIC_BASE_URL is a non-first-party host.
+  const toolSearch = (process.env.ENABLE_TOOL_SEARCH || "").toLowerCase();
+  let mcpLoading = "deferred";
+  if (process.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS || toolSearch === "false") mcpLoading = "upfront";
+  else if (toolSearch.startsWith("auto")) mcpLoading = "threshold";
+  else if (!toolSearch && process.env.ANTHROPIC_BASE_URL) {
+    let host = "";
+    try { host = new URL(process.env.ANTHROPIC_BASE_URL).hostname; } catch { /* unparsable → treat as proxy */ }
+    if (host !== "api.anthropic.com") mcpLoading = "upfront";
+  }
+
+  return {
+    skill_listing: {
+      budget_fraction: settings.skillListingBudgetFraction ?? 0.01,
+      char_budget_override: Number.isFinite(charBudget) && charBudget > 0 ? charBudget : null,
+      max_desc_chars: settings.skillListingMaxDescChars ?? 1536,
+    },
+    mcp_tool_loading: mcpLoading,
+  };
+}
+
 function isOnPath(command) {
   const exts = process.platform === "win32" ? (process.env.PATHEXT || ".EXE").split(";") : [""];
   for (const dir of (process.env.PATH || "").split(path.delimiter)) {
@@ -545,7 +584,7 @@ function main() {
     installed_commands: scanInstalledCommands(enabledPlugins, activeInstallPaths),
     local_skills: scanLocalSkills(),
     hook_inventory: scanHookInventory(enabledPlugins),
-    context_metrics: { mcp_servers: mcpNames.size },
+    context_metrics: { mcp_servers: mcpNames.size, ...readContextSettings() },
     disabled_plugins: [...disabledPlugins],
     requirements: checkRequirements(args.requirements, enabledPlugins, mcpNames),
   };
