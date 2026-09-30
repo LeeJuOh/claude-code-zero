@@ -1,6 +1,6 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1·2단계 완료 `3abe3ee`·`10686fd`(vision-powers 5.0.0, 14차), 다음은 P2 구현 3단계** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차), 다음은 P2 구현 4단계** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
@@ -373,7 +373,7 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 - [ ] #2·#9: plugin-visual의 설치 전 컨텍스트 비용 추정은 유지하고 수치만 공식대로 — 목록 예산 1%(`skillListingBudgetFraction`·`SLASH_COMMAND_TOOL_CHAR_BUDGET`·`skillListingMaxDescChars` 반영, 16K fallback 삭제), MCP는 기본 deferred(tool search, 이름·서버 instructions만 시작 시 로드; `ENABLE_TOOL_SEARCH`·비공식 `ANTHROPIC_BASE_URL`이면 upfront), "10% cap" 삭제. 공식이 밝히지 않은 환산(글자/토큰)은 "추정"으로 표시.
 - [x] `3abe3ee` #8: `agents/coherence-reviewer.md` 삭제 + plugin-visual:509 `--verify` 줄 삭제 — 호출처 없음(13차 grep 재확인).
 - [x] `10686fd` #11: security-auditor의 hook 이벤트 표(22개, 공식 33개) 삭제 → 에이전트 `tools`에 WebFetch 추가, hook이 쓰는 이벤트마다 공식 hooks.md의 "Exit code 2 behavior per event"·"Decision control" 표에서 그 행을 찾아 판정(exit 2 효과가 이벤트마다 달라 스크립트만 보면 오판). 못 가져오면 "미확인". plugin-visual:524 "22 hook events" gotcha 삭제. (처음 안 "스크립트 행동만으로 판정"은 사용자 제안으로 교체)
-- [ ] #12: 의존성 확인(bash 한 블록의 `which`·`grep`·`ls`·`test`)을 `env-fit-scan.js --requirements`로 이동, MCP 경로는 `~/.claude.json`·프로젝트 `.mcp.json`. 이후 안 쓰는 `Bash(which *)`는 #30과 함께 삭제.
+- [x] `d156085` #12(+#30): 의존성 확인(bash 한 블록의 `which`·`grep`·`ls`·`test`)을 `env-fit-scan.js --requirements`로 이동, MCP 경로는 `~/.claude.json`·프로젝트 `.mcp.json`. 이후 안 쓰는 `Bash(which *)`는 #30과 함께 삭제.
 - [x] `10686fd` #13: security-auditor 본문에 `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/security-rules.md` 경로 기재(에이전트 본문 치환 — plugins-reference.md:530), 복제한 Context Modifier 4개 삭제.
 - [ ] #14: 노드 한도를 게이트(`artifact-gate.js:8` 9 nodes/12 arrows)로 통일 — mermaid-patterns:484(15-20)·feature-architect:277(~15)·plugin-visual:359·:530(25) 숫자 삭제, 게이트 한도 포인터로.
 - [ ] #7(§1-5 #10 종결): md는 "기본 로컬, 요청하면 Artifact 게시" — 플래그든 자연어든 요청이면 묻지 않고 게시, 답변에 "Mermaid는 코드로 보인다" 한 줄. channel-decision.md md 행·:32-34 문구, ADR 0009 §3 개정 기록, doc-visual:43·:76-77("md stays local")·:60-66(자연어면 한 번 묻기) 수정.
@@ -387,12 +387,14 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 |---|---|---|
 | 1 ✅ `3abe3ee` | 삭제: `context-health-visual`·`agents/trigger-collision-inspector.md`·`agents/coherence-reviewer.md`(#8 포함) + 참조 정리 → 5.0.0 | 남은 참조 grep, `claude -p --plugin-dir ./plugins/vision-powers` 로드 |
 | 2 ✅ `10686fd` | security-auditor #11·#13 (+plugin-visual "22 hook events" gotcha) | 샘플 플러그인(hook 있는 것)으로 옛/새 비교 |
-| 3 | 의존성 확인 스크립트화 #12 + #30 | `env-fit-scan.js` 단위 테스트, 권한 프롬프트 없음 |
+| 3 ✅ `d156085` | 의존성 확인 스크립트화 #12 + #30 | `env-fit-scan.js` 단위 테스트, 권한 프롬프트 없음 |
 | 4 | plugin-visual 수치·색 #2·#9·#14·#15·#23·#28 + README 2건 | grep, `node --test` |
 | 5 | md 게시 규칙 #7 (ADR 0009 §3 개정 + channel-decision + doc-visual) | 문구 대조 |
 | 6 | 리포트 스킬 오류 #5·#10·#25·#27·#29·#31 | `node --test`, fact-check 감지 |
 | 7 | 중복 통합 #19~#21·#24·#26 + #18 description | 옛/새 eval |
 - 2단계 검증(14차): 실제 `claude -p --plugin-dir`로 security-auditor를 codex-advisor(PreToolUse·SessionStart hook)에 돌려 옛/새 비교(`plugins/vision-powers/.evals/p2-step2-security-auditor/`). 새 버전은 치환된 경로로 security-rules.md를 읽고 hooks.md를 WebFetch해 "SessionStart는 막지 못함, PreToolUse exit 2는 막음, allow는 deny 규칙을 못 넘음"을 인용. 옛 버전도 판정은 맞았으나 출처 없음. ⚠️ "WebFetch 차단" 실행은 부모 `--allowedTools`에 WebFetch가 없어도 서브에이전트가 hooks.md를 받아 와 "unverified" fallback은 검증 못 함. (부수 발견: 세 실행 모두 codex-advisor 스킬 10개의 bare `Bash` allowed-tools를 CRITICAL로 보고 — P3 후보)
+- 3단계(14차, `d156085`): 인자 형태는 `--requirement <TYPE>:<name>` 반복(원장의 `--requirements`와 이름만 다름 — 셸 인용 문제 없게 한 줄 하나). MCP는 `~/.claude.json`(user + `projects[cwd]` local)·프로젝트 `.mcp.json`·활성 플러그인의 `.mcp.json`/inline `mcpServers`. `context_metrics.mcp_servers`도 같은 목록으로 교정(예전엔 settings.json의 `mcpServers`를 셌음 — 공식 위치 아님). 검증: `scripts/env-fit-scan.test.js` 6개(격리 HOME·PATH), 전체 79개 통과. feature-architect 예시 help의 `~/.claude/.mcp.json`도 교정.
+- ⚠️ 14차 교훈: 3단계에 plugin-visual 실제 실행(옛/새 순차, 1회 10분+)을 걸었다가 사용자가 "굳이 해야했나" → 새 버전 실행은 취소. 게다가 이 머신은 `permissions.defaultMode: auto`라 `claude -p`에서 권한 프롬프트가 원래 안 뜬다(옛 실행도 거부 0건) — 권한 프롬프트 검증은 이 방식으로 불가능했다. 긴 e2e는 무엇을 판별하는지 먼저 따지고, 단위 테스트로 충분하면 생략.
 - 버전: P2 단계들은 배포 전이라 5.0.0 하나로 묶는다(단계마다 bump 안 함).
 - [ ] 나머지(#15·#23·#28·#30·README 2건, #10·#18~#21·#24~#27·#29·#31)는 원장 수정안대로 처리, 수정안과 달라질 때만 묻는다(13차 사용자 합의 "중요한 것만 판단"). #15는 예시 3줄을 :275 규칙(반투명 8자리 hex)대로, builtin은 slate.
 
