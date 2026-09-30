@@ -1,6 +1,6 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 결정 완료(13차), 다음은 P2 구현 1단계** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1단계 완료 `3abe3ee`(vision-powers 5.0.0, 14차), 다음은 P2 구현 2단계** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
@@ -367,11 +367,11 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 
 **P2 결정 (2026-09-30 13차, 한 질문씩 — 구현은 결정이 끝난 뒤)**
 - 범위: 29개 전부, 3묶음(1 context-health·예산 #3·#2·#9·#6·#17·#22 / 2 plugin-visual·에이전트 #8·#11·#12·#13·#14·#15·#23·#28·#30·README / 3 리포트 스킬 #5·#10·#7·#18~#21·#24~#27·#29·#31).
-- [ ] `context-health-visual` 스킬 삭제 — 본업(목록 예산·컨텍스트 비용)이 `/doctor`·`/skill-doctor`·`/context`와 겹치고 수치가 자주 바뀜. #3·#6·#17·#22는 삭제로 종결. 재확인 때 본 사실: 공식 skills.md에서 8,000자 fallback은 사라졌고, 초과 시 "덜 쓰는 스킬의 description을 뺌", 새 설정 `skillListingBudgetFraction`(기본 0.01)·`skillListingMaxDescChars`(기본 1536)·`skillOverrides`(플러그인 스킬엔 미적용).
-- [ ] `agents/trigger-collision-inspector.md` 함께 삭제 — 호출자가 context-health-visual뿐.
-- [ ] 삭제에 따라 참조 정리: README, plugin.json·marketplace description, `list-reports.js`, report-manager, `references/design-system/{channel-decision,diagram-type-selection}.md`. docs/issues·adr의 역사 기록은 그대로.
+- [x] `3abe3ee` `context-health-visual` 스킬 삭제 — 본업(목록 예산·컨텍스트 비용)이 `/doctor`·`/skill-doctor`·`/context`와 겹치고 수치가 자주 바뀜. #3·#6·#17·#22는 삭제로 종결. 재확인 때 본 사실: 공식 skills.md에서 8,000자 fallback은 사라졌고, 초과 시 "덜 쓰는 스킬의 description을 뺌", 새 설정 `skillListingBudgetFraction`(기본 0.01)·`skillListingMaxDescChars`(기본 1536)·`skillOverrides`(플러그인 스킬엔 미적용).
+- [x] `3abe3ee` `agents/trigger-collision-inspector.md` 함께 삭제 — 호출자가 context-health-visual뿐.
+- [x] `3abe3ee` 삭제에 따라 참조 정리(README "4 specialized agents"→2 포함, channel-decision "four channel skills" 2곳→three): README, plugin.json·marketplace description, `list-reports.js`, report-manager, `references/design-system/{channel-decision,diagram-type-selection}.md`. docs/issues·adr의 역사 기록은 그대로.
 - [ ] #2·#9: plugin-visual의 설치 전 컨텍스트 비용 추정은 유지하고 수치만 공식대로 — 목록 예산 1%(`skillListingBudgetFraction`·`SLASH_COMMAND_TOOL_CHAR_BUDGET`·`skillListingMaxDescChars` 반영, 16K fallback 삭제), MCP는 기본 deferred(tool search, 이름·서버 instructions만 시작 시 로드; `ENABLE_TOOL_SEARCH`·비공식 `ANTHROPIC_BASE_URL`이면 upfront), "10% cap" 삭제. 공식이 밝히지 않은 환산(글자/토큰)은 "추정"으로 표시.
-- [ ] #8: `agents/coherence-reviewer.md` 삭제 + plugin-visual:509 `--verify` 줄 삭제 — 호출처 없음(13차 grep 재확인).
+- [x] `3abe3ee` #8: `agents/coherence-reviewer.md` 삭제 + plugin-visual:509 `--verify` 줄 삭제 — 호출처 없음(13차 grep 재확인).
 - [ ] #11: security-auditor의 hook 이벤트 표(22개, 공식 33개) 삭제 → 에이전트 `tools`에 WebFetch 추가, hook이 쓰는 이벤트마다 공식 hooks.md의 "Exit code 2 behavior per event"·"Decision control" 표에서 그 행을 찾아 판정(exit 2 효과가 이벤트마다 달라 스크립트만 보면 오판). 못 가져오면 "미확인". plugin-visual:524 "22 hook events" gotcha 삭제. (처음 안 "스크립트 행동만으로 판정"은 사용자 제안으로 교체)
 - [ ] #12: 의존성 확인(bash 한 블록의 `which`·`grep`·`ls`·`test`)을 `env-fit-scan.js --requirements`로 이동, MCP 경로는 `~/.claude.json`·프로젝트 `.mcp.json`. 이후 안 쓰는 `Bash(which *)`는 #30과 함께 삭제.
 - [ ] #13: security-auditor 본문에 `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/security-rules.md` 경로 기재(에이전트 본문 치환 — plugins-reference.md:530), 복제한 Context Modifier 4개 삭제.
@@ -385,7 +385,7 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 
 | 단계 | 내용 | 검증 |
 |---|---|---|
-| 1 | 삭제: `context-health-visual`·`agents/trigger-collision-inspector.md`·`agents/coherence-reviewer.md`(#8 포함) + 참조 정리 → 5.0.0 | 남은 참조 grep, `claude -p --plugin-dir ./plugins/vision-powers` 로드 |
+| 1 ✅ `3abe3ee` | 삭제: `context-health-visual`·`agents/trigger-collision-inspector.md`·`agents/coherence-reviewer.md`(#8 포함) + 참조 정리 → 5.0.0 | 남은 참조 grep, `claude -p --plugin-dir ./plugins/vision-powers` 로드 |
 | 2 | security-auditor #11·#13 (+plugin-visual "22 hook events" gotcha) | 샘플 플러그인(hook 있는 것)으로 옛/새 비교 |
 | 3 | 의존성 확인 스크립트화 #12 + #30 | `env-fit-scan.js` 단위 테스트, 권한 프롬프트 없음 |
 | 4 | plugin-visual 수치·색 #2·#9·#14·#15·#23·#28 + README 2건 | grep, `node --test` |
