@@ -380,7 +380,7 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 - [x] `d156085` #12(+#30): 의존성 확인(bash 한 블록의 `which`·`grep`·`ls`·`test`)을 `env-fit-scan.js --requirements`로 이동, MCP 경로는 `~/.claude.json`·프로젝트 `.mcp.json`. 이후 안 쓰는 `Bash(which *)`는 #30과 함께 삭제.
 - [x] `10686fd` #13: security-auditor 본문에 `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/security-rules.md` 경로 기재(에이전트 본문 치환 — plugins-reference.md:530), 복제한 Context Modifier 4개 삭제.
 - [x] `00422aa` #14: 노드 한도를 게이트(`artifact-gate.js:8` 9 nodes/12 arrows)로 통일 — mermaid-patterns:484(15-20)·feature-architect:277(~15)·plugin-visual:359·:530(25) 숫자 삭제, 게이트 한도 포인터로.
-- [ ] #7(§1-5 #10 종결): md는 "기본 로컬, 요청하면 Artifact 게시" — 플래그든 자연어든 요청이면 묻지 않고 게시, 답변에 "Mermaid는 코드로 보인다" 한 줄. channel-decision.md md 행·:32-34 문구, ADR 0009 §3 개정 기록, doc-visual:43·:76-77("md stays local")·:60-66(자연어면 한 번 묻기) 수정.
+- [x] `7c14121` #7(§1-5 #10 종결): md는 "기본 로컬, 요청하면 Artifact 게시" — 플래그든 자연어든 요청이면 묻지 않고 게시, 답변에 "Mermaid는 코드로 보인다" 한 줄. channel-decision.md md 행·:32-34 문구, ADR 0009 §3 개정 기록, doc-visual:43·:76-77("md stays local")·:60-66(자연어면 한 번 묻기) 수정.
 - [ ] #5: ✎ 피드백 수확 기능 삭제 — UI를 심는 스킬 없음(13차 grep: README·report-manager에만 남음). report-manager 수확·감지 절, fact-check 해당 절, description·README 문구.
 - 버전: 스킬·에이전트 삭제는 인터페이스 제거 → vision-powers 5.0.0.
 - 안 함: 게이트의 보라 hex 목록(4개) 확대 — 사용자가 "중요한 것만"으로 좁힘.
@@ -393,9 +393,10 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 | 2 ✅ `10686fd` | security-auditor #11·#13 (+plugin-visual "22 hook events" gotcha) | 샘플 플러그인(hook 있는 것)으로 옛/새 비교 |
 | 3 ✅ `d156085` | 의존성 확인 스크립트화 #12 + #30 | `env-fit-scan.js` 단위 테스트, 권한 프롬프트 없음 |
 | 4 ✅ `00422aa` | plugin-visual 수치·색 #2·#9·#14·#15·#16·#23·#28 + README 1건("4 agents"는 1단계) | grep, `node --test` |
-| 5 | md 게시 규칙 #7 (ADR 0009 §3 개정 + channel-decision + doc-visual) | 문구 대조 |
+| 5 ✅ `7c14121` | md 게시 규칙 #7 (ADR 0009 §3 개정 + channel-decision + doc-visual) | 문구 대조 |
 | 6 | 리포트 스킬 오류 #5·#10·#25·#27·#29·#31 | `node --test`, fact-check 감지 |
 | 7 | 중복 통합 #19~#21·#24·#26 + #18 description | 옛/새 eval |
+- 5단계(16차, `7c14121`): 수정안과 달리 doc-visual만이 아니라 **diff-visual·plugin-visual md도 같은 규칙** — 사용자가 "세 스킬이 같은 규칙이 더 좋다"로 승인. 규칙 본문은 channel-decision.md "Markdown on request" 절(SSOT) 하나, 세 스킬은 저장 경로(`.md`→`.artifact.md`)와 포인터만. plugin-visual은 `security`/`overview` md도 포함. config는 md를 게시하지 않음(이번 턴 요청만). README 표·:95 문장, plugin.json·marketplace description에 한 구절. 검증: "md stays local"·"ask once"·"lone exception" grep 0건, validate 통과. 실제 게시 동작은 7단계 eval에 넣는다.
 - 2단계 검증(14차): 실제 `claude -p --plugin-dir`로 security-auditor를 codex-advisor(PreToolUse·SessionStart hook)에 돌려 옛/새 비교(`plugins/vision-powers/.evals/p2-step2-security-auditor/`). 새 버전은 치환된 경로로 security-rules.md를 읽고 hooks.md를 WebFetch해 "SessionStart는 막지 못함, PreToolUse exit 2는 막음, allow는 deny 규칙을 못 넘음"을 인용. 옛 버전도 판정은 맞았으나 출처 없음. ⚠️ "WebFetch 차단" 실행은 부모 `--allowedTools`에 WebFetch가 없어도 서브에이전트가 hooks.md를 받아 와 "unverified" fallback은 검증 못 함. (부수 발견: 세 실행 모두 codex-advisor 스킬 10개의 bare `Bash` allowed-tools를 CRITICAL로 보고 — P3 후보)
 - 3단계(14차, `d156085`): 인자 형태는 `--requirement <TYPE>:<name>` 반복(원장의 `--requirements`와 이름만 다름 — 셸 인용 문제 없게 한 줄 하나). MCP는 `~/.claude.json`(user + `projects[cwd]` local)·프로젝트 `.mcp.json`·활성 플러그인의 `.mcp.json`/inline `mcpServers`. `context_metrics.mcp_servers`도 같은 목록으로 교정(예전엔 settings.json의 `mcpServers`를 셌음 — 공식 위치 아님). 검증: `scripts/env-fit-scan.test.js` 6개(격리 HOME·PATH), 전체 79개 통과. feature-architect 예시 help의 `~/.claude/.mcp.json`도 교정.
 - ⚠️ 14차 교훈: 3단계에 plugin-visual 실제 실행(옛/새 순차, 1회 10분+)을 걸었다가 사용자가 "굳이 해야했나" → 새 버전 실행은 취소. 게다가 이 머신은 `permissions.defaultMode: auto`라 `claude -p`에서 권한 프롬프트가 원래 안 뜬다(옛 실행도 거부 0건) — 권한 프롬프트 검증은 이 방식으로 불가능했다. 긴 e2e는 무엇을 판별하는지 먼저 따지고, 단위 테스트로 충분하면 생략.
