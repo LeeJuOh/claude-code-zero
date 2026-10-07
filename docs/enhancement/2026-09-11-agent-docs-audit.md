@@ -1,46 +1,48 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차), 다음은 P2 구현 7단계** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만), 다음은 P2 7단계 구현** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-10-07 17차 끝 → 18차)
+## 핸드오프 (2026-10-07 18차 끝 → 19차)
 
-**목표:** P2(§2-1 vision-powers)를 끝내고 vision-powers 5.0.0을 배포한다. 7단계 중 1~6단계 완료, 7단계 남음 — §2-1 "P2 결정"(체크리스트)·"P2 구현 단계"(표).
+**목표:** P2(§2-1 vision-powers)를 끝내고 vision-powers 5.0.0을 배포한다. 7단계 중 1~6단계 완료. 7단계는 18차에 결정만 끝냈고(Q1~Q5, 원장만), 구현은 아직이다.
 
-**첫 행동:** develop이 `origin/develop`보다 7커밋 앞이다(`3cfa99c`·`7c14121`·`5280dea`·`3a10ec2`·`a24bbac`·`eed492d` + 이 핸드오프 커밋, 미푸시 — 17차에 사용자가 "아니 다음"으로 미룸). 푸시할지 한 줄로 묻는다. 그다음 P2 7단계를 `/skill-creator-pro`로 시작한다. 먼저 **17차 공통 규칙**을 적용한다: 모으거나 옮기기 전에, 툴 설명·게이트·모델 기본 행동과 같은 내용은 지운다. 남은 것(이 플러그인만 아는 것)만 옮긴다. 대상은 §2-1 표의 해당 행(줄 번호는 낡았다 — 문구로 찾을 것):
-1. #19 Artifact 채널 블록(doc-visual·diff-visual·plugin-visual) — 툴 설명과 같은 내용을 먼저 지우고, 남은 것만 `references/design-system/artifact-channel.md`로. channel-decision.md에서 링크.
-2. #20 로컬 채널 규칙 — 게이트가 강제하는 것은 지우고, 남은 것만 `local-channel.md`로.
-3. #21 "Config precedence" 블록 → channel-decision.md 포인터.
-4. #24 개발 흔적("issue 007 S4.5", "S2–S4" 등)과 설치본에 없는 경로(`docs/…`) 삭제.
+**첫 행동:** `/skill-creator-pro`로 P2 7단계 구현을 시작한다. 계획은 §2-1 "P2 결정"의 **18차 Q1~Q5** 항목과 아래 목록이다 — 원장 행(#19·#20)의 옛 수정안보다 18차 항목이 우선. 구현 전 사용자 승인은 18차 끝에 물었으나 답은 없었다(대신 핸드오프 요청) — 시작 전에 "18차 계획대로 구현할까요?" 한 줄로 확인한다. 푸시는 묻지 않는다(18차에 사용자가 "푸시는 하지말고").
+
+**7단계 할 일** (17차 공통 규칙 먼저: 툴 설명·게이트·모델 기본 행동과 같은 내용은 옮기지 말고 지운다. 줄 번호는 낡는다 — 문구로 찾을 것):
+1. #19 Artifact 채널 블록(doc-visual·diff-visual·plugin-visual) — 툴 설명과 같은 내용 삭제. "CSP가 외부 요청을 모두 막는다" 문장 삭제(틀림, Q1). Mermaid 금지는 유지, 이유 한 문장("artifact-design 렌더링이 이겼다"). 남는 공통 글은 `references/design-system/channel-decision.md` "Artifact channel" 절로(Q2). 실행 명령과 스킬별 저장 경로는 SKILL.md에 남긴다(references는 `${CLAUDE_PLUGIN_ROOT}` 치환 안 됨).
+2. #20 로컬 채널 규칙 — 게이트가 강제하는 것 삭제, self-audit 절차는 `visual-self-audit.md` 포인터, 남는 CSS 5줄은 `channel-decision.md` "Local channel" 절로(Q4).
+3. #21 "Config precedence" → channel-decision.md 포인터, config 명령 한 줄만 각 스킬에.
+4. #24 ADR·issue·슬라이스 언급 전부 삭제(~30건, Q3). "Regression authority" 문단 포함. 이유가 필요하면 인라인 한 문장.
 5. #26 8 Tells 재나열 → anti-slop-tells.md 포인터.
-6. #18 description 짧게 + plugin.json·marketplace 동기화(지금 둘의 문구가 다르다).
-검증: 옛/새 eval. 옛 기준은 `git archive 694f452 plugins/vision-powers`(P2 전) 또는 13차 스냅샷 `~/.claude/plugins/data/skill-creator-pro-claude-code-zero/vision-powers-p2/skill-snapshot/`. eval에 넣을 것:
-- (16차) md 게시를 요청하면 세 스킬(doc·diff·plugin-visual)이 묻지 않고 게시하는지, config만으로는 md를 게시하지 않는지, Mermaid가 있으면 "코드로 보인다" 한 줄이 붙는지.
-- (17차) 재게시(report-manager refine, fact-check)가 sidecar의 `url`을 넘기는지. 처음 게시에서 `icon`을 정하는지는 툴에 맡긴다(스킬은 말하지 않는다).
+6. #18 description 짧게(diff-visual 533자, doc-visual 401자) + plugin.json(588자)·marketplace(912자) 같은 문구로.
+- 검증(Q5): 서브에이전트 드라이런으로 옛/새 비교(실제 `claude -p` 게시는 안 함). 옛 기준은 `git archive a24bbac plugins/vision-powers`(6단계 직후, 7단계 전). 볼 항목: md 게시 요청 시 세 스킬이 묻지 않고 게시 / config만으로는 md 미게시 / Mermaid가 있으면 "코드로 보인다" 한 줄 / 재게시(report-manager refine, fact-check)가 sidecar `url` 전달. 그리고 `node --test`, `claude plugin validate .`, 잔여 grep(`ADR 0`, `issue 0`, `Config precedence`, `CSP`).
 
-**그다음:** vision-powers 5.0.0 배포(`docs/release-workflow.md`, 1단계 fetch·`origin/main` 비교 필수). 원장 수정안대로 하되 **수정안과 달라질 때만 묻는다**(13차 합의). 단, 17차에 수정안 자체가 틀린 경우가 나왔다 — 아래 교훈.
-- 버전: P2 단계들은 5.0.0 하나로 묶는다(배포 전이라 단계마다 bump 안 함).
+**그다음:** vision-powers 5.0.0 배포(`docs/release-workflow.md`, 1단계 fetch·`origin/main` 비교 필수 — 두 머신 작업). 원장 수정안대로 하되 수정안과 달라질 때만 묻는다(13차 합의).
+- 버전: P2 단계들은 5.0.0 하나로(단계마다 bump 안 함).
 - 10차부터 미답(급하지 않음): gotchas.md "Plugin variables in the Bash tool"에 한 줄 — hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 실측).
-- P3 후보(14차 부수 발견): security-auditor 실행 3번 모두 codex-advisor 스킬 10개의 bare `Bash` allowed-tools를 CRITICAL로 보고.
-- P2 뒤 순서: P3 codex-advisor → P4 rubber-duck-tutor → P5 skill-creator-pro → P6 claw-mux·notebooklm → P7 나머지(vibeproxy-kit 맨 끝). S5는 원 작성 머신에서만. P3 이후에도 17차 공통 규칙을 쓸지는 그때 묻는다(17차 승인 범위는 "6·7단계 전체").
+- P3 후보(14차): security-auditor가 codex-advisor 스킬 10개의 bare `Bash` allowed-tools를 CRITICAL로 보고.
+- P2 뒤 순서: P3 codex-advisor → P4 rubber-duck-tutor → P5 skill-creator-pro → P6 claw-mux·notebooklm → P7 나머지(vibeproxy-kit 맨 끝). S5는 원 작성 머신에서만. P3 이후에도 17차 공통 규칙을 쓸지는 그때 묻는다.
 
-**17차 요약:** P2 6단계 `a24bbac` + 원장 `eed492d`. 지우기 위주로 98줄 줄었다(+50/−148). 상세는 §2-1 "P2 구현 단계" 표 아래 6단계 줄.
+**상태(18차 끝, git 기준):** develop, `origin/develop`보다 7커밋 앞(미푸시). 18차는 코드 변경 없음 — 원장 수정(18차 Q1~Q5 기록 + 이 핸드오프)만.
 
-**17차 결정**
-- #31: 이름만 `icon`으로 바꾸는 수정안(A) 대신 **A'** — 스킬에서 `favicon`/`icon` 언급을 모두 지우고 sidecar 필드도 지운다. 사용자: "스킬에 왜 클로드가 쓰는 툴 옵션이름까지 자세하게 적어야해?"
-- **공통 규칙**(6·7단계 전체): 툴 설명·게이트·모델 기본 행동과 같은 내용은 옮기지 말고 지운다. 사용자: "이처럼 이상한 수정방향으로 결정된거잇는거아냐?" → #19·#20·#25 수정안을 고쳤다(각 행).
-- 푸시는 미룸.
+**18차 결정** (상세는 §2-1 "P2 결정" 18차 항목)
+- Q1 Artifact 채널 Mermaid 금지 유지, 틀린 CSP 문장은 삭제. Mermaid 허용은 기능 변경이라 P2 밖.
+- Q2·Q4 새 파일(`artifact-channel.md`·`local-channel.md`) 대신 `channel-decision.md`에 절 두 개 — 남는 양이 작고 세 스킬이 이미 읽는 파일.
+- Q3 스킬은 ADR을 가리키면 안 된다(설치본에 `docs/` 없음) → 전부 삭제.
+- Q5 검증은 드라이런.
 
-**17차 교훈**
-- ⚠️ 원장 수정안을 "지금 코드와 다른가"로만 재확인했다. 수정안 자체가 검수 기준(C4 no-op·중복)에 맞는지도 봐야 한다. #31 수정안은 툴 설명을 스킬에 다시 적는 안이었고, 사용자가 잡았다. 7단계 수정안도 구현 전에 이 눈으로 본다.
-- ⚠️ Q1을 툴 파라미터 세부부터 설명했더니 "먼소리하는거야", "줌아웃해 이걸 왜질문한거야". 질문 전에 한 줄로 큰 그림(무슨 단계, 왜 묻나)을 먼저 말한다. 15·16차 교훈(예시로)과 같은 줄기.
-- ⚠️ Python 3.9 + 한국어 긴 줄: heredoc도, Write로 만든 `.py`도 `SyntaxError: Non-UTF-8 code`. 파일 첫 줄에 `# -*- coding: utf-8 -*-`를 넣으면 된다. 그리고 python과 `git commit`은 `&&`로 잇는다 — 17차에 python이 실패했는데 다음 줄의 commit이 돌아 빈 기록 커밋이 생겼다(amend로 고침).
-- ✅ 단계 6은 지우기 전에 "지울 내용이 references·게이트에 있나"를 grep으로 확인했다(#29 규칙 7개). 이 확인을 7단계에도 쓴다.
-- 14차에서 이어지는 것: auto mode 분류기가 막으면 우회하지 말고 바로 한 줄로 묻는다. 무엇을 왜 받는지(공식 문서 fetch 등) 먼저 말한다. `claude -p … --allowedTools`는 프롬프트를 삼키므로 stdin으로. 테스트에서 PATH를 바꾸면 `process.execPath`. 심각도 라벨(med·low)을 "안 고쳐도 됨"으로 번역하지 않는다. 이 원장이 handoff다(toolbox handoff 설정은 `docs/handoff/vision-powers`를 가리키지만 별도 파일을 만들지 않는다).
+**18차 교훈**
+- ⚠️ Q3을 "A/B 중 고르라"로 물었는데, 답이 이미 정해진 문제였다(#24 수정안 = 설치본에 없는 경로 삭제). 사용자: "먼소리야 스킬은 adr을 바라보게 짜면 안되는거아냐?" 기존 규칙에서 답이 나오면 묻지 말고 계획에 넣고 알리기만 한다.
+- ⚠️ 확인할 때 "A로 기록합니다"라고 글자만 말했더니 "A가 먼데". 확인은 내용으로(전/후 예시 한 쌍) 말한다.
+- ✅ 질문마다 "큰 그림 한 줄 → 사실 → 선택지 → 추천"으로 물었더니 Q1·Q2·Q4·Q5는 "추천대로"로 바로 끝났다. 17차 교훈(큰 그림 먼저)이 통했다.
+- ✅ 수정안을 "지금 코드와 다른가"만이 아니라 "지금 툴 설명과 맞나"로도 봤다 → CSP 문장이 틀린 것을 찾았다(Q1). 17차 교훈의 연장.
+
+**17차에서 이어지는 것:** 공통 규칙(위). 원장 수정안 자체가 검수 기준(C4 no-op·중복)에 맞는지도 본다. 지우기 전에 "지울 내용이 references·게이트에 있나"를 grep으로 확인. Python 3.9 + 한국어: 파일 첫 줄 `# -*- coding: utf-8 -*-`, python과 `git commit`은 `&&`로. auto mode 분류기가 막으면 우회하지 말고 한 줄로 묻는다. `claude -p … --allowedTools`는 프롬프트를 삼키므로 stdin으로. 심각도 라벨을 "안 고쳐도 됨"으로 번역하지 않는다. 이 원장이 handoff다 — 별도 파일을 만들지 않는다.
 
 **12차에서 이어지는 주의:** 두 머신에서 작업한다 — 배포 때 release-workflow 1단계(fetch·`origin/main` 비교)를 건너뛰지 않는다(12차 로컬 `main`이 23커밋 뒤였음).
 
@@ -388,6 +390,11 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 - [x] `7c14121` #7(§1-5 #10 종결): md는 "기본 로컬, 요청하면 Artifact 게시" — 플래그든 자연어든 요청이면 묻지 않고 게시, 답변에 "Mermaid는 코드로 보인다" 한 줄. channel-decision.md md 행·:32-34 문구, ADR 0009 §3 개정 기록, doc-visual:43·:76-77("md stays local")·:60-66(자연어면 한 번 묻기) 수정.
 - [ ] #5: ✎ 피드백 수확 기능 삭제 — UI를 심는 스킬 없음(13차 grep: README·report-manager에만 남음). report-manager 수확·감지 절, fact-check 해당 절, description·README 문구.
 - [ ] **17차 공통 규칙(6·7단계 전체)**: 모으거나 옮기기 전에, 툴 설명·게이트·모델 기본 행동과 같은 내용은 먼저 지운다. 남은 것(이 플러그인만 아는 것)만 옮긴다. 계기: #31 수정안("`icon`으로 이름만 교체")이 툴 설명을 스킬에 다시 적는 안이었다 — 사용자 "스킬에 왜 클로드가 쓰는 툴 옵션이름까지 자세하게 적어야해?". 이 규칙으로 #19·#20·#25·#31 수정안을 고쳤다(각 행).
+- [ ] (18차 Q1) #19 새 발견: 세 스킬의 "CSP가 외부 요청을 모두 막는다 → Mermaid CDN 불가"는 틀림(지금 Artifact 툴 설명은 cdnjs·jsdelivr·unpkg 스크립트와 Google Fonts를 허용). 그 문장은 지운다. Artifact 채널의 Mermaid 금지는 **유지**, 이유는 "artifact-design 렌더링이 디자인·가독성에서 이겼다(2026-07 비교)" 한 문장. Mermaid 허용은 기능 변경이라 P2 범위 밖.
+- [ ] (18차 Q2) #19 목적지 변경: 새 파일 `artifact-channel.md` 대신 `channel-decision.md`에 "Artifact channel" 절로 넣는다(툴 설명 중복을 지우면 공통으로 남는 글이 ~10줄, 세 스킬은 이미 이 파일을 읽음). 실행 명령(`artifact-gate.js --content-only`, `write-artifact-sidecar.js`)과 스킬별 저장 경로는 SKILL.md에 남긴다 — references 파일은 `${CLAUDE_PLUGIN_ROOT}`가 치환되지 않는다.
+- [ ] (18차 Q3) #24 범위: 스킬·references·에이전트에서 ADR·issue·슬라이스(`S2–S4` 등) 언급을 **모두** 지운다(~30건, `grep -rn "ADR 0\|docs/\|issue 0\|S[0-9]–S[0-9]\|S0's\|previous version"`). 스킬은 ADR을 가리키면 안 된다 — 설치본에 `docs/`가 없다. channel-decision.md "Regression authority" 문단 삭제. 이유가 필요한 규칙만 이유 한 문장을 인라인으로. ADR 파일은 레포에 그대로.
+- [ ] (18차 Q4) #20 목적지 변경: 새 파일 `local-channel.md` 대신 `channel-decision.md`에 "Local channel" 절. 게이트가 강제하는 규칙(보라 hex, classDef `rgba()`·`color:`, 9 nodes/12 arrows, font fallback, 링크·alt·placeholder, 게이트 검사 목록)은 지운다. self-audit 절차·Chrome 부재·2회 제한은 `visual-self-audit.md` 포인터로, 스킬에는 render 명령과 그 스킬만의 점검 항목만. 절에 남는 공통 글은 CSS 기본 5줄(다크 모드 변수, CJK 폰트, `min-width: 0`, `prefers-reduced-motion`, Mermaid zoom은 SVG 크기).
+- [ ] (18차 Q5) 7단계 검증은 서브에이전트 드라이런(8·10차 방식, 옛/새 스킬 비교). 실제 `claude -p` 게시 실행은 안 한다 — 볼 항목 4개(md 게시 요청 시 묻지 않고 게시, config만으로는 md 미게시, Mermaid "코드로 보인다" 한 줄, 재게시가 sidecar `url` 전달)는 모두 스킬 지시의 문제다. #21·#26·#18은 원장 수정안대로(#21은 config 명령 한 줄만 SKILL.md에 남김 — 치환 때문).
 - 버전: 스킬·에이전트 삭제는 인터페이스 제거 → vision-powers 5.0.0.
 - 안 함: 게이트의 보라 hex 목록(4개) 확대 — 사용자가 "중요한 것만"으로 좁힘.
 
