@@ -21,6 +21,16 @@ set -euo pipefail
 
 die() { echo "$*" >&2; exit 1; }
 
+# Die unless <data-dir> is this plugin's data folder (an absolute path, no ..).
+# The scripts run without a permission prompt, so they write only there.
+check_data_dir() {
+  case $1 in
+    /*/plugins/data/codex-advisor-*) ;;
+    *) die "Refused data folder: $1 (expected .../plugins/data/codex-advisor-<marketplace>)" ;;
+  esac
+  case /$1/ in */../*|*/./*) die "Refused data folder: $1" ;; esac
+}
+
 cmd_list() {
   [ $# -eq 2 ] || die "usage: codex-report.sh list <data-dir> <count>"
   [[ $2 =~ ^[0-9]+$ ]] || die "count must be a number: $2"
@@ -32,6 +42,7 @@ cmd_list() {
 cmd_save() {
   [ $# -ge 2 ] && [ $# -le 3 ] || die "usage: codex-report.sh save <data-dir> <type> [--failed]"
   local data=$1 type=$2 flag=${3:-} suffix=""
+  check_data_dir "$data"
   case $type in
     review|adversarial|rescue|verify|research) ;;
     *) die "Unknown report type: $type" ;;
@@ -55,6 +66,7 @@ cmd_save() {
 cmd_clean() {
   [ $# -ge 2 ] && [ $# -le 3 ] || die "usage: codex-report.sh clean <data-dir> <run-dir> [--keep-inputs]"
   local data=$1 run=$2 keep=${3:-}
+  check_data_dir "$data"
   [ -z "$keep" ] || [ "$keep" = --keep-inputs ] || die "Refused clean argument: $keep"
   [ -d "$run" ] || { echo "Already gone: $run"; return 0; }
   local tmp real

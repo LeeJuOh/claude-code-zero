@@ -18,7 +18,8 @@
 #       Refuse a ref git cannot resolve, listing up to 20 branches on stderr.
 #
 #   codex-task.sh prompt <prompt-file> [--document <path> --tag <tag>]
-#       Write stdin (the prompt header) to <prompt-file>. With --document, append
+#       Write stdin (the prompt header) to <prompt-file>, which must be the
+#       PROMPT_FILE that new-run printed. With --document, append
 #       the file wrapped in <tag>...</tag> by redirect, so its text never reaches
 #       stdout. Call again to rewrite the prompt.
 #
@@ -84,8 +85,44 @@ json_field() {
   ' "$1" "$2"
 }
 
+# Die unless <data-dir> is this plugin's data folder (an absolute path, no ..).
+# The scripts run without a permission prompt, so they write only there.
+check_data_dir() {
+  case $1 in
+    /*/plugins/data/codex-advisor-*) ;;
+    *) die "Refused data folder: $1 (expected .../plugins/data/codex-advisor-<marketplace>)" ;;
+  esac
+  case /$1/ in */../*|*/./*) die "Refused data folder: $1" ;; esac
+}
+
+# Print the real path of an existing run folder, or die. The scripts run
+# without a permission prompt, so every write target must be a run folder
+# that new-run, review or payload made under this plugin's data folder.
+real_run_dir() {
+  local real
+  real=$(cd "$1" 2>/dev/null && pwd -P) || die "No run folder: $1"
+  case ${real%/*} in
+    */plugins/data/codex-advisor-*/tmp) ;;
+    *) die "Refused: $1 is not under the codex-advisor data folder's tmp/" ;;
+  esac
+  case ${real##*/} in
+    *-run-*) ;;
+    *) die "Refused: $1 is not a run folder" ;;
+  esac
+  echo "$real"
+}
+
+# Print the real path of <run-dir>/prompt.txt, or die.
+real_prompt_file() {
+  [ "$(basename "$1")" = prompt.txt ] || die "Refused prompt file name: $1 (must be prompt.txt)"
+  local dir
+  dir=$(real_run_dir "$(dirname "$1")") || exit 1
+  echo "$dir/prompt.txt"
+}
+
 make_run_dir() {
   local data=$1 kind=$2
+  check_data_dir "$data"
   case $kind in
     review|adversarial|rescue|verify|research) ;;
     *) die "Unknown run kind: $kind" ;;
@@ -120,7 +157,8 @@ cmd_check_ref() {
 
 cmd_prompt() {
   [ $# -ge 1 ] || die "usage: codex-task.sh prompt <prompt-file> [--document <path> --tag <tag>]"
-  local file=$1 doc="" tag=""
+  local file doc="" tag=""
+  file=$(real_prompt_file "$1") || exit 1
   shift
   while [ $# -gt 0 ]; do
     case $1 in
@@ -135,7 +173,6 @@ cmd_prompt() {
     [ -s "$doc" ] || die "Document missing or empty: $doc"
   fi
   [ -t 0 ] && die "No prompt on stdin — pass the header as a here-document"
-  mkdir -p "$(dirname "$file")"
   cat > "$file"
   [ -s "$file" ] || die "Prompt header on stdin was empty"
   if [ -n "$doc" ]; then
@@ -207,8 +244,8 @@ cmd_review() {
 
 cmd_review_wait() {
   [ $# -eq 1 ] || die "usage: codex-task.sh review-wait <run-dir>"
-  local dir=$1 kind out i=0
-  [ -d "$dir" ] || die "No run folder: $dir"
+  local dir kind out i=0
+  dir=$(real_run_dir "$1") || exit 1
   case $(basename "$dir") in
     review-run-*) kind=review ;;
     adversarial-run-*) kind=adversarial ;;
@@ -264,6 +301,7 @@ cmd_payload() {
     args+=(--ref "$ref")
   fi
 
+  check_data_dir "$data"
   mkdir -p "$data/tmp"
   local work out rc=0
   work=$(mktemp -d "$data/tmp/verify-XXXXXX")
@@ -278,7 +316,10 @@ cmd_payload() {
 
 cmd_launch() {
   [ $# -ge 2 ] || die "usage: codex-task.sh launch <prompt-file> <run-dir> [task flags...]"
-  local prompt=$1 dir=$2
+  local prompt dir
+  prompt=$(real_prompt_file "$1") || exit 1
+  dir=$(real_run_dir "$2") || exit 1
+  [ "$prompt" = "$dir/prompt.txt" ] || die "Refused: prompt file is not in run folder $2"
   shift 2
   [ -s "$prompt" ] || die "Prompt file missing or empty: $prompt"
 
@@ -296,7 +337,6 @@ cmd_launch() {
 
   local c
   c=$(companion)
-  mkdir -p "$dir"
   node "$c" task --background --json ${flags[@]+"${flags[@]}"} \
     < "$prompt" > "$dir/job.json" 2> "$dir/job.stderr" \
     || { echo "task launch failed:" >&2; cat "$dir/job.stderr" >&2; exit 1; }
@@ -310,9 +350,9 @@ cmd_launch() {
 
 cmd_wait() {
   [ $# -eq 2 ] || die "usage: codex-task.sh wait <job-id> <run-dir>"
-  local id=$1 dir=$2 c status
+  local id=$1 dir c status
+  dir=$(real_run_dir "$2") || exit 1
   c=$(companion)
-  mkdir -p "$dir"
   node "$c" status --wait "$id" --timeout-ms "$WAIT_MS" --json \
     > "$dir/status.json" 2> "$dir/status.stderr" \
     || { echo "status failed:" >&2; cat "$dir/status.stderr" >&2; exit 1; }
