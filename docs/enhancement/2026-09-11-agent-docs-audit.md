@@ -7,39 +7,39 @@
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-10-07 16차 끝 → 17차)
+## 핸드오프 (2026-10-07 17차 끝 → 18차)
 
-**목표:** P2(§2-1 vision-powers)를 끝내고 vision-powers 5.0.0을 배포한다. 7단계 중 1~5단계 완료, 6~7단계 남음 — §2-1 "P2 결정"(체크리스트)·"P2 구현 단계"(표).
+**목표:** P2(§2-1 vision-powers)를 끝내고 vision-powers 5.0.0을 배포한다. 7단계 중 1~6단계 완료, 7단계 남음 — §2-1 "P2 결정"(체크리스트)·"P2 구현 단계"(표).
 
-**첫 행동(17차 중간 기록 — 17차 끝에 다시 쓸 것):** 17차에 사용자가 푸시를 미뤘다("아니 다음"). 6단계 `a24bbac` 완료. 다음은 7단계 — 17차 공통 규칙(§2-1 "P2 결정")을 먼저 적용한다. 아래 6단계 목록은 기록용. 각 항목의 위치·수정안은 §2-1 표의 해당 행(줄 번호는 낡았다 — 문구로 찾을 것):
-1. #5 ✎ 피드백 수확 기능 삭제 — report-manager 수확·감지 절, fact-check 해당 절, marketplace·plugin.json description, README 문구.
-2. #10 fact-check의 리포트 감지를 제목("Diff Visual"·"Doc Visual") 대신 파일명 접미사로(report-manager와 같은 규칙, `.artifact` 접미사 제거 포함).
-3. #25 fact-check·report-manager의 템플릿 시절 클래스(`ve-card`, `--i`) 문구 삭제(17차: 대체 문장 없음).
-4. #27 diff-visual의 "Use extended thinking"·측정 기록 삭제.
-5. #29 doc-visual의 "read them each time" ↔ "no need to look up" 모순 — 규칙 목록 삭제.
-6. #31 (17차 A') 스킬에서 `favicon`/`icon` 언급 모두 삭제, sidecar의 `--favicon` 옵션·필드도 삭제. 재게시는 sidecar `url`만.
-- 17차 공통 규칙: 툴 설명·게이트·모델 기본 행동과 같은 내용은 옮기지 말고 지운다(§2-1 "P2 결정"). #25도 "match existing markup" 없이 삭제만.
-검증: `node --test <테스트 파일들>`(디렉터리 말고 파일 경로), fact-check 감지, validate → 커밋, 원장 기록은 별도 커밋.
+**첫 행동:** develop이 `origin/develop`보다 7커밋 앞이다(`3cfa99c`·`7c14121`·`5280dea`·`3a10ec2`·`a24bbac`·`eed492d` + 이 핸드오프 커밋, 미푸시 — 17차에 사용자가 "아니 다음"으로 미룸). 푸시할지 한 줄로 묻는다. 그다음 P2 7단계를 `/skill-creator-pro`로 시작한다. 먼저 **17차 공통 규칙**을 적용한다: 모으거나 옮기기 전에, 툴 설명·게이트·모델 기본 행동과 같은 내용은 지운다. 남은 것(이 플러그인만 아는 것)만 옮긴다. 대상은 §2-1 표의 해당 행(줄 번호는 낡았다 — 문구로 찾을 것):
+1. #19 Artifact 채널 블록(doc-visual·diff-visual·plugin-visual) — 툴 설명과 같은 내용을 먼저 지우고, 남은 것만 `references/design-system/artifact-channel.md`로. channel-decision.md에서 링크.
+2. #20 로컬 채널 규칙 — 게이트가 강제하는 것은 지우고, 남은 것만 `local-channel.md`로.
+3. #21 "Config precedence" 블록 → channel-decision.md 포인터.
+4. #24 개발 흔적("issue 007 S4.5", "S2–S4" 등)과 설치본에 없는 경로(`docs/…`) 삭제.
+5. #26 8 Tells 재나열 → anti-slop-tells.md 포인터.
+6. #18 description 짧게 + plugin.json·marketplace 동기화(지금 둘의 문구가 다르다).
+검증: 옛/새 eval. 옛 기준은 `git archive 694f452 plugins/vision-powers`(P2 전) 또는 13차 스냅샷 `~/.claude/plugins/data/skill-creator-pro-claude-code-zero/vision-powers-p2/skill-snapshot/`. eval에 넣을 것:
+- (16차) md 게시를 요청하면 세 스킬(doc·diff·plugin-visual)이 묻지 않고 게시하는지, config만으로는 md를 게시하지 않는지, Mermaid가 있으면 "코드로 보인다" 한 줄이 붙는지.
+- (17차) 재게시(report-manager refine, fact-check)가 sidecar의 `url`을 넘기는지. 처음 게시에서 `icon`을 정하는지는 툴에 맡긴다(스킬은 말하지 않는다).
 
-**그다음:** 7단계(#18~#21·#24·#26 중복 통합 + #18 description, 옛/새 eval) → vision-powers 5.0.0 배포(`docs/release-workflow.md`, 1단계 fetch·`origin/main` 비교 필수). 원장 수정안대로 하되 **수정안과 달라질 때만 묻는다**(13차 합의).
-- 7단계 eval에 넣을 것(16차 추가): md 게시 요청 시 세 스킬(doc·diff·plugin-visual)이 묻지 않고 게시하는지, config만으로는 md를 게시하지 않는지, Mermaid가 있으면 "코드로 보인다" 한 줄이 붙는지.
+**그다음:** vision-powers 5.0.0 배포(`docs/release-workflow.md`, 1단계 fetch·`origin/main` 비교 필수). 원장 수정안대로 하되 **수정안과 달라질 때만 묻는다**(13차 합의). 단, 17차에 수정안 자체가 틀린 경우가 나왔다 — 아래 교훈.
 - 버전: P2 단계들은 5.0.0 하나로 묶는다(배포 전이라 단계마다 bump 안 함).
-- 7단계 eval의 옛 버전 기준: `git archive 694f452 plugins/vision-powers`(P2 전) 또는 13차 스냅샷 `~/.claude/plugins/data/skill-creator-pro-claude-code-zero/vision-powers-p2/skill-snapshot/`.
 - 10차부터 미답(급하지 않음): gotchas.md "Plugin variables in the Bash tool"에 한 줄 — hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 실측).
 - P3 후보(14차 부수 발견): security-auditor 실행 3번 모두 codex-advisor 스킬 10개의 bare `Bash` allowed-tools를 CRITICAL로 보고.
-- P2 뒤 순서: P3 codex-advisor → P4 rubber-duck-tutor → P5 skill-creator-pro → P6 claw-mux·notebooklm → P7 나머지(vibeproxy-kit 맨 끝). S5는 원 작성 머신에서만.
+- P2 뒤 순서: P3 codex-advisor → P4 rubber-duck-tutor → P5 skill-creator-pro → P6 claw-mux·notebooklm → P7 나머지(vibeproxy-kit 맨 끝). S5는 원 작성 머신에서만. P3 이후에도 17차 공통 규칙을 쓸지는 그때 묻는다(17차 승인 범위는 "6·7단계 전체").
 
-**16차 요약:** P2 5단계 `7c14121` + 원장 `5280dea`. md는 기본 로컬, 이번 턴에 게시를 요청하면(`--artifact`든 자연어든) 묻지 않고 Artifact 게시. 규칙 본문은 `references/design-system/channel-decision.md`의 "Markdown on request" 절 하나, 세 스킬은 `.artifact.md` 경로·포인터와 짧은 요약(Mermaid 한 줄·실패 처리)만. ADR 0009 Decision 3 개정 기록, README·description 수정. 상세는 §2-1 "P2 구현 단계" 표 아래 5단계 줄.
+**17차 요약:** P2 6단계 `a24bbac` + 원장 `eed492d`. 지우기 위주로 98줄 줄었다(+50/−148). 상세는 §2-1 "P2 구현 단계" 표 아래 6단계 줄.
 
-**16차 결정**
-- 수정안(doc-visual만)과 달리 **diff-visual·plugin-visual md도 같은 규칙**. 사용자: "세 스킬이 같은 규칙 쓰면 더 좋은 거 아냐?" → 기술 문제는 없고 일만 는다고 답하자 "추천대로". plugin-visual은 `security`/`overview` md도 포함.
-- config(`artifact` 없음/`true`)는 HTML에만 적용 — md는 이번 턴 요청이 있을 때만 게시.
+**17차 결정**
+- #31: 이름만 `icon`으로 바꾸는 수정안(A) 대신 **A'** — 스킬에서 `favicon`/`icon` 언급을 모두 지우고 sidecar 필드도 지운다. 사용자: "스킬에 왜 클로드가 쓰는 툴 옵션이름까지 자세하게 적어야해?"
+- **공통 규칙**(6·7단계 전체): 툴 설명·게이트·모델 기본 행동과 같은 내용은 옮기지 말고 지운다. 사용자: "이처럼 이상한 수정방향으로 결정된거잇는거아냐?" → #19·#20·#25 수정안을 고쳤다(각 행).
+- 푸시는 미룸.
 
-**16차 교훈**
-- ⚠️ 범위 질문을 "공용 규칙 파일을 세 스킬이 같이 읽어서…"로 시작했더니 "무슨말이야 이해안가". 명령 예시(`/diff-visual --format md 링크로 올려줘` → 지금은 게시 기능 없음)로 다시 말하니 통했다. 15차 교훈과 같다 — 처음부터 예시로.
-- ⚠️ "합의 범위 밖이라 doc-visual만"이라고 추천했더니 "왜? 근거는?" → "같은 규칙이 더 좋은 거 아냐?" 추천 근거가 "승인 범위"뿐이면 약하다. 사용자에게 더 나은 쪽(일관성)과 그 비용(작업량)을 바로 비교해 말한다.
-- ⚠️ Bash 한 줄에 `cat > 파일`이 stdin을 기다려 120초 타임아웃 → 백그라운드로 넘어감. 한국어가 든 python은 Write 도구로 scratchpad에 `.py`를 만들고 실행한다(15차 교훈과 같은 길).
-- ✅ 5단계는 grep(옛 문구 0건) + validate로 검증했고 실제 게시는 7단계 eval로 미뤘다.
+**17차 교훈**
+- ⚠️ 원장 수정안을 "지금 코드와 다른가"로만 재확인했다. 수정안 자체가 검수 기준(C4 no-op·중복)에 맞는지도 봐야 한다. #31 수정안은 툴 설명을 스킬에 다시 적는 안이었고, 사용자가 잡았다. 7단계 수정안도 구현 전에 이 눈으로 본다.
+- ⚠️ Q1을 툴 파라미터 세부부터 설명했더니 "먼소리하는거야", "줌아웃해 이걸 왜질문한거야". 질문 전에 한 줄로 큰 그림(무슨 단계, 왜 묻나)을 먼저 말한다. 15·16차 교훈(예시로)과 같은 줄기.
+- ⚠️ Python 3.9 + 한국어 긴 줄: heredoc도, Write로 만든 `.py`도 `SyntaxError: Non-UTF-8 code`. 파일 첫 줄에 `# -*- coding: utf-8 -*-`를 넣으면 된다. 그리고 python과 `git commit`은 `&&`로 잇는다 — 17차에 python이 실패했는데 다음 줄의 commit이 돌아 빈 기록 커밋이 생겼다(amend로 고침).
+- ✅ 단계 6은 지우기 전에 "지울 내용이 references·게이트에 있나"를 grep으로 확인했다(#29 규칙 7개). 이 확인을 7단계에도 쓴다.
 - 14차에서 이어지는 것: auto mode 분류기가 막으면 우회하지 말고 바로 한 줄로 묻는다. 무엇을 왜 받는지(공식 문서 fetch 등) 먼저 말한다. `claude -p … --allowedTools`는 프롬프트를 삼키므로 stdin으로. 테스트에서 PATH를 바꾸면 `process.execPath`. 심각도 라벨(med·low)을 "안 고쳐도 됨"으로 번역하지 않는다. 이 원장이 handoff다(toolbox handoff 설정은 `docs/handoff/vision-powers`를 가리키지만 별도 파일을 만들지 않는다).
 
 **12차에서 이어지는 주의:** 두 머신에서 작업한다 — 배포 때 release-workflow 1단계(fetch·`origin/main` 비교)를 건너뛰지 않는다(12차 로컬 `main`이 23커밋 뒤였음).
@@ -63,7 +63,7 @@
 - ⚠️ 모델은 한국어로 답한다(전역 CLAUDE.md) — 채점 정규식을 영어 단어로만 걸지 않는다. 스킬 흐름의 전제 조건도 맞춘다(9차 `/duck-orient`는 `.claude/orientation.md`가 있어야 gap을 확인하는데 없는 레포로 돌렸다).
 - ⚠️ macOS bash 3.2: `declare -A` 없음, `set -u`에서 빈 배열 `"${a[@]}"`는 오류(`${a[@]+"${a[@]}"}`), `timeout` 없음(`perl -e 'alarm shift; exec @ARGV' 600 …`).
 
-- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 10차: worktree-plus(§2-7 #25) `231504a`(3.2.0). 11차: worktree-plus(§2-7 #28·#29) `b451fb8`(3.2.1) — 그릴링으로 버그 하나씩 방향 확정. e2e-test-runner 플러그인 삭제 `e69be21` — §2-7 #6을 보고하자 사용자가 삭제를 물었고, 3월 이후 방치·옛 SDK(`@anthropic-ai/claude-code@^1.0.77`의 `query`, SDK는 지금 `@anthropic-ai/claude-agent-sdk`)·열린 버그 3건(#3·#6·#7)으로 삭제 추천 → 승인. README 두 곳의 Lab 절(이 플러그인뿐)도 삭제. 12차: v1.84.0 배포 `ee4f077`(P1 나머지). 13차: P2 결정(원장만). 14차: P2 1~3단계 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 미배포). 15차: P2 4단계 `00422aa`. 16차: P2 5단계 `7c14121`. 상세는 각 행.
+- 7차: codex-advisor(§2-3 #17) `dae4f7f`·`85f10d5`·`a3cfba4`(5.1.0). 8차: worktree-plus(§2-7 #1·#2) `ebbdffa`(3.1.1) + `6ad0cdd`(3.1.2). 9차: rubber-duck-tutor(§2-4 #1·#21) `d7ea71d`(3.1.3) + 원장 `b0b8999`. 10차: worktree-plus(§2-7 #25) `231504a`(3.2.0). 11차: worktree-plus(§2-7 #28·#29) `b451fb8`(3.2.1) — 그릴링으로 버그 하나씩 방향 확정. e2e-test-runner 플러그인 삭제 `e69be21` — §2-7 #6을 보고하자 사용자가 삭제를 물었고, 3월 이후 방치·옛 SDK(`@anthropic-ai/claude-code@^1.0.77`의 `query`, SDK는 지금 `@anthropic-ai/claude-agent-sdk`)·열린 버그 3건(#3·#6·#7)으로 삭제 추천 → 승인. README 두 곳의 Lab 절(이 플러그인뿐)도 삭제. 12차: v1.84.0 배포 `ee4f077`(P1 나머지). 13차: P2 결정(원장만). 14차: P2 1~3단계 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 미배포). 15차: P2 4단계 `00422aa`. 16차: P2 5단계 `7c14121`. 17차: P2 6단계 `a24bbac`. 상세는 각 행.
 
 | # | 범위 | 막는 결정 |
 |---|---|---|
@@ -78,7 +78,7 @@
 | # | 2부 범위 | 막는 결정 |
 |---|---|---|
 | P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, ~~§2-4 #1·#21~~ ✅ `d7ea71d`, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, ~~§2-7 #1·#2~~ ✅ `ebbdffa`, ~~§2-7 #6~~ ✅ 플러그인 삭제 `e69be21` | — (Q11은 "우선순위 순 하나씩"으로 대체) |
-| P2 | §2-1 vision-powers 나머지 — 13차에 결정 완료, 7단계로 나눔(§2-1 "P2 결정"·"P2 구현 단계"). 14차 1~3단계 ✅, 15차 4단계 ✅, 16차 5단계 ✅, 6~7단계 남음 | ~~#10~~ 13차 결정 |
+| P2 | §2-1 vision-powers 나머지 — 13차에 결정 완료, 7단계로 나눔(§2-1 "P2 결정"·"P2 구현 단계"). 14차 1~3단계 ✅, 15차 4단계 ✅, 16차 5단계 ✅, 17차 6단계 ✅, 7단계 남음 | ~~#10~~ 13차 결정 |
 | P3 | §2-3 codex-advisor 나머지 | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
 | P5 | §2-2 skill-creator-pro(#15 `claude plugin eval` 분기 포함) | #9 |
