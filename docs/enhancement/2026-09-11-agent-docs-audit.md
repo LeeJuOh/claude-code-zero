@@ -20,12 +20,14 @@
 - P3 후보(14차): security-auditor가 codex-advisor 스킬 10개의 bare `Bash` allowed-tools를 CRITICAL로 보고.
 - P2 뒤 순서: P3 codex-advisor → P4 rubber-duck-tutor → P5 skill-creator-pro → P6 claw-mux·notebooklm → P7 나머지(vibeproxy-kit 맨 끝). S5는 원 작성 머신에서만. P3 이후에도 17차 공통 규칙을 쓸지는 그때 묻는다.
 
-**상태(20차 중단, git 기준):** develop. v1.85.0까지 푸시함, 이 원장 커밋만 미푸시. 20차 커밋: `cdae0d8`(7단계), `e1e5b9e`(원장), `4cc477a`(LOST 2개 복구) + 이 원장 커밋.
+**상태(20차 중단, git 기준):** develop, working tree clean. `origin/develop`=`f209ba7`, `origin/main`=`f2c638c`, 태그 `v1.85.0`(→`f2c638c`) 푸시됨. 그 뒤 원장 커밋 2개(`2fce4e2`와 이 핸드오프 커밋)는 미푸시 — 21차 시작 때 푸시할지 묻는다. 20차 커밋: `cdae0d8`(7단계), `e1e5b9e`·`b62ea67`(원장), `4cc477a`(LOST 2개 복구), `f209ba7`(main→develop 동기화), `f2c638c`(main 머지)+`v1.85.0`.
 
 **20차 교훈**
 - ⚠️ 이유를 지어내지 않는다. 19차에 highlight.js 금지 이유를 "Mermaid 결정과 같은 렌더링 선택"으로 적었는데 비교한 적이 없었다 — 사용자가 "하이라이트 js 금지한다고?"로 짚음. 이유가 틀렸으면 규칙 유지/변경을 묻고, 유지하면 이유 없이 두고 과제로 남긴다.
 - ⚠️ 사용자가 "뭐할차례?"를 물으면 작업 중이어도 다음 단계 한 줄로 바로 답한다.
 - ✅ 드라이런 결과는 `commands.sh`를 grep으로 표로 모아(Artifact 호출 수, sidecar url, Ask 수, `--content-only`) 옛/새를 한눈에 비교.
+- ✅ 배포 전 삭제 대조: 서브에이전트가 `git diff <전> <후>`의 지운 규칙마다 MOVED/REWORDED/REF/TOOL/LOST로 분류 → 190개 중 LOST 11개, 그중 2개를 되살림. 드라이런만으로는 이런 손실이 안 보인다. 큰 삭제 정리 뒤에는 이걸 검증 단계에 넣는다.
+- ⚠️ "문제없다?"에는 검증 안 한 것을 먼저 말한다(이번엔 지운 줄 대조를 안 한 채 배포를 물었다).
 - ✅ JSON 매니페스트의 문자열 하나를 바꿀 때 `jq`는 파일 전체 형식을 바꾼다 → python으로 `json.dumps(옛 값)` 문자열 치환.
 
 **19차 교훈**
