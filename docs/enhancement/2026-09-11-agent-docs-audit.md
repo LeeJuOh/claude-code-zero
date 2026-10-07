@@ -360,7 +360,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 6. ~~release-workflow 레포 태그 번호 기준~~ — **결정(2026-09-24): 기존 관행 명문화.** 이번 릴리즈에 minor·major로 오른 플러그인이 있으면 태그 minor, patch만이면 태그 patch(v1.83.0 ← codex 5.0.0, v1.83.1 ← 5.0.2)
 7. ~~AGENTS.md:60(모든 플러그인 작업 → `/skill-creator-pro`) — 제안 문구(§1-1)로 할지~~ — **결정(2026-09-24): 제안 문구대로.** 공식 skill-creator 대신 pro를 가리킨다(본문 동일 + 플러그인 스킬용 35줄, 결함은 §2-2에서 수정). 플러그인 스킬의 동작 검증(`claude plugin eval`)은 스킬에 넣는다(§2-2 #15). :82는 삭제
 8. rubber-duck #2 수정안 — (a) 원안: 4번을 "already committed session edits"로 재정의 (b) 3·4번 순서 교환. (a)는 미커밋 세션 편집을 `/duck-review`로 보내 duck-verify:4("code just written")와 어긋나고, (b)는 Mode Map(:18-19) 순서와 맞는다
-9. skill-creator-pro #9 — `claude`/`anthropic` 예약 규칙 유지 여부. API·claude.ai 스킬엔 유효한 규칙이라 #11(Claude.ai 절 삭제, ADR 0001) 결정과 묶인다
+9. ~~skill-creator-pro #9 — `claude`/`anthropic` 예약 규칙 유지 여부. API·claude.ai 스킬엔 유효한 규칙이라 #11(Claude.ai 절 삭제, ADR 0001) 결정과 묶인다~~ — **결정(2026-10-08, 28차): 묶이지 않음.** 공식 skill-creator에 Claude.ai 절은 있고 예약 규칙은 없다(pro 추가분). Claude.ai 절은 references로 옮겨 유지, 예약 문장은 둘로 나눔 — §2-2 "P5 결정"
 10. vision-powers #7 — doc-visual의 md 게시 예외를 인정하려면 channel-decision.md의 권위인 ADR 0009 §3 개정이 따라온다. 개정할지, doc-visual의 md 게시를 없앨지
 11. 실행 확인 필요(결정 아님): claw-mux #2(라이브 pane에서 `❯` 오판 재현) — 남음. ~~2부 공통 "reference 파일 치환"~~ 확인됨(치환 안 됨, 2026-09-24)
 12. ~~다른 머신 메모리 2개 이관 여부~~ — **결정(2026-09-24, 이 머신 `/Users/leejuo`에서 처리):** `subagent-model-preference` 버림(Fable 세션 전제), `wiki-is-symlink-to-llm-wiki` → AGENTS.md `references/ · wiki/` 절 반 줄(llm-wiki 레포에서 수정). 두 메모리 파일 삭제함. 원문: — `subagent-model-preference`(→ 전역 선호. 근거가 "세션이 Fable 5"라 지금도 유효한지 확인), `wiki-is-symlink-to-llm-wiki`(→ 전역 `~/.claude/CLAUDE.md` 후보: `wiki -> ../llm-wiki/wiki` 심링크가 claude-code-zero·excalidraw-architect·link-dive 3개 레포에 있음 ✅). 전역 CLAUDE.md는 이 머신에 아직 없음 ✅
@@ -499,6 +499,20 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 | 15 | med | skill-creator-pro(eval 절) | 공식은 플러그인에 실린 스킬의 동작 검증에 `claude plugin eval`을 권함(skills.md:831, v2.1.269+). skill-creator의 `evals/evals.json`과 형식 비호환(plugin-evals.md:15). 스킬은 이를 모름 | 플러그인 스킬이면 `claude plugin eval`로 안내하는 분기 추가(#7 결정). 500줄 초과(#11)와 함께 줄 수 관리 | ✅ |
 
 기타: agents 3개·schemas.md·scripts는 공식과 동일(ADR 0001 준수). 기록 안 된 fork 2개 — `eval-viewer/generate_review.py:279-291` `</script>` 이스케이프, `eval-viewer/viewer.html`의 sandboxed iframe(.html 출력 실시간 렌더). 공식 `LICENSE.txt`(Apache-2.0) 누락. → ADR/README에 fork 기록, LICENSE 추가.
+
+### P5 결정 (2026-10-08, 28차 그릴링 — 원장만, 구현 전)
+
+순서: P5(skill-creator-pro)를 P4보다 먼저(사용자 승인). 사실 확인 기준: 설치된 공식 skill-creator `claude-plugins-official/skill-creator/2a8ad9f74633` SKILL.md 485줄, pro 520줄, 공식 skills.md·platform agent-skills overview(2026-10-08 받음).
+
+할 일:
+- [ ] #11 Claude.ai 절(pro :453~, 공식 :420~)을 공식 문장 그대로 `skill-creator-pro/references/claude-ai.md`로 옮기고 본문엔 포인터 1줄. ADR 0001 Consequences의 "`references/` returns to `schemas.md` only" 한 줄 개정(Claude Code 플러그인이라 Claude.ai 절은 거의 안 읽히는데 매번 로드 — C5).
+- [ ] #11 pro 추가 블록 :49-58("스킬이 맞는 도구인가" 관문, 10줄)을 3줄로: "매 세션 필요한 지식 → CLAUDE.md, 이벤트 자동 실행 → hook" 판단만(5개 도구 목록은 C4). 다른 pro 추가 블록(:96-97, :153-154, :187-188, :339-346, :432-440, :503-504)은 ADR 0001대로 본문 유지. 목표 ≤500줄(pro :108 자기 규칙), #9·#15 추가분 포함. 지울 줄 목록은 구현 전에 보고·승인.
+- [ ] #9 :436 예약 문장을 둘로: Claude Code는 폴더 이름 `synced`·`anthropic-skills` 금지(skills.md:155-156), API·Claude.ai는 이름에 `claude`·`anthropic` 포함 금지(overview:217). 원장의 "`claude`/`anthropic`은 예약" 서술은 Claude Code 기준 틀렸고 API 기준 좁았다. 이름 충돌 우선순위 추가는 원안대로.
+- [ ] #7 auto-optimize의 모든 실행(기준선·실험 N회)은 실행마다 새 서브에이전트, 스킬 경로와 입력만 주고 평가 기준은 안 줌, 한 실험의 N회는 같은 턴에 동시 시작. 공식 :169-171(실행마다 서브에이전트, 한 턴에 모두 시작)·:424(직접 실행은 "덜 엄밀")와 같은 원칙.
+- [ ] #3 auto-optimize에 `disable-model-invocation: true`(무인 제자리 수정 루프 + 큰 비용 → 사용자가 `/auto-optimize`로만 시작; 겹침 0, description ~290자 절약). skill-creator-pro description의 "Also trigger on…" 삭제 → 공식 description + "for Claude Code". :346의 `/auto-optimize` 안내는 유지.
+- [ ] #6 대시보드: `auto-optimize/scripts/render_dashboard.py` 추가 — `results.json`을 읽어 결과를 넣은 self-contained HTML + meta refresh를 씀. 모델은 실험마다 스크립트 1번 실행(결정적 우선, file:// fetch 차단 회피, 모델이 HTML을 매번 다시 쓰지 않음).
+- [ ] 나머지 행은 원장 수정안대로: #2(작업 폴더 → `${CLAUDE_PLUGIN_DATA}/autoresearch-<name>/`, `SKILL.md.baseline` 백업도 그 안), #4, #5, #8, #10, #12, #13, #14, #15, 기타(fork 기록·LICENSE).
+- [ ] 버전 범프(minor), README·description 2곳 갱신, `claude plugin validate .`.
 
 ## 2-3. codex-advisor
 
