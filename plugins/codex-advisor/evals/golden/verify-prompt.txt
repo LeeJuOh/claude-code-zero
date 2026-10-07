@@ -27,5 +27,3 @@ Do not speculate about issues not evidenced in the document.
 Review the entire document before finalizing.
 Check for interactions between sections that may create contradictions.
 </completeness_contract>
-
-<document>

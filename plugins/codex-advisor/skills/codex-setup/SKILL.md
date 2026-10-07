@@ -1,8 +1,9 @@
 ---
 name: codex-setup
-description: "Check Codex CLI, auth, Official plugin status, and configure defaults. Use when asked \"codex setup\", \"configure codex\", \"install codex\", or when another codex-advisor skill reports setup issues."
+description: "Check the Codex CLI, sign-in and the Official plugin, and set the default model and effort in config.toml."
+disable-model-invocation: true
 argument-hint: "[--model MODEL] [--effort LEVEL] [--status]"
-allowed-tools: ["Bash", "Read", "Edit", "AskUserQuestion"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)", "Read", "Edit", "AskUserQuestion"]
 ---
 
 # Codex Setup & Configuration
@@ -22,53 +23,30 @@ Parse $ARGUMENTS:
 
 ## Preflight Check
 
-### Check Codex CLI
+One call finds the Official Codex plugin and asks its companion what is installed and signed in:
 
 ```bash
-which codex >/dev/null 2>&1 && codex --version || echo "NOT_INSTALLED"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-job.sh" setup
 ```
 
-If NOT_INSTALLED: "Codex CLI is not installed. Install: `npm install -g @openai/codex`"
-
-### Check Authentication
-
-```bash
-codex --version 2>&1
-```
-
-If output contains "not authenticated" or "OPENAI_API_KEY": "Authentication required. Run: `codex login`"
-If version prints normally: auth is likely OK (full verification happens on first real command).
-
-### Check Official Codex Plugin
-
-```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
-```
-
-If exit code non-zero (plugin not found), guide the user through the full installation process:
+If it fails with `Official Codex plugin not found`, guide the user through the full installation process:
 
 1. Tell the user to run these commands **in order** (they must type these themselves since they are interactive CLI commands):
    - `/plugin marketplace add openai/codex-plugin-cc` — adds the Official Codex marketplace
    - `/plugin install codex@openai-codex` — installs the plugin from that marketplace
    - `/reload-plugins` — activates the newly installed plugin
-2. After the user completes the steps, re-run the companion check to verify.
+2. After the user completes the steps, re-run the check to verify.
 
-Do NOT just print the steps and move on. Wait for the user to complete them.
+Do NOT just print the steps and move on. Wait for the user to complete them. Until then, report the CLI and authentication rows as unknown — only the companion checks them.
 
-If found, run setup check:
-
-```bash
-node "$CODEX_COMPANION" setup --json
-```
-
-Include the setup output in the status report.
+Otherwise fill the status report from the JSON: `codex.available` and `codex.detail` for the CLI, `auth.loggedIn` and `auth.detail` for authentication. Relay `nextSteps`, except the review-gate one — `--enable-review-gate` belongs to the Official plugin's own `/codex:setup` and Stop hook, which codex-advisor does not wrap.
 
 ## Configuration Management
 
 ### Read current config
 
 ```bash
-cat "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null || echo "NO_CONFIG"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-job.sh" config
 ```
 
 ### Set Model / Effort (`--model`, `--effort`)
@@ -76,7 +54,7 @@ cat "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null || echo "NO_CONFIG"
 Both flags are handled by one call. Empty string = no change for that field:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" "<model or empty>" "<effort or empty>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" "<model or empty>" "<effort or empty>"
 ```
 
 The script's first stdout line is:
@@ -104,8 +82,8 @@ If a value looks like an obvious typo, `AskUserQuestion` beats letting it throug
 
 | Item | Status |
 |------|--------|
-| Codex CLI | version or NOT_INSTALLED |
-| Authentication | OK or FAILED |
+| Codex CLI | `codex.detail` or NOT_INSTALLED |
+| Authentication | `auth.detail` or NOT LOGGED IN |
 | Official Plugin | OK or NOT_INSTALLED (required) |
 
 ## Current Configuration (~/.codex/config.toml)
@@ -123,5 +101,5 @@ To change: `/codex-setup --model gpt-5.6-sol --effort high`
 ## Gotchas
 
 - **config.toml applies globally.** Changes affect all Codex commands system-wide — Official plugin, direct CLI, and every codex-advisor skill. Warn the user when you mutate it.
-- **`--effort` is not a registered review/adversarial flag.** `handleReviewCommand` `valueOptions = [base, scope, model, cwd]` (`codex-companion.mjs:714`). The only path that reaches the review code is the config.toml `model_reasoning_effort` key. `--model` IS honored as a flag in companion 1.0.4+ (`startThread({ model })`, `lib/codex.mjs:1010-1015`), but codex-advisor still routes it through `config.toml` for **consistency across skills** and so the value persists for the next session — same call shape on review/adversarial/rescue/verify/research. Every skill (`review`, `adversarial`, `research`, `verify`, `rescue`) accepts `--model`/`--effort` and writes via `scripts/apply-codex-config.py` — so the user doesn't have to call `codex-setup` separately. When a project's own `.codex/config.toml` sets a requested key, those skills also pass it on the Codex command (`--model`, plus `--effort` on `task`), since run-time values outrank every config file; review and adversarial have no effort flag, so the script prints a `Note:` instead.
-- **Don't create config.toml if the user only asked for status.** `apply-codex-config.py "" ""` is safe (no-op, prints current values) but avoid it when just reporting — `grep`/`cat` is enough.
+- **Other skills set these too.** review, adversarial, rescue, verify and research accept `--model`/`--effort` and write them through the same script. Review and adversarial have no `--effort` flag, so config.toml is the only way to set their effort — details in `references/companion-usage.md` §2.
+- **Don't create config.toml if the user only asked for status.** `apply-codex-config.py "" ""` is safe (no-op, prints current values) but avoid it when just reporting — `codex-job.sh config` is enough.

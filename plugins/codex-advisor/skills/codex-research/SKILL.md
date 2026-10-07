@@ -2,7 +2,7 @@
 name: codex-research
 description: "Deep-dive research using Codex, double-checked by a fresh verifier subagent. Use when asked \"codex research\", \"deep dive with codex\", \"investigate this topic\". Not for code review or plan verification."
 argument-hint: "topic [path/to/document.md] [--model SLUG] [--effort LEVEL]"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
 ---
 
 # Codex Research + Independent Verification
@@ -22,19 +22,18 @@ For code review use `/codex-review`. For plan verification use
 
 | Phase | Allowed | Forbidden |
 |-------|---------|-----------|
-| 1 ANALYZE | `test -f/-s`, `wc -l/-c`, `file`, `echo`, `printf`, `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, no stdout) | `cat "$DOC"` to stdout, `head`, `tail`, Read, Grep, Glob |
-| 2 INVOKE | Bash for companion launch via stdin pipe | All source / document reads to stdout |
-| 3 WAIT | `status --wait` loop (≤6 iterations, ≤24 min), result written to a file | All reads, manual polling, `ps`/`kill` |
-| 4 VERIFY | `prepare-verifier.py --mode doc`, then `Agent` (`codex-advisor:verifier`) | Reading the document or the Codex result; judging or supplementing any finding yourself |
-| 5 REPORT + SAVE | Write report file | n/a |
+| 1 ANALYZE | `codex-task.sh check-doc`, `new-run`, `prompt` (the document goes in by file redirect, never to stdout), `apply-codex-config.py` | `cat "$DOC"` to stdout, `head`, `tail`, Read, Grep, Glob |
+| 2 INVOKE | `codex-task.sh launch` (prompt via stdin pipe) | All source / document reads to stdout |
+| 3 WAIT | `codex-task.sh wait` loop (≤6 calls, ≤24 min), result written to a file | All reads, manual polling, `ps`/`kill` |
+| 4 VERIFY | `codex-task.sh payload --mode doc`, then `Agent` (`codex-advisor:verifier`) | Reading the document or the Codex result; judging or supplementing any finding yourself |
+| 5 REPORT + SAVE | `codex-report.sh save`, `codex-report.sh clean` | Write tool for the report |
 
 **Why the material stays out of context:** the value of this skill is a second
 reader who owes nothing to the first. Once you have read Codex's findings, your
 own additions arrive downstream of them — which is agreement dressed as
 independence. Passing paths instead of text is what keeps the two readings apart.
 
-Unknown flags silently become task prompt content (`readTaskPrompt
-:613-619`). Phase 1 is the only safety net.
+`codex-task.sh launch` refuses any argument that is not a known task flag, so a stray word stops the launch instead of landing in the prompt. Phase 1 still decides what is a flag and what is topic text.
 
 ---
 
@@ -42,7 +41,7 @@ Unknown flags silently become task prompt content (`readTaskPrompt
 
 ### Parse `$ARGUMENTS`
 
-**Whitelist for this skill:** `--model <slug>`, `--effort <level>` (skill-level, route through `apply-codex-config.py` — never reach the companion). The topic and optional document path are other skill inputs, not companion flags.
+**Whitelist for this skill:** `--model <slug>`, `--effort <level>` (skill-level, route through `apply-codex-config.py`; they reach the companion only as the `Run flags:` it prints). The topic and optional document path are other skill inputs, not companion flags.
 
 Rules:
 
@@ -83,27 +82,20 @@ in one step.
 ```bash
 # Input validation only — never load content.
 # Replace <literal doc path> with the path parsed from $ARGUMENTS.
-test -f "<literal doc path>" || { echo "File not found: <literal doc path>" >&2; exit 1; }
-test -s "<literal doc path>" || { echo "File is empty: <literal doc path>" >&2; exit 1; }
-echo "DOC_LINES=$(wc -l < "<literal doc path>")"   # size info, not content
+# Refuses a missing or empty file; prints DOC_LINES= (size info, not content).
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" check-doc "<literal doc path>"
 ```
 
 ### Assemble the payload
 
 ```bash
-set -o pipefail
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
-  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" new-run "${CLAUDE_PLUGIN_DATA}" research
+```
 
-mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
-TS=$(date +%s%N)
-PROMPT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/research-prompt-${TS}.txt"
-JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/research-job-${TS}.json"
-RESULT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/research-result-${TS}.json"
-echo "PROMPT_FILE=$PROMPT_FILE"
-echo "JOB_JSON_FILE=$JOB_JSON_FILE"
-echo "RESULT_FILE=$RESULT_FILE"
+It refuses when the Official Codex plugin is missing (point the user at
+`/codex-setup`), else prints `RUN_DIR=` and `PROMPT_FILE=`. Then write the prompt:
 
+```bash
 # Header via heredoc. Replace <literal topic> with the cleaned research
 # topic from Phase 1. Do NOT embed the user's meta-instructions.
 # Block provenance — official gpt-5-4-prompting (prompt-blocks.md), bodies
@@ -113,7 +105,9 @@ echo "RESULT_FILE=$RESULT_FILE"
 #   structured_output_contract  — §Output and Format
 #   research_mode               — §Task-Specific Blocks
 #   citation_rules              — §Grounding and Missing Context
-cat > "$PROMPT_FILE" <<'EOF'
+# Omit the --document line in topic-only mode.
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" prompt "<literal PROMPT_FILE path>" \
+  --document "<literal doc path>" --tag context_document <<'EOF'
 <task>
 You are a technical researcher conducting a deep investigation.
 Topic: <literal topic from Phase 1>
@@ -137,24 +131,16 @@ Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
 EOF
 ```
 
-**Topic-only mode:** if the user gave no document, stop here — the
-payload is complete. Skip the append step below.
-
-**Document mode:** append the context document via file redirect:
-
-```bash
-printf '\n<context_document>\n' >> "$PROMPT_FILE"
-# Use the literal doc path, NOT a shell variable from a prior Bash call.
-cat "<literal doc path>" >> "$PROMPT_FILE"
-printf '\n</context_document>\n' >> "$PROMPT_FILE"
-```
+**Document mode** appends the context document wrapped in
+`<context_document>` by file redirect inside the script — stdout stays empty.
+**Topic-only mode** sends the header alone.
 
 ### Apply model/effort (if either flag was provided)
 
 Run after payload assembly, before Phase 2, so the companion sees the new `config.toml`:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
   "<literal clean effort from Phase 1 or empty>" \
   --run-flags model,effort
@@ -172,7 +158,7 @@ Parsed: topic="GraphQL vs tRPC in 2026", doc=(none)
 Parsed: topic="performance regression analysis", doc="benchmarks/results.md" (DOC_LINES=512)
 ```
 
-Order: apply-codex-config.py output first, Parsed line second. Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, `RESULT_FILE`, and (if any) `USER_DOC` paths.
+Order: apply-codex-config.py output first, Parsed line second. Remember the literal `RUN_DIR`, `PROMPT_FILE`, and (if any) `USER_DOC` paths.
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (ANALYZE rules) and `§8` (blind-payload details).
 
@@ -249,62 +235,43 @@ Use `AskUserQuestion` exactly once:
   produced before it runs.
 - **Needs changes** → the user will describe what to change (e.g.,
   topic rewording, adding/removing XML blocks, changing research
-  framing). Rewrite PROMPT_FILE with the updated content (re-append
-  the document if in document mode), then re-display and re-ask. No
-  loop limit.
-- **Cancel** → clean up PROMPT_FILE and JOB_JSON_FILE, stop execution.
+  framing). Rerun the `prompt` call with the updated content — it rewrites
+  PROMPT_FILE and, in document mode, re-appends the document — then
+  re-display and re-ask. No loop limit.
+- **Cancel** → `codex-report.sh clean` the `RUN_DIR` (as in Phase 5, without `--keep-inputs` — no payload exists yet), stop execution.
 
 ---
 
-## Phase 2: Invoke (Pattern B — stdin pipe to `task --background`)
+## Phase 2: Invoke
 
 ```bash
-# NEVER pass a positional arg — readTaskPrompt short-circuits on
-# positionalPrompt (:619), silently dropping the entire blind payload.
-cat "<literal PROMPT_FILE path>" | node "$CODEX_COMPANION" task --background --json \
-  <flags from the "Run flags:" line, if the apply step printed one> \
-  > "<literal JOB_JSON_FILE path>" 2> "<literal JOB_JSON_FILE path>.stderr" \
-  || { echo "task launch failed:" >&2; cat "<literal JOB_JSON_FILE path>.stderr" >&2; exit 1; }
-
-# Capture jobId (node, not python)
-JOB_ID=$(node -e 'const fs=require("fs");try{const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!j.jobId)throw new Error("no jobId");process.stdout.write(j.jobId);}catch(e){process.stderr.write("JOB_ID parse failed: "+e.message+"\n");process.exit(1);}' "<literal JOB_JSON_FILE path>") \
-  || { echo "raw companion stdout:" >&2; cat "<literal JOB_JSON_FILE path>" >&2; exit 1; }
-echo "JOB_ID=$JOB_ID"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" launch "<literal PROMPT_FILE path>" "<literal RUN_DIR path>" \
+  <flags from the "Run flags:" line, if the apply step printed one>
 ```
 
-Remember the literal `JOB_ID`.
+It prints `JOB_ID=<id>`. Remember the literal `JOB_ID`.
 
 ---
 
-## Phase 3: Wait (`status --wait` loop)
+## Phase 3: Wait
 
-Each call blocks ≤4 min. Re-call on timeout. Cap at **6 iterations** (24
-minutes).
-
-```bash
-# Redirect is load-bearing: `status --json` echoes request.prompt back, document and all.
-node "$CODEX_COMPANION" status --wait "<literal JOB_ID>" \
-  --timeout-ms 240000 --json > "<literal JOB_JSON_FILE path>.status"
-
-node -e 'const o=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(JSON.stringify({status:o.job&&o.job.status,waitTimedOut:o.waitTimedOut})+"\n")' \
-  "<literal JOB_JSON_FILE path>.status"
-```
-
-- `completed` → fetch result
-- `failed` → categorize per §6, save failure report
-- `waitTimedOut === true` + queued/running → re-call
-- Cap exhausted → `wait-timeout` (§6). Show JOB_ID, suggest `/codex:status <JOB_ID>`.
-
-Fetch result:
+Call with the Bash tool's `timeout` set to 300000: each call blocks up to 4
+minutes, and the default Bash timeout is 2. A call the Bash tool cuts off does
+not stop the job — call again, and count it toward the cap. Cap at **6 calls** (24 minutes).
 
 ```bash
-node "$CODEX_COMPANION" result "<literal JOB_ID>" --json \
-  > "<literal RESULT_FILE path>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" wait "<literal JOB_ID>" "<literal RUN_DIR path>"
 ```
 
-The redirect is load-bearing: Phase 4 hands that file to the script and to the
-Verifier. Printing it here would put Codex's answer in your context before anyone
-independent had looked at it.
+- `STATUS=completed` → Phase 4, with the printed `RESULT_FILE`
+- `STATUS=failed` or `cancelled` → categorize the `ERROR=` line per §6, save failure report
+- `WAIT_TIMED_OUT=true` → call again
+- 6 calls exhausted → `wait-timeout` (§6). Show JOB_ID, suggest `/codex-status <JOB_ID>`.
+
+The script keeps the companion's output in files under `RUN_DIR`. Do not print
+them: Phase 4 hands `RESULT_FILE` to the script and to the Verifier, and printing
+it here would put Codex's answer in your context before anyone independent had
+looked at it.
 
 Full error table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
 
@@ -320,18 +287,13 @@ Verifier, collect what comes back.
 ### Step 1 — Prepare the payload
 
 ```bash
-WORK="${CLAUDE_PLUGIN_DATA}/tmp/research-payload-$(date +%s%N)"
-echo "WORK=$WORK"
-
 # Drop the --document line for a topic-only run — there is no document to name,
 # and the approved prompt file is the scope the Verifier judges coverage against.
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" payload "${CLAUDE_PLUGIN_DATA}" \
   --mode doc --skill research \
   --prompt-file "<literal PROMPT_FILE path>" \
   --result-file "<literal RESULT_FILE path>" \
-  --document "<literal USER_DOC path>" \
-  --out-dir "$WORK"
-echo "prepare-verifier exit=$?"
+  --document "<literal USER_DOC path>"
 ```
 
 The payload holds those paths and nothing else — no document text, no Codex text.
@@ -380,31 +342,24 @@ the verdict would make you the judge again.
 
 ## Phase 5: Report + save
 
-```bash
-mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
-```
-
-**Success:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>.md` using the standard
+**Success:** save with `codex-report.sh save … research` using the standard
 format in `references/evaluation.md` — the topic (and document path, if any) as
 the scope, Codex's output verbatim, the verdicts by classification, and the
 summary counts. The `missing-N` items go under *Gaps in the Codex result*, which
 is where a reader looks to see what the research did not answer.
 
-**Failure:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>-failed.md` with
+**Failure:** save with `codex-report.sh save … research --failed` with
 the §6 error category, stderr, and topic/document path.
 
-Clean up temp files using literal paths from Phase 1:
+Clean up temp files using the literal path from Phase 1, keeping the payload's inputs:
 
 ```bash
-rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_JSON_FILE path>.stderr" \
-  "<literal JOB_JSON_FILE path>.status" \
-  "<literal RESULT_FILE path>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-report.sh" clean "${CLAUDE_PLUGIN_DATA}" "<literal RUN_DIR path>" --keep-inputs
 ```
 
-Leave `$WORK` where it is. A re-verification the user asks for needs that payload
-file and its manifest, and the hook refuses a payload it cannot hash-check.
+Leave `WORK` where it is. A re-verification the user asks for needs that payload
+file and its manifest, plus the `prompt.txt` and `result.json` the payload points
+at, and the hook refuses a payload it cannot hash-check.
 
 ---
 
@@ -417,16 +372,14 @@ file and its manifest, and the hook refuses a payload it cannot hash-check.
   redirects it into the prompt file and Phase 4 passes its path to the Verifier.
 - **Topic-only mode skips the document append entirely** — don't
   accidentally pass an empty `<context_document>` tag.
-- **`cat "$USER_DOC" >> "$PROMPT_FILE"`** — file redirect keeps stdout
-  empty. Reading the doc to stdout defeats the entire point.
-- **Never pass a positional argument with Pattern B's stdin pipe.**
-  `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:619`); a positional silently drops the entire blind payload.
+- **`prompt --document`** appends by file redirect inside the script, so
+  stdout stays empty. Reading the doc to stdout defeats the entire point.
 - **Gaps are reported, not filled.** What Codex left out comes back as
   `missing-N` from the Verifier, which judged it against the scope the user
   approved. Writing your own supplement here would put the author back in the
   analysis.
 - **Temp file paths must come from Phase 1 stdout.** Re-inject literal
-  absolute paths for `PROMPT_FILE`, `JOB_JSON_FILE`, and `RESULT_FILE`; Bash
+  absolute paths for `RUN_DIR` and `PROMPT_FILE`; Bash
   shell variables do not survive across calls.
 
 For the full shared gotchas list, read

@@ -17,7 +17,7 @@ That single line triggered four failures in a row:
 
 1. The trailing `,` was forwarded to `git rev-parse develop,` — unknown revision.
 2. The free-text meta-instruction (`don't pre-analyze...`) was shoved into Codex's argument parser as focus text, which the built-in reviewer rejects.
-3. The review ran in the foreground and hit Bash's 5-minute per-call timeout, so the wrapper got SIGKILLed mid-flight.
+3. The review ran in the foreground and hit Bash's per-call timeout, so the wrapper got SIGKILLed mid-flight.
 4. Claude improvised a manual polling loop with a wrong job ID, burned 28 minutes, and never ran the double-check.
 
 The frustrating part is that everything the user wrote was reasonable —
@@ -27,7 +27,7 @@ prompt and double-check". All four failures were wrapper bugs.
 **What v4.3 does instead:**
 
 - Parses the input with LM intelligence first: drops the trailing comma, attempts to obey the meta-instruction ("don't pre-analyze"), and runs a clean `review --base develop`.
-- Launches long-running reviews in the background so Bash's 5-minute timeout never kills them.
+- Launches long-running reviews in the background so Bash's tool timeout never kills them.
 - Uses the official `status --wait` wait mechanism instead of improvised polling.
 - Hands Codex's findings to a fresh subagent that never saw this conversation, and reports what it sends back: Agreed, Disputed, Nuanced, Unverifiable, plus False Positive (hallucinated file/function) and Uncited from the citation script.
 
@@ -36,7 +36,7 @@ prompt and double-check". All four failures were wrapper bugs.
 - **A second opinion you can trust** — Codex reviews your code, verifies your plans, or researches for you; a separate verifier subagent then checks what Codex returns against the evidence. You get the cross-model check *and* a guardrail against Codex's confident hallucinations.
 - **Six-label classification**, from three deciders that can't cover for each other — the Verifier assigns Agreed / Disputed / Nuanced / Unverifiable, and the citation script assigns False Positive and Uncited before any Verifier runs, so hallucinated `file:line` citations are caught by code rather than by judgement.
 - **Independence enforced on both sides** — the Verifier *can't read* this conversation, because it's a fresh subagent (`agents/verifier.md`) rather than a fork; and the session *can't write* to it, because a PreToolUse hook (`hooks/verifier-payload.mjs`) throws away the launch prompt and substitutes the hash-checked payload a script wrote. Neither side rests on the main session choosing to behave.
-- **Background-resilient** — long jobs survive Bash's 5-minute timeout via background launch + `status --wait`. `/codex-result <job-id>` fetches the stored output even after the session that started it is gone.
+- **Background-resilient** — long jobs survive Bash's tool timeout via background launch + `status --wait` (`scripts/codex-task.sh`). `/codex-result <job-id>` fetches the stored output even after the session that started it is gone.
 - **Every call persists** to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failures save to `<type>-<timestamp>-failed.md` with a categorized error.
 - **10 skills**, works with the Official Codex plugin hidden — `/codex-result`, `/codex-status`, `/codex-cancel`, `/codex-transfer` call the companion script directly.
 
@@ -91,6 +91,8 @@ prompt and double-check". All four failures were wrapper bugs.
 | `/codex-cancel` | Cancel an active background job |
 | `/codex-transfer` | Move the current session into a resumable Codex thread |
 
+Claude starts review, adversarial, rescue, verify and research on its own when you ask in words. The other five run only when you type the command.
+
 ## Transfer vs rescue
 
 Easy to conflate — they're opposites. **Rescue** is a subcontractor: Codex does one task, Claude reads the diff, Claude keeps the wheel. **Transfer** is emigration: the whole conversation moves to Codex (`codex resume <id>`) and Claude's part in it ends — there's no diff to review because nothing comes back.
@@ -99,8 +101,8 @@ Easy to conflate — they're opposites. **Rescue** is a subcontractor: Codex doe
 
 **Every skill that sends Codex a prompt accepts `--model <slug>` and `--effort <level>`** (review, adversarial, rescue, verify, research; setup sets the persistent defaults). Job-management skills (status, result, cancel) and transfer have no model turn to steer. The flags route through `scripts/apply-codex-config.py` and update `config.toml` in `$CODEX_HOME` (default `~/.codex`) before the Codex CLI runs. Two reasons:
 
-1. **`--effort` is not a registered review/adversarial flag.** The companion's `handleReviewCommand` accepts `--base`, `--scope`, `--model`, `--cwd` only (`codex-companion.mjs:714`). Passing `--effort` directly would become silent prompt corruption. Only the `model_reasoning_effort` key in `config.toml` reaches the review code path.
-2. **Consistency + persistence.** `--model` IS honored as a flag in companion 1.0.4+ (`lib/codex.mjs:1010-1015`), but routing it through `config.toml` keeps every codex-advisor skill identical and lets the value carry into the next session without re-typing.
+1. **`--effort` is not a registered review/adversarial flag.** The companion's `handleReviewCommand` accepts `--base`, `--scope`, `--model`, `--cwd` only. Passing `--effort` directly would turn it into focus text. Only the `model_reasoning_effort` key in `config.toml` reaches the review code path.
+2. **Consistency + persistence.** `--model` IS honored as a flag in companion 1.0.4+, but routing it through `config.toml` keeps every codex-advisor skill identical and lets the value carry into the next session without re-typing.
 
 Examples:
 
@@ -126,7 +128,7 @@ Every skill does the same five things in order:
 
 1. **Analyze** — parse your input into clean companion flags. Drop junk, obey meta-instructions addressed to Claude, reject unknown flags with a clarifying question instead of silently forwarding them.
 2. **Draft review** — for prompt-passing skills (rescue, research, verify, adversarial), show the exact prompt or command that will be sent to Codex, plus an `Excluded (hypothesis):` line naming anything the skill held back, and wait for your approval before proceeding.
-3. **Invoke** — run the Official Codex plugin's companion in the background, so long jobs don't die on Bash's 5-minute timeout.
+3. **Invoke** — run the Official Codex plugin's companion in the background, so long jobs don't die on Bash's tool timeout.
 4. **Verify** — a script cuts Codex's output into findings, checks every cited `file:line` against the repo, and writes a payload per group. Each payload goes to a fresh `codex-advisor:verifier` subagent, which reads the cited evidence and returns verdicts. The session that ran the call does the plumbing and the tallying, never the judging.
 5. **Report** — present findings with the classification, save to `${CLAUDE_PLUGIN_DATA}/reviews/<type>-<timestamp>.md`. Failed runs are saved to `<type>-<timestamp>-failed.md` with the categorized error.
 

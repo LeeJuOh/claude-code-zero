@@ -1,8 +1,9 @@
 ---
 name: codex-transfer
-description: "Hand off the current Claude Code session to Codex as a resumable thread with full turn history, then continue outside Claude entirely. Use when asked \"codex transfer\", \"move this session to codex\", \"continue this in codex\", \"hand this off to codex\", or wants to migrate the conversation itself (not delegate one task and come back — for that use /codex-rescue)."
+description: "Hand off the current Claude Code session to Codex as a resumable thread, then continue outside Claude."
+disable-model-invocation: true
 argument-hint: "[--source PATH] [--json]"
-allowed-tools: ["Bash", "AskUserQuestion"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)", "AskUserQuestion"]
 ---
 
 # Codex Session Transfer
@@ -20,38 +21,27 @@ not verification.
 route.
 
 - `--source <path>` — explicit Claude session `.jsonl` to import. Optional; when omitted the companion falls back to the `CODEX_COMPANION_TRANSCRIPT_PATH` env var, which codex-advisor's own SessionStart hook (`hooks/session-start.mjs`) sets automatically — whether or not the Official plugin itself is enabled.
-- `--json` — when the user passes this, show them the raw JSON payload in Phase 3 instead of the friendly summary. This is independent of the `--json` codex-advisor always adds internally to the companion call (see Phase 2) — that one is for our own parsing, not the user's request.
+- `--json` — when the user passes this, show them the raw JSON payload in Phase 3 instead of the friendly summary: add `--show-json` to the script call. This is independent of the `--json` the script always passes to the companion, which is for our own parsing.
 - **Unrecognized token** (any other flag, or free-standing text) → `AskUserQuestion`. Transfer has no positional argument — the companion silently discards anything it doesn't recognize as `--source`/`--cwd`/`--json` (`handleTransfer` destructures only `options`, never `positionals`), so passing it through would do nothing rather than corrupt a prompt. Still don't forward it: ask what the user meant. If it looks like a task description, suggest `/codex-rescue` instead — transfer moves the whole session, it doesn't run a task.
 
 ## Phase 2: Invoke
 
 Single synchronous call — no `--wait`/`--background`, no Pattern A/B.
 The companion's own import timeout is 2 minutes
-(`EXTERNAL_AGENT_IMPORT_TIMEOUT_MS`, `lib/codex.mjs:52`), so give the
+(`EXTERNAL_AGENT_IMPORT_TIMEOUT_MS` in `lib/codex.mjs`), so give the
 Bash tool call itself a `timeout` comfortably above that (e.g.
 `150000`) — a shorter tool-side timeout could kill the process right at
 the companion's own deadline and mask its real error message.
 
 ```bash
-set -o pipefail
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
-  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
-
-OUT_FILE="$(mktemp)"
-node "$CODEX_COMPANION" transfer --json \
-  > "$OUT_FILE" 2> "${OUT_FILE}.stderr" \
-  || { echo "transfer failed:" >&2; cat "${OUT_FILE}.stderr" >&2; exit 1; }
-
-# Add --source "<literal path from Phase 1>" as its own line above if the
-# user supplied one. Never pass it interpolated into a larger string.
-
-node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));console.log("THREAD_ID="+j.threadId);console.log("RESUME_COMMAND="+j.resumeCommand);' "$OUT_FILE"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-job.sh" transfer
 ```
 
-Always include the companion's own `--json` here regardless of whether
-the user passed `--json` — this is what makes `threadId` and
-`resumeCommand` reliably parseable. The user-facing `--json` from Phase
-1 only changes what you *show* them in Phase 3.
+Add `--source "<literal path from Phase 1>"` if the user supplied one, as
+its own quoted argument — never interpolated into a larger string — and
+`--show-json` if they passed `--json`. The script prints `THREAD_ID=` and
+`RESUME_COMMAND=` from the companion's JSON (then the raw payload with
+`--show-json`), or `transfer failed:` and the companion's stderr.
 
 ## Phase 3: Report
 
@@ -69,7 +59,7 @@ the user passed `--json` — this is what makes `threadId` and
   This Claude Code session is done — the conversation continues in Codex from here.
   ```
 
-- User passed `--json`: print `cat "$OUT_FILE"` (the raw payload) instead.
+- User passed `--json`: show the raw payload the script printed instead.
 
 ## Errors
 
