@@ -7,20 +7,32 @@
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-10-07 20차 중단 → 21차)
+## 핸드오프 (2026-10-08 21차 중단 → 22차)
 
-**목표:** P3(§2-3 codex-advisor 나머지). P2는 끝났고 v1.85.0(vision-powers 5.0.0)으로 배포·푸시했다(`f2c638c`, 20차).
+**목표:** P3(§2-3 codex-advisor) 구현. 21차 그릴링에서 결정을 모두 끝냈다 — §2-3 "P3 결정" 체크박스 목록이 작업 목록이다(원장 `df5525e`). 아직 코드는 하나도 바꾸지 않았다.
 
-**첫 행동:** §2-3 남은 행을 현재 코드에서 재확인 → 짧게 보고 → 승인("플러그인 하나 처리 절차"). 17차 공통 규칙을 P3에도 쓸지 먼저 묻는다. 아래 P3 후보(bare `Bash` allowed-tools)도 함께 본다.
+**첫 행동:** 사용자에게 한 줄로 묻는다 — "P3 1단계(#7 `scripts/codex-task.sh`)를 시작할까요?" 승인되면 §2-3 "P3 결정"의 "구현 순서·커밋" 항목 ①부터 구현한다. 21차 끝에 같은 질문을 했으나 답 없이 핸드오프로 넘어갔다 — 승인으로 읽지 않는다.
 
-**P2 뒤 과제**
+**P3 구현 요점** (상세·근거는 §2-3 "P3 결정")
+- ① 구조 커밋: `codex-task.sh`(`launch`·`wait`, companion 경로를 스크립트가 직접 찾음) → verify·research·rescue의 실행·대기 블록을 교체. 남은 블록의 `$CODEX_COMPANION`은 `<literal CODEX_COMPANION path>` 방식(#1). setup은 블록 하나에서 resolve → `setup --json`(기타-setup). `/codex:status` → `/codex-status` + companion-usage §6 한 줄(#8). codex-advisor 5.1.0 → **5.2.0**(marketplace.json).
+- ② 글 정리 커밋: 나머지 행 + `disable-model-invocation: true`(transfer·cancel·status·result·setup).
+- ③ 권한 커밋: bare `Bash` → `Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)` 중심. `claude -p`를 `--allowedTools` 없이 돌려 권한 거부 0건 확인, 많으면 그대로 두고 이유 기록.
+- 검증: 단계마다 드라이런/`claude -p` 실행, 끝에 지운 줄 대조(20차 LOST 분류). #5·#15는 각 인용을 설치본 companion 1.0.6(`~/.claude/plugins/cache/openai-codex/codex/1.0.6/scripts/`)에서 함수 이름으로 찾는다.
+
+**P3 뒤 과제** (21차에 다루지 않음)
 - (20차) Artifact 채널에서 highlight.js(cdnjs)를 허용할지 정한다. 금지 이유였던 CSP는 틀렸고, Mermaid와 달리 렌더링 비교가 없다. 허용하면 `structured-blocks.md` "Artifact channel: no CDN" 절을 바꾸고 `data-theme` 테마 전환을 드라이런으로 확인.
 - (20차 드라이런 부수 발견) plugin-visual Phase 7 `-sections` 정리 명령은 죽은 문구. 드라이런 에이전트들이 짚은 모호점: refine에서 문장 하나 추가가 "content 재작성"인지, plugin-visual 게시 실패 뒤 남는 `.artifact.html` 처리, md 전용 실행에서 semantic-tokens.md를 읽어야 하는지.
 - 10차부터 미답(급하지 않음): gotchas.md "Plugin variables in the Bash tool"에 한 줄 — hook `additionalContext`와 Read로 여는 파일도 `${CLAUDE_PLUGIN_ROOT}`·`${CLAUDE_PLUGIN_DATA}`가 치환되지 않는다(9차 실측).
-- P3 후보(14차): security-auditor가 codex-advisor 스킬 10개의 bare `Bash` allowed-tools를 CRITICAL로 보고.
-- P2 뒤 순서: P3 codex-advisor → P4 rubber-duck-tutor → P5 skill-creator-pro → P6 claw-mux·notebooklm → P7 나머지(vibeproxy-kit 맨 끝). S5는 원 작성 머신에서만. P3 이후에도 17차 공통 규칙을 쓸지는 그때 묻는다.
+- 순서: P3 → P4 rubber-duck-tutor → P5 skill-creator-pro → P6 claw-mux·notebooklm → P7 나머지(vibeproxy-kit 맨 끝). S5는 원 작성 머신에서만. P4부터 17차 공통 규칙을 쓸지는 그때 묻는다(P3에선 사용자가 그 규칙대로 지우는 안을 모두 승인했다).
 
-**상태(20차 중단, git 기준):** develop, working tree clean. `origin/develop`=`f209ba7`, `origin/main`=`f2c638c`, 태그 `v1.85.0`(→`f2c638c`) 푸시됨. 그 뒤 원장 커밋 2개(`2fce4e2`와 이 핸드오프 커밋)는 미푸시 — 21차 시작 때 푸시할지 묻는다. 20차 커밋: `cdae0d8`(7단계), `e1e5b9e`·`b62ea67`(원장), `4cc477a`(LOST 2개 복구), `f209ba7`(main→develop 동기화), `f2c638c`(main 머지)+`v1.85.0`.
+**상태(21차 중단, git 기준):** develop, working tree clean. `origin/develop`=`f209ba7`, `origin/main`=`f2c638c`. 미푸시 원장 커밋 3개(`2fce4e2`·`add41cc`·`df5525e`)와 이 핸드오프 커밋 — 21차에 푸시를 물었으나 사용자는 "일단 커밋"만 답했다. 22차에 푸시할지 묻는다(첫 행동 질문 다음에).
+
+**21차 교훈**
+- ✅ 그릴링 전에 행마다 현재 코드와 companion 1.0.6을 실측했더니 원장과 4건이 달랐다: #1은 실제로 깨지지 않음(모델이 스스로 `echo` 후 경로를 글자 그대로 씀), #6은 이미 해결, #12는 전제 틀림(5.1.0부터 effort가 `Run flags`로 companion에 감), setup 인증 확인은 `codex --version`이라 아무것도 확인 안 함. 원장 행을 믿지 말고 구현 직전에도 다시 연다.
+- ✅ 사용자 "머가문제란거야?" → 실제 명령·출력 한 쌍으로 문제 하나씩, "문제(실측) → 선택지 A/B → 추천+근거" 형식으로 물었더니 18개를 "추천대로 다음"으로 빠르게 끝냈다.
+- ✅ 18차 교훈대로 규칙에서 답이 나오는 것(#13, rescue:463, #16의 없는 문서 참조)은 묻지 않고 알리기만 했다.
+- ✅ codex 스킬 실제 실행: 프롬프트를 stdin으로 `claude -p --plugin-dir plugins/codex-advisor --output-format stream-json --verbose --allowedTools "Bash Read Grep Glob Agent"`. `-p`에선 AskUserQuestion에 답할 수 없으니 프롬프트에 "Phase 1.5 초안 승인됨, AskUserQuestion 호출 금지"를 붙였다. jsonl에서 `tool_use`의 `command`를 python으로 뽑아 비교. codex-verify 1회 약 2분.
+- ⚠️ zsh에서 `echo ====`는 오류(`= not found`) — 구분선은 `---`.
 
 **20차 교훈**
 - ⚠️ 이유를 지어내지 않는다. 19차에 highlight.js 금지 이유를 "Mermaid 결정과 같은 렌더링 선택"으로 적었는데 비교한 적이 없었다 — 사용자가 "하이라이트 js 금지한다고?"로 짚음. 이유가 틀렸으면 규칙 유지/변경을 묻고, 유지하면 이유 없이 두고 과제로 남긴다.
@@ -33,8 +45,6 @@
 **19차 교훈**
 - ⚠️ 사용자 "한글로말해" — 사용자에게 보이는 모든 문장은 한국어로.
 - ✅ python으로 블록 단위 `cut(시작 문구, 끝 문구, 새 글)` 교체가 큰 SKILL.md 정리에 빨랐다(문구 한 번만 있는지 assert).
-
-**18차 결정** (상세는 §2-1 "P2 결정" 18차 항목): Q1 Mermaid 금지 유지·CSP 문장 삭제 / Q2·Q4 새 파일 대신 channel-decision.md에 절 두 개 / Q3 스킬은 ADR을 가리키지 않는다 → 전부 삭제 / Q5 검증은 드라이런.
 
 **18차 교훈**
 - ⚠️ 기존 규칙에서 답이 나오면 묻지 말고 계획에 넣고 알리기만 한다(Q3 "먼소리야 스킬은 adr을 바라보게 짜면 안되는거아냐?").
