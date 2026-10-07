@@ -452,10 +452,6 @@ filename from the default channel's `...-report.html`, so the two never collide 
 other for the same plugin.
 
 Re-running this skill on the same plugin within the same conversation reuses that same path.
-Publishing to the same `file_path` again redeploys to the same URL instead of minting a new one, so
-keep the `<title>` and `favicon` identical across those republishes (the tool reads a changed
-favicon as a different page). If `${output-path}.artifact.json` already exists from an earlier
-publish this session, read it first and reuse its `title`/`favicon` verbatim.
 
 **Validation**: run the gate in content-only mode instead of the full check:
 ```bash
@@ -470,12 +466,11 @@ is the built-in artifact-design skill's responsibility here, not this skill's �
 Chrome render loop to run before publishing.
 
 **Publish**, once the gate passes:
-1. Publish with the `Artifact` tool: `file_path` = the fragment you saved, `favicon` = one or two
-   emoji fitting the plugin's purpose (reused unchanged if a sidecar from this session already set
-   one — see above), `description` = one sentence on the plugin and what the report covers.
+1. Publish with the `Artifact` tool: `file_path` = the fragment you saved, `description` = one
+   sentence on the plugin and what the report covers.
 2. Record the publish so a later refine (even across sessions, once that lands) can find this URL:
    ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title>
    ```
 3. Report the URL to the user with one line. This is the **canonical publish notice** shared across
    the channel skills (doc-visual owns the reference form; here the noun is *wiki*), so keep it
@@ -513,7 +508,7 @@ Bash(rm -rf /tmp/plugin-visual-{dirname})
 
 After cleanup, suggest optional next steps:
 - `/fact-check` — verify the report's factual accuracy against the actual codebase
-- `/report-manager refine` — refine specific sections based on feedback
+- `/report-manager refine` — refine specific sections
 
 This is informational — just a brief suggestion, not an automatic invocation.
 

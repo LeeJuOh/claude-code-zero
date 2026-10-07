@@ -37,7 +37,6 @@ test('report with an artifact sidecar surfaces artifact_url', () => {
     fs.writeFileSync(`${reportPath}.artifact.json`, JSON.stringify({
       url: 'https://claude.ai/code/artifact/abc123',
       title: 'Example',
-      favicon: '📄',
       published_at: '2026-07-06T00:00:00.000Z',
     }));
 
@@ -85,7 +84,6 @@ test('a published .artifact.md surfaces artifact_url, its sidecar is not listed 
     fs.writeFileSync(`${reportPath}.artifact.json`, JSON.stringify({
       url: 'https://claude.ai/code/artifact/md-456',
       title: 'Example md',
-      favicon: '📄',
       published_at: '2026-07-06T00:00:00.000Z',
     }));
 

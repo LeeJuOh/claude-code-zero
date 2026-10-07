@@ -183,8 +183,6 @@ If a claim can't be sourced, remove it or mark it uncertain.
 
 ### Report Generation
 
-Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
-
 **HTML channel routing (default = Artifact).** For `--format html` the channel is decided by
 `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account the default
 is the **Artifact channel** — go to "HTML mode — Artifact channel" below. Write the **local
@@ -379,10 +377,7 @@ Then write the page as a **fragment**, not a full document:
 Save the fragment to `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.artifact.html` — a distinct
 filename from the default channel's output, so the two never collide or overwrite each other for
 the same scope. Re-running this skill on the same scope within the same conversation reuses that
-same path; publishing to the same `file_path` again redeploys to the same URL instead of minting a
-new one, so keep the `<title>` and `favicon` identical across those republishes (the tool reads a
-changed favicon as a different page). If `${output-path}.artifact.json` already exists from an
-earlier publish this session, read it first and reuse its `title`/`favicon` verbatim.
+same path.
 
 **Validation**: run the gate in content-only mode instead of the full check:
 ```bash
@@ -395,13 +390,6 @@ don't apply: the built-in artifact-design skill owns the design layer on this ch
 **Skip the visual self-audit (render-report.js) entirely on this channel.** The rendered picture is
 the built-in artifact-design skill's responsibility here, not this skill's — there's no local
 Chrome render loop to run before publishing.
-
-**Size headroom**: a large single-file diff (1483 changed lines, extracted 2026-07-06) measured
-~44 bytes/line through `extract-hunks.js`, so a Code section that keeps to the budget above
-(3–8 snippets, ≤150 lines each) plus a collapsed full-diff appendix lands in the tens-to-low-hundreds
-of KB — hundreds of times under the platform's 16 MiB artifact render ceiling. The ceiling is only
-reachable by ignoring the budget (e.g. pasting a whole large diff into the body as well); no extra
-size-limiting logic is needed as long as the section stays inside it.
 
 Once the gate passes, publish — see "Publish (Artifact channel — default for HTML)" below.
 
@@ -500,12 +488,11 @@ markdown renderer shows the `mermaid` fences as code, so the reply says so in on
 
 After the content-only gate passes (see "HTML mode — Artifact channel" above):
 
-1. Publish with the `Artifact` tool: `file_path` = the fragment you saved, `favicon` = one or two
-   emoji fitting the diff's scope (reused unchanged if a sidecar from this session already set
-   one — see above), `description` = one sentence on what changed.
+1. Publish with the `Artifact` tool: `file_path` = the fragment you saved, `description` = one
+   sentence on what changed.
 2. Record the publish so a later refine (even across sessions, once that lands) can find this URL:
    ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title>
    ```
 3. Report the URL to the user with one line. This is the **canonical publish notice** shared across
    the channel skills (doc-visual owns the reference form; here the noun is *report*), so keep it

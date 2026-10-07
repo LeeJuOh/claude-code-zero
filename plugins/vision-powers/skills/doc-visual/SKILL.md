@@ -108,11 +108,6 @@ distinct filename from the default channel's output, so the two never collide or
 other for the same source document.
 
 Re-running this skill on the same input within the same conversation reuses that same path.
-Publishing to the same `file_path` again redeploys to the same URL instead of minting a new one, so
-keep the `<title>` and `favicon` identical across those republishes (the tool reads a changed
-favicon as a different page). If `${output-path}.artifact.json` already exists from an earlier
-publish this session, read it first and reuse its `title`/`favicon` verbatim rather than choosing
-new ones.
 
 ### Markdown format (`--format md`)
 
@@ -177,16 +172,6 @@ Read these reference files for implementation details — don't memorize them, r
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Complete Mermaid syntax reference, theming, dark mode, zoom controls. This is the implementation bible — 13 type examples, classDef rules, CDN setup
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` — Color/font roles and Mermaid themeVariables mapping
 - `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` — Complexity budgets per type
-
-Key rules for this channel (no need to look up):
-
-1. **Density**: Max 9 nodes, 12 arrows per diagram. Over budget → split into overview + detail
-2. **Accent**: 1-2 focal elements only. 4+ accents = redesign needed
-3. **No rgba() in Mermaid classDef** — parser breaks. Use 8-digit hex `#RRGGBBAA`
-4. **No `color:` in classDef** — breaks parser. Style text via themeVariables only
-5. **Theme**: Always `theme: 'base'` with themeVariables from semantic-tokens
-6. **Palette**: No violet/fuchsia "AI purple" hexes (`#8b5cf6`/`#7c3aed`/`#a78bfa`/`#d946ef`) — the gate fails on these
-7. **Table vs diagram**: If a 3-column table conveys it equally well, use the table
 
 **Either channel's** gate fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders — those are content checks, so `--content-only` runs them too. **This channel's** full gate additionally fails on `background-clip: text` (gradient-clipped text — decorative slop) and on any `font-family` without a generic fallback, so end every stack with a system family (`…, sans-serif`).
 
@@ -293,11 +278,10 @@ For `--format html`, do this after the content-only gate passes. For `--format m
 there's no gate to wait on — publish right away.
 
 1. Publish with the `Artifact` tool: `file_path` = the file you saved (the html fragment or the md
-   file), `favicon` = one or two emoji fitting the document's topic (reused unchanged if a sidecar
-   from this session already set one — see above), `description` = one sentence on what the page is.
+   file), `description` = one sentence on what the page is.
 2. Record the publish so a later refine (even across sessions, once that lands) can find this URL:
    ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title>
    ```
 3. Report the URL to the user with one line. **This is the canonical publish notice** — S2–S4 reuse
    the same shape, only swapping the noun (report / dashboard / wiki), so keep it stable:

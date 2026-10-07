@@ -74,15 +74,13 @@ visualize diff HEAD --format md                           # inline markdown for 
 doc-visual ./docs/research/xxx.md                         # HTML → claude.ai Artifact (default)
 doc-visual ./docs/research/xxx.md --local                 # HTML → local design-system file + Mermaid
 doc-visual ./docs/spec.md --format md                     # inline markdown
-diagnose environment                                      # HTML → claude.ai Artifact (default; offers /context paste)
-diagnose environment --local                             # HTML → local design-system dashboard + Mermaid
 fact-check the last report                                # verify accuracy
 list reports                                              # manage reports
-refine section 3 of the last report                       # targeted re-render from feedback
+refine section 3 of the last report                       # targeted re-render of one section
 analyze ./plugins/my-plugin --lang ko                     # output in Korean (ISO code)
 ```
 
-**Output formats.** Every report skill accepts `--format html` (default) or `--format md`. HTML reports go to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, PNG export, and inline feedback. Markdown reports are delivered in the chat response — suitable for pasting into PR descriptions, Slack, or any non-browser context — and a copy is saved to the same reports directory, so `report-manager` can list, search, and refine them later.
+**Output formats.** Every report skill accepts `--format html` (default) or `--format md`. HTML reports go to `${CLAUDE_PLUGIN_DATA}/reports/` and include zoom, pan, fullscreen, and PNG export. Markdown reports are delivered in the chat response — suitable for pasting into PR descriptions, Slack, or any non-browser context — and a copy is saved to the same reports directory, so `report-manager` can list, search, and refine them later.
 
 **Artifact publishing — the default for HTML.** On a capable account, `doc-visual`, `diff-visual`, and `plugin-visual` (`analyze` mode) publish HTML reports as a claude.ai link out of the box — no flag. Add `--local` (or say "keep it local") to get a local design-system + Mermaid file instead — reach for it when you need an analytical chart type the Artifact channel degrades to a table, or Mermaid's zoom/pan/PNG export:
 
@@ -102,9 +100,7 @@ Design on the Artifact channel is delegated to Claude's built-in Artifact render
 
 **Visual self-audit.** After the content gate passes, the skill renders the HTML to a PNG, reads it back, and checks density, hierarchy, Mermaid rendering, and overflow — then fixes and re-renders (up to twice) before handing the report over. A report isn't done until it's been looked at. Needs a local Chrome or Chromium (`CHROME_BIN` overrides discovery); without one, the audit is skipped with a warning and the report is still delivered.
 
-**Refinement loop.** After reading a report, leave section-level notes via the in-page ✎ button, then run `/report-manager refine` to re-generate only the sections you flagged — feedback is harvested via MCP when `claude-in-chrome` is connected, otherwise by paste.
-
-**In-browser feedback.** Every report embeds a per-section feedback UI (✎ button). When the user invokes `/report-manager refine` after leaving notes, the skill harvests those notes — via MCP if `claude-in-chrome` is connected, otherwise by asking the user to click Copy in the feedback bar and paste.
+**Refinement loop.** After reading a report, run `/report-manager refine` and name the sections to change — only those sections are re-generated.
 
 ## License
 
