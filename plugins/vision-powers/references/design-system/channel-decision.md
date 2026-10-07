@@ -120,6 +120,7 @@ CSS the gate doesn't check:
 - Dark mode through CSS custom properties under `prefers-color-scheme: dark`.
 - A CJK font in the font stacks when the content may be Korean, Japanese, or Chinese.
 - `min-width: 0` on flex/grid children, so wide content can't push the layout.
+- Code blocks: `white-space: pre; overflow-x: auto`, so a long line scrolls instead of overflowing.
 - `prefers-reduced-motion: reduce` respected.
 - Mermaid zoom by sizing the SVG (`mermaid-patterns.md` `applyZoom()`), not `transform: scale()`
   (reserves no layout space and clips) and not the `zoom` property.

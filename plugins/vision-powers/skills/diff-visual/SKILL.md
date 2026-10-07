@@ -3,8 +3,8 @@ name: diff-visual
 description: >
   Catch up on a git change before you review it: background on the system it lands in, the idea
   behind it, a literate diff of the real code, and a five-question quiz. Use when the user wants to
-  understand, explain, walk through, or visualize a diff, branch, commit, range, or PR — including
-  agent-written code or a teammate's PR.
+  understand, explain, walk through, get up to speed on, or visualize a diff, branch, commit, range,
+  or PR — including agent-written code or a teammate's PR — or asks "what changed here".
 argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>] [--local (force a local file instead of publishing)]"
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Artifact, Skill(artifact-design), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
