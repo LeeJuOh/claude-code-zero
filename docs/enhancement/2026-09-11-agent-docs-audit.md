@@ -1,6 +1,6 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차), 다음은 P2 구현 6단계** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차), 다음은 P2 구현 7단계** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
@@ -11,13 +11,14 @@
 
 **목표:** P2(§2-1 vision-powers)를 끝내고 vision-powers 5.0.0을 배포한다. 7단계 중 1~5단계 완료, 6~7단계 남음 — §2-1 "P2 결정"(체크리스트)·"P2 구현 단계"(표).
 
-**첫 행동:** develop이 `origin/develop`보다 3커밋 앞이다(`3cfa99c`·`7c14121`·`5280dea`, 미푸시). 푸시할지 사용자에게 한 줄로 묻는다. 그다음 P2 6단계(리포트 스킬 오류 #5·#10·#25·#27·#29·#31)를 `/skill-creator-pro`로 시작한다. 각 항목의 위치·수정안은 §2-1 표의 해당 행(줄 번호는 낡았다 — 문구로 찾을 것):
+**첫 행동(17차 중간 기록 — 17차 끝에 다시 쓸 것):** 17차에 사용자가 푸시를 미뤘다("아니 다음"). 6단계 `a24bbac` 완료. 다음은 7단계 — 17차 공통 규칙(§2-1 "P2 결정")을 먼저 적용한다. 아래 6단계 목록은 기록용. 각 항목의 위치·수정안은 §2-1 표의 해당 행(줄 번호는 낡았다 — 문구로 찾을 것):
 1. #5 ✎ 피드백 수확 기능 삭제 — report-manager 수확·감지 절, fact-check 해당 절, marketplace·plugin.json description, README 문구.
 2. #10 fact-check의 리포트 감지를 제목("Diff Visual"·"Doc Visual") 대신 파일명 접미사로(report-manager와 같은 규칙, `.artifact` 접미사 제거 포함).
-3. #25 fact-check·report-manager의 템플릿 시절 클래스(`ve-card`, `--i`) → "match existing markup" 한 줄.
+3. #25 fact-check·report-manager의 템플릿 시절 클래스(`ve-card`, `--i`) 문구 삭제(17차: 대체 문장 없음).
 4. #27 diff-visual의 "Use extended thinking"·측정 기록 삭제.
 5. #29 doc-visual의 "read them each time" ↔ "no need to look up" 모순 — 규칙 목록 삭제.
-6. #31 Artifact 툴 `favicon`(deprecated) → `icon`. 스킬들, `scripts/write-artifact-sidecar.js`의 sidecar 필드, `scripts/list-reports.test.js`까지.
+6. #31 (17차 A') 스킬에서 `favicon`/`icon` 언급 모두 삭제, sidecar의 `--favicon` 옵션·필드도 삭제. 재게시는 sidecar `url`만.
+- 17차 공통 규칙: 툴 설명·게이트·모델 기본 행동과 같은 내용은 옮기지 말고 지운다(§2-1 "P2 결정"). #25도 "match existing markup" 없이 삭제만.
 검증: `node --test <테스트 파일들>`(디렉터리 말고 파일 경로), fact-check 감지, validate → 커밋, 원장 기록은 별도 커밋.
 
 **그다음:** 7단계(#18~#21·#24·#26 중복 통합 + #18 description, 옛/새 eval) → vision-powers 5.0.0 배포(`docs/release-workflow.md`, 1단계 fetch·`origin/main` 비교 필수). 원장 수정안대로 하되 **수정안과 달라질 때만 묻는다**(13차 합의).
@@ -348,19 +349,19 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 | 16 | med | mermaid-patterns.md:386,408 | "ELK default" ↔ :27 "Only import when needed", 템플릿은 ADR 0002로 삭제 | 절 삭제 | 🔹 |
 | 17 | med | context-health-visual:18 ↔ :344-345,:521-522 | observational 섹션 5개 vs 4개 | "6 graded + 5 observational"로 통일, :344 "10 diagnostic sections"도 11로 | 🔹 |
 | 18 | med | doc-visual:4-7, diff-visual:4-9, report-manager:4-5, plugin.json/marketplace | description 동의어 나열, diff-visual 531자는 본문 반복, plugin.json(676자)·marketplace(1004자) 불일치 | 짧게 재작성 + 두 매니페스트 동기화 | ✅(길이) |
-| 19 | med | doc-visual:94-121,319-355, diff-visual:354-398,491-519, plugin-visual:413-490, context-health-visual:326-407 | Artifact 채널 블록 ~70줄 × 4 복제 | `references/design-system/artifact-channel.md` 하나로, channel-decision.md(ADR 0009 SSOT)에서 링크 | 🔹 |
-| 20 | med | 5개 스킬 local 채널 규칙 | 로컬 규칙·CSS·self-audit 5곳 중복, 일부는 게이트가 이미 강제 | `local-channel.md` 포인터, channel-decision.md에서 링크 | 🔹 |
+| 19 | med | doc-visual:94-121,319-355, diff-visual:354-398,491-519, plugin-visual:413-490, context-health-visual:326-407 | Artifact 채널 블록 ~70줄 × 4 복제 | (17차) 먼저 Artifact 툴 설명과 같은 내용(같은 `file_path` 재게시 = 같은 URL, icon, artifact-design 로드 안내 등)을 지운다. 남은 것(sidecar `url`, `.artifact.*` 경로, 게이트 `--content-only`)만 `references/design-system/artifact-channel.md` 하나로, channel-decision.md(ADR 0009 SSOT)에서 링크 | 🔹 |
+| 20 | med | 5개 스킬 local 채널 규칙 | 로컬 규칙·CSS·self-audit 5곳 중복, 일부는 게이트가 이미 강제 | (17차) 게이트가 이미 강제하는 규칙은 옮기지 말고 지운다. 남은 것만 `local-channel.md`로, channel-decision.md에서 링크 | 🔹 |
 | 21 | med | 4개 스킬 "Config precedence" 7줄 | channel-decision.md 복제 | channel-decision.md 포인터로 삭제. (`config.js channel` 서브커맨드안은 channel-decision:77-80 "config.js는 단순 키-값"과 충돌해 뺌) | 🔹 |
 | 22 | med | context-health-visual:426-541 등 | Gotchas 115줄 대부분 health-criteria 중복·유지보수자 메모 | 런타임 사실은 criteria로, 유지보수 메모는 docs로 → 세 파일 500줄 미만 | 🔹 |
 | 23 | med | feature-architect:157-177,354-399 ↔ analysis-criteria:69-119 | 품질 기준 이중화, 체크리스트 14 vs 7로 갈라짐 | analysis-criteria SSOT | 🔹 |
 | 24 | med | 여러 스킬 | 개발 흔적("S2–S4", "issue 007 S4.5")과 설치본에 없는 경로(`docs/…`, `references/Kami/…`) | 삭제, 필요한 이유는 인라인 한 문장 | 🔹 |
-| 25 | med | fact-check:171-173, report-manager:100,161 | 템플릿 시절 클래스(`ve-card`, `--i`) | "match existing markup" 한 줄 | 🔹 |
+| 25 | med | fact-check:171-173, report-manager:100,161 | 템플릿 시절 클래스(`ve-card`, `--i`) | ~~"match existing markup" 한 줄~~ (17차) 삭제만 — 그 한 줄은 모델 기본 행동 | 🔹 |
 | 26 | low | 5개 스킬 | 8 Tells 재나열, 목록 갈라짐(report-manager:101은 7개, "borrowed costume" 누락) | anti-slop-tells.md 포인터 | 🔹 |
 | 27 | low | diff-visual:188,400-405 | "Use extended thinking", 측정 기록 — no-op | 삭제 | 🔹 |
 | 28 | low | env-fit-diagnosis.md:43 | "Six Diagnostic Analyses" — 실제 8개, `skills-lock.json`은 공식 문서·디스크 어디에도 없음(실제 파일은 `~/.claude/plugins/installed_plugins.json`) | "Eight", 3G 축소 | 🔹 |
 | 29 | low | doc-visual:204 ↔ :210 | "read them each time" ↔ "no need to look up" | 규칙 목록 삭제 | 🔹 |
 | 30 | low | plugin-visual:516,:8 | 쓰지 않는 `echo $(date)` gotcha와 `Bash(echo *)` grant | 삭제 | 🔹 |
-| 31 | low | doc-visual:118-120,326, diff-visual:384-386,495, context-health-visual:357-359,380, plugin-visual:448-450,465, fact-check:243-244, report-manager:119, scripts/write-artifact-sidecar.js (재검수 추가) | Artifact 툴 `favicon` 파라미터는 deprecated, `icon`으로 대체(툴 스키마) | `icon`으로 교체, sidecar 필드·`list-reports.test.js` 함께 | ✅ |
+| 31 | low | doc-visual:118-120,326, diff-visual:384-386,495, context-health-visual:357-359,380, plugin-visual:448-450,465, fact-check:243-244, report-manager:119, scripts/write-artifact-sidecar.js (재검수 추가) | Artifact 툴 `favicon` 파라미터는 deprecated, `icon`으로 대체(툴 스키마) | ~~`icon`으로 교체~~ (17차 A') 스킬에서 `favicon`/`icon` 언급을 모두 삭제 — 사용법은 툴 설명에 있다(처음 게시만 단어 하나, 재게시는 생략). 재게시 지시는 "sidecar의 `url`을 넣는다"만. "favicon/title을 같게 유지" 문단 삭제. `write-artifact-sidecar.js`의 `--favicon` 옵션·필드, `list-reports.test.js` 해당 값 삭제(옛 sidecar의 `favicon`은 읽는 코드 없음) | ✅ |
 | 32 | med | scripts/artifact-gate.js:416 (S4 발견) | `checkGradientText`의 `gradient-text` 위반에 `severity` 없음 — issue 014 S2 AC 미충족 | `severity` 추가 | 🔹 |
 
 README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#8 적용 후 plugin-visual이 쓰는 건 2개), "Skips gracefully when claude-in-chrome unavailable"(render-report.js는 로컬 Chrome 바이너리 사용). 위치 README:17, :104.
@@ -386,6 +387,7 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 - [x] `00422aa` #14: 노드 한도를 게이트(`artifact-gate.js:8` 9 nodes/12 arrows)로 통일 — mermaid-patterns:484(15-20)·feature-architect:277(~15)·plugin-visual:359·:530(25) 숫자 삭제, 게이트 한도 포인터로.
 - [x] `7c14121` #7(§1-5 #10 종결): md는 "기본 로컬, 요청하면 Artifact 게시" — 플래그든 자연어든 요청이면 묻지 않고 게시, 답변에 "Mermaid는 코드로 보인다" 한 줄. channel-decision.md md 행·:32-34 문구, ADR 0009 §3 개정 기록, doc-visual:43·:76-77("md stays local")·:60-66(자연어면 한 번 묻기) 수정.
 - [ ] #5: ✎ 피드백 수확 기능 삭제 — UI를 심는 스킬 없음(13차 grep: README·report-manager에만 남음). report-manager 수확·감지 절, fact-check 해당 절, description·README 문구.
+- [ ] **17차 공통 규칙(6·7단계 전체)**: 모으거나 옮기기 전에, 툴 설명·게이트·모델 기본 행동과 같은 내용은 먼저 지운다. 남은 것(이 플러그인만 아는 것)만 옮긴다. 계기: #31 수정안("`icon`으로 이름만 교체")이 툴 설명을 스킬에 다시 적는 안이었다 — 사용자 "스킬에 왜 클로드가 쓰는 툴 옵션이름까지 자세하게 적어야해?". 이 규칙으로 #19·#20·#25·#31 수정안을 고쳤다(각 행).
 - 버전: 스킬·에이전트 삭제는 인터페이스 제거 → vision-powers 5.0.0.
 - 안 함: 게이트의 보라 hex 목록(4개) 확대 — 사용자가 "중요한 것만"으로 좁힘.
 
@@ -398,8 +400,9 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 | 3 ✅ `d156085` | 의존성 확인 스크립트화 #12 + #30 | `env-fit-scan.js` 단위 테스트, 권한 프롬프트 없음 |
 | 4 ✅ `00422aa` | plugin-visual 수치·색 #2·#9·#14·#15·#16·#23·#28 + README 1건("4 agents"는 1단계) | grep, `node --test` |
 | 5 ✅ `7c14121` | md 게시 규칙 #7 (ADR 0009 §3 개정 + channel-decision + doc·diff·plugin-visual) | 문구 대조 |
-| 6 | 리포트 스킬 오류 #5·#10·#25·#27·#29·#31 | `node --test`, fact-check 감지 |
+| 6 ✅ `a24bbac` | 리포트 스킬 오류 #5·#10·#25·#27·#29·#31 | `node --test`, fact-check 감지 |
 | 7 | 중복 통합 #19~#21·#24·#26 + #18 description | 옛/새 eval |
+- 6단계(17차, `a24bbac`): 17차 공통 규칙대로 지우기 위주. #5 report-manager 수확 절·refine 2단계·`--i` gotcha, fact-check `feedback.json` 절·gotcha, README 3곳, marketplace description 끝 구절. #10 감지는 report-manager·`list-reports.js`와 같은 "파일명에 `-diff-visual`/`-doc-visual`/`-report` 포함"("끝남"이 아님 — plugin-visual md는 `-report-security.md`). #25 fact-check 요약 블록의 `ve-card`·`--i`와 함께 `kpi-*` 클래스도 삭제(어디에도 CSS 없음, 같은 템플릿 흔적). #29 삭제한 규칙 7개는 모두 references나 게이트에 있음을 grep으로 확인. #31 세 생성 스킬의 "title/favicon 같게 유지" 문단과 favicon 인자, fact-check·report-manager 재게시의 favicon, sidecar `--favicon`·필드, 테스트 값. 부수: README의 `diagnose environment` 예시 2줄(1단계에서 지운 context-health-visual) 삭제, plugin-visual "based on feedback" 삭제. 검증: `node --test` 4파일 82/82, sidecar 스크립트 실행(필드 url·title·published_at), 잔여 grep 0건, validate 통과. 버전은 5.0.0 그대로(미배포).
 - 5단계(16차, `7c14121`): 수정안과 달리 doc-visual만이 아니라 **diff-visual·plugin-visual md도 같은 규칙** — 사용자가 "세 스킬이 같은 규칙이 더 좋다"로 승인. 규칙 본문은 channel-decision.md "Markdown on request" 절(SSOT) 하나, 세 스킬은 저장 경로(`.md`→`.artifact.md`)와 포인터만. plugin-visual은 `security`/`overview` md도 포함. config는 md를 게시하지 않음(이번 턴 요청만). README 표·:95 문장, plugin.json·marketplace description에 한 구절. 검증: "md stays local"·"ask once"·"lone exception" grep 0건, validate 통과. 실제 게시 동작은 7단계 eval에 넣는다.
 - 2단계 검증(14차): 실제 `claude -p --plugin-dir`로 security-auditor를 codex-advisor(PreToolUse·SessionStart hook)에 돌려 옛/새 비교(`plugins/vision-powers/.evals/p2-step2-security-auditor/`). 새 버전은 치환된 경로로 security-rules.md를 읽고 hooks.md를 WebFetch해 "SessionStart는 막지 못함, PreToolUse exit 2는 막음, allow는 deny 규칙을 못 넘음"을 인용. 옛 버전도 판정은 맞았으나 출처 없음. ⚠️ "WebFetch 차단" 실행은 부모 `--allowedTools`에 WebFetch가 없어도 서브에이전트가 hooks.md를 받아 와 "unverified" fallback은 검증 못 함. (부수 발견: 세 실행 모두 codex-advisor 스킬 10개의 bare `Bash` allowed-tools를 CRITICAL로 보고 — P3 후보)
 - 3단계(14차, `d156085`): 인자 형태는 `--requirement <TYPE>:<name>` 반복(원장의 `--requirements`와 이름만 다름 — 셸 인용 문제 없게 한 줄 하나). MCP는 `~/.claude.json`(user + `projects[cwd]` local)·프로젝트 `.mcp.json`·활성 플러그인의 `.mcp.json`/inline `mcpServers`. `context_metrics.mcp_servers`도 같은 목록으로 교정(예전엔 settings.json의 `mcpServers`를 셌음 — 공식 위치 아님). 검증: `scripts/env-fit-scan.test.js` 6개(격리 HOME·PATH), 전체 79개 통과. feature-architect 예시 help의 `~/.claude/.mcp.json`도 교정.
