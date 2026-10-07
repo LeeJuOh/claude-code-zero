@@ -1,6 +1,6 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료), 다음은 P3 codex-advisor** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료) · P3 결정 완료(21차 그릴링, 원장만 — §2-3 "P3 결정"), 다음은 P3 구현 1단계** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
@@ -81,7 +81,7 @@
 |---|---|---|
 | P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, ~~§2-4 #1·#21~~ ✅ `d7ea71d`, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, ~~§2-7 #1·#2~~ ✅ `ebbdffa`, ~~§2-7 #6~~ ✅ 플러그인 삭제 `e69be21` | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 13차에 결정 완료, 7단계로 나눔(§2-1 "P2 결정"·"P2 구현 단계"). 14차 1~3단계 ✅, 15차 4단계 ✅, 16차 5단계 ✅, 17차 6단계 ✅, 7단계 남음 | ~~#10~~ 13차 결정 |
-| P3 | §2-3 codex-advisor 나머지 | — |
+| P3 | §2-3 codex-advisor 나머지 — 21차에 결정 완료, 3단계로 나눔(§2-3 "P3 결정") | — |
 | P4 | §2-4 rubber-duck-tutor | #8 |
 | P5 | §2-2 skill-creator-pro(#15 `claude plugin eval` 분기 포함) | #9 |
 | P6 | §2-5 claw-mux, §2-6 notebooklm-connector | #11(claw-mux #2 라이브 확인) |
@@ -464,6 +464,29 @@ issue 016(codex-advisor 5.0.0, `05b74a7`)이 리뷰 스킬 5개(review·adversar
 | 15 | low | companion-usage.md:14,:155,:296 | "1.0.0+" ↔ README "v1.0.4+", "still present in 1.0.5" 확인 스탬프 | :14 삭제, 스탬프 삭제(:9 핀은 유지) | 🔹 |
 | 16 | low | review:272 | 없는 "the plan" 참조 | 삭제 | 🔹 |
 | 17 | med | scripts/apply-codex-config.py (S4 발견) | ~~최상위 키가 없으면 파일 끝(마지막 `[table]` 안)에 붙음, 테이블 안 같은 키를 잡음~~ ✅ `dae4f7f`(5.0.3). 7차에 Codex 공식 문서(config-basic·config-reference·config-advanced·config-sample·environment-variables)로 케이스 전수 분석 → 추가로 고침: 작은따옴표 값·따옴표 키 미인식 → 키 중복 → config 파손, `CODEX_HOME` 무시, 여러 줄 문자열 속 `[x]`, 인라인 주석 유실. tomllib(3.11+)로 결과 검증 후 쓰기. 공식 샘플 config에서 옛 스크립트는 effort를 `[windows]`에 넣었음 ✅. 7차 검수 후 `85f10d5`(5.0.4): tomllib가 못 읽는 TOML 1.1 config(Codex 0.156.1은 받음 ✅)에 거짓 거부 → 원본이 읽힐 때만 검증 + 요청 키 외 불변 확인. 호출 스킬 5개에 "실패 시 중단" 명시·낡은 "stderr advisories" 문구 삭제 — 단 e2e(codex-verify, 1회)에선 옛 스킬도 스스로 멈춤 → 버그 재현 안 됨, 명확화 수준. 상위 계층 → `a3cfba4`(5.1.0): 프로젝트 `.codex/config.toml`이 전역을 이김, 스레드 `model`·턴 `effort` 값은 프로젝트를 이김 — app-server 실측 ✅. 스크립트가 cwd→프로젝트 루트(`project_root_markers`, 기본 `.git`)의 프로젝트 config를 찾아 요청 키를 덮으면 `Run flags:`(task: model·effort, review·adversarial: model) 또는 `Note:`(review effort) 출력, 스킬은 그 플래그를 companion 명령에 붙임. companion `task --effort`는 none~xhigh만 받음(max·ultra 거부) → 덮는 경우에만 플래그 전달해 기본 경로 불변. e2e(codex-verify, 새/5.0.4 각 1회): 새 스킬만 `--effort` 전달 ✅. `--profile`·`-c`는 사용자가 직접 치는 것이라 대상 아님 | (완료) | ✅ 테스트 10개 + 공식 샘플·실제 config 사본 |
+
+**P3 결정 (21차 그릴링, 구현은 세션 뒤)**
+- [ ] #1: 실측(`claude -p` codex-verify 1회) — 깨지지 않음. 모델이 호출 A에 `echo "CODEX_COMPANION=…"`을 스스로 넣고 뒤 호출에 경로를 글자 그대로 넣었다. 그래도 스킬 글이 :156 규칙("앞 호출의 셸 변수 금지")과 충돌 → **A 작게 고침**: verify·research·rescue 호출 A에 `echo "CODEX_COMPANION=$CODEX_COMPANION"`, 다른 블록은 `"<literal CODEX_COMPANION path>"`(다른 변수와 같은 방식). 심각도 high → med. #7(스크립트화)은 따로 정한다.
+- [ ] #2: 실측 — `/codex-status show me the last job` → `No job found for "show"`. **A 짧은 거름 규칙**: status·result·cancel에 "job id와 문서에 있는 플래그만 값마다 따옴표 붙여 넘김, 그 외는 버림, 말로 된 요청이면 인자 없이" 3줄. review식 전체 Phase 1 복사(C7)·`"$ARGUMENTS"`(플래그 깨짐)는 기각.
+- [ ] #3: companion 1.0.6 `job-control.mjs` 대조 — cancel은 id 없으면 이 세션 활성 job이 1개일 때만 취소(2개↑ 거부 :300), status `--all`은 상한만 해제(:227), result는 이 세션의 최근 종료 job(failed·cancelled 포함, :257). **A 지움**: cancel Phase 1·:37, status :55, result :56. companion 오류 메시지가 이미 설명(C4). companion이 안 말하는 것만 남김(취소해도 diff는 남음).
+- [ ] #4: 같은 입력(`--foo`)에 SKILL.md 5개는 AskUserQuestion, companion-usage §7 규칙 7(:351)은 FATAL — §7 예시(:362 `--uncommitted`)도 규칙 7과 어긋남. **A AskUserQuestion으로 통일**: 규칙 7을 "넘기지 않음 → AskUserQuestion"으로, :367 예시도. 비대화형은 규칙 6(exit 1)이 이미 처리.
+- [ ] #5: 실측 — 스킬 `:619`(readTaskPrompt) ↔ 1.0.6 실제 :643·:648-649. companion-usage는 "1.0.5 기준". **B 모든 곳(SKILL.md 9개 + companion-usage.md)에서 줄 번호를 함수 이름으로**. A(SKILL.md만 삭제)는 낡은 번호를 한 곳에 남겨서 기각.
+- [x] #6: 이미 해결 — 7차 `85f10d5`에서 "stderr advisories" 문구 삭제, 지금 스킬에 없음.
+- [ ] #7: verify·research 블록 diff — 코드 같고 주석·설명만 갈라짐. **A `scripts/codex-task.sh`**: `launch <prompt-file> <out-dir> [run flags]` → JOB_ID 출력, `wait <job-id> <out-dir>` → 4분 한 번 대기 후 상태 출력, 끝났으면 result를 파일로. companion 경로는 스크립트가 직접 찾음 → #1은 이 블록에서 사라지고, #1 A는 남은 블록에만 적용. 재호출 횟수 판단은 스킬에 남김(Bash 시간 제한).
+- [ ] #8: Official 플러그인을 끄면 `/codex:status`는 없음(README :59-62가 끄라고 안내). companion 자체 메시지도 `/codex:status`·`/codex:cancel`을 안내. **A** 우리 글(rescue:307, verify:316, research:296)을 `/codex-status`로 + companion-usage §6에 "companion 메시지의 `/codex:<x>`는 사용자에게 `/codex-<x>`로 알린다" 한 줄. #7 스크립트로 옮겨지는 곳은 함께.
+- [ ] #9: companion-usage:309 "Official 플러그인을 켜라" ↔ transfer:78 "자체 hook이 설정, `CLAUDE_ENV_FILE` 없을 때만 → `--source`"(코드·ADR 0006과 맞음). **A :309 행 삭제**, transfer:78만 남김(transfer 전용 오류, C3).
+- [ ] #10: description 실측 — 10개 합계 약 2,060자, transfer 371자(나머지 150~210). **A `disable-model-invocation: true` + 짧은 description**. 세션을 떠나는 동작은 사용자가 직접 고른다.
+- [ ] (21차 추가, #10 확장) cancel·status·result·setup에도 **`disable-model-invocation: true`**(합계 약 700자, 트리거가 명령 이름 자체). 모델 호출형은 review·adversarial·rescue·verify·research 5개만 남김.
+- [ ] #11: 같은 이유 두 문단이 review:42-44·adversarial:41-43·rescue:457·setup:126·companion-usage :44·:47. **A** SKILL.md 4곳을 "`--effort`를 companion에 직접 넘기지 않음(review엔 그 플래그가 없어 프롬프트에 섞임) — 자세히는 companion-usage §2" 한 줄로. 긴 설명은 companion-usage에만. rescue의 "스크립트는 값을 판단 안 함, Codex가 판단"은 남김.
+- [ ] #12: 원장 전제("effort는 companion에 안 감") 틀림 — 5.1.0부터 프로젝트 config가 effort를 정하면 `Run flags: --effort`로 `task`에 감, `max` 등은 companion이 거부(:124). **B 고쳐 씀**: "프로젝트 config 때문에 Run flags로 `--effort`를 넘긴 경우에만(rescue·verify·research). 메시지 그대로 전달, 다른 값을 묻는다." 값 목록 하드코딩 삭제(setup:92와 충돌).
+- [ ] #13: Q11로 흡수 — result·cancel이 `disable-model-invocation`이 되면 description은 `/` 메뉴용. "Use when asked …" 동의어 나열을 빼고 한 문장으로(4개 모두).
+- [ ] #14: 지금은 adversarial:11-14 한 곳(:354는 이미 없음). Verifier 이유로 든 "invents more than plain review"는 측정 안 함, review도 같은 Verifier. **A 삭제** — review:14와 같은 "The judging is deliberately not yours."로 맞춤, "looks for reasons NOT to ship"은 남김.
+- [ ] #15: companion-usage :14 "1.0.0+"(README :139는 1.0.4+, transfer 1.0.5+), :155 "still present in 1.0.5" 도장, :9 기준 "1.0.5"(설치본 1.0.6). **B** :14·:155 삭제(최소 버전은 README 한 곳), #5 작업 중 인용을 1.0.6에서 찾으며 :9를 "1.0.6"으로. 부수: :7-8 인용 경로 `references/codex-plugin-cc/...`는 레포 전용(설치본 격리 위반) → #5 때 함께.
+- [ ] #16: review:272-274 bullet **전체 삭제**("See §3.1 of the plan"은 없는 문서, 나머지는 Phase 1 :51과 중복·이력 설명).
+- [ ] 기타-setup: 실측 — `codex --version`은 인증과 무관하게 버전만 출력 → 인증 확인이 항상 "likely OK". `companion setup --json`이 `codex.available`·`auth.loggedIn`·`nextSteps`를 줌. **A** "CLI 확인"·"인증 확인" 절 삭제, 블록 하나에서 resolve → `setup --json` → 보고. 못 찾으면 지금 설치 안내. setup의 #1(:45 설정 → :61 사용)도 여기서 사라짐.
+- [ ] 기타-rescue: :463 "Exploring biases the double-check" 삭제(Verifier는 메인 세션 탐색을 모름). 규칙과 앞 이유("Codex가 context를 만든다")는 남김 — 새 이유를 지어내지 않는다.
+- [ ] P3 후보(14차 bare `Bash`): 공식 skills.md:582 — 부른 턴 동안 모든 셸 명령을 묻지 않고 허용. **A #7 뒤에 좁힘**: `Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)` 중심(skills.md:459-471 패턴), `claude -p`를 `--allowedTools` 없이 돌려 권한 거부 0건 확인. 거부가 많으면 B(그대로 두고 이유 기록)로 물러남.
+- [ ] 구현 순서·커밋(Q18 A): ① 구조 — #7 `codex-task.sh` → #1(남은 블록)·기타-setup·#8, 5.2.0 bump ② 글 정리 — #2·#3·#4·#5(+#15)·#9·#11·#12·#14·#16·rescue:463·description(#10·#13·Q11 확장) ③ 권한 — P3 후보 bare `Bash`. 단계마다 커밋 하나, 버전은 배포 전까지 5.2.0(모델 호출을 꺼도 `/명령`은 동작 → minor). 검증: 드라이런 + 지운 줄 대조(20차 LOST 분류).
 
 기타: `codex-setup:32-40` 인증 확인은 companion `setup --json`의 `authStatus`로 대체 가능. rescue:461 "Exploring biases the double-check"는 Verifier 도입 후 낡은 이유 문장(:23-26은 `bcd42f9`에서 교정됨).
 
