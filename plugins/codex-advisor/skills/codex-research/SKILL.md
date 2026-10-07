@@ -2,7 +2,7 @@
 name: codex-research
 description: "Deep-dive research using Codex, double-checked by a fresh verifier subagent. Use when asked \"codex research\", \"deep dive with codex\", \"investigate this topic\". Not for code review or plan verification."
 argument-hint: "topic [path/to/document.md] [--model SLUG] [--effort LEVEL]"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
 ---
 
 # Codex Research + Independent Verification
@@ -22,11 +22,11 @@ For code review use `/codex-review`. For plan verification use
 
 | Phase | Allowed | Forbidden |
 |-------|---------|-----------|
-| 1 ANALYZE | `test -f/-s`, `wc -l/-c`, `file`, `echo`, `printf`, `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, no stdout) | `cat "$DOC"` to stdout, `head`, `tail`, Read, Grep, Glob |
-| 2 INVOKE | Bash for companion launch via stdin pipe | All source / document reads to stdout |
+| 1 ANALYZE | `codex-task.sh check-doc`, `new-run`, `prompt` (the document goes in by file redirect, never to stdout), `apply-codex-config.py` | `cat "$DOC"` to stdout, `head`, `tail`, Read, Grep, Glob |
+| 2 INVOKE | `codex-task.sh launch` (prompt via stdin pipe) | All source / document reads to stdout |
 | 3 WAIT | `codex-task.sh wait` loop (≤6 calls, ≤24 min), result written to a file | All reads, manual polling, `ps`/`kill` |
-| 4 VERIFY | `prepare-verifier.py --mode doc`, then `Agent` (`codex-advisor:verifier`) | Reading the document or the Codex result; judging or supplementing any finding yourself |
-| 5 REPORT + SAVE | Write report file | n/a |
+| 4 VERIFY | `codex-task.sh payload --mode doc`, then `Agent` (`codex-advisor:verifier`) | Reading the document or the Codex result; judging or supplementing any finding yourself |
+| 5 REPORT + SAVE | `codex-report.sh save`, `codex-report.sh clean` | Write tool for the report |
 
 **Why the material stays out of context:** the value of this skill is a second
 reader who owes nothing to the first. Once you have read Codex's findings, your
@@ -82,23 +82,20 @@ in one step.
 ```bash
 # Input validation only — never load content.
 # Replace <literal doc path> with the path parsed from $ARGUMENTS.
-test -f "<literal doc path>" || { echo "File not found: <literal doc path>" >&2; exit 1; }
-test -s "<literal doc path>" || { echo "File is empty: <literal doc path>" >&2; exit 1; }
-echo "DOC_LINES=$(wc -l < "<literal doc path>")"   # size info, not content
+# Refuses a missing or empty file; prints DOC_LINES= (size info, not content).
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" check-doc "<literal doc path>"
 ```
 
 ### Assemble the payload
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh" > /dev/null \
-  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" new-run "${CLAUDE_PLUGIN_DATA}" research
+```
 
-RUN_DIR="${CLAUDE_PLUGIN_DATA}/tmp/research-run-$(date +%s%N)"
-mkdir -p "$RUN_DIR"
-PROMPT_FILE="$RUN_DIR/prompt.txt"
-echo "RUN_DIR=$RUN_DIR"
-echo "PROMPT_FILE=$PROMPT_FILE"
+It refuses when the Official Codex plugin is missing (point the user at
+`/codex-setup`), else prints `RUN_DIR=` and `PROMPT_FILE=`. Then write the prompt:
 
+```bash
 # Header via heredoc. Replace <literal topic> with the cleaned research
 # topic from Phase 1. Do NOT embed the user's meta-instructions.
 # Block provenance — official gpt-5-4-prompting (prompt-blocks.md), bodies
@@ -108,7 +105,9 @@ echo "PROMPT_FILE=$PROMPT_FILE"
 #   structured_output_contract  — §Output and Format
 #   research_mode               — §Task-Specific Blocks
 #   citation_rules              — §Grounding and Missing Context
-cat > "$PROMPT_FILE" <<'EOF'
+# Omit the --document line in topic-only mode.
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" prompt "<literal PROMPT_FILE path>" \
+  --document "<literal doc path>" --tag context_document <<'EOF'
 <task>
 You are a technical researcher conducting a deep investigation.
 Topic: <literal topic from Phase 1>
@@ -132,24 +131,16 @@ Cite sources. Prefer primary. Say "I'm not sure" rather than guessing.
 EOF
 ```
 
-**Topic-only mode:** if the user gave no document, stop here — the
-payload is complete. Skip the append step below.
-
-**Document mode:** append the context document via file redirect:
-
-```bash
-printf '\n<context_document>\n' >> "$PROMPT_FILE"
-# Use the literal doc path, NOT a shell variable from a prior Bash call.
-cat "<literal doc path>" >> "$PROMPT_FILE"
-printf '\n</context_document>\n' >> "$PROMPT_FILE"
-```
+**Document mode** appends the context document wrapped in
+`<context_document>` by file redirect inside the script — stdout stays empty.
+**Topic-only mode** sends the header alone.
 
 ### Apply model/effort (if either flag was provided)
 
 Run after payload assembly, before Phase 2, so the companion sees the new `config.toml`:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
   "<literal clean effort from Phase 1 or empty>" \
   --run-flags model,effort
@@ -244,10 +235,10 @@ Use `AskUserQuestion` exactly once:
   produced before it runs.
 - **Needs changes** → the user will describe what to change (e.g.,
   topic rewording, adding/removing XML blocks, changing research
-  framing). Rewrite PROMPT_FILE with the updated content (re-append
-  the document if in document mode), then re-display and re-ask. No
-  loop limit.
-- **Cancel** → remove RUN_DIR, stop execution.
+  framing). Rerun the `prompt` call with the updated content — it rewrites
+  PROMPT_FILE and, in document mode, re-appends the document — then
+  re-display and re-ask. No loop limit.
+- **Cancel** → `codex-report.sh clean` the `RUN_DIR` (as in Phase 5, without `--keep-inputs` — no payload exists yet), stop execution.
 
 ---
 
@@ -296,18 +287,13 @@ Verifier, collect what comes back.
 ### Step 1 — Prepare the payload
 
 ```bash
-WORK="${CLAUDE_PLUGIN_DATA}/tmp/research-payload-$(date +%s%N)"
-echo "WORK=$WORK"
-
 # Drop the --document line for a topic-only run — there is no document to name,
 # and the approved prompt file is the scope the Verifier judges coverage against.
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" payload "${CLAUDE_PLUGIN_DATA}" \
   --mode doc --skill research \
   --prompt-file "<literal PROMPT_FILE path>" \
   --result-file "<literal RESULT_FILE path>" \
-  --document "<literal USER_DOC path>" \
-  --out-dir "$WORK"
-echo "prepare-verifier exit=$?"
+  --document "<literal USER_DOC path>"
 ```
 
 The payload holds those paths and nothing else — no document text, no Codex text.
@@ -356,29 +342,24 @@ the verdict would make you the judge again.
 
 ## Phase 5: Report + save
 
-```bash
-mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
-```
-
-**Success:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>.md` using the standard
+**Success:** save with `codex-report.sh save … research` using the standard
 format in `references/evaluation.md` — the topic (and document path, if any) as
 the scope, Codex's output verbatim, the verdicts by classification, and the
 summary counts. The `missing-N` items go under *Gaps in the Codex result*, which
 is where a reader looks to see what the research did not answer.
 
-**Failure:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/research-<YYYYMMDD-HHMMSS>-failed.md` with
+**Failure:** save with `codex-report.sh save … research --failed` with
 the §6 error category, stderr, and topic/document path.
 
-Clean up temp files using the literal path from Phase 1:
+Clean up temp files using the literal path from Phase 1, keeping the payload's inputs:
 
 ```bash
-rm -rf "<literal RUN_DIR path>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-report.sh" clean "${CLAUDE_PLUGIN_DATA}" "<literal RUN_DIR path>" --keep-inputs
 ```
 
-Leave `$WORK` where it is. A re-verification the user asks for needs that payload
-file and its manifest, and the hook refuses a payload it cannot hash-check.
+Leave `WORK` where it is. A re-verification the user asks for needs that payload
+file and its manifest, plus the `prompt.txt` and `result.json` the payload points
+at, and the hook refuses a payload it cannot hash-check.
 
 ---
 
@@ -391,8 +372,8 @@ file and its manifest, and the hook refuses a payload it cannot hash-check.
   redirects it into the prompt file and Phase 4 passes its path to the Verifier.
 - **Topic-only mode skips the document append entirely** — don't
   accidentally pass an empty `<context_document>` tag.
-- **`cat "$USER_DOC" >> "$PROMPT_FILE"`** — file redirect keeps stdout
-  empty. Reading the doc to stdout defeats the entire point.
+- **`prompt --document`** appends by file redirect inside the script, so
+  stdout stays empty. Reading the doc to stdout defeats the entire point.
 - **Gaps are reported, not filled.** What Codex left out comes back as
   `missing-N` from the Verifier, which judged it against the scope the user
   approved. Writing your own supplement here would put the author back in the

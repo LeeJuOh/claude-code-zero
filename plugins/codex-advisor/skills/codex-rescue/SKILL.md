@@ -2,7 +2,7 @@
 name: codex-rescue
 description: "Delegate an implementation task to Codex, then Claude reviews the result. Use when asked \"codex rescue\", \"delegate to codex\", \"have codex do it\", or wants Codex to implement or fix something."
 argument-hint: "task description [--write] [--model MODEL] [--effort LEVEL] [--resume-last|--resume|--fresh]"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
 ---
 
 # Codex Task Delegation + Double-Check
@@ -31,11 +31,11 @@ there to replace.
 
 | Phase | Allowed | Forbidden |
 |-------|---------|-----------|
-| 1 ANALYZE | `test -f/-s/-d`, `git status --porcelain` (file names only, not contents), `echo`, `printf` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
-| 2 INVOKE | Bash for companion launch via stdin pipe (no positional!) | All source reads |
+| 1 ANALYZE | `apply-codex-config.py` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
+| 2 INVOKE | `codex-task.sh new-run`, `snapshot`, `prompt`, `launch` (prompt via stdin, no positional!) | All source reads |
 | 3 WAIT | `codex-task.sh wait` loop (≤6 calls, ≤24 min) | All source reads, manual polling, `ps`/`kill` |
-| 4 VERIFY | `prepare-verifier.py`, then `Agent` (`codex-advisor:verifier`) | Reading source; judging or re-judging the result yourself |
-| 5 REPORT + SAVE | Write report file | n/a |
+| 4 VERIFY | `codex-task.sh payload`, then `Agent` (`codex-advisor:verifier`) | Reading source; judging or re-judging the result yourself |
+| 5 REPORT + SAVE | `codex-report.sh save`, `codex-report.sh clean` | Write tool for the report |
 
 `codex-task.sh launch` refuses any argument that is not a known task flag, so a stray word stops the launch instead of landing in the prompt. Phase 1 still decides what is a flag and what is task text.
 
@@ -65,7 +65,7 @@ becomes the `<task>` body — you wrap it in prompt blocks below (see
 Run before Phase 2 so the companion sees the new `config.toml`:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
   "<literal clean effort from Phase 1 or empty>" \
   --run-flags model,effort
@@ -225,33 +225,39 @@ Use `AskUserQuestion` exactly once:
 `codex-task.sh launch` starts the job in the background and prints its id.
 
 ```bash
-RUN_DIR="${CLAUDE_PLUGIN_DATA}/tmp/rescue-run-$(date +%s%N)"
-mkdir -p "$RUN_DIR"
-PROMPT_FILE="$RUN_DIR/prompt.txt"
-echo "RUN_DIR=$RUN_DIR"
-echo "PROMPT_FILE=$PROMPT_FILE"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" new-run "${CLAUDE_PLUGIN_DATA}" rescue
+```
 
-# --write only: snapshot the whole working tree (tracked + untracked) as a git
-# tree object. Phase 4 diffs against it, so the Verifier sees what Codex changed
-# and not what the tree was already dirty with. Drop this line for a read-only
-# run — there is nothing to diff. The real index is never touched.
-PRE_TREE=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
-  snapshot --repo "$(git rev-parse --show-toplevel)")
-echo "PRE_TREE=$PRE_TREE"
+It prints `RUN_DIR=` and `PROMPT_FILE=`. Then, for a `--write` run only, snapshot
+the whole working tree (tracked + untracked) as a git tree object. Phase 4 diffs
+against it, so the Verifier sees what Codex changed and not what the tree was
+already dirty with. Skip this call for a read-only run — there is nothing to
+diff. The real index is never touched.
 
-# Write the approved WRAPPED prompt from Phase 1.5 — <task> with the
-# user's verbatim text plus the Phase 1 blocks, never the bare task text.
-cat > "$PROMPT_FILE" <<'EOF'
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" snapshot
+```
+
+It prints `PRE_TREE=`. Write the approved WRAPPED prompt from Phase 1.5 —
+`<task>` with the user's verbatim text plus the Phase 1 blocks, never the bare
+task text:
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" prompt "<literal PROMPT_FILE path>" <<'EOF'
 <literal approved wrapped XML prompt from Phase 1.5>
 EOF
+```
 
+Then launch:
+
+```bash
 # Each flag line below is optional — include only what Phase 1 parsed.
 # Omit the entire line for flags not provided.
 # --write: include for implementation (default ON); omit for read-only.
 # Model/effort: only the flags on the apply step's "Run flags:" line;
 #   otherwise the companion reads them from config.toml.
 # --resume-last/--resume/--fresh: mutually exclusive; omit if none.
-"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" launch "$PROMPT_FILE" "$RUN_DIR" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" launch "<literal PROMPT_FILE path>" "<literal RUN_DIR path>" \
   <flags from the "Run flags:" line, if the apply step printed one> \
   --write \
   --resume-last
@@ -309,15 +315,9 @@ code, Codex's report when it only investigated. Pick the one that matches Phase 
 ### If Codex made code changes (`--write`)
 
 ```bash
-set -o pipefail
-REPO=$(git rev-parse --show-toplevel)
-WORK="${CLAUDE_PLUGIN_DATA}/tmp/verify-$(date +%s%N)"
-echo "WORK=$WORK"
-
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" payload "${CLAUDE_PLUGIN_DATA}" \
   --mode diff --pre "<literal PRE_TREE from Phase 2>" \
-  --prompt-file "<literal PROMPT_FILE path>" --repo "$REPO" --out-dir "$WORK"
-echo "prepare-verifier exit=$?"
+  --prompt-file "<literal PROMPT_FILE path>"
 ```
 
 The script snapshots the tree again and diffs it against the Phase 2 snapshot, so
@@ -331,15 +331,8 @@ Verifier.
 ### If Codex returned investigation results (read-only)
 
 ```bash
-set -o pipefail
-REPO=$(git rev-parse --show-toplevel)
-WORK="${CLAUDE_PLUGIN_DATA}/tmp/verify-$(date +%s%N)"
-echo "WORK=$WORK"
-
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
-  --skill rescue --input "<literal RESULT_FILE path>" --repo "$REPO" \
-  --out-dir "$WORK"
-echo "prepare-verifier exit=$?"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" payload "${CLAUDE_PLUGIN_DATA}" \
+  --skill rescue --input "<literal RESULT_FILE path>"
 ```
 
 Codex's report here is prose, so the whole of it becomes one payload and the
@@ -348,6 +341,9 @@ first — a list you extracted yourself is a list you have already formed an opi
 about.
 
 ### Exit codes (both modes)
+
+Both calls print `WORK=<path>` (a fresh payload folder) and then the script's
+JSON, and exit with `prepare-verifier.py`'s code.
 
 | Exit | Meaning | What you do |
 |---|---|---|
@@ -393,12 +389,7 @@ the verdict would make you the judge again.
 
 ## Phase 5: Report + save
 
-```bash
-mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
-```
-
-**Success:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/rescue-<YYYYMMDD-HHMMSS>.md` using the standard
+**Success:** save with `codex-report.sh save … rescue` using the standard
 format in `references/evaluation.md`, with the task description in *Scope* and
 Codex's output verbatim. In `--write` mode the Verifier's `req-N` verdicts are
 the per-requirement result and `side-effect-N` goes on the *Unrequested changes*
@@ -407,18 +398,16 @@ line.
 **Do NOT auto-accept the changes.** Present them and wait for the user —
 `references/evaluation.md` has the rule and the reason.
 
-**Failure:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/rescue-<YYYYMMDD-HHMMSS>-failed.md` with
+**Failure:** save with `codex-report.sh save … rescue --failed` with
 the §6 error category and captured stderr.
 
-Clean up temp files using the literal path, keeping the prompt:
+Clean up temp files using the literal path, keeping the payload's inputs:
 
 ```bash
-rm -f "<literal RUN_DIR path>"/job.* "<literal RUN_DIR path>"/status.* \
-      "<literal RUN_DIR path>"/result.*
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-report.sh" clean "${CLAUDE_PLUGIN_DATA}" "<literal RUN_DIR path>" --keep-inputs
 ```
 
-Leave `$WORK` and `$PROMPT_FILE` where they are. A re-verification the user asks
+Leave `WORK` and `PROMPT_FILE` where they are. A re-verification the user asks
 for needs the payload, the diff, and the task text the payload points at, and the
 hook refuses a payload it cannot hash-check.
 

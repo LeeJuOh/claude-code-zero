@@ -2,7 +2,7 @@
 name: codex-adversarial
 description: "Run Codex adversarial review — actively tries to break confidence in the change. Use when asked \"adversarial review\", \"red-team this change\", or wants thorough security/correctness challenge."
 argument-hint: "[--base BRANCH] [--scope auto|working-tree|branch] [--model SLUG] [--effort LEVEL] [focus text]"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
 ---
 
 # Codex Adversarial Review + Double-Check
@@ -18,11 +18,11 @@ and report what it decides. The judging is deliberately not yours.
 
 | Phase | Allowed | Forbidden |
 |-------|---------|-----------|
-| 1 ANALYZE | `test -f/-s/-d`, `git rev-parse --verify`, `git branch --list`, `wc -l/-c`, `file`, `echo`, `printf` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
-| 2 INVOKE | Bash for companion launch (multi-arg form only — never `$ARGUMENTS` blob) | All source reads |
-| 3 WAIT | `Read` the output file once the background command reports completion | All source reads, manual polling, `ps`/`kill` |
-| 4 VERIFY | `prepare-verifier.py`, then `Agent` (`codex-advisor:verifier`) per group | Reading source; judging or re-judging any finding yourself |
-| 5 REPORT + SAVE | Write report file | n/a |
+| 1 ANALYZE | `codex-task.sh check-ref`, `apply-codex-config.py` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
+| 2 INVOKE | `codex-task.sh review` (multi-arg form only — never `$ARGUMENTS` blob) | All source reads |
+| 3 WAIT | `codex-task.sh review-wait` loop (≤8 calls, about 30 min), then `Read` `OUT_FILE` | All source reads, `run_in_background`, `ps`/`kill` |
+| 4 VERIFY | `codex-task.sh payload`, then `Agent` (`codex-advisor:verifier`) per group | Reading source; judging or re-judging any finding yourself |
+| 5 REPORT + SAVE | `codex-report.sh save`, `codex-report.sh clean` | Write tool for the report |
 
 The companion collects the diff itself. Unknown flags are silently
 joined into the focus text, and so into the prompt (`parseArgs` in
@@ -49,7 +49,7 @@ Rules:
   - `--wait` / `--background` → silent no-ops on adversarial; drop.
   - Never pass through.
 - **Duplicate flag** → `AskUserQuestion` which one.
-- **Ambiguous** → `AskUserQuestion` (interactive) or exit 1 (non-interactive, see `references/companion-usage.md §9`).
+- **Ambiguous** → `AskUserQuestion`; if it is unavailable (non-interactive), reply with one `AMBIGUOUS:` line and run nothing (`references/companion-usage.md §9`).
 
 ### Hypothesis exclusion
 
@@ -81,9 +81,8 @@ in one step.
 
 ```bash
 # Replace <literal clean base> with the value from Phase 1 — or skip
-# this block entirely if the user gave no --base.
-git rev-parse --verify "<literal clean base>" >/dev/null 2>&1 \
-  || { echo "Unknown revision: <literal clean base>" >&2; git branch --list | head -20 >&2; exit 1; }
+# call entirely if the user gave no --base.
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" check-ref "<literal clean base>"
 ```
 
 ### Apply model/effort (if either flag was provided)
@@ -91,7 +90,7 @@ git rev-parse --verify "<literal clean base>" >/dev/null 2>&1 \
 Run before Phase 2 so the companion sees the new `config.toml`:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
   "<literal clean effort from Phase 1 or empty>" \
   --run-flags model
@@ -127,10 +126,10 @@ Show the full companion command in a fenced code block:
 **Adversarial review command to execute:**
 
 ```bash
-node "$CODEX_COMPANION" adversarial-review --json \
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" review "${CLAUDE_PLUGIN_DATA}" adversarial-review \
   --base develop \
   --scope auto \
-  "check SQL injection in login handler"
+  --focus "check SQL injection in login handler"
 ```
 ````
 
@@ -177,55 +176,55 @@ Use `AskUserQuestion` exactly once:
 
 ---
 
-## Phase 2: Invoke (Pattern A — Bash run_in_background)
+## Phase 2: Invoke (Pattern A — detached review)
 
 Adversarial shares `handleReviewCommand` with `review`, so
-`--background` / `--wait` are silent no-ops. Use Bash
-`run_in_background=true`.
+`--background` / `--wait` are silent no-ops. The script detaches the
+companion itself and returns at once.
 
 ```bash
-set -o pipefail
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
-  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
-
-mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
-TS=$(date +%s%N)
-OUT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/adversarial-${TS}.json"
-ERR_FILE="${CLAUDE_PLUGIN_DATA}/tmp/adversarial-${TS}.log"
-echo "OUT_FILE=$OUT_FILE"
-echo "ERR_FILE=$ERR_FILE"
-
-# Launch via Bash run_in_background=true.
 # Replace <literal ...> with values from Phase 1. Omit the entire line
-# for values the user did not provide. Focus text is a positional arg —
-# place it AFTER all flags, or omit if empty.
-node "$CODEX_COMPANION" adversarial-review --json \
+# for values the user did not provide, including --focus when there is no
+# focus text.
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" review "${CLAUDE_PLUGIN_DATA}" adversarial-review \
   <flags from the "Run flags:" line, if the apply step printed one> \
   --base "<literal clean base from Phase 1>" \
   --scope "<literal clean scope from Phase 1>" \
-  "<literal clean focus text from Phase 1>" \
-  > "$OUT_FILE" 2> "$ERR_FILE"
+  --focus "<literal clean focus text from Phase 1>"
 ```
 
-Capture the `bash_id` and the literal `OUT_FILE` / `ERR_FILE` paths.
-Re-inject these as literal strings in every subsequent Bash call — shell
-variables do not survive across calls.
+The script refuses any flag outside that list and passes the focus text to the
+companion as the positional prompt, after the flags. It prints `RUN_DIR=`,
+`OUT_FILE=` and `ERR_FILE=`. Re-inject the literal paths in every later
+Bash call — shell variables do not survive across calls.
 
 ---
 
 ## Phase 3: Wait
 
-The companion runs in the background, so this turn resumes on its own when the
-command exits — there is no polling loop to write and no timer to set. On the
-completion notification, `Read` `$OUT_FILE`.
+Call with the Bash tool's `timeout` set to 300000: each call blocks up to 4
+minutes, and the default Bash timeout is 2. Keep calling in the foreground, in
+this turn — a background command that finishes starts a new turn, and the
+`allowed-tools` grant does not carry over to it. A call the Bash tool cuts off
+does not stop the review — call again, and count it toward the cap. **Cap at 8
+calls** (about 30 minutes).
 
-| What you find | Action |
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" review-wait "<literal RUN_DIR path>"
+```
+
+- `STATUS=running` → call again.
+- `STATUS=done` → act on the `OUTPUT=` line:
+
+| `OUTPUT=` | Action |
 |-----------|--------|
-| `$OUT_FILE` is valid JSON | Proceed to Phase 4 |
-| `$OUT_FILE` empty | Read `$ERR_FILE`, categorize per §6, save `adversarial-<ts>-failed.md`, stop |
-| `$OUT_FILE` non-JSON | `unexpected-format` — show stderr verbatim, abort |
+| `json` | `Read` `OUT_FILE`, then Phase 4 |
+| `empty` | Read `ERR_FILE`, categorize per §6, save `adversarial-<ts>-failed.md`, stop |
+| `non-json` | `unexpected-format` — show `ERR_FILE` verbatim, abort |
 
-A run that never finishes is the user's to end, with `/codex-cancel` or Esc.
+- 8 calls exhausted → `wait-timeout` (§6). Do NOT cancel; leave the review
+  running and its `RUN_DIR` in place (skip the Phase 5 clean). Point the user
+  at `/codex-status` to follow it and `/codex-cancel` to stop it.
 
 Full error table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
 
@@ -243,31 +242,14 @@ citation against the tree, and the Verifier weighs the attack scenario.
 ### Step 1 — Prepare the payloads
 
 ```bash
-set -o pipefail
-REPO=$(git rev-parse --show-toplevel)
-WORK="${CLAUDE_PLUGIN_DATA}/tmp/verify-$(date +%s%N)"
-echo "WORK=$WORK"
-
-# A branch review judged committed code, so its citations should still match HEAD
-# and drift since the review is worth flagging; a working-tree review has no such
-# ref. `target.mode` is the scope the companion actually resolved, which is the
-# only reliable answer when the user passed --scope auto.
-REF=$(node -e 'const t=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).target;process.stdout.write(t&&t.mode==="branch"?"HEAD":"")' \
-  "<literal $OUT_FILE path>")
-
-# Spelt out rather than folded into `${REF:+...}`: zsh does not word-split an
-# unquoted expansion, so that form arrives as the single argument `--ref HEAD`.
-if [ -n "$REF" ]; then
-  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
-    --skill adversarial --input "<literal $OUT_FILE path>" --repo "$REPO" \
-    --out-dir "$WORK" --ref "$REF"
-else
-  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
-    --skill adversarial --input "<literal $OUT_FILE path>" --repo "$REPO" \
-    --out-dir "$WORK"
-fi
-echo "prepare-verifier exit=$?"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" payload "${CLAUDE_PLUGIN_DATA}" \
+  --skill adversarial --input "<literal OUT_FILE path>" --ref auto
 ```
+
+`--ref auto` turns on the worktree-drift check only for a branch review: that
+review judged committed code, so its citations should still match HEAD. The
+wrapper adds the repo root and a fresh payload folder, prints `WORK=<path>`,
+and exits with `prepare-verifier.py`'s code.
 
 The script reads `result.findings`, checks that every cited `file:line` exists, and
 writes one payload file per group. Its stdout JSON is your view of the findings —
@@ -322,28 +304,23 @@ the verdict would make you the judge again.
 
 ## Phase 5: Report + save
 
-```bash
-mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
-```
-
-**Success:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>.md` using the
+**Success:** save with `codex-report.sh save … adversarial` using the
 standard format in `references/evaluation.md` — Codex's output verbatim, the
 verdicts by classification, then the summary counts. The counts are the risk
 picture: a high False Positive line is what separates noise from the real
 concerns, so leave it visible rather than summarizing it away.
 
-**Failure:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/adversarial-<YYYYMMDD-HHMMSS>-failed.md`
+**Failure:** save with `codex-report.sh save … adversarial --failed`
 with error category and captured stderr.
 
-Clean up the companion's temp files using the literal paths captured in Phase 2:
+Clean up the companion's temp files — the `RUN_DIR` folder from Phase 2, as a
+literal path:
 
 ```bash
-rm -f "<literal $OUT_FILE path>" "<literal $ERR_FILE path>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-report.sh" clean "${CLAUDE_PLUGIN_DATA}" "<literal RUN_DIR path>"
 ```
 
-Leave `$WORK` where it is. A re-verification the user asks for needs those payload
+Leave `WORK` where it is. A re-verification the user asks for needs those payload
 files and their manifest, and the hook refuses a payload it cannot hash-check.
 
 ---
@@ -354,12 +331,12 @@ files and their manifest, and the hook refuses a payload it cannot hash-check.
   the noisiest findings, and the script reaches it before any Verifier runs by
   checking the citation against the tree. A high False Positive count in the
   report is the expected shape here, not a broken run.
-- **Focus text IS allowed here** (unlike `/codex-review`). It goes as a
-  positional argument after the flags.
+- **Focus text IS allowed here** (unlike `/codex-review`). Pass it as
+  `--focus`; the script puts it after the flags as the positional argument.
 - **`--commit`, `--uncommitted` do not exist** — translate via ANALYZE,
   never pass through.
 - **Companion-side `--background` / `--wait` are silent no-ops.** Same
-  handler as review. Use Pattern A.
+  handler as review. Use Pattern A (`review` + `review-wait`).
 
 For the full shared gotchas list, read
 `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §10`.

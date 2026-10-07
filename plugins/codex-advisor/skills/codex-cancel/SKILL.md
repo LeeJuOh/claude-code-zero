@@ -3,7 +3,7 @@ name: codex-cancel
 description: "Cancel an active background Codex job."
 disable-model-invocation: true
 argument-hint: "[job-id]"
-allowed-tools: ["Bash"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)"]
 ---
 
 # Codex Job Cancel
@@ -12,14 +12,10 @@ Pass-through wrapper around the Official Codex companion's `cancel` subcommand. 
 
 ## Invoke companion cancel
 
-**Arguments:** pass on only a job id (like `task-mf3k2a-x7q1zp`, or a unique start of one) and the flags in `argument-hint`, quoting the job id and any flag value. Drop anything else. If the user asked in words ("stop the running job"), run with no arguments — the companion reads a stray word as a job id and fails with `No job found`.
+**Arguments:** pass on only a job id (like `task-mf3k2a-x7q1zp`, or a unique start of one), quoted. If the user asked in words ("stop the running job"), run with no arguments. The script refuses anything else, because the companion reads a stray word as a job id and fails with `No job found`.
 
 ```bash
-set -o pipefail
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
-  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
-
-node "$CODEX_COMPANION" cancel <filtered arguments>
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-job.sh" cancel <filtered arguments>
 ```
 
 Relay the companion's output verbatim.

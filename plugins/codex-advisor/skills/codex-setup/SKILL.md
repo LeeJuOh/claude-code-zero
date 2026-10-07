@@ -3,7 +3,7 @@ name: codex-setup
 description: "Check the Codex CLI, sign-in and the Official plugin, and set the default model and effort in config.toml."
 disable-model-invocation: true
 argument-hint: "[--model MODEL] [--effort LEVEL] [--status]"
-allowed-tools: ["Bash", "Read", "Edit", "AskUserQuestion"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)", "Read", "Edit", "AskUserQuestion"]
 ---
 
 # Codex Setup & Configuration
@@ -26,11 +26,10 @@ Parse $ARGUMENTS:
 One call finds the Official Codex plugin and asks its companion what is installed and signed in:
 
 ```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
-  && node "$CODEX_COMPANION" setup --json
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-job.sh" setup
 ```
 
-If `resolve-companion.sh` fails (plugin not found), guide the user through the full installation process:
+If it fails with `Official Codex plugin not found`, guide the user through the full installation process:
 
 1. Tell the user to run these commands **in order** (they must type these themselves since they are interactive CLI commands):
    - `/plugin marketplace add openai/codex-plugin-cc` — adds the Official Codex marketplace
@@ -47,7 +46,7 @@ Otherwise fill the status report from the JSON: `codex.available` and `codex.det
 ### Read current config
 
 ```bash
-cat "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null || echo "NO_CONFIG"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-job.sh" config
 ```
 
 ### Set Model / Effort (`--model`, `--effort`)
@@ -55,7 +54,7 @@ cat "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null || echo "NO_CONFIG"
 Both flags are handled by one call. Empty string = no change for that field:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" "<model or empty>" "<effort or empty>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" "<model or empty>" "<effort or empty>"
 ```
 
 The script's first stdout line is:
@@ -103,4 +102,4 @@ To change: `/codex-setup --model gpt-5.6-sol --effort high`
 
 - **config.toml applies globally.** Changes affect all Codex commands system-wide — Official plugin, direct CLI, and every codex-advisor skill. Warn the user when you mutate it.
 - **Other skills set these too.** review, adversarial, rescue, verify and research accept `--model`/`--effort` and write them through the same script. Review and adversarial have no `--effort` flag, so config.toml is the only way to set their effort — details in `references/companion-usage.md` §2.
-- **Don't create config.toml if the user only asked for status.** `apply-codex-config.py "" ""` is safe (no-op, prints current values) but avoid it when just reporting — `grep`/`cat` is enough.
+- **Don't create config.toml if the user only asked for status.** `apply-codex-config.py "" ""` is safe (no-op, prints current values) but avoid it when just reporting — `codex-job.sh config` is enough.

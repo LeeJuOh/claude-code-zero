@@ -82,8 +82,8 @@ def read(path):
 
 
 def heredoc_payload(text):
-    """The `cat > "$PROMPT_FILE" <<'EOF'` body — what lands in PROMPT_FILE."""
-    m = re.search(r'cat > "\$PROMPT_FILE" <<\'EOF\'\n(.*?)\nEOF\n', text, re.S)
+    """The `codex-task.sh prompt ... <<'EOF'` body — what lands in PROMPT_FILE."""
+    m = re.search(r'/codex-task\.sh" prompt [^\n]*(?:\\\n[^\n]*)*<<\'EOF\'\n(.*?)\nEOF\n', text, re.S)
     return m.group(1) + "\n" if m else None
 
 
@@ -202,7 +202,7 @@ def main():
         ("research", research, ["task", "structured_output_contract", "research_mode", "citation_rules"]),
         ("verify", verify, ["task", "structured_output_contract", "grounding_rules", "completeness_contract"]),
     ):
-        note = re.search(r"# Block provenance —.*?(?=\ncat )", text, re.S)
+        note = re.search(r"# Block provenance —.*?(?=\n\"\$\{CLAUDE_PLUGIN_ROOT\}/scripts/codex-task\.sh\" prompt )", text, re.S)
         check(note is not None, "%s has no block provenance note" % name)
         if note:
             for tag in expected:
@@ -223,8 +223,8 @@ def main():
               "%s does not tell the main session to leave a launched Verifier alone" % name)
         check(re.search(r"^allowed-tools:.*\bAgent\b", text, re.M) is not None,
               "%s cannot launch a Verifier without Agent in allowed-tools" % name)
-        check("scripts/prepare-verifier.py" in text,
-              "%s never runs prepare-verifier.py" % name)
+        check('scripts/codex-task.sh" payload' in text,
+              "%s never builds payloads with codex-task.sh payload" % name)
         check("subagent_type: codex-advisor:verifier" in text,
               "%s does not name the Verifier by its plugin-qualified type" % name)
         check('subagent_type: fork' not in text,
@@ -239,9 +239,12 @@ def main():
         text = read("skills/%s/SKILL.md" % name)
         for tool in ABSENT_WAIT_TOOLS:
             check(tool not in text, "%s still names the absent tool %s" % (name, tool))
-        check("wait-timeout" not in text, "%s still caps the wait" % name)
-        check("completion notification" in text,
-              "%s does not say how Phase 3 learns the run finished" % name)
+        # R2: a background command that finishes starts a new turn, where the
+        # allowed-tools grant is gone; the wait has to stay in the foreground.
+        check('scripts/codex-task.sh" review-wait' in text,
+              "%s does not wait with codex-task.sh review-wait" % name)
+        check("Cap at 8" in text and "wait-timeout" in text,
+              "%s has no review-wait cap" % name)
 
     # Phase 3 must not print the companion's status or result JSON.
     for name in BLIND_SKILLS:

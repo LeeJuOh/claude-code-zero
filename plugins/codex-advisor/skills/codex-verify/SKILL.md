@@ -2,7 +2,7 @@
 name: codex-verify
 description: "Verify a plan or document using Codex as independent reviewer with PASS/FAIL verdict. Use when asked \"codex verify\", \"verify this plan\", \"review this doc for issues\"."
 argument-hint: "path/to/document.md [focus text] [--model SLUG] [--effort LEVEL]"
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
 ---
 
 # Codex Document Verification + Double-Check
@@ -22,17 +22,17 @@ For code review use `/codex-review`. For research use `/codex-research`.
 
 | Phase | Allowed | Forbidden |
 |-------|---------|-----------|
-| 1 ANALYZE | `test -f/-s`, `wc -l/-c`, `file`, `echo`, `printf`, `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, no stdout) | `cat "$DOC"` to stdout, `head`, `tail`, Read, Grep, Glob |
-| 2 INVOKE | Bash for companion launch via stdin pipe | All source / document reads to stdout |
+| 1 ANALYZE | `codex-task.sh check-doc`, `new-run`, `prompt` (the document goes in by file redirect, never to stdout), `apply-codex-config.py` | `cat "$DOC"` to stdout, `head`, `tail`, Read, Grep, Glob |
+| 2 INVOKE | `codex-task.sh launch` (prompt via stdin pipe) | All source / document reads to stdout |
 | 3 WAIT | `codex-task.sh wait` loop (≤6 calls, ≤24 min), result written to a file | All reads, manual polling, `ps`/`kill` |
-| 4 VERIFY | `prepare-verifier.py --mode doc`, then `Agent` (`codex-advisor:verifier`) | Reading the document or the Codex result; judging any finding yourself |
-| 5 REPORT + SAVE | Write report file | n/a |
+| 4 VERIFY | `codex-task.sh payload --mode doc`, then `Agent` (`codex-advisor:verifier`) | Reading the document or the Codex result; judging any finding yourself |
+| 5 REPORT + SAVE | `codex-report.sh save`, `codex-report.sh clean` | Write tool for the report |
 
 **Why the document stays out of context:** the Verifier judges against the
 document, and it can only do that honestly if it comes to the document fresh.
-Your copy would add nothing and cost the independence. The blind-payload pattern
-(`cat "$DOC" >> "$PROMPT_FILE"`) redirects to a file, not stdout, so your context
-stays clean; Phase 4 passes paths, not text, for the same reason.
+Your copy would add nothing and cost the independence. `codex-task.sh prompt
+--document` appends the document to the prompt file by redirect, not to stdout,
+so your context stays clean; Phase 4 passes paths, not text, for the same reason.
 
 `codex-task.sh launch` refuses any argument that is not a known task flag, so a stray word stops the launch instead of landing in the prompt. Phase 1 still decides what is a flag and what is document text.
 
@@ -87,23 +87,20 @@ in one step.
 ```bash
 # Input validation only — never load content.
 # Replace <literal doc path> with the path parsed from $ARGUMENTS.
-test -f "<literal doc path>" || { echo "File not found: <literal doc path>" >&2; exit 1; }
-test -s "<literal doc path>" || { echo "File is empty: <literal doc path>" >&2; exit 1; }
-echo "DOC_LINES=$(wc -l < "<literal doc path>")"   # size info, not content
+# Refuses a missing or empty file; prints DOC_LINES= (size info, not content).
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" check-doc "<literal doc path>"
 ```
 
 ### Assemble the blind payload
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh" > /dev/null \
-  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" new-run "${CLAUDE_PLUGIN_DATA}" verify
+```
 
-RUN_DIR="${CLAUDE_PLUGIN_DATA}/tmp/verify-run-$(date +%s%N)"
-mkdir -p "$RUN_DIR"
-PROMPT_FILE="$RUN_DIR/prompt.txt"
-echo "RUN_DIR=$RUN_DIR"
-echo "PROMPT_FILE=$PROMPT_FILE"
+It refuses when the Official Codex plugin is missing (point the user at
+`/codex-setup`), else prints `RUN_DIR=` and `PROMPT_FILE=`. Then write the prompt:
 
+```bash
 # Header via heredoc — no document content yet.
 # Block provenance — official gpt-5-4-prompting (prompt-blocks.md), bodies
 # adapted to this skill's output schema; re-checked against the 5.6/Astra
@@ -112,7 +109,10 @@ echo "PROMPT_FILE=$PROMPT_FILE"
 #   structured_output_contract  — §Output and Format
 #   grounding_rules             — §Grounding and Missing Context
 #   completeness_contract       — §Follow-through and Completion
-cat > "$PROMPT_FILE" <<'EOF'
+# --document appends the file wrapped in <document> by redirect — stdout stays
+# empty, context stays clean.
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" prompt "<literal PROMPT_FILE path>" \
+  --document "<literal doc path>" --tag document <<'EOF'
 <task>
 You are a brutally honest technical reviewer. Review the following document for
 material issues that would cause implementation failure.
@@ -143,16 +143,7 @@ Do not speculate about issues not evidenced in the document.
 Review the entire document before finalizing.
 Check for interactions between sections that may create contradictions.
 </completeness_contract>
-
-<document>
 EOF
-
-# Append document via file redirect — stdout stays empty, context stays clean.
-# Use the literal doc path, NOT a shell variable from a prior Bash call.
-cat "<literal doc path>" >> "$PROMPT_FILE"
-
-# Close XML
-printf '\n</document>\n' >> "$PROMPT_FILE"
 ```
 
 ### Apply model/effort (if either flag was provided)
@@ -160,7 +151,7 @@ printf '\n</document>\n' >> "$PROMPT_FILE"
 Run after payload assembly, before Phase 2, so the companion sees the new `config.toml`:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/apply-codex-config.py" \
   "<literal clean model from Phase 1 or empty>" \
   "<literal clean effort from Phase 1 or empty>" \
   --run-flags model,effort
@@ -264,10 +255,10 @@ Use `AskUserQuestion` exactly once:
   before it runs.
 - **Needs changes** → the user will describe what to change. Common
   edits: reword focus areas, add domain-specific review criteria,
-  remove irrelevant focus areas, change the review tone. Rewrite
-  PROMPT_FILE with updated XML header, re-append the document via
-  blind redirect, then re-display and re-ask. No loop limit.
-- **Cancel** → remove RUN_DIR, stop execution.
+  remove irrelevant focus areas, change the review tone. Rerun the
+  `prompt` call with the updated XML header — it rewrites PROMPT_FILE and
+  re-appends the document blind — then re-display and re-ask. No loop limit.
+- **Cancel** → `codex-report.sh clean` the `RUN_DIR` (as in Phase 5, without `--keep-inputs` — no payload exists yet), stop execution.
 
 ---
 
@@ -316,16 +307,11 @@ Verifier, collect what comes back.
 ### Step 1 — Prepare the payload
 
 ```bash
-WORK="${CLAUDE_PLUGIN_DATA}/tmp/verify-payload-$(date +%s%N)"
-echo "WORK=$WORK"
-
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-verifier.py" \
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" payload "${CLAUDE_PLUGIN_DATA}" \
   --mode doc --skill verify \
   --prompt-file "<literal PROMPT_FILE path>" \
   --result-file "<literal RESULT_FILE path>" \
-  --document "<literal USER_DOC path>" \
-  --out-dir "$WORK"
-echo "prepare-verifier exit=$?"
+  --document "<literal USER_DOC path>"
 ```
 
 The payload holds those three paths and nothing else — no document text, no Codex
@@ -373,28 +359,23 @@ the verdict would make you the judge again.
 
 ## Phase 5: Report + save
 
-```bash
-mkdir -p "${CLAUDE_PLUGIN_DATA}/reviews"
-```
-
-**Success:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>.md` using the standard
+**Success:** save with `codex-report.sh save … verify` using the standard
 format in `references/evaluation.md` — the document path as the scope, Codex's
 output verbatim, the verdicts by classification, the summary counts, and the
 PASS/FAIL line that section's rules produce.
 
-**Failure:** save to
-`${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>-failed.md` with
+**Failure:** save with `codex-report.sh save … verify --failed` with
 the §6 error category, stderr, and the document path.
 
-Clean up temp files using the literal path captured in Phase 1:
+Clean up temp files using the literal path captured in Phase 1, keeping the payload's inputs:
 
 ```bash
-rm -rf "<literal RUN_DIR path>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-report.sh" clean "${CLAUDE_PLUGIN_DATA}" "<literal RUN_DIR path>" --keep-inputs
 ```
 
-Leave `$WORK` where it is. A re-verification the user asks for needs that payload
-file and its manifest, and the hook refuses a payload it cannot hash-check.
+Leave `WORK` where it is. A re-verification the user asks for needs that payload
+file and its manifest, plus the `prompt.txt` and `result.json` the payload points
+at, and the hook refuses a payload it cannot hash-check.
 
 ---
 
@@ -403,12 +384,12 @@ file and its manifest, and the hook refuses a payload it cannot hash-check.
 - **The document never enters your context, in any phase.** Phase 1 redirects
   it into the prompt file and Phase 4 passes its path to the Verifier. Reading it
   yourself at any point puts an opinion where the independence was.
-- **`cat "$USER_DOC" >> "$PROMPT_FILE"`** — file redirect keeps stdout
-  empty. `cat "$USER_DOC"` alone would dump content into Claude's
-  context. The `>> "$PROMPT_FILE"` is load-bearing.
-- **Temp file paths must come from Phase 1 stdout.** Do not rely on
-  `$RUN_DIR` / `$PROMPT_FILE` variables in later Bash calls — Bash spawns a
-  fresh shell each call. Re-inject literal absolute paths.
+- **`prompt --document`** appends by file redirect inside the script, so
+  stdout stays empty. Printing the document any other way would dump it into
+  your context.
+- **Temp file paths must come from Phase 1 stdout.** Bash spawns a fresh
+  shell each call, so re-inject the literal absolute `RUN_DIR` and
+  `PROMPT_FILE` paths.
 
 For the full shared gotchas list, read
 `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §10`.

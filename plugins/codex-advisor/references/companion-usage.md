@@ -16,15 +16,18 @@ discarded `--model`; v1.0.4+ passes it through `executeReviewRun` →
 
 ## 1. Resolve the companion
 
-```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
-```
+Skills never resolve the companion themselves. `scripts/codex-task.sh` and
+`scripts/codex-job.sh` call `scripts/resolve-companion.sh`, which finds the
+official Codex plugin's `codex-companion.mjs` path inside the user's plugin
+install. When the plugin is absent, their `die()` exits 1 with `Official Codex
+plugin not found — run /codex-setup` on stderr — this is the `setup` error
+category (see §6).
+Redirect the user to `/codex-setup` and stop.
 
-`resolve-companion.sh` finds the official Codex plugin's
-`codex-companion.mjs` path inside the user's plugin install and prints it.
-It exits 1 with `Official Codex plugin not found. ...` on stderr if the
-plugin is absent — this is the `setup` error category (see §6). Redirect
-the user to `/codex-setup` and stop.
+Every shell step a skill takes is one call to a script in `scripts/`, so the
+single `allowed-tools` rule `Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)` covers the
+whole run. A command that starts with anything else — a variable assignment,
+`set`, `mkdir`, `git` — falls outside the rule and asks the user.
 
 ---
 
@@ -180,44 +183,36 @@ codex-advisor skills use exactly two patterns to run the companion.
 
 ### Pattern A — review / adversarial-review
 
-The companion's `--background` is a no-op here, so we use Claude's own Bash
-`run_in_background=true` to keep the wrapper alive past the Bash tool's
-per-call timeout.
+The companion's `--background` is a no-op here — the review runs in the
+foreground of whatever starts it. So `codex-task.sh review` starts it detached
+(its own session and process group) and returns at once, and the skill waits
+in the same turn with `review-wait`.
 
 ```bash
-set -o pipefail
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
-
-mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
-TS=$(date +%s%N)
-OUT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/review-${TS}.json"
-ERR_FILE="${CLAUDE_PLUGIN_DATA}/tmp/review-${TS}.log"
-echo "OUT_FILE=$OUT_FILE"
-echo "ERR_FILE=$ERR_FILE"
-
-# Launch via Bash run_in_background=true (Claude-side).
+# Phase 2 — prints RUN_DIR=, OUT_FILE=, ERR_FILE= and returns.
 # Replace <literal ...> with values from Phase 1.
-node "$CODEX_COMPANION" review --json \
-  --base "<literal clean base from Phase 1>" \
-  > "$OUT_FILE" 2> "$ERR_FILE"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" review "${CLAUDE_PLUGIN_DATA}" review \
+  --base "<literal clean base from Phase 1>"
+
+# Phase 3 — blocks ≤4 min, prints STATUS=running|done; done also prints
+# COMPANION_EXIT= and OUTPUT=. Cap at 8 calls (about 30 min) total.
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" review-wait "<literal RUN_DIR path>"
 ```
 
-**Phase 3 polling spec** (do not improvise):
+Why not Bash `run_in_background`: a background command that finishes starts
+a new turn, and the skill's `allowed-tools` grant clears at a new turn
+(skills.md), so the next script call asks the user.
 
-| Item | Value |
-|------|-------|
-| Tool | `BashOutput` — never `ps`, `kill`, or state JSON reads |
-| Cadence | 30 seconds between polls (60s acceptable for very long reviews) |
-| Termination | `BashOutput` response field `status === "completed"` (NOT stdout content matching — payload format may change) |
-| Total cap | 30 minutes (review p99 ≈ 20 min; 30 min gives headroom) |
-| Cap exceeded | `wait-timeout` (§6) → `KillShell` the bash_id → if `$OUT_FILE` is non-empty and parses as JSON treat as partial result, otherwise `recovery-impossible` |
-| `$OUT_FILE` empty after exit | Companion crashed / SIGKILLed. Read `$ERR_FILE`, categorize, save `<type>-<ts>-failed.md` |
-| `$OUT_FILE` non-JSON | `unexpected-format` (§6). Show raw stderr verbatim, abort |
+| `OUTPUT=` | Action |
+|-----------|--------|
+| `json` | `Read` `OUT_FILE`, go on to Phase 4 |
+| `empty` | Companion crashed or was killed. Read `ERR_FILE`, categorize (§6), save `<type>-<ts>-failed.md` |
+| `non-json` | `unexpected-format` (§6). Show `ERR_FILE` verbatim, abort |
 
-Claude must remember the bash_id **and** the absolute `$OUT_FILE` /
-`$ERR_FILE` paths printed in Phase 1 — they are needed in Phase 3/4. Bash
-spawns a fresh shell per call, so local variables do not persist; always
-reuse the literal paths you captured from stdout.
+The companion records the review as a job with its own pid, so `/codex-status`
+lists it and `/codex-cancel` stops it; `review-wait` then reports `OUTPUT=empty`.
+Bash spawns a fresh shell per call, so remember the literal paths printed on
+stdout and re-inject them in every later call.
 
 ### Pattern B — task family (rescue / verify / research)
 
@@ -235,8 +230,8 @@ these steps themselves:
 "${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" wait "<literal JOB_ID>" "<literal RUN_DIR path>"
 ```
 
-The wait call needs the Bash tool's `timeout` set to 300000 — the default is
-2 minutes. On the cap, surface as `wait-timeout` (§6). The script refuses any
+Both wait calls (`wait`, `review-wait`) need the Bash tool's `timeout` set to
+300000 — the default is 2 minutes. On the cap, surface as `wait-timeout` (§6). The script refuses any
 task argument that is not a known flag (a positional word would replace the
 stdin prompt) and keeps all companion output in `RUN_DIR`, because `status`
 and `result` echo the prompt back.
@@ -247,9 +242,9 @@ and `result` echo the prompt back.
 
 - Always pass `--json` to commands whose output you intend to parse. The
   rendered text format is not stable across releases.
-- Parse jobId with `node -e '...'` (already a runtime dependency). Do NOT
-  grep / regex the rendered output.
-- **Pattern A:** jobId is embedded in the final `$OUT_FILE` payload
+- The scripts parse JSON with `node -e '...'` (already a runtime dependency).
+  Do NOT grep / regex the rendered output.
+- **Pattern A:** jobId is embedded in the final `OUT_FILE` payload
   (alongside `review`, `target`, `threadId`, `codex`). It is the
   `threadId` or inside the `codex` object depending on review type — read
   the actual payload, don't guess the key.
@@ -277,7 +272,7 @@ Never retry silently. Never swallow errors. Never blame the user.
 | `Missing value for --<key>` | bad-input | `parseArgs` in `lib/args.mjs` | Phase 1 should have caught this → ANALYZE regression. |
 | `Stored job <id> is missing its task request payload.` | recovery-impossible | `handleTaskWorker` | Detached task-worker couldn't load the stored request. Surfaced via `result <jobId>` or the job log file, NOT from the original `task --background --json` stdout. Abort, save failure report. |
 | JSON parse error on companion stdout | unexpected-format | n/a | Companion output format changed. Show raw stdout/stderr, abort, ask user to report. |
-| Pattern A 30-min cap exceeded | wait-timeout | n/a (Claude-side) | `KillShell` the bash_id; if `$OUT_FILE` parses as JSON treat as partial, else `recovery-impossible`. |
+| Pattern A wait cap (8 `review-wait` calls) exceeded | wait-timeout | n/a (Claude-side) | Do not cancel. Leave the review and its `RUN_DIR` in place; point the user at `/codex-status` and `/codex-cancel`. |
 | (no stderr — silently corrupted prompt) | silent-flag-corruption | `parseArgs` in `lib/args.mjs` + `readTaskPrompt` | **NOT detectable post-hoc.** Only Phase 1 ANALYZE whitelisting prevents it. If Codex echoes an unknown flag back as task content, treat as Phase 1 regression and AskUserQuestion. |
 | `Codex can import Claude sessions only from <dir>: <path>` | bad-input | `lib/claude-session-transfer.mjs` | Source path resolved outside `~/.claude/projects/`. Show the offending path, do not retry with a modified path automatically. |
 | `Timed out waiting for Codex to finish importing the Claude session.` | wait-timeout | `requestExternalAgentSessionImport` in `lib/codex.mjs` (`EXTERNAL_AGENT_IMPORT_TIMEOUT_MS = 2 * 60 * 1000`) | Import RPC didn't complete in 2 min. Abort, don't retry silently — re-running may just return the same ledger-cached thread (see next row) or hit the same stall. |
@@ -292,8 +287,8 @@ disabled.
 **Never:**
 - Silently retry
 - Swallow errors
-- Enter manual polling loops outside `BashOutput` (Pattern A) or
-  `codex-task.sh wait` (Pattern B)
+- Enter manual polling loops — Pattern A waits with `codex-task.sh
+  review-wait`, Pattern B with `codex-task.sh wait`
 - Use `ps`, `kill`, or raw state JSON reads for tracking
 - Pass any token through to the companion that did not survive Phase 1's
   whitelist (see "silent-flag-corruption" — no companion-side safety net)
@@ -323,8 +318,8 @@ For each token in `$ARGUMENTS`:
 5. **Focus text on `codex-review`?** → AskUserQuestion offering the
    adversarial redirect (do NOT pass it; the companion rejects it in
    `validateNativeReviewRequest`).
-6. **Ambiguous?** → AskUserQuestion (interactive) or exit 1 with a clear
-   stderr message (non-interactive). See §9.
+6. **Ambiguous?** → AskUserQuestion; if it is unavailable (non-interactive),
+   reply with one `AMBIGUOUS:` line and run nothing. See §9.
 7. **Unknown token (not on whitelist, not meta-instruction, not junk)?**
    → never pass it through; AskUserQuestion what it means (§3
    silent-flag-corruption).
@@ -359,60 +354,46 @@ This makes the translation step auditable in the session log.
 ## 8. Blind-payload pattern (verify / research only)
 
 verify and research must NOT load document content into Claude's context —
-double-check independence depends on it. Use file redirection so the
-content never enters Bash's stdout.
+double-check independence depends on it. `codex-task.sh prompt --document`
+appends the file by redirect, so the content never enters Bash's stdout.
 
 ### Key invariants
 
-- **`cat $DOC >> $PROMPT_FILE`** — redirects to file, Bash returns empty
-  stdout, content never enters Claude's context.
+- **`prompt --document <path> --tag <tag>`** — redirects to file, Bash
+  returns empty stdout, content never enters Claude's context.
 - **`codex-task.sh launch`** feeds PROMPT_FILE to the companion on stdin
   and writes its output to files — nothing comes back but the job id.
 
 ### Temp file lifecycle
 
-`$$` (shell PID) does NOT survive across Claude's separate Bash
-invocations — Bash spawns a fresh shell each call. Use timestamps and
-have Claude **remember the absolute path** printed in Phase 1 stdout,
-then re-inject it literally in every later Bash call.
+Bash spawns a fresh shell each call, so nothing set in one call survives to
+the next. The scripts print every path they make; Claude **remembers the
+absolute path** printed on stdout and re-injects it literally in every later
+Bash call.
 
 ```bash
-RUN_DIR="${CLAUDE_PLUGIN_DATA}/tmp/<skill>-run-$(date +%s%N)"
-mkdir -p "$RUN_DIR"
-PROMPT_FILE="$RUN_DIR/prompt.txt"
-echo "RUN_DIR=$RUN_DIR"
-echo "PROMPT_FILE=$PROMPT_FILE"
+# Refuses a missing or empty file; prints DOC_LINES= (size, not content).
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" check-doc "<literal doc path>"
 
-# Header via heredoc — no document content yet
-cat > "$PROMPT_FILE" <<'EOF'
+# Refuses when the companion is missing; prints RUN_DIR= and PROMPT_FILE=.
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" new-run "${CLAUDE_PLUGIN_DATA}" <skill>
+
+# Header on stdin; the document is appended inside <document> by redirect.
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" prompt "<literal PROMPT_FILE path>" \
+  --document "<literal doc path>" --tag document <<'EOF'
 <task>
 ...skill-specific task block...
 </task>
 
 <structured_output_contract>...</structured_output_contract>
 <grounding_rules>...</grounding_rules>
-
-<document>
 EOF
-
-# Input validation only — never load content.
-# Replace <literal doc path> with the path parsed from $ARGUMENTS.
-test -f "<literal doc path>" || { echo "File not found: <literal doc path>" >&2; exit 1; }
-test -s "<literal doc path>" || { echo "File is empty: <literal doc path>" >&2; exit 1; }
-echo "DOC_LINES=$(wc -l < "<literal doc path>")"   # size info, not content
-
-# Append document via redirect — Bash stdout stays empty.
-# Use the literal doc path, NOT a shell variable from a prior Bash call.
-cat "<literal doc path>" >> "$PROMPT_FILE"
-
-# Close XML
-printf '\n</document>\n' >> "$PROMPT_FILE"
 ```
 
 ### Why this preserves independence
 
-- `cat "$USER_DOC" >> "$PROMPT_FILE"` → stdout goes to the file, not the
-  terminal. Bash tool returns empty.
+- `prompt --document` → the document goes to the file, not the terminal.
+  The Bash tool sees only `PROMPT_WRITTEN=<path>`.
 - `codex-task.sh launch` → the prompt goes in on stdin; the Bash tool
   sees only `JOB_ID=<id>`.
 - Claude knows the path, the line count, and that the assembly succeeded
@@ -421,8 +402,8 @@ printf '\n</document>\n' >> "$PROMPT_FILE"
 ### Topic-only research
 
 For `codex-research` when the user gives a topic (no file), skip the
-document append entirely. Write the topic inside the heredoc header
-template and launch the resulting `$PROMPT_FILE` as usual.
+`--document` and `--tag` entirely. Write the topic inside the heredoc header
+and launch the resulting `PROMPT_FILE` as usual.
 
 ### Cleanup
 
@@ -430,11 +411,12 @@ Clean up temp files at the end of Phase 5 by re-injecting the literal
 absolute path (captured from Phase 1 stdout):
 
 ```bash
-rm -rf "<literal RUN_DIR path>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-report.sh" clean "${CLAUDE_PLUGIN_DATA}" "<literal RUN_DIR path>" --keep-inputs
 ```
 
-Do NOT rely on the `$RUN_DIR` shell variable in the cleanup call — it is only
-defined in the shell that set it, which is a different shell from this one.
+`--keep-inputs` keeps `prompt.txt` and `result.json`: the Verifier payload
+points at both by path. The script refuses any folder that is not a run folder under
+`${CLAUDE_PLUGIN_DATA}/tmp/`.
 
 ---
 
@@ -445,14 +427,9 @@ is available — `CLAUDECODE` is always set inside Claude Code. The
 pragmatic pattern is "try and fall back":
 
 1. Always attempt `AskUserQuestion` first when ANALYZE detects ambiguity.
-2. If the tool errors or times out (headless `claude -p` runs), fall back
-   to a clean stderr + exit 1:
-
-   ```bash
-   printf 'AMBIGUOUS: %s\nProvide unambiguous input or run interactively.\n' \
-     "$REASON" >&2
-   exit 1
-   ```
+2. If the tool errors or times out (headless `claude -p` runs), stop and
+   reply with one line — `AMBIGUOUS: <reason>. Provide unambiguous input or
+   run interactively.` — instead of running anything.
 
 3. Never silently guess. Never pass an ambiguous token through to the
    companion (§3 silent-corruption).
@@ -461,27 +438,29 @@ pragmatic pattern is "try and fall back":
 
 ## 10. Shared gotchas
 
-- **Pattern B wait calls need the Bash `timeout` raised to 300000.**
-  `codex-task.sh wait` blocks ≤240s; the Bash default is 120s. A call cut
-  off by the timeout does not stop the job — call again.
-- **Pattern A requires `run_in_background=true`.** The companion's own
-  `--background` is a no-op on `review` / `adversarial-review`.
+- **Wait calls need the Bash `timeout` raised to 300000.**
+  `codex-task.sh wait` and `review-wait` block ≤240s; the Bash default is
+  120s. A call cut off by the timeout does not stop the job — call again.
+- **Never use Bash `run_in_background` for a codex-advisor step.** Its
+  completion starts a new turn without the `allowed-tools` grant. The
+  companion's own `--background` is a no-op on `review` /
+  `adversarial-review`; `codex-task.sh review` detaches it instead.
 - **Natural language in `$ARGUMENTS` is for YOU, not the companion.**
   Meta-instructions like "don't analyze first" modify YOUR behavior; they
   never become companion flags or prompt content.
 - **Unknown flags don't error — they silently become prompt content.**
   ANALYZE whitelist is the only line of defense.
-- **`$$` does not survive across Bash calls.** Use timestamps; remember
-  absolute paths from Phase 1 stdout and re-inject them.
-- **Never poll manually outside `BashOutput` (Pattern A) or
-  `codex-task.sh wait` (Pattern B).** `ps` / `kill` / raw state JSON reads are
+- **Shell variables do not survive across Bash calls.** Remember the
+  absolute paths the scripts print and re-inject them.
+- **Never poll manually.** Pattern A waits with `codex-task.sh review-wait`;
+  Pattern B with `codex-task.sh wait`. `ps` / `kill` / raw state JSON reads are
   forbidden — they leave orphan jobs in unrecoverable states.
 - **Never swallow errors. Never retry silently.** Categorize per §6 and
   surface verbatim.
 - **Read source only AFTER Phase 3 completes.** Phase 1-3 must not call
   `Read` / `Grep` / `Glob` / `git diff` / `git log -p` / `git show` /
-  `git blame` on source or diffs. Input validation (`test -f`, `wc -l`,
-  `git rev-parse --verify`, `git branch --list`) is allowed.
+  `git blame` on source or diffs. Input validation (`codex-task.sh
+  check-doc`, `check-ref`) is allowed.
 - **In Phase 4, read only what Codex cited.** Never read whole files "for
   context". If a cited file/function/line does not exist in the current
   source tree, classify as "False Positive (hallucination)". If a finding
