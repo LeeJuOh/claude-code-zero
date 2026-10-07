@@ -63,11 +63,13 @@ Determine **how** to present the result (independent of analysis mode):
 `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
 `(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
 The short version: for `analyze`+HTML, **capable accounts publish to a claude.ai Artifact by default**;
-`--local` forces the local wiki; `md`, non-capable sessions, and `security`/`overview` modes stay local.
+`--local` forces the local wiki; non-capable sessions stay local; every markdown report stays local
+unless this turn asks to publish it.
 
-This channel is scoped to `analyze` mode with HTML format the same way diff-visual scoped its own:
-`security` and `overview` modes stay markdown-only (too brief for a full report to begin with), and
-`--format md` has no publish path in this slice. `--local` triggers on natural-language equivalents
+The HTML channel is scoped to `analyze` mode: `security` and `overview` modes stay markdown-only (too
+brief for a full report to begin with). Any markdown report — `analyze --format md`, `security`, or
+`overview` — publishes when this turn asks for it, without asking; config alone never does. See
+"Phase 5 — Artifact channel (on request)" below. `--local` triggers on natural-language equivalents
 ("keep it local", "don't publish"); `--artifact` is the retained alias for the now-default behavior
 and still triggers on "as an artifact", "publish as a link", "share as a URL" — in whatever language
 the user writes. If `--local` and `--artifact` are both signalled, `--local` wins.
@@ -77,8 +79,7 @@ default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/conf
 config as JSON, or `{}`). A `default_format` value replaces the HTML default. For the channel: an
 **absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
 force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first — but all
-only within the `analyze`+HTML scope above; config can't force artifact publishing onto
-`security`/`overview` modes any more than the flag can. Anything the user actually says this turn — a
+only within the `analyze`+HTML scope above; config never publishes a markdown report. Anything the user actually says this turn — a
 literal flag or a natural-language equivalent — always overrides config; config only fills in when the
 request is silent on format/channel.
 
@@ -303,12 +304,19 @@ Output the report directly to the user (inline markdown), and save the same cont
 the same day) — the chat text is the delivery, the file is the record that lets report-manager
 list and refine this report later.
 
+**Phase 5 — Artifact channel (on request).** Entered only when this turn asks to publish the
+markdown report (`--artifact` or its natural-language equivalent). Publish without asking — the user
+chose the channel. Follow "Markdown on request" in `channel-decision.md`: same report, saved to the
+path above with `.md` replaced by `.artifact.md`, and published as-is. If the report has `mermaid`
+fences, the reply says in one line that they show as code and that `--format html` renders them.
+Publish unavailable → deliver in the response body instead.
+
 **HTML channel routing (default = Artifact).** For `analyze` mode with HTML format the channel is
 decided by `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account
 the default is the **Artifact channel** — go straight to "Phase 5R — Artifact channel" below. Write the
 **local design-system + Mermaid** wiki (the section directly under this one) only when `--local` is in
-play, or as the **non-capable regenerate fallback** after a publish attempt fails (see "Publish"). The
-`security`/`overview` modes and `--format md` are unaffected — they stay local (Phase 5). **The input
+play, or as the **non-capable regenerate fallback** after a publish attempt fails (see "Publish"). Markdown
+reports follow Phase 5 — local unless this turn asks to publish. **The input
 form doesn't change routing:** local path, installed plugin name, and GitHub URL all resolve to the same
 target directory in Phase 1, so once the format is `analyze`+HTML the channel decision is identical
 regardless of where the plugin came from.

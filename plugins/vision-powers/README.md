@@ -90,9 +90,9 @@ analyze ./plugins/my-plugin --lang ko                     # output in Korean (IS
 |---|---|---|
 | **html** — capable account | **claude.ai Artifact** (default) | built-in Artifact design |
 | **html** — `--local` / non-capable | local file | our design-system + Mermaid |
-| **md** | chat/PR text + saved copy | design-system + Mermaid fences |
+| **md** | chat/PR text + saved copy; Artifact on request | design-system + Mermaid fences |
 
-Design on the Artifact channel is delegated to Claude's built-in Artifact renderer, so the look differs from local reports. Markdown stays local — claude.ai's renderer can't draw Mermaid, so `--format md` is delivered in chat and saved, never published (the lone exception: `doc-visual --format md --artifact` will publish markdown as-is, with diagrams left as fenced code). A non-capable session (API-key/CI/org policy) auto-degrades to the local file with a one-line notice. Sharing a claude.ai link is limited to members of your Team/Enterprise organization; on Pro/Max the URL is private to you, and getting a report to someone outside your organization means the local `.html` file (`--local`). Want local as your standing default? Tell Claude to set `artifact` to `false` in config — a `--artifact` flag or natural-language request for one run still overrides it.
+Design on the Artifact channel is delegated to Claude's built-in Artifact renderer, so the look differs from local reports. Markdown stays local by default — claude.ai's renderer can't draw Mermaid, so `--format md` is delivered in chat and saved. Ask to publish it (`--artifact`, or "publish it as a link") and it goes to an Artifact as-is, with diagrams left as fenced code. A non-capable session (API-key/CI/org policy) auto-degrades to the local file with a one-line notice. Sharing a claude.ai link is limited to members of your Team/Enterprise organization; on Pro/Max the URL is private to you, and getting a report to someone outside your organization means the local `.html` file (`--local`). Want local as your standing default? Tell Claude to set `artifact` to `false` in config — a `--artifact` flag or natural-language request for one run still overrides it.
 
 **Multi-language output.** Every visual skill accepts `--lang <ISO code>` (e.g., `ko`, `ja`, `es`). Without the flag, output language is detected from the user message.
 

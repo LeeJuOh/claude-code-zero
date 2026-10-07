@@ -27,11 +27,12 @@ the local/md fallback rendering. This flips ADR 0007's posture where the local f
 |---|---|---|---|
 | `html` | yes | **Artifact** (default publish) | built-in artifact-design (inline SVG / HTML+CSS, no Mermaid) |
 | `html` | no | Local file | design-system + Mermaid |
-| `md` | any | Local (chat body + saved copy) | design-system + Mermaid fences |
+| `md` | any | Local (chat body + saved copy); **Artifact only on request** | design-system + Mermaid fences |
 
 Read this as: **HTML defaults to the Artifact channel.** Local is the fallback for a non-capable
-session (or an explicit force-local), and `md` never changes — claude.ai's markdown renderer can't
-draw Mermaid anyway (ADR 0007), so md stays local.
+session (or an explicit force-local). **`md` defaults to local** — claude.ai's markdown renderer
+can't draw Mermaid (ADR 0007) — and publishes only when this turn asks for it. See "Markdown on
+request" below.
 
 ## Precedence — explicit request > config > default
 
@@ -60,9 +61,29 @@ deleted, so existing muscle memory and natural-language triggers ("as an artifac
 link", "share as a URL") don't break. Semantics:
 
 - **capable HTML**: no-op — it's already the default.
+- **`md`**: the publish request — see "Markdown on request" below.
 - **non-capable session**: still *attempts* to publish (then auto-degrades per below).
 - **`--artifact` and `--local` both given**: **`--local` wins** (the exception flag beats the
   redundant one).
+
+## Markdown on request
+
+`md` publishes only when **this turn** asks for it — a literal `--artifact` or a natural-language
+equivalent ("publish it", "as a link", "share as a URL", in any language). Config never publishes md:
+`artifact` absent or `true` means artifact-first for HTML only, so a silent md request stays local.
+
+When the turn asks, publish without asking first — the user already chose the channel:
+
+1. Write the md report as usual, and save the same content to the skill's md path with `.md`
+   replaced by `.artifact.md` (reuse it on a same-session re-run, so a republish keeps its URL).
+   Publish it as-is: no rewrite, no `artifact-design` load, no gate — md has no CSS or script for
+   the Artifact viewer's CSP to break.
+2. Call the `Artifact` tool with that file, then record the sidecar with
+   `write-artifact-sidecar.js`, same as the HTML publish.
+3. Reply with the URL instead of the full report body. If the content has a ` ```mermaid ` fence,
+   add one line: the diagrams show as code on this channel, and `--format html` renders them.
+4. Publish unavailable or failed → deliver the md in the chat body (the local path) and say so in
+   one line.
 
 ## Config keys
 

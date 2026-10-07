@@ -48,16 +48,14 @@ Parse `--format` first:
 `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
 `(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
 The short version: **capable HTML publishes to a claude.ai Artifact by default**; `--local` forces the
-local page; `md` and non-capable sessions stay local.
+local page; non-capable sessions stay local; `md` stays local unless this turn asks to publish it.
 
 `--local` forces local (Mermaid diagrams, zoom/pan) and triggers on natural-language equivalents —
 "keep it local", "don't publish", "just the local file" — in whatever language the user writes.
 `--artifact` is the retained alias for the now-default behavior and still triggers on "as an artifact",
-"publish as a link", "share as a URL"; if both are signalled, `--local` wins. Both apply to
-`--format html` only. If `--artifact` is combined with `--format md`, ignore it and use the normal
-markdown response path below — publishing a diff-visual md report as-is is out of scope for this
-slice (doc-visual's simpler single-file input validated that combination first; diff-visual's diff
-scope makes it a separate follow-up).
+"publish as a link", "share as a URL"; if both are signalled, `--local` wins. With `--format md`,
+that publish request publishes the md report without asking; config alone never does. See
+"Markdown mode — Artifact channel" below.
 
 **Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
 default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get --data-dir "${CLAUDE_PLUGIN_DATA}"` (prints the
@@ -191,7 +189,8 @@ Use extended thinking for the analysis above. The depth of analysis directly det
 `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account the default
 is the **Artifact channel** — go to "HTML mode — Artifact channel" below. Write the **local
 design-system + Mermaid** page only when `--local` is in play, or as the **non-capable regenerate
-fallback** after a publish attempt fails (see "Publish"). `md` is unaffected — it stays local either way.
+fallback** after a publish attempt fails (see "Publish"). `md` has its own channel rule — local unless
+this turn asks to publish.
 
 #### The four sections (all formats, all channels)
 
@@ -487,6 +486,15 @@ language. Keep file paths, function names, commit hashes, and code fences untran
 (1) the full-diff appendix, (2) the deep Background layer, (3) the number of Code snippets — each
 with a `(+N more)` note. **Intuition and Quiz are never cut**: they are the two sections that do
 the catching up, and a report that drops them has failed at the thing it exists for.
+
+#### Markdown mode — Artifact channel (on request)
+
+Entered only when this turn asks to publish the md (`--artifact` or its natural-language
+equivalent). Publish without asking — the user chose the channel. Follow "Markdown on request" in
+`channel-decision.md`: same report as the markdown mode above, saved to
+`${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.artifact.md` and published as-is. claude.ai's
+markdown renderer shows the `mermaid` fences as code, so the reply says so in one line and points at
+`--format html` for rendered diagrams. Publish unavailable → deliver in the response body instead.
 
 ### Publish (Artifact channel — default for HTML)
 

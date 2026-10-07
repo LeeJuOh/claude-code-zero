@@ -40,7 +40,8 @@ The report language must match the source document's language.
 `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
 `(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
 The short version: **capable HTML publishes to a claude.ai Artifact by default**; `--local` forces the
-local design-system + Mermaid file; `md` and non-capable sessions stay local.
+local design-system + Mermaid file; non-capable sessions stay local; `md` stays local unless this
+turn asks to publish it.
 
 `--local` forces local (analytical charts, zoom/pan) and also triggers on natural-language equivalents
 — "keep it local", "don't publish", "just the local file" — in whatever language the user writes.
@@ -55,15 +56,8 @@ force-local** (the config twin of `--local`), and `artifact: true` is explicit a
 the user actually says this turn — a literal flag or a natural-language equivalent — always overrides
 config; config only fills in when the request is silent on format/channel.
 
-When the target format is `md`, whether you ask before publishing depends on how the request arrived:
-
-- **Both flags typed literally** (`--format md --artifact`, exact tokens): that's a deliberate,
-  informed choice — publish the md file as-is, never ask. See "Markdown format — Artifact channel" below.
-- **Artifact intent expressed in natural language** (no literal `--artifact` token) while the target
-  format is `md`: check the md content for a ` ```mermaid ` fenced block first. None found → publish
-  as-is, same as the explicit path (nothing would be lost either way, so there's nothing to ask
-  about). Found one or more → the natural-language phrasing never committed to losing diagram
-  rendering, so ask once before publishing (see "Markdown format — Artifact channel").
+For `md`, a publish request this turn — `--artifact` or its natural-language equivalent — publishes
+without asking; config alone never does. See "Markdown format — Artifact channel" below.
 
 ## Writing the report
 
@@ -74,7 +68,7 @@ You write the output yourself. No template files, no assembly scripts, no interm
 default is the **Artifact channel** — go straight to "HTML format — Artifact channel" below. Write the
 **local design-system + Mermaid** file (the section directly under this one) only when `--local` is in
 play, or as the **non-capable regenerate fallback** after a publish attempt fails (see "Publish"). `md`
-is unaffected — it stays local either way.
+has its own channel rule — local unless this turn asks to publish.
 
 ### HTML format — local design-system channel (`--local` / non-capable fallback)
 
@@ -129,37 +123,14 @@ file is the record that lets report-manager list and refine this report later:
 - Footer links to the source path
 - No CSS, no `<script>` — pure markdown
 
-### Markdown format — Artifact channel (`--format md --artifact`)
+### Markdown format — Artifact channel (on request)
 
-Write the same content as the default markdown path above — same structure, same fenced
-` ```mermaid ` blocks, nothing rewritten for the channel. There's no CSS or script to break under
-the Artifact viewer's CSP, so unlike the HTML channel this variant needs no fragment rewrite, no
-built-in artifact-design skill load, and no content-only gate — the md content is already correct
-by the same standard the default md path holds itself to.
-
-The one channel-specific fact to act on: **claude.ai's markdown renderer does not render Mermaid**
-(confirmed by a direct publish-and-view test, 2026-07-05) — a `mermaid` fence displays as a plain
-monospace code block, not a diagram. Decide what to do about that using the branch from "Format
-detection" above:
-
-- **Explicit** (`--format md --artifact` typed literally): publish as-is, never ask. If the content
-  has any Mermaid blocks, add one line next to the URL noting they'll show as code, with the
-  rendered-diagram alternative — e.g. "Diagrams appear as code on this channel — for rendered
-  diagrams, use `--format html --artifact`" (in whatever language you're already replying in).
-- **Ambiguous** (natural-language artifact intent, target format `md`) **and no Mermaid present**:
-  publish as-is, same as explicit — there's no diagram fidelity at stake, so nothing to ask about.
-- **Ambiguous and Mermaid is present**: ask once with `AskUserQuestion` before publishing anything:
-  1. Regenerate as `--format html --artifact` (diagrams render — recommended)
-  2. Publish the md as-is (diagrams show as code)
-  3. Keep it local (no publish)
-
-  Act on whichever the user picks. Don't ask again in the same conversation once they've answered.
-
-Publish steps: save the md content to
-`${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.artifact.md` (reuse the same path on a
-same-session re-run, same as the HTML variant), then follow "Publish (Artifact channel — default for
-HTML)" below — the Artifact tool call, sidecar write, and fallback behavior are identical regardless
-of format.
+Entered only when this turn asks to publish the md (`--artifact` or its natural-language
+equivalent). Publish without asking — the user chose the channel. Follow "Markdown on request" in
+`channel-decision.md`: same content as the md path above, saved to
+`${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.artifact.md` and published as-is, then
+"Publish" below. claude.ai's markdown renderer shows a `mermaid` fence as a code block (publish-and-view
+test, 2026-07-05), so the reply notes it when the content has one.
 
 ### Modes
 
@@ -314,13 +285,12 @@ Full procedure, limits (fixed-height clipping, downscaling, render cost), and th
 - **HTML (Artifact channel — the default)**: publish the fragment — see "Publish" below.
 - **HTML (local design-system channel — `--local` / non-capable fallback)**: save to
   `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.html` and run `open <output-path>`.
-- **MD**: Insert directly into the response body and save a copy to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.md`. Footer links to the source path.
+- **MD**: Insert directly into the response body and save a copy to `${CLAUDE_PLUGIN_DATA}/reports/{doc-basename}-doc-visual.md`. Footer links to the source path. On a publish request, publish instead — see "Markdown format — Artifact channel".
 
 ## Publish (Artifact channel — default for HTML)
 
-For `--format html`, do this after the content-only gate passes. For `--format md`, there's no gate
-to wait on — go straight to publishing once the branch in "Markdown format — Artifact channel" above
-resolved to "publish."
+For `--format html`, do this after the content-only gate passes. For `--format md` on request,
+there's no gate to wait on — publish right away.
 
 1. Publish with the `Artifact` tool: `file_path` = the file you saved (the html fragment or the md
    file), `favicon` = one or two emoji fitting the document's topic (reused unchanged if a sidecar
@@ -337,8 +307,8 @@ resolved to "publish."
      not a local file) **and** the design delegation. Phrase it in whatever language you're already
      replying in — the structure (published · delegated-design · `--local` escape hatch) is what's
      canonical, not the exact English words.
-   - **md**: only if the content has Mermaid blocks, note they show as code (see "Markdown format —
-     Artifact channel" above for the exact wording). No diagrams → no extra line needed.
+   - **md**: only if the content has Mermaid blocks, add one line — e.g. "Diagrams appear as code on
+     this channel — use `--format html` for rendered diagrams." No diagrams → no extra line.
 
 **Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
 unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
@@ -350,9 +320,8 @@ and don't ask before falling back:
   gate + visual self-audit, save to the `…-doc-visual.html` path, `open` it, and state the fallback in
   one line (e.g. "Artifact publish unavailable — generated the local design-system report instead.").
   Cost = one regeneration, only on a non-capable session.
-- **md**: deliver the content the normal way instead — insert it directly into the response body (the
-  default `--format md` path above) — and state the fallback in one generic line (e.g. "Artifact
-  publish unavailable — delivered as chat markdown instead.").
+- **md**: deliver the content in the response body (the `--format md` path above) and state the
+  fallback in one line (e.g. "Artifact publish unavailable — delivered as chat markdown instead.").
 
 ## Error handling
 
