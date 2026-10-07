@@ -40,7 +40,7 @@ Single call — returns structured JSON:
 node ${CLAUDE_SKILL_DIR}/../../scripts/list-reports.js --data-dir "${CLAUDE_PLUGIN_DATA}"
 ```
 
-Output contains `reports_dir`, `count`, and `reports[]` (each with `index`, `filename`, `path`, `type`, `size`, `date`, and `artifact_url` when a `<report>.artifact.json` sidecar exists — issue 007 S4.5).
+Output contains `reports_dir`, `count`, and `reports[]` (each with `index`, `filename`, `path`, `type`, `size`, `date`, and `artifact_url` when a `<report>.artifact.json` sidecar exists).
 
 Format as a numbered table with clickable links. Add an `Artifact` column only when at least one report in the list has `artifact_url` (omit the column entirely otherwise — most reports won't have one):
 
@@ -77,7 +77,7 @@ Steps:
 1. Resolve matching files (use `list-reports.js` output or ls)
 2. Show files that will be deleted (filename, size, date)
 3. Confirm via AskUserQuestion — "Delete N files" / "Cancel"
-4. `rm` each file on confirmation, **and its `<file>.artifact.json` sidecar if one exists** — an orphaned sidecar would make a future `list` claim a shared link for a report that's gone (issue 007 S4.5)
+4. `rm` each file on confirmation, **and its `<file>.artifact.json` sidecar if one exists** — an orphaned sidecar would make a future `list` claim a shared link for a report that's gone
 5. Report count deleted
 
 ## search
@@ -93,28 +93,21 @@ Surgically edit a section of an existing report without full regeneration.
 
 *Why: Full regeneration re-rolls fonts, colors, and all content. Targeted edits preserve what works.*
 
-1. **Resolve target report**: filename, number, partial name, or most recent if none given. **Check for a sidecar**: `<report-path>.artifact.json` — its presence means this file is an Artifact-channel file published to claude.ai (an `.artifact.html` fragment or an `.artifact.md`), not a plain local report. This changes steps 5–7 below (issue 007 S4.5).
+1. **Resolve target report**: filename, number, partial name, or most recent if none given. **Check for a sidecar**: `<report-path>.artifact.json` — its presence means this file is an Artifact-channel file published to claude.ai (an `.artifact.html` fragment or an `.artifact.md`), not a plain local report. This changes steps 5–7 below.
 2. **Identify section**: If the user's message names specific sections, use those; otherwise Read the report, list `<section id="...">` headings, and use AskUserQuestion to let the user pick
 3. **Gather context**: If the requested change references source code or git data, use Grep/Read to get correct info
 4. **Apply edit**: Read the target section, use Edit to modify it. Preserve HTML structure, CSS classes, and Mermaid/Chart.js formatting. Do not touch other sections.
-   - When you re-author the section's *content* (not just patch a value), don't reintroduce behavioral slop. Read `${CLAUDE_SKILL_DIR}/../../references/design-system/anti-slop-tells.md` for the catalogue of named defaults to break — summary-leak, linear dump, forced diagram, generic label, uniform density, empty decoration, accent overuse. They're reflexes to resist, not a layout to apply: taste and structure stay yours.
+   - When you re-author the section's *content* (not just patch a value), don't reintroduce behavioral slop. Read `${CLAUDE_SKILL_DIR}/../../references/design-system/anti-slop-tells.md` for the named defaults to break.
 5. **Validate**:
    ```
    node ${CLAUDE_SKILL_DIR}/../../scripts/artifact-gate.js <report-path> [--content-only]
    ```
-   Pass `--content-only` when step 1 found a sidecar (or the filename ends in `.artifact.html`) — design-layer checks (density, palette, font fallback, Mermaid classDef) don't apply to a page whose design is owned by the built-in `artifact-design` skill, only the local channel's own CSS is checked against those (issue 007, ADR 0007). If violations found, fix inline and re-validate (max 2 retries).
+   Pass `--content-only` when step 1 found a sidecar (or the filename ends in `.artifact.html`) — design-layer checks (density, palette, font fallback, Mermaid classDef) don't apply to a page whose design is owned by the built-in `artifact-design` skill. If violations found, fix inline and re-validate (max 2 retries).
    **Markdown reports (`.md` / `.artifact.md`) skip this script entirely** — `artifact-gate.js` parses HTML only and would false-flag markdown's own `##`/`**` syntax as leakage. Give the edited markdown the generating skills' hand-check instead: no leftover `{{ }}`/`[STUB]`/lorem placeholder tokens, and every link resolves.
-6. **Visual self-audit (local HTML reports only)**: The gate reads the HTML as *text* — it never sees the rendered picture, so a re-authored section can pass the gate and still render as a tangled diagram, a clipped label, or a flat grey wall. Skip this step entirely for markdown reports (nothing to render) and for Artifact-channel fragments (step 1's sidecar case) — the fragment on disk is missing the `<head>`/theme wrapper claude.ai adds at publish time, so a local Chrome render of it wouldn't reflect what actually ships; the built-in `artifact-design` skill owns their visual quality, not this audit. For local HTML reports, after the gate passes, render the report and look at it:
+6. **Visual self-audit (local HTML reports only)**: skip it for markdown reports and for Artifact-channel fragments — a local render of a fragment lacks the wrapper claude.ai adds, and `artifact-design` owns their look. For local HTML reports, follow `${CLAUDE_SKILL_DIR}/../../references/design-system/visual-self-audit.md` on the edited section, rendering with:
    ```
    node ${CLAUDE_SKILL_DIR}/../../scripts/render-report.js <report-path> --data-dir "${CLAUDE_PLUGIN_DATA}"
    ```
-   On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
-   - **Density** — is the edited section a uniform grey wall, or a diagram past its budget and unreadable?
-   - **Hierarchy** — does anything draw the eye first, or is every section the same weight?
-   - **Mermaid integrity** — did a diagram render as raw `<pre>` text or as crossing/overlapping edges?
-   - **Overflow** — does a diagram, table, or label run past its container or off the page?
-
-   Fix what you see and re-render — **cap at 2 audit passes**, then ship with a one-line note rather than looping. **If Chrome is absent**, `render-report.js` exits non-zero; skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found — set `CHROME_BIN` or install Chrome"). The visual pass is an enhancement and **never blocks** delivery. Full procedure: `${CLAUDE_SKILL_DIR}/../../references/design-system/visual-self-audit.md`.
 7. **Republish (Artifact-channel files only — `.artifact.html` / `.artifact.md`)**: skip this step for local reports — nothing to publish. If step 1 found a sidecar, read it for `url` and `title`, then call the `Artifact` tool with `file_path=<report-path>`, `url=<sidecar url>`, and a `description` — passing `url` is what stacks the edit onto the **same** claude.ai link instead of minting a new one; a fresh session has no other way to target an existing artifact (this is exactly the gap a missing `url` arg leaves open). After a successful publish, rewrite the sidecar (`node ${CLAUDE_SKILL_DIR}/../../scripts/write-artifact-sidecar.js --report <report-path> --url <url> --title <title>`) so `published_at` reflects this refine.
    - **No sidecar, but the filename still ends in `.artifact.html` or `.artifact.md`**: this file was never successfully published (an earlier attempt fell back to local-only). Publish fresh — omit `url` — and write the sidecar for the first time.
    - **Sidecar present but the republish call errors** (the link died, e.g. the artifact was deleted upstream): publish fresh — omit `url` — write a new sidecar over the old one, and tell the user in one line: "New shared link published — any previously shared link now points to a stale version." Don't guess at *why* the old link died.
@@ -123,4 +116,4 @@ Surgically edit a section of an existing report without full regeneration.
 ## Gotchas
 
 - **Report type detection is filename-based**: `*-diff-visual` → diff-visual, `*-doc-visual` → doc-visual, `*-report` → plugin-visual.
-- **A local report and its Artifact-channel fragment are two separate files** (e.g. `2026-07-06-x-doc-visual.html` vs `2026-07-06-x-doc-visual.artifact.html`) with independently designed content — refining one never touches the other. A partial-name match in step 1 of refine can hit both; if the resolved list has more than one candidate, ask which one rather than guessing (issue 007 S4.5).
+- **A local report and its Artifact-channel fragment are two separate files** (e.g. `2026-07-06-x-doc-visual.html` vs `2026-07-06-x-doc-visual.artifact.html`) with independently designed content — refining one never touches the other. A partial-name match in step 1 of refine can hit both; if the resolved list has more than one candidate, ask which one rather than guessing.

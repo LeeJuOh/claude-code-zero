@@ -48,7 +48,7 @@ The checklist that model-authored HTML must pass **before** saving. `scripts/art
 
 Checks 4–5 mechanize the **Technical** and **Signal** rules above, and 9–10 the **Typography** rule and the anti-slop catalogue, that were previously left to authoring judgment — a request without a gate is a wish.
 
-Check 11 is **internal consistency, not grounding**: it can tell that an arrow points at nothing, never that a node names real code. Whether a diagram describes the actual system stays an authoring discipline in the skill's fact sheet, because there is no symbol set to check against (ADR 0011).
+Check 11 is **internal consistency, not grounding**: it can tell that an arrow points at nothing, never that a node names real code. Whether a diagram describes the actual system stays an authoring discipline in the skill's fact sheet, because there is no symbol set to check against.
 
 Every violation carries `{ rule, severity, hint }`; `severity` is `'error'` for all current checks, since any violation fails the gate. Check 11 adds `supportedFixes` — `declare-node` (add the missing declaration) and `rename-endpoint` (it was a typo; `candidates` lists the ids actually declared in that diagram) — so the fix loop reads a structure instead of guessing from prose.
 
@@ -59,10 +59,10 @@ Items still requiring manual judgment (Remove test, Type fit, accent ≤ 2, lang
 `node scripts/artifact-gate.js <path> --content-only` runs only checks 1, 2, 6, 7, 8 (missing images,
 raw markdown, anchor hrefs, image alt, placeholder leak). It skips 3–5 and 9–10 — density, palette,
 classDef, gradient text, font fallback — because on the Artifact channel the design layer belongs to
-the harness's built-in artifact-design skill, not this gate (ADR 0007). Use this mode whenever the
+the harness's built-in artifact-design skill, not this gate. Use this mode whenever the
 page was authored for `--artifact`; the full check set stays the default for local html output.
 Check 11 is skipped there too, for a different reason: the Artifact channel emits inline SVG, which
-has no Mermaid source to parse (ADR 0011).
+has no Mermaid source to parse.
 
 ## On violation
 

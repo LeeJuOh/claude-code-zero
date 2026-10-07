@@ -51,7 +51,7 @@ Determine what to verify from `$1`:
 
 **Artifact-channel detection** — after resolving the target, check whether a `<target-path>.artifact.json` sidecar sits next to it. Its presence means the file is a **published Artifact fragment** (an `.artifact.html` living on claude.ai), not a plain local report. This flips two things downstream: the Phase 4 gate runs `--content-only` (the fragment's design layer is owned by the built-in `artifact-design` skill, not this file's CSS), and Phase 4.5 republishes the corrected fragment to the **same** claude.ai URL. A local file with no sidecar takes neither branch — fact-check edits it in place exactly as it always has.
 
-*Why this isn't a channel decision:* fact-check does not author reports, so S0's `capable × format → channel` table does not apply to it — there is nothing to route. It follows the target's **existing** channel: a local file stays local, a published fragment stays published at its link. See `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (fact-check is explicitly out of that table) and ADR 0009 §Scope.
+*Why this isn't a channel decision:* fact-check does not author reports, so there is nothing to route. It follows the target's **existing** channel: a local file stays local, a published fragment stays published at its link.
 
 ### Language Detection
 
@@ -218,7 +218,7 @@ If the gate flags violations, fix them inline (max 2 retries), consistent with h
 Do this **only** when Target File Detection found a sidecar (or the filename ends in `.artifact.html`). Local files and markdown skip this entirely — there is nothing published to update, so fact-check stops after Phase 4. Mirror the `report-manager` republish contract (its refine step 7):
 
 1. Read the sidecar `<target-path>.artifact.json` for `url` and `title`.
-2. Call the `Artifact` tool with `file_path=<target-path>`, `url=<sidecar url>`, and a one-sentence `description`. Passing `url` is what stacks the correction onto the **same** claude.ai link instead of creating a new one — a fresh session has no other handle on an existing artifact. You do **not** load `artifact-design` here: the fragment's design is already baked in, and content-only republish needs neither the load nor the grant (see `docs/reference/gotchas.md` carve-out).
+2. Call the `Artifact` tool with `file_path=<target-path>`, `url=<sidecar url>`, and a one-sentence `description`. Passing `url` is what stacks the correction onto the **same** claude.ai link instead of creating a new one — a fresh session has no other handle on an existing artifact. You do **not** load `artifact-design` here: the fragment's design is already baked in, and content-only republish needs neither the load nor the grant.
 3. Rewrite the sidecar so `published_at` reflects this fact-check:
    ```bash
    node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <target-path> --url <url> --title <title>

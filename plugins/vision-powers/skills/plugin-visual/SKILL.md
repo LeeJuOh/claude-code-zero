@@ -59,29 +59,12 @@ Determine **how** to present the result (independent of analysis mode):
 | Inline markdown **(always)** | — | `security`, `overview` (too brief for HTML) |
 | Local file | `--local` switch | `analyze` + HTML — forces the local wiki instead of publishing |
 
-**Channel is decided by the shared contract**, not re-derived here — read
-`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
-`(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
-The short version: for `analyze`+HTML, **capable accounts publish to a claude.ai Artifact by default**;
-`--local` forces the local wiki; non-capable sessions stay local; every markdown report stays local
-unless this turn asks to publish it.
-
-The HTML channel is scoped to `analyze` mode: `security` and `overview` modes stay markdown-only (too
-brief for a full report to begin with). Any markdown report — `analyze --format md`, `security`, or
-`overview` — publishes when this turn asks for it, without asking; config alone never does. See
-"Phase 5 — Artifact channel (on request)" below. `--local` triggers on natural-language equivalents
-("keep it local", "don't publish"); `--artifact` is the retained alias for the now-default behavior
-and still triggers on "as an artifact", "publish as a link", "share as a URL" — in whatever language
-the user writes. If `--local` and `--artifact` are both signalled, `--local` wins.
-
-**Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
-default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get --data-dir "${CLAUDE_PLUGIN_DATA}"` (prints the
-config as JSON, or `{}`). A `default_format` value replaces the HTML default. For the channel: an
-**absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
-force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first — but all
-only within the `analyze`+HTML scope above; config never publishes a markdown report. Anything the user actually says this turn — a
-literal flag or a natural-language equivalent — always overrides config; config only fills in when the
-request is silent on format/channel.
+**Channel, flags, and config** follow `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`
+— read it before writing. In short: for `analyze`+HTML, capable accounts publish to a claude.ai
+Artifact and `--local` (or "keep it local", "don't publish") forces the local wiki; every markdown
+report — `analyze --format md`, `security`, `overview` — stays local unless this turn asks to publish
+it. Config `artifact` applies to `analyze`+HTML only. Stored config:
+`node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get --data-dir "${CLAUDE_PLUGIN_DATA}"`.
 
 ### Intent Check
 
@@ -304,22 +287,13 @@ Output the report directly to the user (inline markdown), and save the same cont
 the same day) — the chat text is the delivery, the file is the record that lets report-manager
 list and refine this report later.
 
-**Phase 5 — Artifact channel (on request).** Entered only when this turn asks to publish the
-markdown report (`--artifact` or its natural-language equivalent). Publish without asking — the user
-chose the channel. Follow "Markdown on request" in `channel-decision.md`: same report, saved to the
-path above with `.md` replaced by `.artifact.md`, and published as-is. If the report has `mermaid`
-fences, the reply says in one line that they show as code and that `--format html` renders them.
-Publish unavailable → deliver in the response body instead.
+**Phase 5 — Artifact channel (on request).** Only when this turn asks to publish the markdown
+report — follow "Markdown on request" in `channel-decision.md`: save to the path above with `.md`
+replaced by `.artifact.md`, publish without asking, then record the sidecar (Phase 5R "Publish").
 
-**HTML channel routing (default = Artifact).** For `analyze` mode with HTML format the channel is
-decided by `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account
-the default is the **Artifact channel** — go straight to "Phase 5R — Artifact channel" below. Write the
-**local design-system + Mermaid** wiki (the section directly under this one) only when `--local` is in
-play, or as the **non-capable regenerate fallback** after a publish attempt fails (see "Publish"). Markdown
-reports follow Phase 5 — local unless this turn asks to publish. **The input
-form doesn't change routing:** local path, installed plugin name, and GitHub URL all resolve to the same
-target directory in Phase 1, so once the format is `analyze`+HTML the channel decision is identical
-regardless of where the plugin came from.
+**HTML routing.** `analyze`+HTML goes to "Phase 5R — Artifact channel" by default, and to the local
+wiki below for `--local` or a failed publish. Local path, installed name, and GitHub URL all resolve
+to the same target in Phase 1, so the input form never changes routing.
 
 #### Phase 5R: HTML report — local design-system channel (`--local` / non-capable fallback)
 
@@ -352,145 +326,51 @@ Include all analysis data from Phase 4 (feature-architect + security-auditor) an
 
 Skip sections with no data (e.g., no security findings → slim security section).
 
-**Diagrams**: Read these reference files for implementation:
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Mermaid syntax, theming, dark mode, zoom
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` — Color/font roles, Mermaid themeVariables
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` — 13-type selection guide
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` — Complexity budgets
-
-Key diagram rules (always apply):
-1. Max 9 nodes, 12 arrows per diagram. Over budget → split
-2. 1-2 focal accents only
-3. No `rgba()` or `color:` in Mermaid classDef — parser breaks
-4. No violet/fuchsia "AI purple" hexes (`#8b5cf6`/`#7c3aed`/`#a78bfa`/`#d946ef`) — the gate fails on these
-5. Always `theme: 'base'` with themeVariables from semantic-tokens
-6. Architecture diagrams with 15+ components → show 3-5 representatives per layer with total counts, or split into an overview plus per-layer diagrams, so each stays within rule 1
-
-The gate also fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders.
-
-**CSS essentials**: Write your own CSS inline. Must support:
-- `prefers-color-scheme: dark` via CSS custom properties
-- Korean font stack (CJK font in font-family)
-- Mermaid zoom by SVG sizing (mermaid-patterns.md `applyZoom()`), not `transform: scale()` (which reserves no layout space and clips) and not the `zoom` property
-- `min-width: 0` on flex/grid children
-- `prefers-reduced-motion: reduce`
-- Status indicators: colored dots via CSS, no emoji
+**Diagrams**: Mermaid (`mermaid-patterns.md`). Architecture diagrams with 15+ components → show 3-5
+representatives per layer with total counts, or split into an overview plus per-layer diagrams, so
+each stays within the density budget. Status indicators: coloured dots via CSS, no emoji. The rest of
+the local rules (CSS, gate, self-audit) are in `channel-decision.md` "Local channel".
 
 **Source links**: When `source_type` is `github`, make file paths clickable with `{github_url}/{relative-path}` links. For local sources, use `file://` URLs.
 
 **Content integrity**: All analysis data from sub-agents must survive intact in the report — specific numbers, finding details, risk levels, recommendations. If you're writing "the security audit found issues" instead of listing the actual findings — that's compression.
 
-This cardinal rule (call it *summary-leak*) is one of eight authoring reflexes that pass every mechanical gate and still flatten the output. Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue — linear dump, forced diagram, generic label, uniform density, empty decoration, accent overuse, borrowed costume. They're named defaults to break, not design rules: layout and taste stay yours, the catalogue just flags the habits worth resisting (e.g. a forced flowchart on a flat permission list, or every section — security, architecture, dependency map — rendered at the same weight).
+This cardinal rule is *summary-leak*, one of the reflexes in `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` that pass every gate and still flatten the output — read it while shaping the report (e.g. a forced flowchart on a flat permission list, or security, architecture, and dependency map all at the same weight).
 
-**3. Validate**: Run artifact-gate after writing:
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
-```
-If violations found: fix inline, max 2 retries.
+**3. Validate**: `node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>` — fix and re-run, max 2 retries.
 
-**4. Visual self-audit (HTML only)**:
-
-The gate reads the HTML as *text* — it never sees the rendered picture. An architecture or dependency-map diagram can pass the density check and still render as an unreadable tangle; a long permission-matrix label can clip at the container edge; the security/architecture/profile hierarchy that reads fine in source can collapse into a flat wall once styled. After the gate passes, **render the report and look at it** before delivering:
-
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path> --data-dir "${CLAUDE_PLUGIN_DATA}"
-```
-
-On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
+**4. Visual self-audit**: `node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path> --data-dir "${CLAUDE_PLUGIN_DATA}"`, then read the PNG (procedure: `visual-self-audit.md`). Look for:
 
 - **Density** — is any section a uniform grey wall, or is the architecture/dependency diagram past its budget and unreadable?
-- **Hierarchy** — does anything draw the eye first, or are the security, architecture, and component-map sections all the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
+- **Hierarchy** — do the security, architecture, and component-map sections all have the same weight?
 - **Mermaid integrity** — did the component map or security diagram render as raw `<pre>` text or as crossing/overlapping edges?
 - **Overflow** — does a diagram, permission matrix, or label run past its container or off the page?
-
-Fix what you see and re-render. **Cap at 2 audit passes** — if something still looks off after the second, ship with a one-line note to the user rather than looping. This catches gross breakage, not pixel-perfection.
-
-**If Chrome is absent**, `render-report.js` exits `1` (non-zero). Skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found — set `CHROME_BIN` or install Chrome"). The report already passed the gate; the visual pass is an enhancement and **never blocks delivery**.
-
-Full procedure, limits (fixed-height clipping, downscaling, render cost), and the rationale for *not* mechanizing this with a measurement script live in `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md`.
 
 **5. Open and present**:
 Run `open <output-path>`. Tell the user the report is ready and ask if they want changes.
 
 #### Phase 5R — Artifact channel (default on a capable account)
 
-Same content decisions as the local design-system channel above (section set, per-component analysis,
-source links, anti-slop-tells) — only the page's shape and delivery mechanism change, because it ships
-inside Claude Code's official Artifacts feature instead of as a local file.
+Same sections and content decisions as the local wiki; the channel rules are in `channel-decision.md`
+"Artifact channel". The Architecture, Feature Deep Dive, and Environment Fit diagrams become inline
+SVG or HTML+CSS. Source links (`github_url` or `file://`) stay as plain `<a href>`.
 
-**Before writing anything**, load the built-in `artifact-design` skill (Skill tool, skill name
-`artifact-design`). This is a tool contract MUST, not a suggestion — it conditions you for the CSP
-sandbox this page runs in, and skipping it is how a page ends up broken on publish.
+**Watch density here.** This report packs more sections than doc-visual or diff-visual — permission
+matrix, component map, feature deep dive, environment fit — into the same width. A wide permission
+table or a 15+-component architecture diagram is the most likely place the page overflows or wraps
+badly.
 
-Then write the page as a **fragment**, not a full document:
-- No `<!DOCTYPE>`, `<html>`, `<head>`, or `<body>` tags — content only, starting from your first
-  real element. The Artifact tool wraps the file in that skeleton at publish time.
-- Set a concise `<title>` directly in the content — it names the artifact in the browser tab. Keep
-  it stable across every republish of the same plugin in this session.
-- **Zero external requests** — the Artifact viewer's CSP blocks all of them. No Mermaid CDN
-  `<script>`, no hotlinked images or fonts. The Architecture, Feature Deep Dive, and Environment Fit
-  diagrams become inline SVG or HTML+CSS layouts instead (follow the artifact-design skill's
-  guidance) — same diagram-type decision from `diagram-type-selection.md`, different rendering
-  technique. `mermaid-patterns.md`'s CDN setup and `classDef` rules don't apply here. Source links
-  (`github_url` or `file://`) stay as plain `<a href>` navigation — that's a top-level link click,
-  not a fetched resource, so CSP doesn't touch it.
-- Support both themes: `@media (prefers-color-scheme: dark)` as the default signal, plus
-  `:root[data-theme="dark"]` / `:root[data-theme="light"]` overrides — the artifact viewer's theme
-  toggle stamps `data-theme` on the root and it must win in both directions.
+Save to `${CLAUDE_PLUGIN_DATA}/reports/{YYYY-MM-DD}-{plugin-name}-report.artifact.html`.
 
-**Watch density here more than on doc-visual or diff-visual's artifact pages.** This report packs
-more concurrent sections — security permission matrix, architecture/component map, feature deep
-dive, environment fit, skill design quality, plugin profile — into the same fragment width. A wide
-permission table or a 15+-component architecture diagram that reads fine in the local channel's
-layout is the most likely place a fragment overflows or wraps awkwardly; this is exactly what the
-S4 local-vs-artifact comparison run is for (see the issue's acceptance criteria), not something to
-assume away here.
+**Publish**:
+1. `node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path> --content-only` — fix and re-run, max 2 retries.
+2. Publish the file with the `Artifact` tool, `description` = one sentence on the plugin and what the report covers.
+3. `node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title>`
+4. Reply with the URL and the publish notice (`channel-decision.md` "Artifact channel").
 
-Save the fragment to
-`${CLAUDE_PLUGIN_DATA}/reports/{YYYY-MM-DD}-{plugin-name}-report.artifact.html` — a distinct
-filename from the default channel's `...-report.html`, so the two never collide or overwrite each
-other for the same plugin.
-
-Re-running this skill on the same plugin within the same conversation reuses that same path.
-
-**Validation**: run the gate in content-only mode instead of the full check:
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path> --content-only
-```
-This checks only missing images, raw markdown leakage, anchor hrefs, image alt, and placeholders —
-the facts that must survive regardless of who designed the page. Density/classDef/palette checks
-don't apply: the built-in artifact-design skill owns the design layer on this channel (ADR 0007).
-
-**Skip the visual self-audit (`render-report.js`) entirely on this channel.** The rendered picture
-is the built-in artifact-design skill's responsibility here, not this skill's — there's no local
-Chrome render loop to run before publishing.
-
-**Publish**, once the gate passes:
-1. Publish with the `Artifact` tool: `file_path` = the fragment you saved, `description` = one
-   sentence on the plugin and what the report covers.
-2. Record the publish so a later refine (even across sessions, once that lands) can find this URL:
-   ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title>
-   ```
-3. Report the URL to the user with one line. This is the **canonical publish notice** shared across
-   the channel skills (doc-visual owns the reference form; here the noun is *wiki*), so keep it
-   stable: `Published to claude.ai — design is delegated to Claude's built-in Artifact renderer, so
-   it differs from the local wiki's look; run --local for the local design-system + Mermaid version.`
-   This one line does double duty — it discloses the publish (the deliverable is now a URL, not a
-   local file) **and** the design delegation. Phrase it in whatever language you're already replying
-   in; the structure (published · delegated-design · `--local` escape hatch) is what's canonical, not
-   the exact English words.
-
-**Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
-unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
-and don't ask before falling back. The fragment you authored is a Mermaid-less, skeleton-less page
-meant for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
-breaks ADR 0009 §3's promise of design-system + Mermaid on a non-capable session). Instead
-**regenerate the full local design-system + Mermaid wiki** ("Phase 5R: HTML report — local
-design-system channel" above), run its full gate + visual self-audit, save to the
-`{YYYY-MM-DD}-{plugin-name}-report.html` path, `open` it, and state the fallback in one line (e.g.
-"Artifact publish unavailable — generated the local design-system wiki instead."). Cost = one
-regeneration, only on a non-capable session.
+**Publish unavailable or failed:** regenerate as the local wiki (Phase 5R local, its own path), don't
+open the Artifact file. A markdown report goes to the response body instead. Say so in one line,
+don't ask.
 
 Continue to Phase 7 (cleanup) as normal once publish (or fallback) completes.
 
@@ -544,6 +424,7 @@ Read these during report generation (not upfront — read the relevant one when 
 | `references/platforms/claude-code/security-rules.md` | Security patterns and risk classification (with context modifiers) |
 | `references/platforms/claude-code/report-template.md` | Information-structure schema for the inline-markdown report — section layout and data, not visual design (Phase 5) |
 | `references/platforms/claude-code/env-fit-diagnosis.md` | Environment Fit Diagnosis detailed steps (Phase 4.5) |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` | Before writing — channel, flags, config, per-channel rules (Phase 5, 5R) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram (Phase 5R) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme (Phase 5R) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for a section (Phase 5R) |
