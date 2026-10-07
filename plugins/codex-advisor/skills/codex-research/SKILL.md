@@ -33,8 +33,7 @@ reader who owes nothing to the first. Once you have read Codex's findings, your
 own additions arrive downstream of them — which is agreement dressed as
 independence. Passing paths instead of text is what keeps the two readings apart.
 
-Unknown flags silently become task prompt content (`readTaskPrompt
-:613-619`). Phase 1 is the only safety net.
+`codex-task.sh launch` refuses any argument that is not a known task flag, so a stray word stops the launch instead of landing in the prompt. Phase 1 still decides what is a flag and what is topic text.
 
 ---
 
@@ -42,7 +41,7 @@ Unknown flags silently become task prompt content (`readTaskPrompt
 
 ### Parse `$ARGUMENTS`
 
-**Whitelist for this skill:** `--model <slug>`, `--effort <level>` (skill-level, route through `apply-codex-config.py` — never reach the companion). The topic and optional document path are other skill inputs, not companion flags.
+**Whitelist for this skill:** `--model <slug>`, `--effort <level>` (skill-level, route through `apply-codex-config.py`; they reach the companion only as the `Run flags:` it prints). The topic and optional document path are other skill inputs, not companion flags.
 
 Rules:
 

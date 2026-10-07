@@ -27,9 +27,9 @@ subagent and report what it decides. The judging is deliberately not yours.
 
 The companion collects the diff and context itself. Your value-add is a
 verdict reached by someone with no stake in the code, not pre-analysis.
-Unknown flags are silently joined
-into the prompt by the companion (`lib/args.mjs:47-49` + `:643-650`) —
-there is NO post-hoc detection. Phase 1 whitelist is the only safety net.
+The companion's parser turns an unknown flag into
+focus text (`parseArgs` in `lib/args.mjs`), and the built-in review rejects
+focus text, so the run fails. Phase 1 whitelist catches it first.
 
 ---
 
@@ -39,15 +39,13 @@ You are a translator. Use LM intelligence, not regex tables.
 
 **Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`, `--model <slug>`, `--effort <level>`. Nothing else.
 
-`--model` and `--effort` route through `scripts/apply-codex-config.py` to update `~/.codex/config.toml` *before* the companion launches — see the Apply block below. Two reasons:
-1. **`--effort` is not a registered review flag** (`handleReviewCommand` `valueOptions = ["base", "scope", "model", "cwd"]` at `:714`). Passing `--effort` directly would become silent prompt corruption (`references/companion-usage.md §3`). Only the config.toml `model_reasoning_effort` key reaches the review path.
-2. **Consistency + persistence.** `--model` IS honored as a flag in v1.0.4+ (`startThread({ model })`, `lib/codex.mjs:1010-1015`), but routing it through config.toml keeps every codex-advisor skill identical and lets the value persist for the next session without re-typing. A project's own `.codex/config.toml` outranks `config.toml`, so when it sets a model the script prints a `Run flags:` line and `--model` goes on the command too.
+`--model` and `--effort` go through `scripts/apply-codex-config.py`, which updates `~/.codex/config.toml` before the companion launches — see the Apply block below. Never put `--effort` on the review command: review has no such flag, so the companion would mix it into the prompt. Why, and when `--model` does go on the command: `references/companion-usage.md` §2.
 
 Rules:
 
 - **Meta-instructions addressed to YOU** (e.g. "don't analyze first", "in Korean", "quickly", "thoroughly" — often typed in the user's own language) → obey for your own behavior, never forward to the companion.
 - **Junk, emoji, trailing punctuation** → drop. Strip trailing `,` `.` `)` from flag values (e.g., `--base develop,` → `base=develop`).
-- **Focus text detected** (any natural-language string not addressed to you and not a whitelisted flag) → use `AskUserQuestion` to offer the adversarial redirect: "This looks like focus text — use `/codex-adversarial <focus>` instead? The built-in review rejects focus text at `codex-companion.mjs:272-273`." Do NOT pass focus text to the companion.
+- **Focus text detected** (any natural-language string not addressed to you and not a whitelisted flag) → use `AskUserQuestion` to offer the adversarial redirect: "This looks like focus text — use `/codex-adversarial <focus>` instead? The built-in review rejects focus text." Do NOT pass focus text to the companion.
 - **Unknown flag** (e.g., `--commit`, `--uncommitted`, `--wait`, `--foo`) → `AskUserQuestion` to clarify. Common corrections:
   - `--uncommitted` → did you mean `--scope working-tree`?
   - `--commit <sha>` → did you mean `--base <sha>~1 --scope branch`?
@@ -98,7 +96,7 @@ details), read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 ## Phase 2: Invoke (Pattern A — Bash run_in_background)
 
 Review's companion-side `--background` / `--wait` are silent no-ops
-(`handleReviewCommand :709` unconditionally calls `runForegroundCommand`).
+(`handleReviewCommand` always calls `runForegroundCommand`).
 We use Claude's Bash `run_in_background=true` to survive the Bash tool's
 timeout.
 
@@ -269,10 +267,7 @@ scoped to the shell that set them, which is not this shell.
 
 ## Gotchas
 
-- **`--commit`, `--uncommitted` do not exist on review** — they were in
-  an older argument-hint and need to be translated by ANALYZE, not
-  passed through. See §3.1 of the plan.
-- **Focus text on `codex-review` is fatal at the companion** (`:272-273`).
+- **Focus text on `codex-review` is fatal at the companion** (`validateNativeReviewRequest`).
   Offer the adversarial redirect in Phase 1 instead of forwarding.
 - **Review always runs in the foreground on the companion side** — the
   companion's `--background` / `--wait` are silent no-ops. Pattern A

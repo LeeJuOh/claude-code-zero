@@ -1,6 +1,7 @@
 ---
 name: codex-result
-description: "Show the final stored result of a completed Codex job. Use when asked \"codex result\", \"show the codex output\", \"show me the job result\", or wants output from a finished job."
+description: "Show the final stored result of a completed Codex job."
+disable-model-invocation: true
 argument-hint: "[job-id]"
 allowed-tools: ["Bash", "Read", "Glob"]
 ---
@@ -11,14 +12,14 @@ Thin wrapper around the Official Codex companion's `result` subcommand. If a cod
 
 ## Phase 1: Fetch companion result
 
+**Arguments:** pass on only a job id (like `task-mf3k2a-x7q1zp`, or a unique start of one) and the flags in `argument-hint`, quoting the job id and any flag value. Drop anything else. If the user asked in words ("show me the last job"), run with no arguments — the companion reads a stray word as a job id and fails with `No job found`.
+
 ```bash
 set -o pipefail
 CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
   || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
 
-# Forward args verbatim. The companion accepts an optional [job-id];
-# without one it shows the most recent finished job.
-node "$CODEX_COMPANION" result $ARGUMENTS
+node "$CODEX_COMPANION" result <filtered arguments>
 ```
 
 Relay the companion's rendered result verbatim (includes the Codex session ID, making `codex resume <session-id>` possible).
@@ -53,5 +54,4 @@ Don't claim a specific report belongs to the queried job unless timestamps clear
 ## Gotchas
 
 - **The companion's result is authoritative for Codex output.** codex-advisor's report adds classification on top but the raw Codex text lives in the companion's store.
-- **No `job-id` → most recent.** The companion picks the most recently *completed* job in the current workspace; this may not be what the user wants if they just finished multiple jobs. Prompt for clarification if ambiguous.
 - **Session ID enables `codex resume`.** If the companion's output includes a `session_id`, point that out — the user can continue that Codex thread with `codex resume <session-id>` outside Claude entirely.

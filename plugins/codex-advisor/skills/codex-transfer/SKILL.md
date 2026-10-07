@@ -1,6 +1,7 @@
 ---
 name: codex-transfer
-description: "Hand off the current Claude Code session to Codex as a resumable thread with full turn history, then continue outside Claude entirely. Use when asked \"codex transfer\", \"move this session to codex\", \"continue this in codex\", \"hand this off to codex\", or wants to migrate the conversation itself (not delegate one task and come back — for that use /codex-rescue)."
+description: "Hand off the current Claude Code session to Codex as a resumable thread, then continue outside Claude."
+disable-model-invocation: true
 argument-hint: "[--source PATH] [--json]"
 allowed-tools: ["Bash", "AskUserQuestion"]
 ---
@@ -27,7 +28,7 @@ route.
 
 Single synchronous call — no `--wait`/`--background`, no Pattern A/B.
 The companion's own import timeout is 2 minutes
-(`EXTERNAL_AGENT_IMPORT_TIMEOUT_MS`, `lib/codex.mjs:52`), so give the
+(`EXTERNAL_AGENT_IMPORT_TIMEOUT_MS` in `lib/codex.mjs`), so give the
 Bash tool call itself a `timeout` comfortably above that (e.g.
 `150000`) — a shorter tool-side timeout could kill the process right at
 the companion's own deadline and mask its real error message.

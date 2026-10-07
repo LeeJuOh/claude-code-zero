@@ -91,6 +91,8 @@ prompt and double-check". All four failures were wrapper bugs.
 | `/codex-cancel` | Cancel an active background job |
 | `/codex-transfer` | Move the current session into a resumable Codex thread |
 
+Claude starts review, adversarial, rescue, verify and research on its own when you ask in words. The other five run only when you type the command.
+
 ## Transfer vs rescue
 
 Easy to conflate — they're opposites. **Rescue** is a subcontractor: Codex does one task, Claude reads the diff, Claude keeps the wheel. **Transfer** is emigration: the whole conversation moves to Codex (`codex resume <id>`) and Claude's part in it ends — there's no diff to review because nothing comes back.
@@ -99,8 +101,8 @@ Easy to conflate — they're opposites. **Rescue** is a subcontractor: Codex doe
 
 **Every skill that sends Codex a prompt accepts `--model <slug>` and `--effort <level>`** (review, adversarial, rescue, verify, research; setup sets the persistent defaults). Job-management skills (status, result, cancel) and transfer have no model turn to steer. The flags route through `scripts/apply-codex-config.py` and update `config.toml` in `$CODEX_HOME` (default `~/.codex`) before the Codex CLI runs. Two reasons:
 
-1. **`--effort` is not a registered review/adversarial flag.** The companion's `handleReviewCommand` accepts `--base`, `--scope`, `--model`, `--cwd` only (`codex-companion.mjs:714`). Passing `--effort` directly would become silent prompt corruption. Only the `model_reasoning_effort` key in `config.toml` reaches the review code path.
-2. **Consistency + persistence.** `--model` IS honored as a flag in companion 1.0.4+ (`lib/codex.mjs:1010-1015`), but routing it through `config.toml` keeps every codex-advisor skill identical and lets the value carry into the next session without re-typing.
+1. **`--effort` is not a registered review/adversarial flag.** The companion's `handleReviewCommand` accepts `--base`, `--scope`, `--model`, `--cwd` only. Passing `--effort` directly would turn it into focus text. Only the `model_reasoning_effort` key in `config.toml` reaches the review code path.
+2. **Consistency + persistence.** `--model` IS honored as a flag in companion 1.0.4+, but routing it through `config.toml` keeps every codex-advisor skill identical and lets the value carry into the next session without re-typing.
 
 Examples:
 

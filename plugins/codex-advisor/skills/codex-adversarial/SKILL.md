@@ -8,10 +8,9 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob", "AskUserQuestion", "Agent"]
 # Codex Adversarial Review + Double-Check
 
 You are a **translator + executor**. Adversarial review defaults to
-skepticism — it looks for reasons NOT to ship, and it invents more than plain
-review does. Your first job is a clean invocation; your second is to hand what
-comes back to a fresh Verifier subagent and report what it decides. The extra
-noise is why the judging is deliberately not yours.
+skepticism — it looks for reasons NOT to ship. Your first job is a clean
+invocation; your second is to hand what comes back to a fresh Verifier subagent
+and report what it decides. The judging is deliberately not yours.
 
 ## Execution Contract
 
@@ -26,8 +25,8 @@ noise is why the judging is deliberately not yours.
 | 5 REPORT + SAVE | Write report file | n/a |
 
 The companion collects the diff itself. Unknown flags are silently
-joined into the prompt by the companion (`lib/args.mjs:47-49` +
-`:643-650`). Phase 1 whitelist is the only safety net.
+joined into the focus text, and so into the prompt (`parseArgs` in
+`lib/args.mjs`). Phase 1 whitelist is the only safety net.
 
 ---
 
@@ -37,9 +36,7 @@ You are a translator. Use LM intelligence, not regex tables.
 
 **Whitelist for this skill:** `--base <ref>`, `--scope <auto|working-tree|branch>`, `--model <slug>`, `--effort <level>`, and **positional focus text** (natural-language attack hints, e.g., "check for SQL injection in login handler").
 
-`--model` and `--effort` route through `scripts/apply-codex-config.py` to update `~/.codex/config.toml` before the companion launches. Two reasons:
-1. **`--effort` is not a registered review flag** (`handleReviewCommand` `valueOptions = ["base", "scope", "model", "cwd"]` at `:714`). Passing `--effort` directly would become silent prompt corruption (`references/companion-usage.md §3`). Only the config.toml `model_reasoning_effort` key reaches the review path.
-2. **Consistency + persistence.** `--model` IS honored as a flag in v1.0.4+ (`startThread({ model })`, `lib/codex.mjs:1010-1015`), but routing it through config.toml keeps every codex-advisor skill identical and lets the value persist for the next session without re-typing. A project's own `.codex/config.toml` outranks `config.toml`, so when it sets a model the script prints a `Run flags:` line and `--model` goes on the command too.
+`--model` and `--effort` go through `scripts/apply-codex-config.py`, which updates `~/.codex/config.toml` before the companion launches — see the Apply block below. Never put `--effort` on the review command: review has no such flag, so the companion would mix it into the prompt. Why, and when `--model` does go on the command: `references/companion-usage.md` §2.
 
 Rules:
 
@@ -182,7 +179,7 @@ Use `AskUserQuestion` exactly once:
 
 ## Phase 2: Invoke (Pattern A — Bash run_in_background)
 
-Adversarial shares `handleReviewCommand` with `review` (`:755, :1035-1049`), so
+Adversarial shares `handleReviewCommand` with `review`, so
 `--background` / `--wait` are silent no-ops. Use Bash
 `run_in_background=true`.
 

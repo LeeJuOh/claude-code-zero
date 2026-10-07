@@ -1,6 +1,7 @@
 ---
 name: codex-setup
-description: "Check Codex CLI, auth, Official plugin status, and configure defaults. Use when asked \"codex setup\", \"configure codex\", \"install codex\", or when another codex-advisor skill reports setup issues."
+description: "Check the Codex CLI, sign-in and the Official plugin, and set the default model and effort in config.toml."
+disable-model-invocation: true
 argument-hint: "[--model MODEL] [--effort LEVEL] [--status]"
 allowed-tools: ["Bash", "Read", "Edit", "AskUserQuestion"]
 ---
@@ -101,5 +102,5 @@ To change: `/codex-setup --model gpt-5.6-sol --effort high`
 ## Gotchas
 
 - **config.toml applies globally.** Changes affect all Codex commands system-wide — Official plugin, direct CLI, and every codex-advisor skill. Warn the user when you mutate it.
-- **`--effort` is not a registered review/adversarial flag.** `handleReviewCommand` `valueOptions = [base, scope, model, cwd]` (`codex-companion.mjs:714`). The only path that reaches the review code is the config.toml `model_reasoning_effort` key. `--model` IS honored as a flag in companion 1.0.4+ (`startThread({ model })`, `lib/codex.mjs:1010-1015`), but codex-advisor still routes it through `config.toml` for **consistency across skills** and so the value persists for the next session — same call shape on review/adversarial/rescue/verify/research. Every skill (`review`, `adversarial`, `research`, `verify`, `rescue`) accepts `--model`/`--effort` and writes via `scripts/apply-codex-config.py` — so the user doesn't have to call `codex-setup` separately. When a project's own `.codex/config.toml` sets a requested key, those skills also pass it on the Codex command (`--model`, plus `--effort` on `task`), since run-time values outrank every config file; review and adversarial have no effort flag, so the script prints a `Note:` instead.
+- **Other skills set these too.** review, adversarial, rescue, verify and research accept `--model`/`--effort` and write them through the same script. Review and adversarial have no `--effort` flag, so config.toml is the only way to set their effort — details in `references/companion-usage.md` §2.
 - **Don't create config.toml if the user only asked for status.** `apply-codex-config.py "" ""` is safe (no-op, prints current values) but avoid it when just reporting — `grep`/`cat` is enough.
