@@ -158,17 +158,7 @@ For each component, determine:
 
 Classify each active skill into one of 9 functional categories. This classification helps users understand the plugin's purpose at a glance and reveals gaps or concentrations in functionality.
 
-| Category | Detection Heuristics | Examples |
-|----------|---------------------|----------|
-| **Library & API Reference** | Pure knowledge/guidance; description mentions "how to use", "conventions", "patterns", "gotchas"; has `references/` with API docs or code snippets | billing-lib, frontend-design |
-| **Product Verification** | Description mentions "test", "verify", "validate", "assert", "check"; uses Bash with test runners (playwright, jest, tmux); has scripts/ with test helpers | signup-flow-driver, checkout-verifier |
-| **Data Fetching & Analysis** | Description mentions "query", "data", "metrics", "dashboard", "analytics"; uses Bash with data tools (bq, psql, curl to APIs); references datasource IDs or table names | funnel-query, grafana |
-| **Business Process & Team Automation** | Description mentions "standup", "ticket", "recap", "post", "notify", "workflow"; integrates with Slack, Linear, Jira, GitHub Issues; saves log files for history | standup-post, weekly-recap |
-| **Code Scaffolding & Templates** | Description mentions "scaffold", "generate", "create", "new", "template", "boilerplate"; has `templates/` or `assets/` with template files; produces new files | new-migration, create-app |
-| **Code Quality & Review** | Description mentions "review", "lint", "style", "quality", "refactor"; may spawn review subagents; uses Git diff patterns; has style rules or checklists | adversarial-review, code-style |
-| **CI/CD & Deployment** | Description mentions "deploy", "build", "release", "merge", "PR", "pipeline"; uses gh/git CLI heavily; monitors CI status | babysit-pr, deploy-service |
-| **Runbooks** | Description mentions "debug", "investigate", "diagnose", "incident", "alert", "oncall"; multi-tool investigation workflow; produces structured reports | service-debugging, oncall-runner |
-| **Infrastructure Operations** | Description mentions "cleanup", "orphan", "cost", "dependency", "maintenance"; involves destructive actions with guardrails; uses cloud/container CLIs | resource-orphans, cost-investigation |
+Use the categories and detection heuristics in the "Skill Category Distribution" table of `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/analysis-criteria.md` (read it once, before classifying).
 
 **Classification rules**:
 - One primary category per skill (pick the best fit)
@@ -247,9 +237,9 @@ Skills and agents don't call each other directly — they go through the platfor
 
 ````mermaid
 graph TD
-    classDef builtin fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,stroke-dasharray:5 5
-    classDef skill fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
-    classDef agent fill:#d1fae5,stroke:#10b981,stroke-width:2px
+    classDef builtin fill:#64748b1f,stroke:#64748b,stroke-width:2px,stroke-dasharray:5 5
+    classDef skill fill:#3b82f626,stroke:#3b82f6,stroke-width:2px
+    classDef agent fill:#10b98126,stroke:#10b981,stroke-width:2px
 
     User -->|"trigger"| S1["SKILL: orchestrator"]
     S1 -->|"Task(subagent_type:...)"| BT["Built-in: Agent Tool"]:::builtin
@@ -274,7 +264,7 @@ Adapt node IDs and labels to match actual plugin components. Use `-->` for direc
 - Prefer `graph TD` for diagrams with 5+ nodes (top-down is easier to read)
 - Use semi-transparent fill with `classDef` — never set `color:` inside `classDef` (breaks dark mode). Never use `rgba()` because commas break Mermaid's parser — use 8-digit hex instead. Example: `classDef skill fill:#0891b226,stroke:#0891b2`
 - Avoid naming custom classes `.node` — conflicts with Mermaid's internal class
-- Keep diagrams to ~15 nodes max per diagram. Split into multiple diagrams if needed
+- Stay within the density budget in `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` (the artifact gate enforces it — 9 nodes and 12 arrows for a flowchart). Split into multiple diagrams if needed
 
 ### 2.5 Philosophy in Action
 
@@ -353,50 +343,11 @@ Simple plugins (< 3 components): 1 scenario is sufficient.
 
 ### 5. Quality Checklist
 
-Check the following:
-
-| Check | Pass/Fail |
-|-------|-----------|
-| Plugin name is kebab-case | |
-| Component names are kebab-case | |
-| README.md exists and has content | |
-| LICENSE file exists | |
-| CHANGELOG.md exists | |
-| tests/ directory exists | |
-| homepage or repository URL in plugin.json | |
-| All skills have `name` in frontmatter | |
-| All skills have `description` in frontmatter | |
-| All agents have `name` in frontmatter | |
-| All agents have `description` in frontmatter | |
-| Skill auxiliary files organized (templates, refs) | |
-| English content in public-facing files | |
-| Error handling documented or evident | |
+Apply the "Documentation Checklist" and "Quality Checklist" in `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/analysis-criteria.md`. Report each item as PASS or FAIL with a short detail on FAIL.
 
 ### 5.5 Skill Design Quality Assessment
 
-Evaluate how well the plugin's skills follow established best practices. This assessment helps users understand the plugin's maturity and identify areas for improvement.
-
-For each active skill, evaluate:
-
-| Criterion | What to check | Good / Needs work |
-|-----------|--------------|-------------------|
-| **Description as trigger** | Does the `description` field explain when to trigger, not just what it does? Does it include concrete trigger phrases and contexts? | Good: includes "Use when..." or trigger scenarios. Needs work: only says what it does ("Generates X") |
-| **Progressive disclosure** | Does the skill use supporting files (`references/`, `scripts/`, `assets/`, `templates/`) to keep SKILL.md focused? Is SKILL.md under ~500 lines? | Good: SKILL.md < 500 lines with pointers to reference files. Needs work: everything in one monolithic SKILL.md |
-| **Gotchas section** | Does the skill document common failure points and edge cases? | Good: has a Gotchas or "Common issues" section. Needs work: no mention of failure modes |
-| **Script bundling** | Does the skill include reusable scripts that save the model from reconstructing boilerplate? | Good: `scripts/` with helper functions. Needs work: instructions to write boilerplate from scratch each time |
-| **On-demand hooks** | Does the skill register session-scoped hooks via frontmatter `hooks` field for contextual guardrails? | Good: uses hooks for validation/formatting. N/A: skill doesn't need hooks |
-| **Data persistence** | If the skill stores data, does it use `${CLAUDE_PLUGIN_DATA}` (survives upgrades) rather than the skill directory? | Good: uses stable storage path. Needs work: writes to `${CLAUDE_PLUGIN_ROOT}` or skill dir |
-| **Anti-railroading** | Do instructions give Claude flexibility to adapt, or are they overly prescriptive with rigid step sequences? | Good: explains the why, lets Claude choose how. Needs work: excessive MUSTs and rigid sequences |
-
-**Output**: For each skill, assign an overall design maturity:
-
-| Level | Criteria |
-|-------|----------|
-| **Mature** | Passes 5+ criteria (or N/A); has progressive disclosure + gotchas |
-| **Developing** | Passes 3-4 criteria; functional but could benefit from documented gotchas or reference files |
-| **Basic** | Passes 1-2 criteria; works but follows few best practices |
-
-Plugin-level summary: count skills by maturity level and note the most impactful improvement opportunities (1-3 actionable recommendations).
+For each active skill, apply the "Skill Design Quality" criteria and maturity levels in the same file. Then give a plugin-level summary: count skills by maturity level and note the 1-3 most impactful improvement opportunities.
 
 ## Output Format
 
@@ -573,7 +524,7 @@ Machine-parseable list for automated environment fit diagnosis.
 \`\`\`requirements
 name|type|required|help
 gh|CLI|required|Install: brew install gh
-claude-in-chrome|MCP|optional|Configure in ~/.claude/.mcp.json
+claude-in-chrome|MCP|optional|Add with claude mcp add
 GITHUB_TOKEN|ENV|optional|export GITHUB_TOKEN=<your-token>
 some-plugin|Plugin|optional|claude plugin add some-plugin
 \`\`\`

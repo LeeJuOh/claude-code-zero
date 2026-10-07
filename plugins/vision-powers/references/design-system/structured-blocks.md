@@ -5,14 +5,13 @@ code), annotated-code (code + margin notes), data-model (schema change), api-end
 contract). It is distinct from a **diagram** (which *abstracts* relationships) and a **callout**
 (which the model *writes*): a structured block's factual content **is the source itself, lifted
 unchanged**. It widens the design brief past diagrams to the code/contract layer reviewers
-actually read. See `docs/context/vision-powers.md` and ADR 0005.
+actually read.
 
 This file is the shared pattern reference for those blocks. Read it when a diff (or a document, or
 a plugin) contains code worth showing as code rather than summarizing in prose.
 
-> **Scope today:** this file documents **split-diff**. annotated-code, data-model, and
-> api-endpoint join it in later slices (issue 005 S3–S5); each follows the same grounding law
-> below, not necessarily the same extraction tool.
+> **Scope today:** this file documents **split-diff** only. Any other block type follows the same
+> grounding law below, not necessarily the same extraction tool.
 
 ## The one law: build-time grounding
 
@@ -37,11 +36,10 @@ by another name and breaks the verbatim guarantee. Highlighting is a **runtime**
 ## Syntax highlighting: runtime CDN, same shape as Mermaid
 
 **Scope: local channel only.** Everything in this section — the CDN `<link>`/`<script>` tags, the
-`<head>` injection — applies to the default local-file HTML output. The Artifact channel forbids
-external requests outright (CSP), so it never emits any of this; see "Artifact channel: no CDN,
-forced degrade" below for what to do instead.
+`<head>` injection — applies to the local-file HTML output. The Artifact channel never emits any of
+this; see "Artifact channel: no CDN, forced degrade" below for what to do instead.
 
-`diff-visual` already renders Mermaid from a CDN `<script>` (ADR 0002). Highlighting follows the
+`diff-visual` already renders Mermaid from a CDN `<script>`. Highlighting follows the
 same pattern with **highlight.js** — the model emits plain escaped `<pre><code class="language-X">`
 and the browser colours it at view time. The model does not colour anything.
 
@@ -100,9 +98,8 @@ the network off and confirm the code is readable, just un-coloured.
 
 ### Artifact channel: no CDN, forced degrade
 
-On the Artifact channel, don't emit the highlight.js `<link>`/`<script>` tags at all — the same
-zero-external-requests rule that already bans the Mermaid CDN on this channel applies symmetrically
-here. There's no "try CDN, degrade if offline" branch on this channel; the no-CDN path above is the
+On the Artifact channel, don't emit the highlight.js `<link>`/`<script>` tags at all. There's no
+"try CDN, degrade if offline" branch on this channel; the no-CDN path above is the
 *only* path, always. That's an accepted degrade, not a gap: plain monospace code is exactly what the
 Network-0 degrade case above already guarantees looks clean and readable — the Artifact channel just
 takes that branch unconditionally instead of as a fallback.
@@ -134,7 +131,7 @@ is pasted verbatim on every channel; only the CSS/highlight mechanism around it 
 
 ## split-diff: before | after, side by side
 
-The grilled layout decision (issue 005): **left = before, right = after**, each pane highlighted
+Layout: **left = before, right = after**, each pane highlighted
 *normally* by highlight.js. We deliberately do **not** paint per-line `+/−` backgrounds inside the
 panes — line tints fight the token colours and turn the code muddy. The before/after comparison
 lives at the **pane** level (labelled headers + a thin edge accent), the token colours stay clean.

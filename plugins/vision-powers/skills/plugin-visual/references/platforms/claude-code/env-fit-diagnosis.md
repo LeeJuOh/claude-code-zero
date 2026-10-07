@@ -27,20 +27,14 @@ Extract these from the feature-architect output:
 ## Step 2: Run Environment Scan
 
 ```
-Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name})
+Bash(node {plugin-root}/scripts/env-fit-scan.js --plugin-name {plugin-name} --requirement CLI:gh --requirement MCP:claude-in-chrome ...)
 ```
 
-Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. The script merges `enabledPlugins` across all three settings scopes (user → project → local) with later scopes overriding earlier ones, then filters all scan results to only include plugins enabled for the current project context. It outputs JSON with: `install_status`, `installed_plugins` (enabled only), `installed_skills` (with `total_desc_chars`, `disabled_count`), `installed_commands` (with `total_desc_chars`, `disabled_count`), `local_skills` (includes both skills and commands), `hook_inventory` (with `total`, `type_counts`; plugin hooks filtered by enabled), `context_metrics` (with `mcp_servers` from all 3 settings scopes), and `disabled_plugins` (list of explicitly disabled plugin names from merged settings).
+Where `{plugin-root}` is this plugin's root directory and `{plugin-name}` is from Phase 3. Add one `--requirement <type>:<name>` per row of the `requirements` block from Step 1 (type is CLI, MCP, ENV, or Plugin); omit the flag when there is no block. Keep every check inside this one call — separate `which`/`grep`/`test` Bash calls are not in `allowed-tools` and stop the run on a permission prompt. The script merges `enabledPlugins` across all three settings scopes (user → project → local) with later scopes overriding earlier ones, then filters all scan results to only include plugins enabled for the current project context. It outputs JSON with: `install_status`, `installed_plugins` (enabled only), `installed_skills` (with `total_desc_chars`, `disabled_count`), `installed_commands` (with `total_desc_chars`, `disabled_count`), `local_skills` (includes both skills and commands), `hook_inventory` (with `total`, `type_counts`; plugin hooks filtered by enabled), `context_metrics` (with `mcp_servers`: user and local scope in `~/.claude.json`, project `.mcp.json`, and enabled plugins' MCP servers; `skill_listing`: `budget_fraction`, `char_budget_override`, `max_desc_chars`; `mcp_tool_loading`: `deferred` / `upfront` / `threshold`), `disabled_plugins` (list of explicitly disabled plugin names from merged settings), and `requirements` (`[{type, name, status}]`, one per `--requirement`).
 
-If the plugin has external requirements (from Step 1), also check them with simple commands:
+Requirement status values: CLI → AVAILABLE / MISSING (executable on PATH); MCP → AVAILABLE / MISSING (server name in the same MCP locations); ENV → SET / UNSET; Plugin → AVAILABLE / MISSING (enabled in settings); UNKNOWN_TYPE for any other type.
 
-| Type | Check pattern | Status values |
-|------|--------------|---------------|
-| CLI | `which {name} >/dev/null 2>&1` | AVAILABLE / MISSING |
-| MCP | `grep -q '"{name}"' ~/.claude/.mcp.json 2>/dev/null` | AVAILABLE / MISSING |
-| ENV | `[ -n "${name}" ]` | SET / UNSET |
-
-## Step 3: Six Diagnostic Analyses
+## Step 3: Eight Diagnostic Analyses
 
 ### 3A: Installation Status
 
@@ -63,18 +57,17 @@ Calculate the plugin's context footprint using the **always-loaded vs deferred**
 
 | Resource | Token cost model | Budget |
 |----------|-----------------|--------|
-| Skill/command descriptions | Sum description chars for items WITHOUT `disable-model-invocation: true`. Formatted as `"skill-name": description` in `<available_skills>` XML | 2% of context window (16K chars fallback) |
+| Skill/command descriptions | Sum description chars for items WITHOUT `disable-model-invocation: true`, each capped at `max_desc_chars` | 1% of context window by default (`context_metrics.skill_listing`) |
 | Rules (without `paths:`) | Full file content loaded at session start. Rules WITH `paths:` frontmatter are on-demand | Part of instruction context |
 | CLAUDE.md files | Full content with `@import` expansion (up to 5 hops). Includes HTML comment stripping | Part of instruction context |
 | Agent/command definitions | Full file content for agents and commands | Part of instruction context |
-| MCP server config | Server names and metadata (small) | Minimal |
+| MCP tool names + server instructions | Loaded at session start under tool search (the default) | Minimal |
 
 #### Deferred items (loaded on-demand, reserved but not always present)
 
 | Resource | Token cost model | Budget |
 |----------|-----------------|--------|
-| MCP tool schemas | ~90% of MCP tokens. Loaded when tools are needed | 10% of context window |
-| Individual memory files | Loaded via `readFileState` on demand | N/A |
+| MCP tool definitions | Deferred under tool search (the default); loaded upfront when `mcp_tool_loading` is `upfront` or a server sets `alwaysLoad: true` | See analysis-criteria.md "MCP Tool Surface" |
 | Rules with `paths:` | Only loaded when matching file paths are in context | N/A |
 | Skills with `disable-model-invocation: true` | Only loaded when user explicitly invokes | Zero always-on cost |
 
@@ -83,22 +76,15 @@ Calculate the plugin's context footprint using the **always-loaded vs deferred**
 1. **Skill/command description chars (always-loaded)**:
    Sum description chars for skills AND commands in this plugin that do NOT have `disable-model-invocation: true`. Add to current environment total from `installed_skills.total_desc_chars` + `installed_commands.total_desc_chars` + `local_skills.total_desc_chars`.
 
-   **Budget reference** (source: [official Skills docs](https://code.claude.com/docs/en/skills)):
-   > "The budget scales dynamically at 2% of the context window, with a fallback of 16,000 characters."
-   > Overridable via `SLASH_COMMAND_TOOL_CHAR_BUDGET` environment variable.
-
-   - 200K scenario: ~16,000 chars (2% of 200K tokens × ~4 chars/token ≈ 16K; coincides with the 16K fallback)
-   - 1M scenario: ~80,000 chars (2% of 1M tokens × ~4 chars/token ≈ 80K)
+   **Budget**: follow analysis-criteria.md "Skill Description Budget" — 1% of the context window by default, adjusted by `context_metrics.skill_listing`. Default estimates: ~8,000 chars at 200K, ~40,000 chars at 1M (~4 chars/token — an estimate, since the docs do not give the conversion).
 
 2. **Rules context cost (always-loaded)**:
    Count rules in this plugin. Rules WITHOUT `paths:` frontmatter are always-loaded — their full content is injected at session start. Rules WITH `paths:` are on-demand (deferred). Estimate token cost as `file_size_bytes / 4`.
 
-3. **MCP tool surface (deferred, but reserved)**:
-   Count MCP servers this plugin adds (from `.mcp.json`). Estimate tokens using heuristic: servers x 25 tools x 200 tokens/tool.
-   - Current MCP token estimate: `context_metrics.mcp_servers x 25 x 200`
-   - Adding: `new_servers x 25 x 200`
-   - 200K scenario: compare projected total against ~20,000 token cap (10% of 200K)
-   - 1M scenario: compare projected total against ~100,000 token cap (10% of 1M)
+3. **MCP tool surface**:
+   Count MCP servers this plugin adds (from `.mcp.json` or inline `mcpServers`) and note any with `alwaysLoad: true`.
+   - `mcp_tool_loading` is `deferred` (the default) and no `alwaysLoad`: report minimal cost (tool names + server instructions); no verdict impact.
+   - Otherwise estimate upfront tokens with the heuristic servers × 25 tools × 200 tokens/tool (current `context_metrics.mcp_servers` + new servers), and compare against 10% of the window: ~20,000 tokens at 200K, ~100,000 at 1M. Label as an estimate.
 
 4. **CLAUDE.md @import chain analysis**:
    If the plugin includes a `CLAUDE.md`, trace its `@import` directives (up to 5 hops). Each imported file adds to always-loaded context. Report:
@@ -181,18 +167,14 @@ Identify how the plugin was installed to provide provenance context in the repor
 
 #### Detection methods
 
-1. **skills-lock.json**: Claude Code tracks bundle installations in `skills-lock.json`:
-   - Project-level (v1): `{repo}/.claude/skills-lock.json`
-   - Global (v3): `~/.claude/skills-lock.json`
-
-   Parse the lock file entries — each maps a skill name to its source bundle (marketplace name, version, and publisher).
+1. **Install registry**: `~/.claude/plugins/installed_plugins.json` keys each installed plugin as `name@marketplace`, with its `scope` and `installPath`. A matching key gives the marketplace name.
 
 2. **Plugin cache path**: Inspect the plugin's location in `~/.claude/plugins/cache/`:
    - Path contains marketplace identifier → `marketplace` source
    - Path is a symlink → `local` source (development mode)
    - Plugin.json contains `repository` field with `github.com` → `github` source
 
-3. **Fallback heuristic**: If neither lock file nor cache path provides definitive information:
+3. **Fallback heuristic**: If neither the registry nor the cache path provides definitive information:
    - Plugin has `repository` URL in plugin.json → likely `github`
    - Plugin is in the current working directory → `local`
    - Otherwise → `unknown`
@@ -232,7 +214,7 @@ Verdict priority (highest severity wins):
 3. DUPLICATE skill with HIGH trigger collision → at least REDUNDANT
 4. Multiple OVERLAP findings covering > 50% of plugin's skills → at least REDUNDANT
 5. Skill description budget exceeded in the user's context scenario → at least CONDITIONAL; exceeded in both 200K and 1M → CONFLICTING
-6. MCP tool surface would exceed 10% cap in the user's context scenario → at least CONDITIONAL; exceeded in both → CONFLICTING
+6. MCP tools load upfront (`mcp_tool_loading` is `upfront`, or the plugin's server sets `alwaysLoad: true`) and the projected upfront tool tokens exceed 10% of the context window in the user's scenario → at least CONDITIONAL; exceeded in both → CONFLICTING. With tool search deferring them (the default), MCP tools do not affect the verdict
 7. Cross-plugin component dependency MISSING → at least CONDITIONAL
 8. Projected hooks > 15 or hook context injection HIGH → at least CONDITIONAL
 9. Scope conflicts: plugin hooks/MCP collide with project-level configs on same event/name → at least CONDITIONAL

@@ -11,7 +11,7 @@ The loop that closes the gap the gate can't reach: render the HTML to an image, 
 - Section hierarchy that reads fine in source collapses into a flat grey wall once styled.
 - A chart's axis labels overlap; a table scrolls off-screen.
 
-None of these are text defects. The Kami principle applies: **if you didn't render it and look, it isn't done.** This audit is that look.
+None of these are text defects: **if you didn't render it and look, it isn't done.** This audit is that look.
 
 ## The loop
 
@@ -42,9 +42,9 @@ The skill gives the full command. On success it prints one absolute PNG path to 
 
 ## Why there is no deterministic measurement script
 
-A reasonable instinct is to mechanize this the way Kami does — measure whitespace ratio, count pages, assert margins. **We deliberately do not**, for two reasons:
+A reasonable instinct is to mechanize this — measure whitespace ratio, count pages, assert margins. **We deliberately do not**, for two reasons:
 
-1. **HTML has no fixed canvas.** Kami pre-renders to a known page geometry; a vision-powers report is fluid HTML whose height depends on content and whose `render-report.js` "page size" is just a viewport argument, not a real page. "Margin %" and "page count" have no stable definition here, so any number a script produced would be measuring the screenshot window, not the design.
+1. **HTML has no fixed canvas.** A vision-powers report is fluid HTML whose height depends on content and whose `render-report.js` "page size" is just a viewport argument, not a real page. "Margin %" and "page count" have no stable definition here, so any number a script produced would be measuring the screenshot window, not the design.
 2. **It would violate delegation.** Mechanizing a *design* judgment — "this has the right whitespace," "the hierarchy is correct" — is exactly the leverage-vs-delegation line this plugin draws. Taste stays with the model. This audit gives the model *eyes* (a rendered image to react to); it does not give a script a *ruler* to grade design with. The model looks and decides, the same way a person would.
 
 So the audit is intentionally a **judgment loop, not a metric.** The rubric above is a prompt for the eye, not a checklist a script evaluates.

@@ -2,7 +2,7 @@
 
 Mermaid.js configuration, theming, zoom controls, and common gotchas for self-contained HTML reports.
 
-**Scope — local / md channel only (a rendering technique, not the diagram layer).** Since ADR 0009, Mermaid renders diagrams only on the **local design-system channel** and in `--format md` fences. It is **not** used on the Artifact channel (the default for capable HTML), whose built-in `artifact-design` renderer draws diagrams as inline SVG / HTML+CSS — CDN-free and CSP-safe. Reach for this file only when authoring a local report or a non-capable fallback. *Which* diagram type to draw is a channel-agnostic decision that lives in `diagram-type-selection.md`; this file only governs *how* Mermaid draws it locally. See `channel-decision.md` and ADR 0009.
+**Scope — local / md channel only (a rendering technique, not the diagram layer).** Mermaid renders diagrams only on the **local design-system channel** and in `--format md` fences. It is **not** used on the Artifact channel (the default for capable HTML), whose built-in `artifact-design` renderer draws diagrams as inline SVG / HTML+CSS. Reach for this file only when authoring a local report or a non-capable fallback. *Which* diagram type to draw is a channel-agnostic decision that lives in `diagram-type-selection.md`; this file only governs *how* Mermaid draws it locally. See `channel-decision.md`.
 
 ## CDN Import
 
@@ -381,28 +381,6 @@ document.addEventListener('keydown', function(e) {
 }
 ```
 
-## ELK Layout
-
-All templates use ELK (Eclipse Layout Kernel) as the default renderer for flowcharts. ELK produces cleaner vertical layouts than dagre, especially for complex graphs with 10+ nodes and subgraphs.
-
-The ELK module is imported alongside Mermaid in the template:
-
-```html
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs';
-  mermaid.registerLayoutLoaders(elkLayouts);
-  mermaid.initialize({
-    startOnLoad: true, theme: 'base', look: 'classic',
-    securityLevel: 'loose',
-    flowchart: { defaultRenderer: 'elk' },
-    themeVariables: { /* ... */ }
-  });
-</script>
-```
-
-ELK only applies to flowchart/graph diagrams. Other diagram types (sequence, ER, state, etc.) use their own renderers and are unaffected.
-
 ## Click Events
 
 Mermaid nodes can be made clickable to enable in-report navigation. Templates use `securityLevel: 'loose'` which enables this.
@@ -481,7 +459,7 @@ Prefer `TD` (top-down) over `LR` (left-to-right). LR spreads horizontally and sc
 
 ### Node Count
 
-Max 15-20 nodes per diagram. Beyond that, use `subgraph` blocks or split into multiple diagrams.
+Follow the per-type budget in `diagram-density-rules.md` — the artifact gate fails a flowchart over 9 nodes or 12 arrows. Over budget, split into an overview plus detail diagrams.
 
 ### Special Characters
 

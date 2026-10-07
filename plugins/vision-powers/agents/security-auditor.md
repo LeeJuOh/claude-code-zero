@@ -10,6 +10,7 @@ tools:
   - Read
   - Glob
   - Grep
+  - WebFetch
 ---
 
 # Security Auditor
@@ -37,12 +38,7 @@ Read the actual component files (SKILL.md, agent.md, command.md, hooks.json, hoo
 
 ### 0. Context Modifier Awareness
 
-Before assigning severity to any finding, check whether a **Context Modifier** applies. Context Modifiers (defined in `security-rules.md`) adjust severity based on how a pattern is actually used. The same code pattern can have different severity depending on its context:
-
-- **Cleanup Pattern**: `rm -rf` targeting `/tmp/`, temp directories, or build artifacts → downgrade to LOW
-- **Notification/Logging Pattern**: `curl`/`wget` in hooks that clearly send outbound notifications (Slack webhooks, localhost, health checks) → downgrade to LOW
-- **Plugin Agent Permission Override**: `bypassPermissions` on agent files inside a plugin's `agents/` directory is silently ignored by Claude Code → report as LOW with informational note
-- **Sensitive Env Var Access**: Hook reading vars named `*TOKEN*`, `*SECRET*`, `*KEY*`, `*PASSWORD*` → upgrade to MEDIUM
+Before assigning severity to any finding, read the "Context Modifiers" section of `${CLAUDE_PLUGIN_ROOT}/skills/plugin-visual/references/platforms/claude-code/security-rules.md`. A modifier adjusts severity by how a pattern is used — `rm -rf` on a temp folder is cleanup, not destruction — so the same code can land at different levels.
 
 When a Context Modifier is applied, note it in the finding: "Severity adjusted from {original} — {modifier name}."
 
@@ -91,32 +87,9 @@ Hooks can appear in three locations:
 
 #### 3b. Hook Event Impact Assessment
 
-All hook events and their security relevance:
+What a hook can do depends on its event, and the same script can be harmless on one event and a gate on another: `exit 2` blocks a `PreToolUse` tool call, but on an event that cannot block it only shows stderr. The event list changes between Claude Code releases, so do not judge from memory.
 
-| Event | Security Impact |
-|-------|----------------|
-| `SessionStart` | Context injection at session start — can shape all subsequent behavior |
-| `UserPromptSubmit` | User input interception — can modify or block user messages |
-| `PreToolUse` | Tool call interception — can block, allow, or modify tool execution |
-| `PermissionRequest` | Permission decision override — can auto-approve dangerous operations |
-| `PostToolUse` | Tool result access — can read outputs, inject follow-up actions |
-| `PostToolUseFailure` | Error handler — access to failure details, can trigger recovery |
-| `Notification` | Side-channel — can exfiltrate data through notifications |
-| `SubagentStart` | Subagent launch interception — can modify agent parameters |
-| `SubagentStop` | Subagent output access — can read or modify agent results |
-| `Stop` | Turn end interception — can execute cleanup or exfiltration |
-| `StopFailure` | API error handler — fires when turn ends due to API error; output/exit code ignored |
-| `TeammateIdle` | Multi-agent coordination — can trigger actions on idle |
-| `TaskCompleted` | Task completion handler — can inject follow-up tasks |
-| `InstructionsLoaded` | CLAUDE.md/rules file interception — fires when instruction files load; can inject context |
-| `ConfigChange` | Configuration change handler — fires when settings change during session |
-| `WorktreeCreate` | Worktree creation handler — replaces default git worktree behavior |
-| `WorktreeRemove` | Worktree cleanup handler — fires when worktree is removed |
-| `PreCompact` | Context compaction — can inject content into compressed context |
-| `PostCompact` | Post-compaction handler — fires after context compaction completes |
-| `Elicitation` | MCP user input request — fires when MCP server requests user input |
-| `ElicitationResult` | MCP user response handler — fires before response sent back to MCP server |
-| `SessionEnd` | Session termination — final execution opportunity |
+For the events the plugin's hooks use, WebFetch `https://code.claude.com/docs/en/hooks.md` once and ask for those events' rows in two tables: "Exit code 2 behavior per event" (can it block, and what) and "Decision control" (which JSON fields it can return — allow/deny a tool call, block a prompt, add context). Judge each hook from its event's rows plus what its script actually does. If the fetch fails or an event is not in the doc, say "event impact unverified" in the finding rather than guess.
 
 #### 3c. Hook Script Security (command type)
 

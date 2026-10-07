@@ -1,12 +1,10 @@
 ---
 name: diff-visual
 description: >
-  Catch up on a git change before you review it — background on the system it lands in, the idea
-  behind it, a literate diff of the real extracted code, and a five-question quiz. Use whenever the
-  user wants to understand, explain, walk through, or get up to speed on a diff, branch, commit, or
-  PR — including agent-written code they didn't write themselves, or a teammate's PR they're about
-  to review. Also use for "visualize this diff" and "what changed here". Accepts branch names,
-  commit hashes, HEAD, PR numbers, or commit ranges.
+  Catch up on a git change before you review it: background on the system it lands in, the idea
+  behind it, a literate diff of the real code, and a five-question quiz. Use when the user wants to
+  understand, explain, walk through, get up to speed on, or visualize a diff, branch, commit, range,
+  or PR — including agent-written code or a teammate's PR — or asks "what changed here".
 argument-hint: "<branch|commit|HEAD|#PR|range> [--format html|md] [--lang <code>] [--local (force a local file instead of publishing)]"
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Artifact, Skill(artifact-design), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git branch *), Bash(wc -l *), Bash(gh pr diff *), Bash(gh pr view *), Bash(node *), Bash(open *), Bash(rm -rf /tmp/diff-visual-*)
 ---
@@ -22,7 +20,7 @@ realises it (**Code**), and whether the reader actually got it (**Quiz**).
 - Your agent finished a task and you're about to push — read it, pass the quiz, then send.
 - A teammate's PR is waiting — read it before you form an opinion.
 
-The quiz is a speed regulator, not a gate. Nothing blocks a push (ADR 0003); "don't send it until
+The quiz is a speed regulator, not a gate. Nothing blocks a push; "don't send it until
 you can pass" is a rule the reader keeps, not one the tool enforces. And nothing in the report
 says whether the change is *good* — that judgement is `/code-review`'s and the reader's.
 
@@ -44,28 +42,20 @@ Parse `--format` first:
 | `--local` | switch | off | Force the local design-system file — capable HTML **publishes to an Artifact by default** |
 | `--artifact` | switch | retained no-op alias | Already the default on capable HTML — kept so muscle memory / natural-language triggers don't break |
 
-**Channel is decided by the shared contract**, not re-derived here — read
-`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (SSOT, restates ADR 0009) for the
-`(Format × capable) → channel` table, flag semantics, and the optimistic-try-then-regenerate rule.
-The short version: **capable HTML publishes to a claude.ai Artifact by default**; `--local` forces the
-local page; `md` and non-capable sessions stay local.
+**Channel, flags, and config** follow `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`
+— read it before writing. In short: capable HTML publishes to a claude.ai Artifact; `--local` (or
+"keep it local", "don't publish") forces the local page; `md` stays local unless this turn asks to
+publish it. Stored config: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get --data-dir "${CLAUDE_PLUGIN_DATA}"`.
 
-`--local` forces local (Mermaid diagrams, zoom/pan) and triggers on natural-language equivalents —
-"keep it local", "don't publish", "just the local file" — in whatever language the user writes.
-`--artifact` is the retained alias for the now-default behavior and still triggers on "as an artifact",
-"publish as a link", "share as a URL"; if both are signalled, `--local` wins. Both apply to
-`--format html` only. If `--artifact` is combined with `--format md`, ignore it and use the normal
-markdown response path below — publishing a diff-visual md report as-is is out of scope for this
-slice (doc-visual's simpler single-file input validated that combination first; diff-visual's diff
-scope makes it a separate follow-up).
+**Output paths**, all under `${CLAUDE_PLUGIN_DATA}/reports/`, where `{scope}` is sanitized from the
+input (e.g. `feature-auth`, `abc1234`, `pr-123`, `HEAD`):
 
-**Config precedence.** Explicit this-turn signal > config > default. Before falling back to the
-default, check stored preferences once: `node ${CLAUDE_PLUGIN_ROOT}/scripts/config.js get --data-dir "${CLAUDE_PLUGIN_DATA}"` (prints the
-config as JSON, or `{}`). A `default_format` value replaces the `html` default. For the channel: an
-**absent `artifact` key means artifact-first** (the default), `artifact: false` is a **persistent
-force-local** (the config twin of `--local`), and `artifact: true` is explicit artifact-first. Anything
-the user actually says this turn — a literal flag or a natural-language equivalent — always overrides
-config; config only fills in when the request is silent on format/channel.
+| Channel | Path |
+|---|---|
+| HTML, Artifact (default) | `{scope}-diff-visual.artifact.html` |
+| HTML, local (`--local` / non-capable fallback) | `{scope}-diff-visual.html` |
+| md | `{scope}-diff-visual.md` — also delivered in the response body |
+| md, published on request | `{scope}-diff-visual.artifact.md` |
 
 ### Scope Detection
 
@@ -148,7 +138,7 @@ Read the full diff **and the changed files in full** — a hunk without its file
 context that makes it mean anything. Establish:
 - What the change does, and which functions/types/endpoints it touches
 - Which imports and call sites appear or disappear — this alone decides whether the dependency
-  picture in Code exists at all (D5: no change, no picture)
+  picture in Code exists at all (no change, no picture)
 
 **Step 4 — Surrounding-code exploration** (Background's raw material):
 Read *outward* from the changed files until you could describe this subsystem to someone who has
@@ -175,7 +165,7 @@ Before generating the report, **produce a structured fact sheet** listing every 
    names** — never invent a box or an arrow for something you haven't confirmed at a `file:line`.
    A made-up arrow teaches a relationship the system doesn't have, which is the same failure as a
    retyped snippet that drifted. This is a writing discipline you keep, not something a gate can
-   check for you (ADR 0011) — the fact sheet is the only place it gets enforced.
+   check for you — the fact sheet is the only place it gets enforced.
 3. **Behavior check**: Every behavioral description must be traceable to specific code
 4. **Source citation**: For each claim, name the source (commit hash, `file:line`, diff hunk)
 5. **Verdict check**: No claim asserts quality. If a sentence contains *should*, *bad*, *better*,
@@ -184,14 +174,6 @@ Before generating the report, **produce a structured fact sheet** listing every 
 If a claim can't be sourced, remove it or mark it uncertain.
 
 ### Report Generation
-
-Use extended thinking for the analysis above. The depth of analysis directly determines report quality.
-
-**HTML channel routing (default = Artifact).** For `--format html` the channel is decided by
-`${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md`: on a capable account the default
-is the **Artifact channel** — go to "HTML mode — Artifact channel" below. Write the **local
-design-system + Mermaid** page only when `--local` is in play, or as the **non-capable regenerate
-fallback** after a publish attempt fails (see "Publish"). `md` is unaffected — it stays local either way.
 
 #### The four sections (all formats, all channels)
 
@@ -235,7 +217,7 @@ sections; only the rendering technique changes.
 extracted snippets embedded where they're being discussed. Not file-by-file: group the hunks that
 belong to one idea even when they live in different files, and lead with whichever one the rest
 depends on.
-- *Extraction law (ADR 0005)*: every code block is `extract-hunks.js` output pasted verbatim. You
+- *Extraction law*: every code block is `extract-hunks.js` output pasted verbatim. You
   write the prose around it and never a line inside it. A reader who doesn't know the code cannot
   notice when a retyped snippet has drifted — a wrong snippet teaches a wrong system.
   ```bash
@@ -264,9 +246,8 @@ depends on.
   by shape instead of understanding.
 - Clicking an option reveals right/wrong **plus one sentence per option** saying why it is or isn't
   the case — the moment right after a wrong guess is when the explanation lands.
-- HTML (both channels): inline `<script>`, zero external requests — this works inside the Artifact
-  viewer's CSP. md: answers and explanations in a collapsed block (see markdown mode).
-- Never a gate, never a hook (ADR 0003).
+- HTML (both channels): inline `<script>`, no library. md: answers and explanations in a
+  collapsed block (see markdown mode).
 
 **No verdicts, anywhere.** *should*, *bad*, *better*, *recommended* and their
 equivalents don't appear in the prose, the captions, or the quiz explanations. Extracted code blocks
@@ -285,126 +266,34 @@ Rendering specifics for this channel:
 - **Background deep layer** and the **full-diff appendix**: `<details>`, collapsed.
 - **Quiz**: inline `<script>`, no CDN.
 
-**Diagrams**: Read these reference files for implementation:
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` — Mermaid syntax, theming, dark mode, zoom
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` — Color/font roles, Mermaid themeVariables
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` — 13-type selection guide
-- `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-density-rules.md` — Complexity budgets
-
-Key diagram rules (always apply):
-1. Max 9 nodes, 12 arrows per diagram. Over budget → split
-2. 1-2 focal accents only
-3. No `rgba()` or `color:` in Mermaid classDef — parser breaks
-4. No violet/fuchsia "AI purple" hexes (`#8b5cf6`/`#7c3aed`/`#a78bfa`/`#d946ef`) — the gate fails on these
-5. Always `theme: 'base'` with themeVariables from semantic-tokens
-6. Table > diagram when a 3-column table conveys it equally well
-
-The gate also fails on dead links, alt-less images, and leftover scaffolding: give every `<a>` a real href, every `<img>` an `alt` (`alt=""` if decorative), and leave no `{{ }}`/lorem/`[STUB]` placeholders.
-
-**CSS essentials**: Write your own CSS inline. Must support:
-- `prefers-color-scheme: dark` via CSS custom properties
-- Korean font stack (CJK font in font-family)
-- Mermaid zoom by SVG sizing (mermaid-patterns.md `applyZoom()`), not `transform: scale()` (which reserves no layout space and clips) and not the `zoom` property
-- `min-width: 0` on flex/grid children
-- `prefers-reduced-motion: reduce`
-
 **Content integrity**: Every number, file path, function name, and behavioral claim traces back to
 the verified fact sheet. Background prose included — its sources are the files you read, cited by
 `file:line`.
 
-Beyond integrity, eight authoring reflexes pass every mechanical gate and still flatten the output — summary-leak (a one-line gist where the real substance belongs), linear dump (file-by-file with no proportion), forced diagram, generic label, uniform density, empty decoration, accent overuse, borrowed costume (the generic "looks designed" outfit worn unchosen). Read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` for the full catalogue. They're named defaults to break, not design rules: layout and taste stay yours — the catalogue just flags the habits worth resisting (e.g. let the idea in Intuition land before anything else on the page, don't render a two-line aside at the same weight as the before/after flow).
+Beyond integrity, read `${CLAUDE_PLUGIN_ROOT}/references/design-system/anti-slop-tells.md` — reflexes
+that pass every gate and still flatten the output. Here that means: let the idea in Intuition land
+before anything else on the page, and don't render a two-line aside at the same weight as the
+before/after flow.
 
-**Output path**: `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.html` — where `{scope}` is sanitized from the input (e.g., `feature-auth`, `abc1234`, `pr-123`, `HEAD`).
-
-**Validation**: After writing the HTML, run artifact-gate:
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>
-```
-If violations found: fix inline, max 2 retries.
-
-**Visual self-audit (HTML only)**: The gate reads the HTML as *text* — it never sees the rendered picture. A before/after flow pair can pass the density check and render as an unreadable tangle; a long file path can clip at the container edge. After the gate passes, **render the report and look at it** before delivering:
-
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path> --data-dir "${CLAUDE_PLUGIN_DATA}"
-```
-
-On success it prints a PNG path. **Read that PNG** (you read images multimodally) and scan it for what the text gate can't judge:
+**Visual self-audit — what to look for in this report** (after the full gate; procedure in
+`channel-decision.md` "Local channel"):
 
 - **Background** — is the deep layer actually collapsed, and the narrow layer visible without a click?
 - **Intuition** — do the before/after flow diagrams sit side by side and stay readable, with their example-data labels legible rather than clipped?
-- **Code** — do the extracted snippets stay inside their container (`min-width: 0`), highlighted or cleanly monospace, with only the load-bearing ones `open`? Is the full-diff appendix collapsed?
+- **Code** — do the extracted snippets stay inside their container, highlighted or cleanly monospace, with only the load-bearing ones `open`? Is the full-diff appendix collapsed?
 - **Quiz** — do the five questions and their options render as a usable list, options visually equal-weight rather than one obviously longest?
-- **Mermaid integrity** — did any diagram render as raw `<pre>` text, or with crossing/overlapping edges?
-- **Density / hierarchy** — is any section a uniform grey wall? Does the idea land first, or is every block the same weight? (see *uniform density* / *accent overuse* in anti-slop-tells.md)
-
-Fix what you see and re-render. **Cap at 2 audit passes** — if something still looks off after the second, ship with a one-line note to the user rather than looping. This catches gross breakage, not pixel-perfection.
-
-**If Chrome is absent**, `render-report.js` exits `1` (non-zero). Skip the audit and tell the user it was skipped (e.g. "rendered-image check skipped: Chrome not found — set `CHROME_BIN` or install Chrome"). The report already passed the gate; the visual pass is an enhancement and **never blocks delivery**.
-
-Full procedure, limits (fixed-height clipping, downscaling, render cost), and the rationale for *not* mechanizing this with a measurement script live in `${CLAUDE_PLUGIN_ROOT}/references/design-system/visual-self-audit.md`.
-
-Then run `open <output-path>`.
+- **Mermaid integrity** and **density / hierarchy** — no raw `<pre>` text or tangled edges; the idea lands first.
 
 #### HTML mode — Artifact channel (default on a capable account)
 
-Same four sections and the same content decisions as above — only the page's shape and delivery
-mechanism change, because it ships inside Claude Code's official Artifacts feature instead of as a
-local file.
+Same four sections and content decisions; the rest of the channel rules are in `channel-decision.md`
+"Artifact channel". What changes in this report:
 
-**Before writing anything**, load the built-in `artifact-design` skill (Skill tool, skill name
-`artifact-design`). This is a tool contract MUST, not a suggestion — it conditions you for the CSP
-sandbox this page runs in, and skipping it is how a page ends up broken on publish.
-
-Then write the page as a **fragment**, not a full document:
-- No `<!DOCTYPE>`, `<html>`, `<head>`, or `<body>` tags — content only, starting from your first
-  real element. The Artifact tool wraps the file in that skeleton at publish time.
-- Set a concise `<title>` directly in the content — it names the artifact in the browser tab. Keep
-  it stable across every republish of the same diff in this session.
-- **Zero external requests** — the Artifact viewer's CSP blocks all of them:
-  - **Diagrams**: no Mermaid CDN `<script>`. The Intuition flow pair and the Code dependency
-    picture become inline SVG or HTML+CSS layouts instead (follow the artifact-design skill's
-    guidance) — same diagram-type decision from `diagram-type-selection.md`, different rendering
-    technique. `mermaid-patterns.md`'s CDN setup and `classDef` rules don't apply here.
-  - **Code snippets**: no highlight.js CDN either — symmetric with the Mermaid ban. Read
-    `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md`'s "Artifact channel: no
-    CDN, forced degrade" subsection first: the code always renders as clean monospace, never
-    coloured, and the fallback CSS must use this page's own colours (not vision-powers'
-    `--paper-2`/`--ink`/`--mono` tokens, which don't exist here). The extraction law doesn't
-    change — `extract-hunks.js` output is still pasted verbatim; only the CSS around it does.
-  - **Quiz**: inline `<script>` is fine and is the intended technique — it's same-document, not an
-    external request, so click feedback works on the published page.
-- Support both themes: `@media (prefers-color-scheme: dark)` as the default signal, plus
-  `:root[data-theme="dark"]` / `:root[data-theme="light"]` overrides — the artifact viewer's theme
-  toggle stamps `data-theme` on the root and it must win in both directions.
-
-Save the fragment to `${CLAUDE_PLUGIN_DATA}/reports/{scope}-diff-visual.artifact.html` — a distinct
-filename from the default channel's output, so the two never collide or overwrite each other for
-the same scope. Re-running this skill on the same scope within the same conversation reuses that
-same path; publishing to the same `file_path` again redeploys to the same URL instead of minting a
-new one, so keep the `<title>` and `favicon` identical across those republishes (the tool reads a
-changed favicon as a different page). If `${output-path}.artifact.json` already exists from an
-earlier publish this session, read it first and reuse its `title`/`favicon` verbatim.
-
-**Validation**: run the gate in content-only mode instead of the full check:
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path> --content-only
-```
-This checks only missing images, raw markdown leakage, anchor hrefs, image alt, and placeholders —
-the facts that must survive regardless of who designed the page. Density/classDef/palette checks
-don't apply: the built-in artifact-design skill owns the design layer on this channel (ADR 0007).
-
-**Skip the visual self-audit (render-report.js) entirely on this channel.** The rendered picture is
-the built-in artifact-design skill's responsibility here, not this skill's — there's no local
-Chrome render loop to run before publishing.
-
-**Size headroom**: a large single-file diff (1483 changed lines, extracted 2026-07-06) measured
-~44 bytes/line through `extract-hunks.js`, so a Code section that keeps to the budget above
-(3–8 snippets, ≤150 lines each) plus a collapsed full-diff appendix lands in the tens-to-low-hundreds
-of KB — hundreds of times under the platform's 16 MiB artifact render ceiling. The ceiling is only
-reachable by ignoring the budget (e.g. pasting a whole large diff into the body as well); no extra
-size-limiting logic is needed as long as the section stays inside it.
-
-Once the gate passes, publish — see "Publish (Artifact channel — default for HTML)" below.
+- **Diagrams**: the Intuition flow pair and the Code dependency picture become inline SVG or
+  HTML+CSS, with phantom notation as above.
+- **Code snippets**: plain monospace — read `structured-blocks.md` "Artifact channel" first; its
+  fallback CSS must use this page's own colours. `extract-hunks.js` output is still pasted verbatim.
+- **Quiz**: inline `<script>`, so click feedback works on the published page.
 
 #### Markdown mode (`--format md`)
 
@@ -488,35 +377,29 @@ language. Keep file paths, function names, commit hashes, and code fences untran
 with a `(+N more)` note. **Intuition and Quiz are never cut**: they are the two sections that do
 the catching up, and a report that drops them has failed at the thing it exists for.
 
-### Publish (Artifact channel — default for HTML)
+#### Markdown mode — Artifact channel (on request)
 
-After the content-only gate passes (see "HTML mode — Artifact channel" above):
+Only when this turn asks to publish the md — see "Markdown on request" in `channel-decision.md`.
+Same report, saved to the `.artifact.md` path, published without asking.
 
-1. Publish with the `Artifact` tool: `file_path` = the fragment you saved, `favicon` = one or two
-   emoji fitting the diff's scope (reused unchanged if a sidecar from this session already set
-   one — see above), `description` = one sentence on what changed.
-2. Record the publish so a later refine (even across sessions, once that lands) can find this URL:
-   ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title> --favicon <favicon>
-   ```
-3. Report the URL to the user with one line. This is the **canonical publish notice** shared across
-   the channel skills (doc-visual owns the reference form; here the noun is *report*), so keep it
-   stable: `Published to claude.ai — design is delegated to Claude's built-in Artifact renderer, so
-   it differs from the local page's look; run --local for the local design-system + Mermaid
-   version.` This one line does double duty — it discloses the publish (the deliverable is now a URL,
-   not a local file) **and** the design delegation. Phrase it in whatever language you're already
-   replying in; the structure (published · delegated-design · `--local` escape hatch) is what's
-   canonical, not the exact English words.
+### Validate and deliver
 
-**Fallback — non-capable session (regenerate, don't just open).** If the `Artifact` tool is
-unavailable or the publish call fails, the session is non-capable. Don't guess at the specific cause
-and don't ask before falling back. The fragment you authored is a Mermaid-less, skeleton-less page
-meant for the Artifact viewer — **do not `open` it** (that serves a broken, diagram-free page and
-breaks ADR 0009 §3's promise of design-system + Mermaid on a non-capable session). Instead
-**regenerate the full local design-system + Mermaid page** ("HTML mode — local design-system
-channel" above), run its full gate + visual self-audit, save to the `{scope}-diff-visual.html` path,
-`open` it, and state the fallback in one line (e.g. "Artifact publish unavailable — generated the
-local design-system report instead."). Cost = one regeneration, only on a non-capable session.
+**Artifact channel (HTML default):**
+1. `node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path> --content-only` — fix and re-run, max 2 retries.
+2. Publish the file with the `Artifact` tool, `description` = one sentence on what changed.
+3. `node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <output-path> --url <artifact-url> --title <title>`
+4. Reply with the URL and the publish notice (`channel-decision.md` "Artifact channel").
+
+**Local channel (`--local` / non-capable fallback):**
+1. `node ${CLAUDE_PLUGIN_ROOT}/scripts/artifact-gate.js <output-path>`
+2. `node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.js <output-path> --data-dir "${CLAUDE_PLUGIN_DATA}"`, then read the PNG against the checklist above.
+3. `open <output-path>`
+
+**md:** deliver in the response body. On a publish request, publish the `.artifact.md` with steps 2–3
+above and no gate.
+
+**Publish unavailable or failed:** HTML → regenerate as the local page at its local path, don't
+open the Artifact file; md → deliver in the response body. Say so in one line, don't ask.
 
 ### Gotchas
 
@@ -534,7 +417,8 @@ Read these during report generation (not upfront — read the relevant one when 
 
 | File | When to read |
 |---|---|
-| `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` | Before writing — channel, flags, config, per-channel rules |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-system/mermaid-patterns.md` | Before writing any Mermaid diagram (local and md) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/structured-blocks.md` | Before writing the Code section's snippets (layout, highlight.js CDN, budgets, extraction grounding, degrade — including the Artifact-channel no-CDN variant) |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/semantic-tokens.md` | When setting up CSS custom properties and Mermaid theme |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-system/diagram-type-selection.md` | When deciding diagram type for the flow or dependency picture |

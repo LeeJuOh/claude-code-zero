@@ -7,10 +7,14 @@
  *
  * Outputs a JSON object with sections:
  *   install_status, installed_plugins, installed_skills, local_skills,
- *   hook_inventory, context_metrics
+ *   hook_inventory, context_metrics, requirements
  *
  * Usage:
- *   node env-fit-scan.js --plugin-name <name>
+ *   node env-fit-scan.js --plugin-name <name> [--requirement <TYPE>:<name> ...]
+ *
+ * TYPE is CLI, MCP, ENV, or Plugin (the feature-architect `requirements` block).
+ * Each requirement is checked here so the skill needs no `which`/`grep`/`test`
+ * Bash calls, which would stop on permission prompts.
  *
  * Exit codes:
  *   0 = success (JSON on stdout)
@@ -25,10 +29,15 @@ const os = require("os");
 // Arg parsing
 // ---------------------------------------------------------------------------
 function parseArgs(argv) {
-  const args = { pluginName: null };
+  const args = { pluginName: null, requirements: [] };
   for (let i = 2; i < argv.length; i++) {
     if (argv[i] === "--plugin-name" && argv[i + 1]) {
       args.pluginName = argv[i + 1];
+      i++;
+    } else if (argv[i] === "--requirement" && argv[i + 1]) {
+      const spec = argv[i + 1];
+      const sep = spec.indexOf(":");
+      if (sep > 0) args.requirements.push({ type: spec.slice(0, sep), name: spec.slice(sep + 1) });
       i++;
     }
   }
@@ -458,21 +467,100 @@ function scanHookInventory(enabledPlugins) {
   };
 }
 
-function scanContextMetrics() {
-  const mcpNames = new Set();
-  const settingsFiles = [
-    expandHome("~/.claude/settings.json"),   // user scope
-    ".claude/settings.json",                  // project scope
-    ".claude/settings.local.json",            // local scope
-  ];
-  for (const sf of settingsFiles) {
+/** MCP server names from the official config locations: user and local scope
+ *  in ~/.claude.json (local scope is keyed by project path), project scope in
+ *  .mcp.json, and enabled plugins' .mcp.json or inline plugin.json mcpServers. */
+function collectMcpServerNames(enabledPlugins, activeInstallPaths) {
+  const names = new Set();
+  const addKeys = (obj) => {
+    if (obj && typeof obj === "object") for (const key of Object.keys(obj)) names.add(key);
+  };
+  const readJson = (p) => {
+    try { return JSON.parse(fs.readFileSync(p, "utf-8")); } catch { return null; }
+  };
+
+  const userConfig = readJson(expandHome("~/.claude.json"));
+  if (userConfig) {
+    addKeys(userConfig.mcpServers);
+    addKeys(userConfig.projects?.[process.cwd()]?.mcpServers);
+  }
+  addKeys(readJson(".mcp.json")?.mcpServers);
+
+  for (const installPath of activeInstallPaths || []) {
+    if (!enabledPlugins.has(pluginNameFromCachePath(installPath))) continue;
+    const pluginMcp = readJson(path.join(installPath, ".mcp.json"));
+    addKeys(pluginMcp?.mcpServers || pluginMcp);
+    const inline = readJson(path.join(installPath, ".claude-plugin", "plugin.json"))?.mcpServers;
+    if (inline && typeof inline === "object") addKeys(inline);
+  }
+  return names;
+}
+
+/** Skill listing budget and MCP loading mode, from the official settings and
+ *  env vars (skills.md "Skill descriptions are cut short", mcp.md "Configure
+ *  tool search"). Settings merge user → project → local; env vars reach this
+ *  script through the Bash tool's environment. */
+function readContextSettings() {
+  const settings = {};
+  for (const sf of [expandHome("~/.claude/settings.json"), ".claude/settings.json", ".claude/settings.local.json"]) {
     try {
       const data = JSON.parse(fs.readFileSync(sf, "utf-8"));
-      for (const key of Object.keys(data.mcpServers || {})) mcpNames.add(key);
-      for (const key of Object.keys(data.enabledMcpjsonServers || {})) mcpNames.add(key);
+      for (const key of ["skillListingBudgetFraction", "skillListingMaxDescChars"]) {
+        if (typeof data[key] === "number") settings[key] = data[key];
+      }
     } catch { /* skip */ }
   }
-  return { mcp_servers: mcpNames.size };
+  const charBudget = Number.parseInt(process.env.SLASH_COMMAND_TOOL_CHAR_BUDGET, 10);
+
+  // Tool search defers MCP tool definitions by default. It is off when
+  // ENABLE_TOOL_SEARCH=false, when experimental betas are disabled, or (unless
+  // ENABLE_TOOL_SEARCH is set) when ANTHROPIC_BASE_URL is a non-first-party host.
+  const toolSearch = (process.env.ENABLE_TOOL_SEARCH || "").toLowerCase();
+  let mcpLoading = "deferred";
+  if (process.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS || toolSearch === "false") mcpLoading = "upfront";
+  else if (toolSearch.startsWith("auto")) mcpLoading = "threshold";
+  else if (!toolSearch && process.env.ANTHROPIC_BASE_URL) {
+    let host = "";
+    try { host = new URL(process.env.ANTHROPIC_BASE_URL).hostname; } catch { /* unparsable → treat as proxy */ }
+    if (host !== "api.anthropic.com") mcpLoading = "upfront";
+  }
+
+  return {
+    skill_listing: {
+      budget_fraction: settings.skillListingBudgetFraction ?? 0.01,
+      char_budget_override: Number.isFinite(charBudget) && charBudget > 0 ? charBudget : null,
+      max_desc_chars: settings.skillListingMaxDescChars ?? 1536,
+    },
+    mcp_tool_loading: mcpLoading,
+  };
+}
+
+function isOnPath(command) {
+  const exts = process.platform === "win32" ? (process.env.PATHEXT || ".EXE").split(";") : [""];
+  for (const dir of (process.env.PATH || "").split(path.delimiter)) {
+    if (!dir) continue;
+    for (const ext of exts) {
+      try {
+        fs.accessSync(path.join(dir, command + ext), fs.constants.X_OK);
+        return true;
+      } catch { /* keep looking */ }
+    }
+  }
+  return false;
+}
+
+function checkRequirements(requirements, enabledPlugins, mcpNames) {
+  return requirements.map(({ type, name }) => {
+    let status;
+    switch (type) {
+      case "CLI": status = isOnPath(name) ? "AVAILABLE" : "MISSING"; break;
+      case "MCP": status = mcpNames.has(name) ? "AVAILABLE" : "MISSING"; break;
+      case "ENV": status = process.env[name] ? "SET" : "UNSET"; break;
+      case "Plugin": status = enabledPlugins.has(name) ? "AVAILABLE" : "MISSING"; break;
+      default: status = "UNKNOWN_TYPE";
+    }
+    return { type, name, status };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -487,6 +575,7 @@ function main() {
 
   const { enabled: enabledPlugins, disabled: disabledPlugins } = getPluginStates();
   const activeInstallPaths = getActiveInstallPaths();
+  const mcpNames = collectMcpServerNames(enabledPlugins, activeInstallPaths);
 
   const result = {
     install_status: scanInstallStatus(args.pluginName),
@@ -495,8 +584,9 @@ function main() {
     installed_commands: scanInstalledCommands(enabledPlugins, activeInstallPaths),
     local_skills: scanLocalSkills(),
     hook_inventory: scanHookInventory(enabledPlugins),
-    context_metrics: scanContextMetrics(),
+    context_metrics: { mcp_servers: mcpNames.size, ...readContextSettings() },
     disabled_plugins: [...disabledPlugins],
+    requirements: checkRequirements(args.requirements, enabledPlugins, mcpNames),
   };
 
   console.log(JSON.stringify(result, null, 2));

@@ -39,19 +39,19 @@ Determine what to verify from `$1`:
    ```
    If no reports found, inform the user and stop.
 
-**Document type detection** — auto-detect from page content to adjust verification strategy:
+**Document type detection** — from the filename, the same rule `report-manager` uses:
 
 | Document Type | Detection | Verification Focus |
 |--------------|-----------|-------------------|
-| diff-visual report | Contains "Diff Visual" in title/heading | Verify against the git ref the review was based on |
-| doc-visual report | Contains "Doc Visual" in title/heading | Verify file references, names, architecture claims |
-| plugin-visual report | Contains plugin analysis markers | Verify plugin structure, file paths, feature descriptions |
+| diff-visual report | Filename contains `-diff-visual` | Verify against the git ref the review was based on |
+| doc-visual report | Filename contains `-doc-visual` | Verify file references, names, architecture claims |
+| plugin-visual report | Filename contains `-report` | Verify plugin structure, file paths, feature descriptions |
 | Markdown document | `.md` extension | Verify file references, function/type names, behavior descriptions |
 | Other | Fallback | Extract and verify whatever factual claims about code it contains |
 
 **Artifact-channel detection** — after resolving the target, check whether a `<target-path>.artifact.json` sidecar sits next to it. Its presence means the file is a **published Artifact fragment** (an `.artifact.html` living on claude.ai), not a plain local report. This flips two things downstream: the Phase 4 gate runs `--content-only` (the fragment's design layer is owned by the built-in `artifact-design` skill, not this file's CSS), and Phase 4.5 republishes the corrected fragment to the **same** claude.ai URL. A local file with no sidecar takes neither branch — fact-check edits it in place exactly as it always has.
 
-*Why this isn't a channel decision:* fact-check does not author reports, so S0's `capable × format → channel` table does not apply to it — there is nothing to route. It follows the target's **existing** channel: a local file stays local, a published fragment stays published at its link. See `${CLAUDE_PLUGIN_ROOT}/references/design-system/channel-decision.md` (fact-check is explicitly out of that table) and ADR 0009 §Scope.
+*Why this isn't a channel decision:* fact-check does not author reports, so there is nothing to route. It follows the target's **existing** channel: a local file stays local, a published fragment stays published at its link.
 
 ### Language Detection
 
@@ -62,29 +62,6 @@ Determine the output language for the verification summary:
    - Examples: Korean text → Korean, Japanese text → Japanese, "en español" → Spanish, "auf Deutsch" → German
 3. **Document language**: Match the language of the document being verified
 4. **Default**: English
-
-### Feedback File Detection
-
-After determining the target file, check for a companion `feedback.json`:
-
-1. **Explicit argument**: `--feedback path/to/feedback.json`
-2. **Auto-detect**: Check `~/Downloads/feedback.json` (macOS default download location) — verify `report_path` matches the target file. If multiple `feedback*.json` exist (e.g., `feedback (1).json`), use the most recent one.
-3. **No feedback**: Proceed with standard full verification
-
-When feedback.json is present, adjust verification strategy:
-
-- **Sections with status "issue" + feedback text**: These are the user's primary concerns. Verify these sections FIRST and with extra scrutiny. The feedback text describes the specific problem — use it to guide what to check.
-- **Sections with status "ok"**: User reviewed and approved. Still verify, but at lower priority — only check quantitative claims and names.
-- **Sections with status "not-reviewed"**: Standard verification.
-
-In the Phase 5 Report, include feedback-driven summary:
-
-```
-Feedback-guided verification:
-  {N} sections flagged by user
-  {N} issues confirmed and corrected
-  {N} issues not reproduced (user concern was unfounded)
-```
 
 ### Phase 1: Extract Claims
 
@@ -168,24 +145,24 @@ Insert a verification summary into the document. Choose block type based on reso
 **For HTML files** — insert a verification section matching the page's existing design:
 
 ```html
-<section id="verification-summary" class="ve-card" style="--i: {next-index}">
+<section id="verification-summary">
   <h2>Verification Summary</h2>
-  <div class="kpi-grid">
-    <div class="kpi-card kpi-card--info">
-      <span class="kpi-value">{total}</span>
-      <span class="kpi-label">Claims Checked</span>
+  <div>
+    <div>
+      <strong>{total}</strong>
+      <span>Claims Checked</span>
     </div>
-    <div class="kpi-card kpi-card--success">
-      <span class="kpi-value">{confirmed}</span>
-      <span class="kpi-label">Confirmed</span>
+    <div>
+      <strong>{confirmed}</strong>
+      <span>Confirmed</span>
     </div>
-    <div class="kpi-card kpi-card--danger">
-      <span class="kpi-value">{corrected}</span>
-      <span class="kpi-label">Corrected</span>
+    <div>
+      <strong>{corrected}</strong>
+      <span>Corrected</span>
     </div>
-    <div class="kpi-card kpi-card--warning">
-      <span class="kpi-value">{unverifiable}</span>
-      <span class="kpi-label">Unverifiable</span>
+    <div>
+      <strong>{unverifiable}</strong>
+      <span>Unverifiable</span>
     </div>
   </div>
   <details>
@@ -238,17 +215,17 @@ If the gate flags violations, fix them inline (max 2 retries), consistent with h
 
 *Why: a correction that only touches the local `.artifact.html` file leaves the live claude.ai page stale — readers still see the unverified numbers. Re-publishing to the same URL keeps the shared link honest without minting a new one.*
 
-Do this **only** when Target File Detection found a sidecar (or the filename ends in `.artifact.html`). Local files and markdown skip this entirely — there is nothing published to update, so fact-check stops after Phase 4. Mirror the `report-manager` republish contract (its refine step 8):
+Do this **only** when Target File Detection found a sidecar (or the filename ends in `.artifact.html`). Local files and markdown skip this entirely — there is nothing published to update, so fact-check stops after Phase 4. Mirror the `report-manager` republish contract (its refine step 7):
 
-1. Read the sidecar `<target-path>.artifact.json` for `url`, `title`, and `favicon`.
-2. Call the `Artifact` tool with `file_path=<target-path>`, `url=<sidecar url>`, `favicon=<sidecar favicon>`, and a one-sentence `description`. Passing `url` is what stacks the correction onto the **same** claude.ai link instead of creating a new one — a fresh session has no other handle on an existing artifact. You do **not** load `artifact-design` here: the fragment's design is already baked in, and content-only republish needs neither the load nor the grant (see `docs/reference/gotchas.md` carve-out).
+1. Read the sidecar `<target-path>.artifact.json` for `url` and `title`.
+2. Call the `Artifact` tool with `file_path=<target-path>`, `url=<sidecar url>`, and a one-sentence `description`. Passing `url` is what stacks the correction onto the **same** claude.ai link instead of creating a new one — a fresh session has no other handle on an existing artifact. You do **not** load `artifact-design` here: the fragment's design is already baked in, and content-only republish needs neither the load nor the grant.
 3. Rewrite the sidecar so `published_at` reflects this fact-check:
    ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <target-path> --url <url> --title <title> --favicon <favicon>
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/write-artifact-sidecar.js --report <target-path> --url <url> --title <title>
    ```
 4. Report the claude.ai URL in the Phase 5 summary instead of the local `file://` path.
 
-**Edge cases** (same as report-manager step 8):
+**Edge cases** (same as report-manager step 7):
 - **Filename ends in `.artifact.html` but no sidecar**: an earlier publish fell back to local-only. Publish fresh (omit `url`) and write the sidecar for the first time.
 - **Sidecar present but the republish call errors** (the link died upstream): publish fresh (omit `url`), overwrite the old sidecar, and tell the user in one line: "New shared link published — any previously shared link now points to a stale version." Don't guess why the old link died.
 
@@ -257,7 +234,6 @@ Do this **only** when Target File Detection found a sidecar (or the filename end
 - **Over-correcting opinions as facts**: "This architecture is well-designed" is a subjective judgment, not a factual claim. Only correct things that can be verified against source — names, numbers, behaviors, paths. When in doubt, skip it.
 - **Modifying HTML structure**: The Edit tool is for surgical text corrections only. Do not reorganize sections, move content between sections, or change HTML wrapper elements. If a section is fundamentally wrong, rewrite the text content inside the existing `<section>` tags.
 - **Stale git refs in diff-visual reports**: A diff-visual report captures a snapshot. If new commits landed since the report was generated, the fact-checker sees different data than the report author did. Verify against the same ref the report was based on (look for commit hashes in the report), not HEAD.
-- **Feedback.json from wrong report**: The auto-detect checks `~/Downloads/feedback.json` which may be from a completely different report. Always verify the `report_path` field matches the target file before using feedback data.
 - **Counting claims too aggressively**: Not every number in a report is a "claim" worth verifying. Focus on claims that matter — metrics in KPI cards, file counts in summaries, function names in architecture descriptions. Ignore incidental numbers in prose.
 - **Mermaid diagram labels**: Mermaid node labels that contain function or file names are factual claims. If a diagram says `validateAuth()` but the actual function is `verifyAuth()`, that's a correction. But don't change diagram layout or styling.
 

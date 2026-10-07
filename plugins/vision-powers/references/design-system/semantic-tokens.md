@@ -23,7 +23,7 @@ Translucent values invert with the ground they sit on: a light-mode `rgba(ink, X
 | `body` | `Geist, system-ui, -apple-system, sans-serif` | Body text, node names |
 | `mono` | `Geist Mono, ui-monospace, "SF Mono", Menlo, monospace` | Technical content only (ports/URLs/paths) |
 
-vision-powers does not bundle or `@font-face`-load these web fonts, so always emit the **full fallback chain**, never the bare family name. On a machine without Geist/Instrument Serif (or fully offline), the chain degrades to a system serif/sans/mono and the page still reads as intended instead of falling back to an arbitrary browser default. Kami applies the same local-first + fallback discipline (`references/Kami/styles.css` per-language `--serif` chains).
+vision-powers does not bundle or `@font-face`-load these web fonts, so always emit the **full fallback chain**, never the bare family name. On a machine without Geist/Instrument Serif (or fully offline), the chain degrades to a system serif/sans/mono and the page still reads as intended instead of falling back to an arbitrary browser default.
 
 **Do not set a mono font as body text — mono is for technical content only** (ports, URLs, paths). The specific mono face (Geist Mono is the default; JetBrains Mono and others are fine) is a free choice; what's forbidden is monospacing the prose.
 

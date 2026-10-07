@@ -45,8 +45,14 @@ is not the *diagram layer*, it is one *rendering technique*. The durable asset i
 3. **Mermaid is retained as the fallback rendering**, not retired:
    - **HTML on a non-capable session** (API-key / Bedrock / CI, or `disableArtifact`) →
      design-system + Mermaid, saved locally. This is the auto-degrade landing spot.
-   - **MD output (any account)** → design-system + Mermaid fences. (claude.ai's md renderer
-     can't draw Mermaid anyway — see [[0007]].)
+   - **MD output (any account)** → design-system + Mermaid fences, local by default.
+     (claude.ai's md renderer can't draw Mermaid anyway — see [[0007]].)
+     *(Amended 2026-10-07, agent-docs audit §2-1 #7: md publishes to an Artifact when the
+     turn asks for it — a `--artifact` flag or natural language — with no confirmation
+     question, in doc-visual, diff-visual, and plugin-visual alike. The reply notes that
+     Mermaid fences show as code. Config never publishes md. This replaces doc-visual's
+     lone `--format md --artifact` exception and its ask-once rule for natural-language
+     requests.)*
 
 4. **The density budget already bounds feasibility.** Hand-authored SVG is competitive for
    relational diagrams (flow, tree, sequence, hierarchy) but harder than Mermaid for

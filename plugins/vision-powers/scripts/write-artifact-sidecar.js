@@ -2,13 +2,13 @@
 /**
  * Writes the artifact-publish sidecar next to a report file.
  *
- * A report published through the Artifact channel keeps its claude.ai URL,
- * title, and favicon in `<report-path>.artifact.json` alongside the report —
+ * A report published through the Artifact channel keeps its claude.ai URL
+ * and title in `<report-path>.artifact.json` alongside the report —
  * report-manager finds reports by scanning the folder (list-reports.js), so
  * the URL lives in the same filesystem, not a separate index (issue 007, S4.5).
  *
  * Usage:
- *   node write-artifact-sidecar.js --report <path> --url <url> [--title <title>] [--favicon <emoji>]
+ *   node write-artifact-sidecar.js --report <path> --url <url> [--title <title>]
  *
  * Exit codes:
  *   0 = success
@@ -26,9 +26,9 @@ function parseArgs(argv) {
 }
 
 function main() {
-  const { report, url, title, favicon } = parseArgs(process.argv);
+  const { report, url, title } = parseArgs(process.argv);
   if (!report || !url) {
-    console.error('Usage: node write-artifact-sidecar.js --report <path> --url <url> [--title <title>] [--favicon <emoji>]');
+    console.error('Usage: node write-artifact-sidecar.js --report <path> --url <url> [--title <title>]');
     process.exit(2);
   }
 
@@ -36,7 +36,6 @@ function main() {
   const sidecar = {
     url,
     title: title || null,
-    favicon: favicon || null,
     published_at: new Date().toISOString(),
   };
 

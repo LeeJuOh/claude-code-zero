@@ -118,8 +118,8 @@ Keep component names, file paths, and technical terms (CRITICAL, HIGH, MEDIUM, L
 
 | Resource | Current | Adding | Budget (200K) | Budget (1M) | Severity |
 |----------|---------|--------|---------------|-------------|----------|
-| Skill Descriptions | {n} chars | +{n} chars | {n}/{16K} ({x}%) | {n}/{~80K} ({x}%) | {severity} |
-| MCP Tools | {n} servers | +{n} servers | ~{n}/{~20K} tokens | ~{n}/{~100K} tokens | {severity} |
+| Skill Descriptions | {n} chars | +{n} chars | {n}/{~8K est.} ({x}%) | {n}/{~40K est.} ({x}%) | {severity} |
+| MCP Tools | {n} servers | +{n} servers | {deferred: names only \| upfront: ~{n}/{~20K est.} tokens} | {deferred: names only \| upfront: ~{n}/{~100K est.} tokens} | {severity} |
 
 {notes — e.g. N skills with disable-model-invocation, hook context injection patterns}
 
