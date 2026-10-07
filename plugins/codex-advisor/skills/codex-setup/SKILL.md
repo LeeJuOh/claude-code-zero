@@ -22,46 +22,24 @@ Parse $ARGUMENTS:
 
 ## Preflight Check
 
-### Check Codex CLI
+One call finds the Official Codex plugin and asks its companion what is installed and signed in:
 
 ```bash
-which codex >/dev/null 2>&1 && codex --version || echo "NOT_INSTALLED"
+CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
+  && node "$CODEX_COMPANION" setup --json
 ```
 
-If NOT_INSTALLED: "Codex CLI is not installed. Install: `npm install -g @openai/codex`"
-
-### Check Authentication
-
-```bash
-codex --version 2>&1
-```
-
-If output contains "not authenticated" or "OPENAI_API_KEY": "Authentication required. Run: `codex login`"
-If version prints normally: auth is likely OK (full verification happens on first real command).
-
-### Check Official Codex Plugin
-
-```bash
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
-```
-
-If exit code non-zero (plugin not found), guide the user through the full installation process:
+If `resolve-companion.sh` fails (plugin not found), guide the user through the full installation process:
 
 1. Tell the user to run these commands **in order** (they must type these themselves since they are interactive CLI commands):
    - `/plugin marketplace add openai/codex-plugin-cc` — adds the Official Codex marketplace
    - `/plugin install codex@openai-codex` — installs the plugin from that marketplace
    - `/reload-plugins` — activates the newly installed plugin
-2. After the user completes the steps, re-run the companion check to verify.
+2. After the user completes the steps, re-run the check to verify.
 
-Do NOT just print the steps and move on. Wait for the user to complete them.
+Do NOT just print the steps and move on. Wait for the user to complete them. Until then, report the CLI and authentication rows as unknown — only the companion checks them.
 
-If found, run setup check:
-
-```bash
-node "$CODEX_COMPANION" setup --json
-```
-
-Include the setup output in the status report.
+Otherwise fill the status report from the JSON: `codex.available` and `codex.detail` for the CLI, `auth.loggedIn` and `auth.detail` for authentication. Relay `nextSteps`, except the review-gate one — `--enable-review-gate` belongs to the Official plugin's own `/codex:setup` and Stop hook, which codex-advisor does not wrap.
 
 ## Configuration Management
 
@@ -104,8 +82,8 @@ If a value looks like an obvious typo, `AskUserQuestion` beats letting it throug
 
 | Item | Status |
 |------|--------|
-| Codex CLI | version or NOT_INSTALLED |
-| Authentication | OK or FAILED |
+| Codex CLI | `codex.detail` or NOT_INSTALLED |
+| Authentication | `auth.detail` or NOT LOGGED IN |
 | Official Plugin | OK or NOT_INSTALLED (required) |
 
 ## Current Configuration (~/.codex/config.toml)

@@ -137,8 +137,8 @@ This is the single most important thing to understand about the companion.
 
 - `booleanOptions` at `:886` includes `wait`.
 - Handler honors it at `:893-897` via `waitForSingleJobSnapshot`.
-- Uses `DEFAULT_STATUS_WAIT_TIMEOUT_MS = 240000` (`:69`), safely under
-  Bash's 300s tool timeout.
+- Uses `DEFAULT_STATUS_WAIT_TIMEOUT_MS = 240000` (`:69`) — above the
+  Bash tool's 120s default, so the call needs `timeout: 300000` (§4).
 - This is the **only** universal wait mechanism in the companion.
 
 ### `review --wait`, `adversarial-review --wait` — SILENT NO-OP
@@ -182,7 +182,7 @@ codex-advisor skills use exactly two patterns to run the companion.
 ### Pattern A — review / adversarial-review
 
 The companion's `--background` is a no-op here, so we use Claude's own Bash
-`run_in_background=true` to keep the wrapper alive past Bash's 300s
+`run_in_background=true` to keep the wrapper alive past the Bash tool's
 per-call timeout.
 
 ```bash
@@ -222,45 +222,25 @@ reuse the literal paths you captured from stdout.
 
 ### Pattern B — task family (rescue / verify / research)
 
-The companion's `--background` IS honored for `task`. It returns a job
-payload immediately, then polls via `status --wait`.
+The companion's `--background` IS honored for `task`. `scripts/codex-task.sh`
+wraps the launch and the wait, so the skills never call the companion for
+these steps themselves:
 
 ```bash
-set -o pipefail
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
+# Phase 2 — feeds PROMPT_FILE on stdin, prints JOB_ID=<id>
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" launch "<literal PROMPT_FILE path>" "<literal RUN_DIR path>" [task flags]
 
-mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
-TS=$(date +%s%N)
-PROMPT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/<skill>-prompt-${TS}.txt"
-JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/<skill>-job-${TS}.json"
-echo "PROMPT_FILE=$PROMPT_FILE"
-echo "JOB_JSON_FILE=$JOB_JSON_FILE"
-
-# (Assemble $PROMPT_FILE — see §8 for the blind-payload pattern)
-
-# Invoke via stdin pipe. NEVER pass a positional arg — readTaskPrompt
-# short-circuits on positionalPrompt (:649), silently dropping stdin.
-cat "$PROMPT_FILE" | node "$CODEX_COMPANION" task --background --json \
-  > "$JOB_JSON_FILE" 2> "${JOB_JSON_FILE}.stderr" \
-  || { echo "task launch failed:" >&2; cat "${JOB_JSON_FILE}.stderr" >&2; exit 1; }
-
-# Capture jobId — use node (already a dependency) to avoid host-python assumptions
-JOB_ID=$(node -e 'const fs=require("fs");try{const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!j.jobId)throw new Error("no jobId");process.stdout.write(j.jobId);}catch(e){process.stderr.write("JOB_ID parse failed: "+e.message+"\n");process.exit(1);}' "$JOB_JSON_FILE") \
-  || { echo "raw companion stdout:" >&2; cat "$JOB_JSON_FILE" >&2; exit 1; }
-echo "JOB_ID=$JOB_ID"
-
-# Poll. Each call blocks ≤4 min (well under Bash 300s). Re-call until
-# status === "completed" or "failed". Cap at 6 iterations (24 min) total.
-node "$CODEX_COMPANION" status --wait "$JOB_ID" \
-  --timeout-ms 240000 --json
-
-# Fetch final result
-node "$CODEX_COMPANION" result "$JOB_ID" --json
+# Phase 3 — blocks ≤4 min, prints STATUS=<status>; WAIT_TIMED_OUT=true means
+# call again; a finished job also prints RESULT_FILE=<path> (and ERROR= if
+# it did not complete). Cap at 6 calls (24 min) total.
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" wait "<literal JOB_ID>" "<literal RUN_DIR path>"
 ```
 
-`status --wait` returns a snapshot with `waitTimedOut: true` when the
-deadline hits but the job is still running. Re-call in that case. On the
-cap, surface as `wait-timeout` (§6).
+The wait call needs the Bash tool's `timeout` set to 300000 — the default is
+2 minutes. On the cap, surface as `wait-timeout` (§6). The script refuses any
+task argument that is not a known flag (a positional word would replace the
+stdin prompt) and keeps all companion output in `RUN_DIR`, because `status`
+and `result` echo the prompt back.
 
 ---
 
@@ -274,13 +254,7 @@ cap, surface as `wait-timeout` (§6).
   (alongside `review`, `target`, `threadId`, `codex`). It is the
   `threadId` or inside the `codex` object depending on review type — read
   the actual payload, don't guess the key.
-- **Pattern B:** jobId is in the immediate response from
-  `task --background --json` as `{"jobId": "...", "status": "queued", ...}`.
-- **Always set `set -o pipefail`** before any `cat file | node ...` or
-  similar pipeline. Without it, a failing left side (e.g., missing
-  `PROMPT_FILE`) sends 0 bytes into the companion, which then throws
-  `Provide a prompt, a prompt file, piped stdin, or use --resume-last.`
-  (`:654`) — masking the real root cause.
+- **Pattern B:** `codex-task.sh launch` prints it as `JOB_ID=<id>`.
 
 ---
 
@@ -297,7 +271,7 @@ Never retry silently. Never swallow errors. Never blame the user.
 | `not a git repository` | environment | `lib/git.mjs` `ensureGitRepository` | Tell user, stop |
 | `unknown revision` / `bad revision` | bad-input | `git rev-parse` | Show `git branch --list`, AskUserQuestion |
 | `does not support custom focus text` | wrong-skill | `:274` | Should NOT fire from codex-advisor: Phase 1 strips focus text and offers the adversarial redirect. If it fires, Phase 1 was skipped → SKILL.md regression. |
-| `Provide a prompt, a prompt file, piped stdin, or use --resume-last.` | prompt-empty | `:654` | Pattern B failed before consuming stdin. Common cause: `cat` failed and `set -o pipefail` was missing, OR a positional arg overrode stdin (§3). |
+| `Provide a prompt, a prompt file, piped stdin, or use --resume-last.` | prompt-empty | `:654` | Pattern B sent no prompt. `codex-task.sh launch` already refuses an empty prompt file and positional words, so this points to a companion change — show stderr verbatim. |
 | `Task <id> is still running. Use /codex:status before continuing it.` | concurrency-conflict | `:343` | Previous Codex task in flight. Show user the active jobId, stop. Do NOT silently cancel. |
 | `Unsupported reasoning effort "<value>"` | bad-input | `:114-125` | codex-rescue: effort must be `{none, minimal, low, medium, high, xhigh}`. Re-prompt via AskUserQuestion. |
 | `Choose either --resume/--resume-last or --fresh.` | bad-input | `:780` | codex-rescue: ANALYZE produced conflicting flags. Re-prompt. |
@@ -312,11 +286,16 @@ Never retry silently. Never swallow errors. Never blame the user.
 | (same file + same content re-imported → existing `threadId` returned) | **not an error** | ledger dedup, `lib/codex.mjs:661-677` (`external_agent_session_imports.json`) | Normal behavior, not a failure to surface as one. Codex recognizes the identical `sourcePath` + `content_sha256` pair and returns the prior thread instead of creating a duplicate. |
 | (other) | unknown | n/a | Show raw stderr verbatim. Do NOT retry. |
 
+Companion messages name the Official plugin's commands (`/codex:status`,
+`/codex:cancel`, `/codex:result`). Tell the user the codex-advisor equivalent
+(`/codex-status`, `/codex-cancel`, `/codex-result`) — the Official plugin may be
+disabled.
+
 **Never:**
 - Silently retry
 - Swallow errors
 - Enter manual polling loops outside `BashOutput` (Pattern A) or
-  `status --wait` (Pattern B)
+  `codex-task.sh wait` (Pattern B)
 - Use `ps`, `kill`, or raw state JSON reads for tracking
 - Pass any token through to the companion that did not survive Phase 1's
   whitelist (see "silent-flag-corruption" — no companion-side safety net)
@@ -382,24 +361,15 @@ This makes the translation step auditable in the session log.
 ## 8. Blind-payload pattern (verify / research only)
 
 verify and research must NOT load document content into Claude's context —
-double-check independence depends on it. Use file redirection and stdin
-piping so the content never enters Bash's stdout.
+double-check independence depends on it. Use file redirection so the
+content never enters Bash's stdout.
 
 ### Key invariants
 
 - **`cat $DOC >> $PROMPT_FILE`** — redirects to file, Bash returns empty
   stdout, content never enters Claude's context.
-- **`cat "$PROMPT_FILE" | node companion task --background --json`** —
-  sends payload over the stdin pipe, not as a positional.
-- **Never add a positional prompt after `task`** in Pattern B. `:649` does
-  `positionalPrompt || readStdinIfPiped()`; any positional short-circuits
-  stdin and the entire blind payload is silently dropped.
-- **`--prompt-file` is parser-only** (`:764` vs `:82`). Stdin is the
-  first-class path (`readTaskPrompt` at `:643-650` handles it explicitly
-  via `lib/fs.mjs:35-40`). Use stdin.
-- **`set -o pipefail`** is mandatory. Without it, a cat-side failure
-  sends 0 bytes and the companion's `prompt-empty` error masks the real
-  root cause.
+- **`codex-task.sh launch`** feeds PROMPT_FILE to the companion on stdin
+  and writes its output to files — nothing comes back but the job id.
 
 ### Temp file lifecycle
 
@@ -409,15 +379,11 @@ have Claude **remember the absolute path** printed in Phase 1 stdout,
 then re-inject it literally in every later Bash call.
 
 ```bash
-set -o pipefail
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh")
-
-mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
-TS=$(date +%s%N)
-PROMPT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/<skill>-prompt-${TS}.txt"
-JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/<skill>-job-${TS}.json"
+RUN_DIR="${CLAUDE_PLUGIN_DATA}/tmp/<skill>-run-$(date +%s%N)"
+mkdir -p "$RUN_DIR"
+PROMPT_FILE="$RUN_DIR/prompt.txt"
+echo "RUN_DIR=$RUN_DIR"
 echo "PROMPT_FILE=$PROMPT_FILE"
-echo "JOB_JSON_FILE=$JOB_JSON_FILE"
 
 # Header via heredoc — no document content yet
 cat > "$PROMPT_FILE" <<'EOF'
@@ -443,24 +409,14 @@ cat "<literal doc path>" >> "$PROMPT_FILE"
 
 # Close XML
 printf '\n</document>\n' >> "$PROMPT_FILE"
-
-# Phase 2 — launch via stdin pipe (no positional!)
-cat "$PROMPT_FILE" | node "$CODEX_COMPANION" task --background --json \
-  > "$JOB_JSON_FILE" 2> "${JOB_JSON_FILE}.stderr" \
-  || { echo "task launch failed:" >&2; cat "${JOB_JSON_FILE}.stderr" >&2; exit 1; }
-
-# Capture jobId (use node, not python, to avoid host assumptions)
-JOB_ID=$(node -e 'const fs=require("fs");try{const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!j.jobId)throw new Error("no jobId");process.stdout.write(j.jobId);}catch(e){process.stderr.write("JOB_ID parse failed: "+e.message+"\n");process.exit(1);}' "$JOB_JSON_FILE") \
-  || { echo "raw companion stdout:" >&2; cat "$JOB_JSON_FILE" >&2; exit 1; }
-echo "JOB_ID=$JOB_ID"
 ```
 
 ### Why this preserves independence
 
 - `cat "$USER_DOC" >> "$PROMPT_FILE"` → stdout goes to the file, not the
   terminal. Bash tool returns empty.
-- `cat "$PROMPT_FILE" | node ...` → stdout goes to the pipe. Bash tool
-  still returns empty on success.
+- `codex-task.sh launch` → the prompt goes in on stdin; the Bash tool
+  sees only `JOB_ID=<id>`.
 - Claude knows the path, the line count, and that the assembly succeeded
   — but never sees the document text.
 
@@ -468,21 +424,19 @@ echo "JOB_ID=$JOB_ID"
 
 For `codex-research` when the user gives a topic (no file), skip the
 document append entirely. Write the topic inside the heredoc header
-template and pipe the resulting `$PROMPT_FILE` straight into `task
---background --json`.
+template and launch the resulting `$PROMPT_FILE` as usual.
 
 ### Cleanup
 
 Clean up temp files at the end of Phase 5 by re-injecting the literal
-absolute paths (captured from Phase 1 stdout):
+absolute path (captured from Phase 1 stdout):
 
 ```bash
-rm -f "<literal $PROMPT_FILE path>" "<literal $JOB_JSON_FILE path>" "<literal ${JOB_JSON_FILE}.stderr path>"
+rm -rf "<literal RUN_DIR path>"
 ```
 
-Do NOT rely on `$PROMPT_FILE` / `$JOB_JSON_FILE` shell variables in the
-cleanup call — those are only defined in the shell that set them, which
-is a different shell from this one.
+Do NOT rely on the `$RUN_DIR` shell variable in the cleanup call — it is only
+defined in the shell that set it, which is a different shell from this one.
 
 ---
 
@@ -509,8 +463,9 @@ pragmatic pattern is "try and fall back":
 
 ## 10. Shared gotchas
 
-- **Bash 300s timeout ≠ job failure when Pattern B is used.** `status
-  --wait` blocks ≤240s per call, well under the limit.
+- **Pattern B wait calls need the Bash `timeout` raised to 300000.**
+  `codex-task.sh wait` blocks ≤240s; the Bash default is 120s. A call cut
+  off by the timeout does not stop the job — call again.
 - **Pattern A requires `run_in_background=true`.** The companion's own
   `--background` is a no-op on `review` / `adversarial-review`.
 - **Natural language in `$ARGUMENTS` is for YOU, not the companion.**
@@ -518,16 +473,10 @@ pragmatic pattern is "try and fall back":
   never become companion flags or prompt content.
 - **Unknown flags don't error — they silently become prompt content.**
   ANALYZE whitelist is the only line of defense.
-- **Pattern B stdin pipe never combines with a positional arg.**
-  `readTaskPrompt` does `positionalPrompt || readStdinIfPiped()`
-  (`:643-650`); a positional silently overrides stdin and drops the
-  entire blind payload.
-- **Always `set -o pipefail` before `cat ... | node ...`.** Without it,
-  a cat-side failure masks as a companion-side `prompt-empty` error.
 - **`$$` does not survive across Bash calls.** Use timestamps; remember
   absolute paths from Phase 1 stdout and re-inject them.
-- **Never poll manually outside `BashOutput` (Pattern A) or `status
-  --wait` (Pattern B).** `ps` / `kill` / raw state JSON reads are
+- **Never poll manually outside `BashOutput` (Pattern A) or
+  `codex-task.sh wait` (Pattern B).** `ps` / `kill` / raw state JSON reads are
   forbidden — they leave orphan jobs in unrecoverable states.
 - **Never swallow errors. Never retry silently.** Categorize per §6 and
   surface verbatim.

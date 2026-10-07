@@ -51,7 +51,8 @@ VERIFIER_SKILLS = ["codex-review", "codex-adversarial", "codex-rescue",
                    "codex-verify", "codex-research"]
 
 # Skills whose document never enters the main session's context. `status --json`
-# echoes request.prompt back, so Phase 3 must redirect it (measured 2026-09-20).
+# and `result --json` echo request.prompt back (measured 2026-09-20), so Phase 3
+# goes through codex-task.sh, which keeps both in files.
 BLIND_SKILLS = ["codex-verify", "codex-research"]
 
 # Tools review and adversarial used to poll a background launch with. Neither
@@ -242,15 +243,19 @@ def main():
         check("completion notification" in text,
               "%s does not say how Phase 3 learns the run finished" % name)
 
-    # Phase 3 must not print the companion's status JSON.
+    # Phase 3 must not print the companion's status or result JSON.
     for name in BLIND_SKILLS:
         text = read("skills/%s/SKILL.md" % name)
-        wait = re.search(r'\$CODEX_COMPANION" status --wait.*?```', text, re.S)
-        check(wait is not None, "%s has no status --wait block to check" % name)
-        if wait:
-            check(".json > " in wait.group(0) or "--json > " in wait.group(0),
-                  "%s prints the status JSON, which carries request.prompt and "
-                  "with it the document Phase 1 kept out of context" % name)
+        check("codex-task.sh\" wait" in text,
+              "%s does not wait through codex-task.sh" % name)
+        check("$CODEX_COMPANION" not in text,
+              "%s calls the companion directly, outside codex-task.sh" % name)
+    script = read("scripts/codex-task.sh")
+    for sub in ("status", "result"):
+        call = re.search(r'node "\$c" %s (?:.*\\\n)*.*\n' % sub, script)
+        check(call is not None and '> "$dir/%s.json"' % sub in call.group(0),
+              "codex-task.sh prints the %s JSON, which carries request.prompt and "
+              "with it the document Phase 1 kept out of context" % sub)
 
     if failures:
         for f in failures:

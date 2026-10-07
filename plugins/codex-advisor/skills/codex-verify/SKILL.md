@@ -24,7 +24,7 @@ For code review use `/codex-review`. For research use `/codex-research`.
 |-------|---------|-----------|
 | 1 ANALYZE | `test -f/-s`, `wc -l/-c`, `file`, `echo`, `printf`, `cat "$DOC" >> "$PROMPT_FILE"` (file-redirect, no stdout) | `cat "$DOC"` to stdout, `head`, `tail`, Read, Grep, Glob |
 | 2 INVOKE | Bash for companion launch via stdin pipe | All source / document reads to stdout |
-| 3 WAIT | `status --wait` loop (≤6 iterations, ≤24 min), result written to a file | All reads, manual polling, `ps`/`kill` |
+| 3 WAIT | `codex-task.sh wait` loop (≤6 calls, ≤24 min), result written to a file | All reads, manual polling, `ps`/`kill` |
 | 4 VERIFY | `prepare-verifier.py --mode doc`, then `Agent` (`codex-advisor:verifier`) | Reading the document or the Codex result; judging any finding yourself |
 | 5 REPORT + SAVE | Write report file | n/a |
 
@@ -96,18 +96,14 @@ echo "DOC_LINES=$(wc -l < "<literal doc path>")"   # size info, not content
 ### Assemble the blind payload
 
 ```bash
-set -o pipefail
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
+"${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh" > /dev/null \
   || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
 
-mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
-TS=$(date +%s%N)
-PROMPT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/verify-prompt-${TS}.txt"
-JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/verify-job-${TS}.json"
-RESULT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/verify-result-${TS}.json"
+RUN_DIR="${CLAUDE_PLUGIN_DATA}/tmp/verify-run-$(date +%s%N)"
+mkdir -p "$RUN_DIR"
+PROMPT_FILE="$RUN_DIR/prompt.txt"
+echo "RUN_DIR=$RUN_DIR"
 echo "PROMPT_FILE=$PROMPT_FILE"
-echo "JOB_JSON_FILE=$JOB_JSON_FILE"
-echo "RESULT_FILE=$RESULT_FILE"
 
 # Header via heredoc — no document content yet.
 # Block provenance — official gpt-5-4-prompting (prompt-blocks.md), bodies
@@ -183,7 +179,7 @@ Parsed: doc="docs/plan.md" (DOC_LINES=247), focus="security angle", payload=PROM
 
 Omit `focus=` when there was none.
 
-Order: apply-codex-config.py output first, Parsed line second. Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, `RESULT_FILE`, and `USER_DOC` paths. They are needed in later phases.
+Order: apply-codex-config.py output first, Parsed line second. Remember the literal `RUN_DIR`, `PROMPT_FILE`, and `USER_DOC` paths. They are needed in later phases.
 
 For edge cases, read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7` (ANALYZE rules) and `§8` (blind-payload details).
 
@@ -272,59 +268,40 @@ Use `AskUserQuestion` exactly once:
   remove irrelevant focus areas, change the review tone. Rewrite
   PROMPT_FILE with updated XML header, re-append the document via
   blind redirect, then re-display and re-ask. No loop limit.
-- **Cancel** → clean up PROMPT_FILE and JOB_JSON_FILE, stop execution.
+- **Cancel** → remove RUN_DIR, stop execution.
 
 ---
 
-## Phase 2: Invoke (Pattern B — stdin pipe to `task --background`)
+## Phase 2: Invoke
 
 ```bash
-# NEVER pass a positional arg — readTaskPrompt short-circuits on
-# positionalPrompt (:619), silently dropping the entire blind payload.
-cat "<literal PROMPT_FILE path>" | node "$CODEX_COMPANION" task --background --json \
-  <flags from the "Run flags:" line, if the apply step printed one> \
-  > "<literal JOB_JSON_FILE path>" 2> "<literal JOB_JSON_FILE path>.stderr" \
-  || { echo "task launch failed:" >&2; cat "<literal JOB_JSON_FILE path>.stderr" >&2; exit 1; }
-
-# Capture jobId (node, not python — avoid host assumptions)
-JOB_ID=$(node -e 'const fs=require("fs");try{const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!j.jobId)throw new Error("no jobId");process.stdout.write(j.jobId);}catch(e){process.stderr.write("JOB_ID parse failed: "+e.message+"\n");process.exit(1);}' "<literal JOB_JSON_FILE path>") \
-  || { echo "raw companion stdout:" >&2; cat "<literal JOB_JSON_FILE path>" >&2; exit 1; }
-echo "JOB_ID=$JOB_ID"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" launch "<literal PROMPT_FILE path>" "<literal RUN_DIR path>" \
+  <flags from the "Run flags:" line, if the apply step printed one>
 ```
 
-Remember the literal `JOB_ID` for Phase 3-4.
+It prints `JOB_ID=<id>`. Remember the literal `JOB_ID` for Phase 3-4.
 
 ---
 
-## Phase 3: Wait (`status --wait` loop)
+## Phase 3: Wait
 
-Each call blocks ≤4 min. Re-call on timeout. Cap at **6 iterations** (24
-minutes).
-
-```bash
-# Redirect is load-bearing: `status --json` echoes request.prompt back, document and all.
-node "$CODEX_COMPANION" status --wait "<literal JOB_ID>" \
-  --timeout-ms 240000 --json > "<literal JOB_JSON_FILE path>.status"
-
-node -e 'const o=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(JSON.stringify({status:o.job&&o.job.status,waitTimedOut:o.waitTimedOut})+"\n")' \
-  "<literal JOB_JSON_FILE path>.status"
-```
-
-- `status === "completed"` → fetch result
-- `status === "failed"` → categorize per §6, save failure report
-- `waitTimedOut === true` with `queued`/`running` → re-call
-- 6 iterations exhausted → `wait-timeout` (§6). Show JOB_ID, suggest `/codex:status <JOB_ID>`.
-
-Fetch result:
+Call with the Bash tool's `timeout` set to 300000: each call blocks up to 4
+minutes, and the default Bash timeout is 2. A call the Bash tool cuts off does
+not stop the job — call again, and count it toward the cap. Cap at **6 calls** (24 minutes).
 
 ```bash
-node "$CODEX_COMPANION" result "<literal JOB_ID>" --json \
-  > "<literal RESULT_FILE path>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" wait "<literal JOB_ID>" "<literal RUN_DIR path>"
 ```
 
-The redirect is load-bearing: Phase 4 hands that file to the script and to the
-Verifier, and Codex's answer quotes the document you have been keeping out of
-context. Printing it here would undo Phase 1.
+- `STATUS=completed` → Phase 4, with the printed `RESULT_FILE`
+- `STATUS=failed` or `cancelled` → categorize the `ERROR=` line per §6, save failure report
+- `WAIT_TIMED_OUT=true` → call again
+- 6 calls exhausted → `wait-timeout` (§6). Show JOB_ID, suggest `/codex-status <JOB_ID>`.
+
+The script keeps the companion's output in files under `RUN_DIR`: `status` and
+`result` echo the prompt back, and Codex's answer quotes the document you have
+been keeping out of context. Do not print those files — Phase 4 hands
+`RESULT_FILE` to the script and to the Verifier.
 
 Full error table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
 
@@ -411,12 +388,10 @@ PASS/FAIL line that section's rules produce.
 `${CLAUDE_PLUGIN_DATA}/reviews/verify-<YYYYMMDD-HHMMSS>-failed.md` with
 the §6 error category, stderr, and the document path.
 
-Clean up temp files using the literal paths captured in Phase 1:
+Clean up temp files using the literal path captured in Phase 1:
 
 ```bash
-rm -f "<literal PROMPT_FILE path>" "<literal JOB_JSON_FILE path>" "<literal JOB_JSON_FILE path>.stderr" \
-  "<literal JOB_JSON_FILE path>.status" \
-  "<literal RESULT_FILE path>"
+rm -rf "<literal RUN_DIR path>"
 ```
 
 Leave `$WORK` where it is. A re-verification the user asks for needs that payload
@@ -432,14 +407,9 @@ file and its manifest, and the hook refuses a payload it cannot hash-check.
 - **`cat "$USER_DOC" >> "$PROMPT_FILE"`** — file redirect keeps stdout
   empty. `cat "$USER_DOC"` alone would dump content into Claude's
   context. The `>> "$PROMPT_FILE"` is load-bearing.
-- **Never pass a positional argument with Pattern B's stdin pipe.**
-  `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:619`); a positional silently drops the entire blind payload.
-- **`set -o pipefail` is mandatory.** Without it, a cat-side failure
-  sends 0 bytes and the companion's `prompt-empty` error masks the root
-  cause.
 - **Temp file paths must come from Phase 1 stdout.** Do not rely on
-  `$PROMPT_FILE` / `$JOB_JSON_FILE` / `$RESULT_FILE` variables in later Bash
-  calls — Bash spawns a fresh shell each call. Re-inject literal absolute paths.
+  `$RUN_DIR` / `$PROMPT_FILE` variables in later Bash calls — Bash spawns a
+  fresh shell each call. Re-inject literal absolute paths.
 
 For the full shared gotchas list, read
 `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §10`.

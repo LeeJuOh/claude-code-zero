@@ -33,7 +33,7 @@ there to replace.
 |-------|---------|-----------|
 | 1 ANALYZE | `test -f/-s/-d`, `git status --porcelain` (file names only, not contents), `echo`, `printf` | `cat`, `head`, `tail`, `git diff`, `git log -p`, `git show`, `git blame`, Read, Grep, Glob |
 | 2 INVOKE | Bash for companion launch via stdin pipe (no positional!) | All source reads |
-| 3 WAIT | `status --wait` loop (≤6 iterations, ≤24 min) | All source reads, manual polling, `ps`/`kill` |
+| 3 WAIT | `codex-task.sh wait` loop (≤6 calls, ≤24 min) | All source reads, manual polling, `ps`/`kill` |
 | 4 VERIFY | `prepare-verifier.py`, then `Agent` (`codex-advisor:verifier`) | Reading source; judging or re-judging the result yourself |
 | 5 REPORT + SAVE | Write report file | n/a |
 
@@ -222,24 +222,16 @@ Use `AskUserQuestion` exactly once:
 
 ---
 
-## Phase 2: Invoke (Pattern B — companion `--background` + stdin pipe)
+## Phase 2: Invoke
 
-`task --background` is honored by the companion (`:758-790` →
-`enqueueBackgroundTask`). It returns a job payload immediately.
+`codex-task.sh launch` starts the job in the background and prints its id.
 
 ```bash
-set -o pipefail
-CODEX_COMPANION=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-companion.sh") \
-  || { echo "Official Codex plugin not found — run /codex-setup" >&2; exit 1; }
-
-mkdir -p "${CLAUDE_PLUGIN_DATA}/tmp"
-TS=$(date +%s%N)
-PROMPT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/rescue-prompt-${TS}.txt"
-JOB_JSON_FILE="${CLAUDE_PLUGIN_DATA}/tmp/rescue-job-${TS}.json"
-RESULT_FILE="${CLAUDE_PLUGIN_DATA}/tmp/rescue-result-${TS}.json"
+RUN_DIR="${CLAUDE_PLUGIN_DATA}/tmp/rescue-run-$(date +%s%N)"
+mkdir -p "$RUN_DIR"
+PROMPT_FILE="$RUN_DIR/prompt.txt"
+echo "RUN_DIR=$RUN_DIR"
 echo "PROMPT_FILE=$PROMPT_FILE"
-echo "JOB_JSON_FILE=$JOB_JSON_FILE"
-echo "RESULT_FILE=$RESULT_FILE"
 
 # --write only: snapshot the whole working tree (tracked + untracked) as a git
 # tree object. Phase 4 diffs against it, so the Verifier sees what Codex changed
@@ -255,26 +247,17 @@ cat > "$PROMPT_FILE" <<'EOF'
 <literal approved wrapped XML prompt from Phase 1.5>
 EOF
 
-# Launch via stdin pipe. Each flag line below is optional — include only
-# what Phase 1 parsed. Omit the entire line for flags not provided.
+# Each flag line below is optional — include only what Phase 1 parsed.
+# Omit the entire line for flags not provided.
 # --write: include for implementation (default ON); omit for read-only.
 # Model/effort are NOT passed as companion flags — they were written to
 #   config.toml by apply-codex-config.py in Phase 1 and the companion
 #   picks them up from there.
 # --resume-last/--resume/--fresh: mutually exclusive; omit if none.
-# NEVER pass a positional arg — readTaskPrompt short-circuits on
-# positionalPrompt (:619), silently dropping stdin.
-cat "$PROMPT_FILE" | node "$CODEX_COMPANION" task --background --json \
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" launch "$PROMPT_FILE" "$RUN_DIR" \
   <flags from the "Run flags:" line, if the apply step printed one> \
   --write \
-  --resume-last \
-  > "$JOB_JSON_FILE" 2> "${JOB_JSON_FILE}.stderr" \
-  || { echo "task launch failed:" >&2; cat "${JOB_JSON_FILE}.stderr" >&2; exit 1; }
-
-# Capture jobId — use node (already a dependency)
-JOB_ID=$(node -e 'const fs=require("fs");try{const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!j.jobId)throw new Error("no jobId");process.stdout.write(j.jobId);}catch(e){process.stderr.write("JOB_ID parse failed: "+e.message+"\n");process.exit(1);}' "$JOB_JSON_FILE") \
-  || { echo "raw companion stdout:" >&2; cat "$JOB_JSON_FILE" >&2; exit 1; }
-echo "JOB_ID=$JOB_ID"
+  --resume-last
 ```
 
 Each flag line in the template is optional — include only what Phase 1
@@ -282,45 +265,35 @@ parsed. Replace `<literal ...>` values with the actual strings from
 Phase 1. `--write` defaults to ON for implementation; omit for
 read-only investigation.
 
-Remember the literal `PROMPT_FILE`, `JOB_JSON_FILE`, `RESULT_FILE`, `PRE_TREE`,
-and `JOB_ID` values. Re-inject these as literal strings in
+Remember the literal `RUN_DIR`, `PROMPT_FILE`, `PRE_TREE`, and `JOB_ID`
+values. Re-inject these as literal strings in
 every subsequent Bash call — shell variables do not survive across calls.
 
 ---
 
-## Phase 3: Wait (`status --wait` loop)
+## Phase 3: Wait
 
-Each `status --wait` call blocks ≤4 min (under Bash 300s). Re-call on
-timeout. **Cap total iterations at 6** (24 minutes).
-
-```bash
-# Repeat this call until status is "completed" or "failed", or cap hit.
-node "$CODEX_COMPANION" status --wait "<literal JOB_ID>" \
-  --timeout-ms 240000 --json
-```
-
-Inspect the returned JSON:
-
-- `status === "completed"` → proceed to fetch result
-- `status === "failed"` → categorize per §6, save failure report
-- `waitTimedOut === true` and `status` still `queued`/`running` → re-call (iteration budget permitting)
-- 6 iterations exhausted → `wait-timeout` (§6). Do NOT silently cancel; leave the job running. Show the user the JOB_ID and suggest `/codex:status <JOB_ID>` for manual follow-up.
-
-Fetch the final result:
+Call with the Bash tool's `timeout` set to 300000: each call blocks up to 4
+minutes, and the default Bash timeout is 2. A call the Bash tool cuts off does
+not stop the job — call again, and count it toward the cap. **Cap at 6 calls** (24 minutes).
 
 ```bash
-node "$CODEX_COMPANION" result "<literal JOB_ID>" --json \
-  > "<literal RESULT_FILE path>"
+"${CLAUDE_PLUGIN_ROOT}/scripts/codex-task.sh" wait "<literal JOB_ID>" "<literal RUN_DIR path>"
 ```
 
-Phase 4 hands that file to the script rather than to you, so write it to disk even
-when you are about to read it for the report.
+- `STATUS=completed` → Phase 4, with the printed `RESULT_FILE`
+- `STATUS=failed` or `cancelled` → categorize the `ERROR=` line per §6, save failure report
+- `WAIT_TIMED_OUT=true` → call again
+- 6 calls exhausted → `wait-timeout` (§6). Do NOT silently cancel; leave the job running. Show the user the JOB_ID and suggest `/codex-status <JOB_ID>` for manual follow-up.
+
+Phase 4 hands `RESULT_FILE` to the script rather than to you, so leave it on disk
+even when you are about to read it for the report.
 
 Full error table: `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §6`.
 
 Notable cases:
 
-- `Task <id> is still running. Use /codex:status before continuing it.` → a previous task is still in flight. Show the user the active jobId and stop. Never silently cancel.
+- `Task <id> is still running. Use /codex:status before continuing it.` → a previous task is still in flight. Show the user the active jobId, point them to `/codex-status`, and stop. Never silently cancel.
 - `Stored job <id> is missing its task request payload.` → detached worker couldn't load the request. `recovery-impossible`. Save failure report.
 
 ---
@@ -441,11 +414,11 @@ line.
 `${CLAUDE_PLUGIN_DATA}/reviews/rescue-<YYYYMMDD-HHMMSS>-failed.md` with
 the §6 error category and captured stderr.
 
-Clean up temp files using literal paths:
+Clean up temp files using the literal path, keeping the prompt:
 
 ```bash
-rm -f "<literal JOB_JSON_FILE path>" "<literal JOB_JSON_FILE.stderr path>" \
-      "<literal RESULT_FILE path>"
+rm -f "<literal RUN_DIR path>"/job.* "<literal RUN_DIR path>"/status.* \
+      "<literal RUN_DIR path>"/result.*
 ```
 
 Leave `$WORK` and `$PROMPT_FILE` where they are. A re-verification the user asks
@@ -458,7 +431,6 @@ hook refuses a payload it cannot hash-check.
 
 - **`--model` / `--effort` go through `apply-codex-config.py`, not the companion.** config.toml becomes the single source of truth; routing keeps every codex-advisor skill identical, lets the value persist for the next session without re-typing, and is the only way to set `effort` for review/adversarial (whose `valueOptions = [base, scope, model, cwd]` does not include effort). `apply-codex-config.py` writes whatever it's given without judging it — Codex is the authority on valid models and efforts, so a bad value surfaces there, not here.
 - **Never combine `--resume` / `--resume-last` with `--fresh`.** The companion rejects the combination (`:750`).
-- **Never pass a positional argument with Pattern B's stdin pipe.** `readTaskPrompt` short-circuits on `positionalPrompt || readStdinIfPiped()` (`:619`); a positional silently drops the entire task description.
 - **`--wait` on task is silent prompt corruption.** It becomes part of the task prompt body. ANALYZE must reject it.
 - **Do NOT explore the repo in Phase 1.** The point of delegation is that Codex builds the context. Exploring biases the double-check.
 

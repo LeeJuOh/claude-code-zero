@@ -99,7 +99,7 @@ details), read `${CLAUDE_PLUGIN_ROOT}/references/companion-usage.md §7`.
 
 Review's companion-side `--background` / `--wait` are silent no-ops
 (`handleReviewCommand :709` unconditionally calls `runForegroundCommand`).
-We use Claude's Bash `run_in_background=true` to survive the 300s tool
+We use Claude's Bash `run_in_background=true` to survive the Bash tool's
 timeout.
 
 ```bash
