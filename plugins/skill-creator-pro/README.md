@@ -49,4 +49,4 @@ The first one needs you. The second one needs evals.
 
 ## License
 
-MIT. The `skill-creator-pro` skill is derived from Anthropic's skill-creator (Apache-2.0, see `skills/skill-creator-pro/LICENSE.txt`); it differs from upstream in the additions above, the Claude.ai notes moved to `references/claude-ai.md`, and two eval-viewer changes: `generate_review.py` escapes `</script>` in embedded data, and `viewer.html` renders `.html` outputs live in a sandboxed iframe.
+MIT. The `skill-creator-pro` skill is derived from Anthropic's skill-creator (Apache-2.0, see `skills/skill-creator-pro/LICENSE.txt`).

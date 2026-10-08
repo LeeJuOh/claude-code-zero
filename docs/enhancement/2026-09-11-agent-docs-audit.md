@@ -7,13 +7,16 @@
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-10-08 27차 중단 → 28차)
+## 핸드오프 (2026-10-08 28차 → 29차)
 
-**목표:** 2부 다음 플러그인을 시작한다. P3(codex-advisor)는 끝났다 — v1.86.0(codex-advisor 5.2.0) 배포·푸시 완료.
+**목표:** 2부 P4(rubber-duck-tutor)를 시작한다. P5(skill-creator-pro)는 28차에 결정·구현 완료 `5a67f5e`(2.1.0) — **미배포·미푸시**(§2-2 "P5 결정").
 
-**첫 행동:** 사용자에게 한 줄로 묻는다: "순서를 P5(skill-creator-pro) → P4(rubber-duck-tutor)로 바꿀까요? 추천: 바꿈." 27차 끝에 이 질문을 했고 답이 없었다(사용자가 바로 핸드오프를 불렀다). 답을 받으면 그 플러그인 절(P5면 §2-2 15행, P4면 §2-4)을 현재 코드에서 다시 열어 행마다 확인 → 짧게 보고 → 승인(아래 "플러그인 하나 처리 절차").
+**첫 행동:** §1-5 #8을 사용자에게 한 줄로 묻는다: rubber-duck #2 수정안 (a) 4번 재정의 vs (b) 3·4번 순서 교환, 추천 (b)(Mode Map 순서와 맞고, (a)는 duck-verify:4와 어긋남). 답을 받으면 §2-4를 현재 코드에서 다시 열어 행마다 확인 → 짧게 보고 → 승인.
 
-**P5 먼저 추천 근거(27차, 사용자 확인 전):** 원장의 P4 → P5 순서에는 기록된 이유가 없다(지어내지 않는다). skill-creator-pro는 AGENTS.md가 정한 스킬 작업 도구라 P4·P6·P7에서 쓴다 → 도구를 먼저 고친다. §2-2에 high 3건이 남았다(auto-optimize #2 작업 폴더가 스킬 옆 → 배포본에 섞임, #3 "improve my skill"이 무인 루프로 감, #4 기준선·실험 횟수 다름). 걸림: §1-5 #9 결정(`claude`/`anthropic` 예약 규칙 — #11 Claude.ai 절 삭제·ADR 0001과 묶임). P4는 §1-5 #8 결정(rubber-duck #2: (a) 4번 재정의 vs (b) 3·4번 순서 교환, 원장 추천 근거는 (b)). rubber-duck에 high가 안 남았다는 것은 (unverified).
+**28차 교훈**
+- ✅ 원장이 묶어 둔 결정(#9 ↔ #11)을 공식 원본과 대조하니 묶일 이유가 없었다(공식에 Claude.ai 절은 있고 예약 규칙은 없음). 결정 질문 전에 "공식에 있나"를 먼저 확인한다.
+- ⚠️ 첫 스모크 테스트는 없는 파일을 가리켜 Skill이 아예 안 불렸는데 "자동 실행 0"으로 기록할 뻔했다. 트리거 테스트는 옛 버전(`git archive <커밋> plugins/<p> | tar -x`)을 대조군으로 같은 프롬프트에 돌린다 — 옛 버전이 트리거돼야 시험이 유효하다.
+- ⚠️ 비용 예상 $0.2 → 실제 $0.48(새 버전이 스킬 안으로 더 진행). `--max-turns`는 비용 상한이 아니다.
 
 **27차 진행**
 - 검사기 3개 + `claude plugin validate .` 통과 → `7a0f62c`(P3 3단계 권한) → 원장 `b369a77`.
@@ -515,7 +518,7 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 - [x] 버전 범프(minor), README·description 2곳 갱신, `claude plugin validate .`.
 
 P5 구현 기록(28차): skill-creator-pro SKILL.md 520 → 495줄, auto-optimize 379 → 304줄. 공식 대조 기준은 `claude-plugins-official/skill-creator/6eb6a30bf024`(캐시의 7개 해시 모두 SKILL.md 동일). 옮긴 `references/claude-ai.md`는 공식 절과 문장 동일(diff 확인). #4 실행 단위: "1 실험 = 입력마다 R회, 기본 R=2", `max_score` = evals × 입력 수 × R, Step 2 발견 실행 = 한 실험(→ Step 5 기준선과 같은 단위). #3 명령 이름은 공식 skills.md:437대로 `/skill-creator-pro:auto-optimize`(README도). #6 `render_dashboard.py <results.json> <out.html>`: 데이터 인라인·인라인 SVG(CDN 없음)·running일 때 meta refresh 10초·`.html` 아닌 출력 거부·환경변수 안 읽음·`allowed-tools` 사전 허용 안 함(27차 교훈). 원장 수정안과 다른 점: :438 "조용히 엉뚱한 것이 이긴다"도 틀려서 공식 우선순위(skills.md:188-197)로 고침. README 라이선스 줄에 공식 Apache-2.0 파생과 fork 2개 기록.
-검증: `claude plugin validate .` 통과(경고는 로컬 플러그인 version 경고뿐), 절 제목 5개(auto-optimize가 인용) 유지 grep, 깨진 참조 0(`claude.ai section above`·`VIEWER_PID`·옛 `/auto-optimize`), 대시보드 headless Chrome 스크린샷(다크 모드·이스케이프·refresh 확인), `claude -p --model haiku --plugin-dir` 스모크 $0.08 — 명령 목록에 `skill-creator-pro:auto-optimize` 확인, auto-optimize 자동 실행 0. **안 한 것:** 스모크 프롬프트가 없는 파일을 가리켜 haiku가 Skill 도구를 아예 안 불렀다 → skill-creator-pro 쪽 트리거는 확인 못 함(description은 공식 문장으로 돌아간 것뿐이라 위험 낮음). 벤치마크(사용자 결정으로 생략).
+검증: `claude plugin validate .` 통과(경고는 로컬 플러그인 version 경고뿐), 절 제목 5개(auto-optimize가 인용) 유지 grep, 깨진 참조 0(`claude.ai section above`·`VIEWER_PID`·옛 `/auto-optimize`), 대시보드 headless Chrome 스크린샷(다크 모드·이스케이프·refresh 확인), 트리거 대조 스모크(`claude -p --model haiku`, 같은 auto-optimize형 프롬프트, 더미 `my-skill`): 옛 버전(`7e50047`) → `skill-creator-pro:auto-optimize` 자동 호출, 새 버전 → `skill-creator-pro:skill-creator-pro` 호출(auto-optimize 0). 합계 약 $0.48. 명령 목록에 `skill-creator-pro:auto-optimize` 있음. 첫 스모크($0.08)는 없는 파일을 가리켜 Skill이 안 불려 무효였다. README 스타일: fork 상세는 구현 세부라 ADR 0001로 옮김. **안 한 것:** 벤치마크(사용자 결정으로 생략). 계획에 없던 값: 기본 R=2(입력 3 × 2 = 6회, 옛 기본 5회와 비슷).
 ## 2-3. codex-advisor
 
 issue 016(codex-advisor 5.0.0, `05b74a7`)이 리뷰 스킬 5개(review·adversarial·rescue·verify·research)를 다시 썼다. 이 절의 줄 번호는 `23c69ec` 기준이다. (재검수 삭제: 머리말의 `codex-review:73` spark 건 — `4e80b17`에서 해소.)
