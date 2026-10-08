@@ -1,6 +1,6 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료) · P3 결정 완료(21차 그릴링, 원장만 — §2-3 "P3 결정") · P3 1단계 완료 `3c4f2ab`(22차, codex-advisor 5.2.0) · P3 2단계 완료 `882843b`(23차) · P3 3단계(권한) 완료 `7a0f62c`·`52d5be6`(24~27차) · v1.86.0 배포·푸시(27차, codex-advisor 5.2.0) — P3 끝. 다음은 P5(skill-creator-pro)를 P4보다 먼저 할지 28차에 정함** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료) · P3 결정 완료(21차 그릴링, 원장만 — §2-3 "P3 결정") · P3 1단계 완료 `3c4f2ab`(22차, codex-advisor 5.2.0) · P3 2단계 완료 `882843b`(23차) · P3 3단계(권한) 완료 `7a0f62c`·`52d5be6`(24~27차) · v1.86.0 배포·푸시(27차, codex-advisor 5.2.0) — P3 끝 · 순서 P5 → P4로 바꿈(28차) · P5 결정·구현 완료 `5a67f5e`(28차, skill-creator-pro 2.1.0, 미배포). 다음은 P4(rubber-duck-tutor)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
@@ -500,20 +500,22 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 
 기타: agents 3개·schemas.md·scripts는 공식과 동일(ADR 0001 준수). 기록 안 된 fork 2개 — `eval-viewer/generate_review.py:279-291` `</script>` 이스케이프, `eval-viewer/viewer.html`의 sandboxed iframe(.html 출력 실시간 렌더). 공식 `LICENSE.txt`(Apache-2.0) 누락. → ADR/README에 fork 기록, LICENSE 추가.
 
-### P5 결정 (2026-10-08, 28차 그릴링 — 원장만, 구현 전)
+### P5 결정 (2026-10-08, 28차 그릴링) — **구현 완료 `5a67f5e`(skill-creator-pro 2.1.0)**
 
 순서: P5(skill-creator-pro)를 P4보다 먼저(사용자 승인). 사실 확인 기준: 설치된 공식 skill-creator `claude-plugins-official/skill-creator/2a8ad9f74633` SKILL.md 485줄, pro 520줄, 공식 skills.md·platform agent-skills overview(2026-10-08 받음).
 
 할 일:
-- [ ] #11 Claude.ai 절(pro :453~, 공식 :420~)을 공식 문장 그대로 `skill-creator-pro/references/claude-ai.md`로 옮기고 본문엔 포인터 1줄. ADR 0001 Consequences의 "`references/` returns to `schemas.md` only" 한 줄 개정(Claude Code 플러그인이라 Claude.ai 절은 거의 안 읽히는데 매번 로드 — C5).
-- [ ] #11 pro 추가 블록 :49-58("스킬이 맞는 도구인가" 관문, 10줄)을 3줄로: "매 세션 필요한 지식 → CLAUDE.md, 이벤트 자동 실행 → hook" 판단만(5개 도구 목록은 C4). 다른 pro 추가 블록(:96-97, :153-154, :187-188, :339-346, :432-440, :503-504)은 ADR 0001대로 본문 유지. 목표 ≤500줄(pro :108 자기 규칙), #9·#15 추가분 포함. 지울 줄 목록은 구현 전에 보고·승인.
-- [ ] #9 :436 예약 문장을 둘로: Claude Code는 폴더 이름 `synced`·`anthropic-skills` 금지(skills.md:155-156), API·Claude.ai는 이름에 `claude`·`anthropic` 포함 금지(overview:217). 원장의 "`claude`/`anthropic`은 예약" 서술은 Claude Code 기준 틀렸고 API 기준 좁았다. 이름 충돌 우선순위 추가는 원안대로.
-- [ ] #7 auto-optimize의 모든 실행(기준선·실험 N회)은 실행마다 새 서브에이전트, 스킬 경로와 입력만 주고 평가 기준은 안 줌, 한 실험의 N회는 같은 턴에 동시 시작. 공식 :169-171(실행마다 서브에이전트, 한 턴에 모두 시작)·:424(직접 실행은 "덜 엄밀")와 같은 원칙.
-- [ ] #3 auto-optimize에 `disable-model-invocation: true`(무인 제자리 수정 루프 + 큰 비용 → 사용자가 `/auto-optimize`로만 시작; 겹침 0, description ~290자 절약). skill-creator-pro description의 "Also trigger on…" 삭제 → 공식 description + "for Claude Code". :346의 `/auto-optimize` 안내는 유지.
-- [ ] #6 대시보드: `auto-optimize/scripts/render_dashboard.py` 추가 — `results.json`을 읽어 결과를 넣은 self-contained HTML + meta refresh를 씀. 모델은 실험마다 스크립트 1번 실행(결정적 우선, file:// fetch 차단 회피, 모델이 HTML을 매번 다시 쓰지 않음).
-- [ ] 나머지 행은 원장 수정안대로: #2(작업 폴더 → `${CLAUDE_PLUGIN_DATA}/autoresearch-<name>/`, `SKILL.md.baseline` 백업도 그 안), #4, #5, #8, #10, #12, #13, #14, #15, 기타(fork 기록·LICENSE).
-- [ ] 버전 범프(minor), README·description 2곳 갱신, `claude plugin validate .`.
+- [x] #11 Claude.ai 절(pro :453~, 공식 :420~)을 공식 문장 그대로 `skill-creator-pro/references/claude-ai.md`로 옮기고 본문엔 포인터 1줄. ADR 0001 Consequences의 "`references/` returns to `schemas.md` only" 한 줄 개정(Claude Code 플러그인이라 Claude.ai 절은 거의 안 읽히는데 매번 로드 — C5).
+- [x] #11 pro 추가 블록 :49-58("스킬이 맞는 도구인가" 관문, 10줄)을 3줄로: "매 세션 필요한 지식 → CLAUDE.md, 이벤트 자동 실행 → hook" 판단만(5개 도구 목록은 C4). 다른 pro 추가 블록(:96-97, :153-154, :187-188, :339-346, :432-440, :503-504)은 ADR 0001대로 본문 유지. 목표 ≤500줄(pro :108 자기 규칙), #9·#15 추가분 포함. 지울 줄 목록은 구현 전에 보고·승인.
+- [x] #9 :436 예약 문장을 둘로: Claude Code는 폴더 이름 `synced`·`anthropic-skills` 금지(skills.md:155-156), API·Claude.ai는 이름에 `claude`·`anthropic` 포함 금지(overview:217). 원장의 "`claude`/`anthropic`은 예약" 서술은 Claude Code 기준 틀렸고 API 기준 좁았다. 이름 충돌 우선순위 추가는 원안대로.
+- [x] #7 auto-optimize의 모든 실행(기준선·실험 N회)은 실행마다 새 서브에이전트, 스킬 경로와 입력만 주고 평가 기준은 안 줌, 한 실험의 N회는 같은 턴에 동시 시작. 공식 :169-171(실행마다 서브에이전트, 한 턴에 모두 시작)·:424(직접 실행은 "덜 엄밀")와 같은 원칙.
+- [x] #3 auto-optimize에 `disable-model-invocation: true`(무인 제자리 수정 루프 + 큰 비용 → 사용자가 `/auto-optimize`로만 시작; 겹침 0, description ~290자 절약). skill-creator-pro description의 "Also trigger on…" 삭제 → 공식 description + "for Claude Code". :346의 `/auto-optimize` 안내는 유지.
+- [x] #6 대시보드: `auto-optimize/scripts/render_dashboard.py` 추가 — `results.json`을 읽어 결과를 넣은 self-contained HTML + meta refresh를 씀. 모델은 실험마다 스크립트 1번 실행(결정적 우선, file:// fetch 차단 회피, 모델이 HTML을 매번 다시 쓰지 않음).
+- [x] 나머지 행은 원장 수정안대로: #2(작업 폴더 → `${CLAUDE_PLUGIN_DATA}/autoresearch-<name>/`, `SKILL.md.baseline` 백업도 그 안), #4, #5, #8, #10, #12, #13, #14, #15, 기타(fork 기록·LICENSE).
+- [x] 버전 범프(minor), README·description 2곳 갱신, `claude plugin validate .`.
 
+P5 구현 기록(28차): skill-creator-pro SKILL.md 520 → 495줄, auto-optimize 379 → 304줄. 공식 대조 기준은 `claude-plugins-official/skill-creator/6eb6a30bf024`(캐시의 7개 해시 모두 SKILL.md 동일). 옮긴 `references/claude-ai.md`는 공식 절과 문장 동일(diff 확인). #4 실행 단위: "1 실험 = 입력마다 R회, 기본 R=2", `max_score` = evals × 입력 수 × R, Step 2 발견 실행 = 한 실험(→ Step 5 기준선과 같은 단위). #3 명령 이름은 공식 skills.md:437대로 `/skill-creator-pro:auto-optimize`(README도). #6 `render_dashboard.py <results.json> <out.html>`: 데이터 인라인·인라인 SVG(CDN 없음)·running일 때 meta refresh 10초·`.html` 아닌 출력 거부·환경변수 안 읽음·`allowed-tools` 사전 허용 안 함(27차 교훈). 원장 수정안과 다른 점: :438 "조용히 엉뚱한 것이 이긴다"도 틀려서 공식 우선순위(skills.md:188-197)로 고침. README 라이선스 줄에 공식 Apache-2.0 파생과 fork 2개 기록.
+검증: `claude plugin validate .` 통과(경고는 로컬 플러그인 version 경고뿐), 절 제목 5개(auto-optimize가 인용) 유지 grep, 깨진 참조 0(`claude.ai section above`·`VIEWER_PID`·옛 `/auto-optimize`), 대시보드 headless Chrome 스크린샷(다크 모드·이스케이프·refresh 확인), `claude -p --model haiku --plugin-dir` 스모크 $0.08 — 명령 목록에 `skill-creator-pro:auto-optimize` 확인, auto-optimize 자동 실행 0. **안 한 것:** 스모크 프롬프트가 없는 파일을 가리켜 haiku가 Skill 도구를 아예 안 불렀다 → skill-creator-pro 쪽 트리거는 확인 못 함(description은 공식 문장으로 돌아간 것뿐이라 위험 낮음). 벤치마크(사용자 결정으로 생략).
 ## 2-3. codex-advisor
 
 issue 016(codex-advisor 5.0.0, `05b74a7`)이 리뷰 스킬 5개(review·adversarial·rescue·verify·research)를 다시 썼다. 이 절의 줄 번호는 `23c69ec` 기준이다. (재검수 삭제: 머리말의 `codex-review:73` spark 건 — `4e80b17`에서 해소.)
