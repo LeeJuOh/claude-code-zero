@@ -10,7 +10,7 @@ skill-creator-pro goes the other way. It *is* Anthropic's official [skill-creato
 
 - **A "is a skill even the right primitive?" gate** before you build, so you don't write a skill when the need really belongs in CLAUDE.md, a hook, or an MCP server.
 - **A retire-don't-just-patch review**, because a skill written to paper over a model limitation becomes dead weight once the next model fixes it.
-- **A pre-ship platform check** for the silent traps — reserved names, YAML booleans, unquoted colons, slash-command collisions — that pass review and then break loading.
+- **A pre-ship platform check** for the silent traps — reserved names, YAML booleans, unquoted colons, name collisions — that pass review and then break loading.
 
 Everything else is the official tool. That's the whole idea: official + a few genuinely good ideas, not a framework to learn.
 
@@ -19,8 +19,8 @@ Everything else is the official tool. That's the whole idea: official + a few ge
 **`/skill-creator-pro`** — for when you're at the keyboard.
 Captures intent, drafts a skill, runs your test prompts as parallel baseline-vs-with-skill subagents, and opens an HTML benchmark viewer so you can see — side by side, with variance across runs — where the skill helps and where it doesn't. It waits for your feedback before changing anything, then iterates. A separate description-trigger optimizer tunes the frontmatter so the skill fires when it should and stays quiet when it shouldn't. Use it when the skill is new, the requirements are fuzzy, or you want to stay in the loop.
 
-**`/auto-optimize`** — for when you're not.
-Takes a working-ish skill and hill-climbs **output quality** (not trigger accuracy). Runs the skill repeatedly, scores each output against binary evals, reads the failures, and mutates the prompt with reflection-driven mutation, confidence scoring, and a structured session archive — autonomously, without stopping to ask. Based on Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) methodology. Use it once a skill is already ~70% good and you want to push it higher.
+**`/skill-creator-pro:auto-optimize`** — for when you're not.
+Takes a working-ish skill and hill-climbs **output quality** (not trigger accuracy). Runs the skill repeatedly, scores each output against binary evals, reads the failures, and mutates the prompt with reflection-driven mutation and a structured session archive — autonomously, without stopping to ask. Every run goes to a fresh subagent that never sees the evals, and a live dashboard tracks the score. Only you can start it: Claude never launches it on its own, because it edits the skill in place and spends many model calls. Based on Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) methodology. Use it once a skill is already ~70% good and you want to push it higher.
 
 The first one needs you. The second one needs evals.
 
@@ -33,7 +33,7 @@ The first one needs you. The second one needs evals.
 ```
 /skill-creator-pro I want to make a skill for X
 /skill-creator-pro improve this skill @path/to/skill
-/auto-optimize @path/to/skill
+/skill-creator-pro:auto-optimize @path/to/skill
 ```
 
 ## Commands
@@ -41,7 +41,7 @@ The first one needs you. The second one needs evals.
 | Command | What it does |
 |---|---|
 | `/skill-creator-pro` | Create or improve a skill with the human-in-the-loop coaching + eval loop, then optimize its description for reliable triggering. |
-| `/auto-optimize` | Autonomously hill-climb an existing skill's output quality against binary evals. |
+| `/skill-creator-pro:auto-optimize` | User-started only. Autonomously hill-climb an existing skill's output quality against binary evals. |
 
 ## Prerequisites
 
@@ -49,4 +49,4 @@ The first one needs you. The second one needs evals.
 
 ## License
 
-MIT
+MIT. The `skill-creator-pro` skill is derived from Anthropic's skill-creator (Apache-2.0, see `skills/skill-creator-pro/LICENSE.txt`).

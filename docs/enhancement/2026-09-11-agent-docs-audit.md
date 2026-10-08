@@ -1,25 +1,36 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료) · P3 결정 완료(21차 그릴링, 원장만 — §2-3 "P3 결정") · P3 1단계 완료 `3c4f2ab`(22차, codex-advisor 5.2.0) · P3 2단계 완료 `882843b`(23차) · P3 3단계(권한) 완료 `7a0f62c`·`52d5be6`(24~27차) · v1.86.0 배포(27차, codex-advisor 5.2.0) — P3 끝, 다음 P4** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료) · P3 결정 완료(21차 그릴링, 원장만 — §2-3 "P3 결정") · P3 1단계 완료 `3c4f2ab`(22차, codex-advisor 5.2.0) · P3 2단계 완료 `882843b`(23차) · P3 3단계(권한) 완료 `7a0f62c`·`52d5be6`(24~27차) · v1.86.0 배포·푸시(27차, codex-advisor 5.2.0) — P3 끝 · 순서 P5 → P4로 바꿈(28차) · P5 결정·구현 완료 `5a67f5e`(28차, skill-creator-pro 2.1.0, 미배포). 다음은 P4(rubber-duck-tutor)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-10-08 27차 → 28차)
+## 핸드오프 (2026-10-08 28차 → 29차)
 
-**목표:** P3(codex-advisor) 끝. 27차에 P3 3단계(권한)를 커밋 `7a0f62c`·`52d5be6`하고 v1.86.0으로 배포했다(codex-advisor 5.2.0). 스킬 10개가 `allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)` 하나로 확인 없이 돈다.
+**목표:** 2부 P4(rubber-duck-tutor)를 시작한다. P5(skill-creator-pro)는 28차에 결정·구현 완료 `5a67f5e`(2.1.0) — **미배포·미푸시**(§2-2 "P5 결정").
 
-**첫 행동:** 푸시가 됐는지 `git fetch` 뒤 `git log origin/develop..develop`로 확인(27차에 푸시를 물었다). 그다음 "P3 뒤 과제"를 하거나 P4(§2-4 rubber-duck-tutor)를 시작한다. P4는 §1-5 #8 결정이 막고 있다. 17차 공통 규칙을 쓸지 먼저 묻는다.
+**첫 행동:** §1-5 #8을 사용자에게 한 줄로 묻는다: rubber-duck #2 수정안 (a) 4번 재정의 vs (b) 3·4번 순서 교환, 추천 (b)(Mode Map 순서와 맞고, (a)는 duck-verify:4와 어긋남). 답을 받으면 §2-4를 현재 코드에서 다시 열어 행마다 확인 → 짧게 보고 → 승인.
+
+**28차 교훈**
+- ✅ 원장이 묶어 둔 결정(#9 ↔ #11)을 공식 원본과 대조하니 묶일 이유가 없었다(공식에 Claude.ai 절은 있고 예약 규칙은 없음). 결정 질문 전에 "공식에 있나"를 먼저 확인한다.
+- ⚠️ 첫 스모크 테스트는 없는 파일을 가리켜 Skill이 아예 안 불렸는데 "자동 실행 0"으로 기록할 뻔했다. 트리거 테스트는 옛 버전(`git archive <커밋> plugins/<p> | tar -x`)을 대조군으로 같은 프롬프트에 돌린다 — 옛 버전이 트리거돼야 시험이 유효하다.
+- ⚠️ 비용 예상 $0.2 → 실제 $0.48(새 버전이 스킬 안으로 더 진행). `--max-turns`는 비용 상한이 아니다.
 
 **27차 진행**
-- 검사기 3개 + `claude plugin validate .` 통과 → 수정 커밋 `7a0f62c` → 원장 커밋 → v1.86.0 배포.
-- 커밋 뒤 자동 보안 리뷰(security-guidance 플러그인)가 문제를 찾았다: `codex-task.sh prompt <파일>`이 stdin을 아무 경로에나 썼다. 스크립트는 `allowed-tools`로 확인 없이 돌기 때문에 Write 도구의 안전 검사를 건너뛴다(예: `prompt ~/.zshrc`). 같은 문제가 `launch`·`wait`(아무 `<run-dir>`에 `mkdir`·쓰기)와 모든 `<data-dir>` 인자에도 있었다. 고침 `52d5be6`: `real_run_dir`(실제 경로가 `…/plugins/data/codex-advisor-*/tmp/*-run-*`), `real_prompt_file`(그 안의 `prompt.txt`만), `check_data_dir`(절대 경로, `..` 없음). 스킬 호출 문구는 그대로. 가짜 companion으로 정상 6건 통과·공격 14건 거부 확인. `--document` 읽기는 그대로 둔다(문서를 Codex에 보내는 것이 기능).
-- ⚠️ 27차 교훈: bash는 `set -e`를 `$( … )` 안으로 넘기지 않는다. 함수 안의 `x=$(검사 함수)`가 실패해도 계속 돈다 → 검사 호출마다 `|| exit 1`. 첫 시험에서 이것 때문에 `prompt <다른 폴더>/prompt.txt`가 통과할 뻔했다(`/`가 읽기 전용이라 우연히 실패).
-- ⚠️ 27차 교훈: 권한을 사전 허용한 스크립트는 Write 도구의 안전 검사를 대신한다. 경로를 받는 스크립트는 쓰기 대상을 스크립트 안에서 가둔다.
-- 26차 변경의 지운 줄 대조는 하지 않았다(사용자 승인 — 변경이 작고 e2e로 확인).
-- 남은 정리(선택): `~/.claude/plugins/data/codex-advisor-inline/tmp/`의 옛 테스트 찌꺼기 5개(`review-run-O07SUY`, `verify-*` 4개). 지워도 된다.
+- 검사기 3개 + `claude plugin validate .` 통과 → `7a0f62c`(P3 3단계 권한) → 원장 `b369a77`.
+- 커밋 뒤 자동 보안 리뷰(security-guidance 플러그인)가 실제 문제를 찾았다: `codex-task.sh prompt <파일>`이 stdin을 아무 경로에나 썼다(예: `prompt ~/.zshrc`). 스크립트는 `allowed-tools`로 확인 없이 돌아 Write 도구의 안전 검사를 건너뛴다. 같은 문제가 `launch`·`wait`·`review-wait`(아무 `<run-dir>`)와 모든 `<data-dir>` 인자에 있었다. 사용자 승인 뒤 고침 `52d5be6`: `codex-task.sh`의 `real_run_dir`(실제 경로가 `…/plugins/data/codex-advisor-*/tmp/*-run-*`)·`real_prompt_file`(그 안 `prompt.txt`만)·`check_data_dir`(절대 경로, `..` 없음, `codex-report.sh`에도). 스킬 호출 문구는 그대로. 가짜 companion으로 정상 6건 통과·공격 14건 거부. `--document` 읽기는 그대로(문서를 Codex에 보내는 것이 기능). 원장 `f2e2993`.
+- 배포: main 병합 `85c1d04`, 태그 `v1.86.0`, `main`·`develop`·태그 푸시(사용자 승인). 푸시 뒤 `origin/develop..develop` 0, `origin/main..main` 0.
+- 하지 않은 것: 26차 변경의 지운 줄 대조(사용자 승인으로 건너뜀), `52d5be6` 뒤 `claude -p` e2e 재실행(스크립트 직접 시험만).
+
+**상태(27차 중단, git 기준):** develop, 작업 트리 깨끗, 마지막 커밋은 이 핸드오프 원장 커밋(푸시 안 함 — 원장만). 정리(선택): `~/.claude/plugins/data/codex-advisor-inline/tmp/`에 옛 테스트 찌꺼기 5개(`review-run-O07SUY`, `verify-gJYaJm`, `verify-mirbjw`, `verify-payload-…`, `verify-run-…`). 지워도 된다.
+
+**27차 교훈**
+- ⚠️ bash는 `set -e`를 `$( … )` 안으로 넘기지 않는다. 함수 안의 `x=$(검사 함수)`가 실패해도 계속 돈다 → 검사 호출마다 `|| exit 1`. 첫 시험에서 `prompt <다른 폴더>/prompt.txt`가 통과할 뻔했다(`/`가 읽기 전용이라 우연히 실패). 거부 시험은 "실패했다"만 보지 말고 실패 메시지가 검사 문구인지 본다.
+- ⚠️ 권한을 사전 허용한 스크립트는 Write 도구의 안전 검사를 대신한다. 경로를 받는 스크립트는 쓰기 대상을 스크립트 안에서 가둔다. 사전 허용 규칙을 넓히는 변경 뒤에는 "이 스크립트로 아무 파일이나 쓸 수 있나"를 시험한다.
+- ✅ 보안 리뷰가 지적한 함수 하나만 고치지 않고 같은 모양(경로 인자 → 쓰기)을 grep으로 모두 찾았다(`launch`·`wait`·`<data-dir>`). 인자를 더하는 안 대신 경로 모양 검사로 스킬 문구를 안 바꿨다.
+- ✅ 사용자가 "뭐할차례?"·"구현은끝남?"을 물으면 결론 한 줄 + 검증 안 한 것 + 추천 한 줄로 답했다.
 
 **26차 교훈**
 - ⚠️ e2e 로그 요약 스크립트가 명령을 100자에서 잘라, 한 Bash 호출 안의 두 번째 줄(`clean`)을 못 보고 "clean을 빠뜨렸다"고 잘못 보고했다. 사용자가 핸드오프를 부른 뒤 `CLEANED=`를 grep해서 바로잡았다. 빠졌다고 말하기 전에 결과 문자열(`CLEANED=`·`SAVED=`)이나 남은 파일로 확인한다.
@@ -352,7 +363,7 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 6. ~~release-workflow 레포 태그 번호 기준~~ — **결정(2026-09-24): 기존 관행 명문화.** 이번 릴리즈에 minor·major로 오른 플러그인이 있으면 태그 minor, patch만이면 태그 patch(v1.83.0 ← codex 5.0.0, v1.83.1 ← 5.0.2)
 7. ~~AGENTS.md:60(모든 플러그인 작업 → `/skill-creator-pro`) — 제안 문구(§1-1)로 할지~~ — **결정(2026-09-24): 제안 문구대로.** 공식 skill-creator 대신 pro를 가리킨다(본문 동일 + 플러그인 스킬용 35줄, 결함은 §2-2에서 수정). 플러그인 스킬의 동작 검증(`claude plugin eval`)은 스킬에 넣는다(§2-2 #15). :82는 삭제
 8. rubber-duck #2 수정안 — (a) 원안: 4번을 "already committed session edits"로 재정의 (b) 3·4번 순서 교환. (a)는 미커밋 세션 편집을 `/duck-review`로 보내 duck-verify:4("code just written")와 어긋나고, (b)는 Mode Map(:18-19) 순서와 맞는다
-9. skill-creator-pro #9 — `claude`/`anthropic` 예약 규칙 유지 여부. API·claude.ai 스킬엔 유효한 규칙이라 #11(Claude.ai 절 삭제, ADR 0001) 결정과 묶인다
+9. ~~skill-creator-pro #9 — `claude`/`anthropic` 예약 규칙 유지 여부. API·claude.ai 스킬엔 유효한 규칙이라 #11(Claude.ai 절 삭제, ADR 0001) 결정과 묶인다~~ — **결정(2026-10-08, 28차): 묶이지 않음.** 공식 skill-creator에 Claude.ai 절은 있고 예약 규칙은 없다(pro 추가분). Claude.ai 절은 references로 옮겨 유지, 예약 문장은 둘로 나눔 — §2-2 "P5 결정"
 10. vision-powers #7 — doc-visual의 md 게시 예외를 인정하려면 channel-decision.md의 권위인 ADR 0009 §3 개정이 따라온다. 개정할지, doc-visual의 md 게시를 없앨지
 11. 실행 확인 필요(결정 아님): claw-mux #2(라이브 pane에서 `❯` 오판 재현) — 남음. ~~2부 공통 "reference 파일 치환"~~ 확인됨(치환 안 됨, 2026-09-24)
 12. ~~다른 머신 메모리 2개 이관 여부~~ — **결정(2026-09-24, 이 머신 `/Users/leejuo`에서 처리):** `subagent-model-preference` 버림(Fable 세션 전제), `wiki-is-symlink-to-llm-wiki` → AGENTS.md `references/ · wiki/` 절 반 줄(llm-wiki 레포에서 수정). 두 메모리 파일 삭제함. 원문: — `subagent-model-preference`(→ 전역 선호. 근거가 "세션이 Fable 5"라 지금도 유효한지 확인), `wiki-is-symlink-to-llm-wiki`(→ 전역 `~/.claude/CLAUDE.md` 후보: `wiki -> ../llm-wiki/wiki` 심링크가 claude-code-zero·excalidraw-architect·link-dive 3개 레포에 있음 ✅). 전역 CLAUDE.md는 이 머신에 아직 없음 ✅
@@ -492,6 +503,22 @@ README 충돌: "4 specialized agents"(실제 3개, 하나는 미호출 — #1·#
 
 기타: agents 3개·schemas.md·scripts는 공식과 동일(ADR 0001 준수). 기록 안 된 fork 2개 — `eval-viewer/generate_review.py:279-291` `</script>` 이스케이프, `eval-viewer/viewer.html`의 sandboxed iframe(.html 출력 실시간 렌더). 공식 `LICENSE.txt`(Apache-2.0) 누락. → ADR/README에 fork 기록, LICENSE 추가.
 
+### P5 결정 (2026-10-08, 28차 그릴링) — **구현 완료 `5a67f5e`(skill-creator-pro 2.1.0)**
+
+순서: P5(skill-creator-pro)를 P4보다 먼저(사용자 승인). 사실 확인 기준: 설치된 공식 skill-creator `claude-plugins-official/skill-creator/2a8ad9f74633` SKILL.md 485줄, pro 520줄, 공식 skills.md·platform agent-skills overview(2026-10-08 받음).
+
+할 일:
+- [x] #11 Claude.ai 절(pro :453~, 공식 :420~)을 공식 문장 그대로 `skill-creator-pro/references/claude-ai.md`로 옮기고 본문엔 포인터 1줄. ADR 0001 Consequences의 "`references/` returns to `schemas.md` only" 한 줄 개정(Claude Code 플러그인이라 Claude.ai 절은 거의 안 읽히는데 매번 로드 — C5).
+- [x] #11 pro 추가 블록 :49-58("스킬이 맞는 도구인가" 관문, 10줄)을 3줄로: "매 세션 필요한 지식 → CLAUDE.md, 이벤트 자동 실행 → hook" 판단만(5개 도구 목록은 C4). 다른 pro 추가 블록(:96-97, :153-154, :187-188, :339-346, :432-440, :503-504)은 ADR 0001대로 본문 유지. 목표 ≤500줄(pro :108 자기 규칙), #9·#15 추가분 포함. 지울 줄 목록은 구현 전에 보고·승인.
+- [x] #9 :436 예약 문장을 둘로: Claude Code는 폴더 이름 `synced`·`anthropic-skills` 금지(skills.md:155-156), API·Claude.ai는 이름에 `claude`·`anthropic` 포함 금지(overview:217). 원장의 "`claude`/`anthropic`은 예약" 서술은 Claude Code 기준 틀렸고 API 기준 좁았다. 이름 충돌 우선순위 추가는 원안대로.
+- [x] #7 auto-optimize의 모든 실행(기준선·실험 N회)은 실행마다 새 서브에이전트, 스킬 경로와 입력만 주고 평가 기준은 안 줌, 한 실험의 N회는 같은 턴에 동시 시작. 공식 :169-171(실행마다 서브에이전트, 한 턴에 모두 시작)·:424(직접 실행은 "덜 엄밀")와 같은 원칙.
+- [x] #3 auto-optimize에 `disable-model-invocation: true`(무인 제자리 수정 루프 + 큰 비용 → 사용자가 `/auto-optimize`로만 시작; 겹침 0, description ~290자 절약). skill-creator-pro description의 "Also trigger on…" 삭제 → 공식 description + "for Claude Code". :346의 `/auto-optimize` 안내는 유지.
+- [x] #6 대시보드: `auto-optimize/scripts/render_dashboard.py` 추가 — `results.json`을 읽어 결과를 넣은 self-contained HTML + meta refresh를 씀. 모델은 실험마다 스크립트 1번 실행(결정적 우선, file:// fetch 차단 회피, 모델이 HTML을 매번 다시 쓰지 않음).
+- [x] 나머지 행은 원장 수정안대로: #2(작업 폴더 → `${CLAUDE_PLUGIN_DATA}/autoresearch-<name>/`, `SKILL.md.baseline` 백업도 그 안), #4, #5, #8, #10, #12, #13, #14, #15, 기타(fork 기록·LICENSE).
+- [x] 버전 범프(minor), README·description 2곳 갱신, `claude plugin validate .`.
+
+P5 구현 기록(28차): skill-creator-pro SKILL.md 520 → 495줄, auto-optimize 379 → 304줄. 공식 대조 기준은 `claude-plugins-official/skill-creator/6eb6a30bf024`(캐시의 7개 해시 모두 SKILL.md 동일). 옮긴 `references/claude-ai.md`는 공식 절과 문장 동일(diff 확인). #4 실행 단위: "1 실험 = 입력마다 R회, 기본 R=2", `max_score` = evals × 입력 수 × R, Step 2 발견 실행 = 한 실험(→ Step 5 기준선과 같은 단위). #3 명령 이름은 공식 skills.md:437대로 `/skill-creator-pro:auto-optimize`(README도). #6 `render_dashboard.py <results.json> <out.html>`: 데이터 인라인·인라인 SVG(CDN 없음)·running일 때 meta refresh 10초·`.html` 아닌 출력 거부·환경변수 안 읽음·`allowed-tools` 사전 허용 안 함(27차 교훈). 원장 수정안과 다른 점: :438 "조용히 엉뚱한 것이 이긴다"도 틀려서 공식 우선순위(skills.md:188-197)로 고침. README 라이선스 줄에 공식 Apache-2.0 파생과 fork 2개 기록.
+검증: `claude plugin validate .` 통과(경고는 로컬 플러그인 version 경고뿐), 절 제목 5개(auto-optimize가 인용) 유지 grep, 깨진 참조 0(`claude.ai section above`·`VIEWER_PID`·옛 `/auto-optimize`), 대시보드 headless Chrome 스크린샷(다크 모드·이스케이프·refresh 확인), 트리거 대조 스모크(`claude -p --model haiku`, 같은 auto-optimize형 프롬프트, 더미 `my-skill`): 옛 버전(`7e50047`) → `skill-creator-pro:auto-optimize` 자동 호출, 새 버전 → `skill-creator-pro:skill-creator-pro` 호출(auto-optimize 0). 합계 약 $0.48. 명령 목록에 `skill-creator-pro:auto-optimize` 있음. 첫 스모크($0.08)는 없는 파일을 가리켜 Skill이 안 불려 무효였다. README 스타일: fork 상세는 구현 세부라 ADR 0001로 옮김. **안 한 것:** 벤치마크(사용자 결정으로 생략). 계획에 없던 값: 기본 R=2(입력 3 × 2 = 6회, 옛 기본 5회와 비슷).
 ## 2-3. codex-advisor
 
 issue 016(codex-advisor 5.0.0, `05b74a7`)이 리뷰 스킬 5개(review·adversarial·rescue·verify·research)를 다시 썼다. 이 절의 줄 번호는 `23c69ec` 기준이다. (재검수 삭제: 머리말의 `codex-review:73` spark 건 — `4e80b17`에서 해소.)

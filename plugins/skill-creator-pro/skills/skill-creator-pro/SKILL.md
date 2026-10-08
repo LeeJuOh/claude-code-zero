@@ -1,6 +1,6 @@
 ---
 name: skill-creator-pro
-description: Create new skills, modify and improve existing skills, and measure skill performance for Claude Code. Use when users want to create a skill from scratch, edit or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy. Also trigger on "make a skill", "skill for X", "improve my skill", "turn this into a skill", or capturing a workflow as a reusable skill.
+description: Create new skills, modify and improve existing skills, and measure skill performance for Claude Code. Use when users want to create a skill from scratch, edit or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
 ---
 
 # Skill Creator Pro
@@ -46,15 +46,7 @@ It's OK to briefly explain terms if you're in doubt, and feel free to clarify te
 
 ### Capture Intent
 
-First, a gate worth a moment: **is a skill even the right primitive for this?** A capability can live in five places, and a skill is only one of them:
-
-- **CLAUDE.md** — knowledge Claude should carry every session (project conventions, codebase facts). Right when the need is "always know X," not "do a specialized task."
-- **A hook** — automatic behavior on an event (lint on save, a pre-commit check). And hooks aren't only for *blocking*: a Stop hook can *propose* edits back to a skill or CLAUDE.md, so the harness can improve itself.
-- **A skill** — on-demand expertise, loaded only when a specific multi-step task appears. Right when the workflow is specialized and shouldn't sit in context the rest of the time.
-- **A plugin** — a bundle of skills + hooks + MCP; the unit you distribute to a team.
-- **An MCP server** — a connection to an external tool, data source, or API.
-
-If the honest answer is "remember this every session" or "run this automatically on an event," point the user at CLAUDE.md or a hook instead — a skill nobody triggers is wasted work. If a skill genuinely fits, go on.
+First, a gate worth a moment: **is a skill even the right primitive for this?** Knowledge Claude should carry every session belongs in CLAUDE.md; behavior that should run automatically on an event belongs in a hook (which can also *propose* edits back to a skill or CLAUDE.md, not only block). A skill fits on-demand expertise for a specialized multi-step task. If the honest answer is one of the first two, point the user there instead — a skill nobody triggers is wasted work.
 
 Start by understanding the user's intent. The current conversation might already contain a workflow the user wants to capture (e.g., they say "turn this into a skill"). If so, extract answers from the conversation history first — the tools used, the sequence of steps, corrections the user made, input/output formats observed. The user may need to fill the gaps, and should confirm before proceeding to the next step.
 
@@ -93,7 +85,7 @@ skill-name/
     └── assets/     - Files used in output (templates, icons, fonts)
 ```
 
-**Referencing bundled files and writing output.** Point at a skill's own bundled files with `${CLAUDE_SKILL_DIR}` (e.g. `${CLAUDE_SKILL_DIR}/references/api.md`) so paths resolve wherever the plugin is installed. Write any persistent output, config, or workspace to `${CLAUDE_PLUGIN_DATA}` — it survives plugin updates, whereas the skill's own directory is wiped on update — never inside the skill folder. For the full list of frontmatter fields and string substitutions, fetch `skills.md` from the official docs on demand (`https://code.claude.com/docs/llms.txt` → the relevant page) rather than relying on a frozen copy.
+**Referencing bundled files and writing output.** Point at a skill's own bundled files with `${CLAUDE_SKILL_DIR}` (e.g. `${CLAUDE_SKILL_DIR}/references/api.md`) so paths resolve wherever the plugin is installed. Never write output, config, or a workspace inside the skill folder. In a plugin skill, write it to `${CLAUDE_PLUGIN_DATA}` — it survives plugin updates, whereas the plugin's own directory is wiped on update. That variable is substituted only in plugin skills, so a personal or project skill needs a path outside its folder that the user chooses. For the full list of frontmatter fields and string substitutions, fetch `skills.md` from the official docs on demand (`https://code.claude.com/docs/llms.txt` → the relevant page) rather than relying on a frozen copy.
 
 #### Progressive Disclosure
 
@@ -173,6 +165,8 @@ Save test cases to `evals/evals.json`. Don't write assertions yet — just the p
 ```
 
 See `${CLAUDE_SKILL_DIR}/references/schemas.md` for the full schema (including the `assertions` field, which you'll add later).
+
+If the skill ships in a plugin, also mention `claude plugin eval` (Claude Code v2.1.269+): it runs each case in an isolated session with and without the plugin and can gate CI. Its case files and `evals/evals.json` aren't interchangeable, so pick one per suite — this loop for iterating in conversation, `claude plugin eval` for regression checks.
 
 ## Running and evaluating test cases
 
@@ -256,7 +250,7 @@ Put each with_skill version before its baseline counterpart.
      --skill-name "my-skill" \
      --benchmark <workspace>/iteration-N/benchmark.json \
      > /dev/null 2>&1 &
-   VIEWER_PID=$!
+   echo "viewer pid: $!"
    ```
    For iteration 2+, also pass `--previous-workspace <workspace>/iteration-<N-1>`.
 
@@ -297,10 +291,10 @@ When the user tells you they're done, read `feedback.json`:
 
 Empty feedback means the user thought it was fine. Focus your improvements on the test cases where the user had specific complaints.
 
-Kill the viewer server when you're done with it — it stays alive after review, and forgetting leaves zombie processes that can collide on the port next launch:
+Kill the viewer server when you're done with it, using the pid printed at launch (shell variables don't carry over between commands):
 
 ```bash
-kill $VIEWER_PID 2>/dev/null
+kill <viewer-pid> 2>/dev/null
 ```
 
 ---
@@ -342,7 +336,7 @@ Skills age. A skill written to work around a model limitation becomes pure overh
 
 ### Autonomous optimization (optional)
 
-If the user wants a hands-off pass instead of the manual review loop, the `/auto-optimize` sub-skill runs the skill repeatedly, scores outputs against binary evals, mutates the prompt, and keeps improvements. It works best once a manual iteration already shows a with-skill pass rate around 0.7+; below that, the skill usually needs a structural rethink the manual loop is better at. It's a separate skill — point the user at it, don't fold its mechanics in here.
+If the user wants a hands-off pass instead of the manual review loop, the auto-optimize sub-skill runs the skill repeatedly, scores outputs against binary evals, mutates the prompt, and keeps improvements. It works best once a manual iteration already shows a with-skill pass rate around 0.7+; below that, the skill usually needs a structural rethink the manual loop is better at. Only the user can start it: tell them to type `/skill-creator-pro:auto-optimize`, and don't fold its mechanics in here.
 
 ---
 
@@ -433,9 +427,9 @@ Take `best_description` from the JSON output and update the skill's SKILL.md fro
 
 A handful of platform-level traps silently break a skill that otherwise looks perfect — the validator won't always catch them. Give the frontmatter a quick once-over before shipping:
 
-- **Reserved or boolean-looking names.** A `name` like `claude` or `anthropic` is reserved, and YAML reads bare `on`, `off`, `yes`, `no`, `true`, `false` as booleans — either one breaks loading. Rename.
+- **Reserved or boolean-looking names.** Claude Code skips a skill folder named `synced` or `anthropic-skills`; on the API and Claude.ai, a `name` can't contain `claude` or `anthropic`. YAML reads bare `on`, `off`, `yes`, `no`, `true`, `false` as booleans. Any of these breaks loading — rename.
 - **Unquoted colons in `description`.** A colon-then-space inside an unquoted description is parsed as a YAML mapping and corrupts the frontmatter. Quote the string or rephrase.
-- **Slash-command name collisions.** If the skill ships a command, make sure its name doesn't shadow a built-in (`/init`, `/review`, …) — the collision is silent and the wrong one may win.
+- **Name collisions.** A personal or project skill named like a built-in or bundled command (`/usage`, `/code-review`) replaces that command but not its aliases, and personal beats project. Plugin skills are namespaced (`/plugin:skill`), so they never collide. Rename unless replacing the built-in is the point.
 - **Description length budget.** Descriptions have a maximum character budget; overrun and it gets truncated, which can quietly kill triggering. Don't trust a memorized number — fetch the current limit from `skills.md` in the official docs.
 
 ### Package and Present (only if `present_files` tool is available)
@@ -452,26 +446,7 @@ After packaging, direct the user to the resulting `.skill` file path so they can
 
 ## Claude.ai-specific instructions
 
-In Claude.ai, the core workflow is the same (draft → test → review → improve → repeat), but because Claude.ai doesn't have subagents, some mechanics change. Here's what to adapt:
-
-**Running test cases**: No subagents means no parallel execution. For each test case, read the skill's SKILL.md, then follow its instructions to accomplish the test prompt yourself. Do them one at a time. This is less rigorous than independent subagents (you wrote the skill and you're also running it, so you have full context), but it's a useful sanity check — and the human review step compensates. Skip the baseline runs — just use the skill to complete the task as requested.
-
-**Reviewing results**: If you can't open a browser (e.g., Claude.ai's VM has no display, or you're on a remote server), skip the browser reviewer entirely. Instead, present results directly in the conversation. For each test case, show the prompt and the output. If the output is a file the user needs to see (like a .docx or .xlsx), save it to the filesystem and tell them where it is so they can download and inspect it. Ask for feedback inline: "How does this look? Anything you'd change?"
-
-**Benchmarking**: Skip the quantitative benchmarking — it relies on baseline comparisons which aren't meaningful without subagents. Focus on qualitative feedback from the user.
-
-**The iteration loop**: Same as before — improve the skill, rerun the test cases, ask for feedback — just without the browser reviewer in the middle. You can still organize results into iteration directories on the filesystem if you have one.
-
-**Description optimization**: This section requires the `claude` CLI tool (specifically `claude -p`) which is only available in Claude Code. Skip it if you're on Claude.ai.
-
-**Blind comparison**: Requires subagents. Skip it.
-
-**Packaging**: The `package_skill.py` script works anywhere with Python and a filesystem. On Claude.ai, you can run it and the user can download the resulting `.skill` file.
-
-**Updating an existing skill**: The user might be asking you to update an existing skill, not create a new one. In this case:
-- **Preserve the original name.** Note the skill's directory name and `name` frontmatter field -- use them unchanged. E.g., if the installed skill is `research-helper`, output `research-helper.skill` (not `research-helper-v2`).
-- **Copy to a writeable location before editing.** The installed skill path may be read-only. Copy to `/tmp/skill-name/`, edit there, and package from the copy.
-- **If packaging manually, stage in `/tmp/` first**, then copy to the output directory -- direct writes may fail due to permissions.
+In Claude.ai there are no subagents, so test runs, benchmarking, description optimization, and packaging change. Read `${CLAUDE_SKILL_DIR}/references/claude-ai.md` when you're running there, or when updating an installed skill rather than creating one.
 
 ---
 
@@ -485,7 +460,7 @@ If you're in Cowork, the main things to know are:
 - Feedback works differently: since there's no running server, the viewer's "Submit All Reviews" button will download `feedback.json` as a file. You can then read it from there (you may have to request access first).
 - Packaging works — `package_skill.py` just needs Python and a filesystem.
 - Description optimization (`run_loop.py` / `run_eval.py`) should work in Cowork just fine since it uses `claude -p` via subprocess, not a browser, but please save it until you've fully finished making the skill and the user agrees it's in good shape.
-- **Updating an existing skill**: The user might be asking you to update an existing skill, not create a new one. Follow the update guidance in the claude.ai section above.
+- **Updating an existing skill**: The user might be asking you to update an existing skill, not create a new one. Follow the update guidance in `${CLAUDE_SKILL_DIR}/references/claude-ai.md`.
 
 ---
 
