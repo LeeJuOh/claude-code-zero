@@ -1,6 +1,6 @@
 {
   "name": "skill-creator-pro",
-  "description": "Create, test, and iteratively improve Claude Code skills with the official lean coaching loop, an eval harness for benchmarking with variance analysis, and automated description-trigger optimization.",
+  "description": "Create, test, and iteratively improve Claude Code skills with the official lean coaching loop, an eval harness for benchmarking with variance analysis, automated description-trigger optimization, and a user-started autonomous output-quality optimizer.",
   "author": {
     "name": "LeeJuOh",
     "email": "xop4p@naver.com"

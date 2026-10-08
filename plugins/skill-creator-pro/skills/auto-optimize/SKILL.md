@@ -1,6 +1,7 @@
 ---
 name: auto-optimize
-description: "Autonomously optimize any Claude Code skill by running it repeatedly, scoring against binary evals, mutating the prompt, and keeping improvements. Use when: optimize/improve/benchmark/eval a skill, autoresearch, auto-optimize. Not for creating skills from scratch (use skill-creator-pro)."
+description: "Autonomously optimize an existing skill's output quality by running it repeatedly, scoring against binary evals, mutating the prompt, and keeping improvements. Started only by the user, because it edits the skill in place and runs many paid model calls."
+disable-model-invocation: true
 ---
 
 # Autoresearch for Skills
@@ -39,7 +40,7 @@ Take any existing skill, define what "good output" looks like as binary yes/no c
 
 1. **Target skill** -- Which skill to optimize? (exact path to SKILL.md)
 2. **Test inputs** -- 3-5 different prompts/scenarios to test with. Variety matters -- pick inputs that cover different use cases so we don't overfit to one scenario.
-3. **Runs per experiment** -- How many times to run the skill per mutation? Default: 5. More runs = more reliable scores but slower. 5 is the sweet spot.
+3. **Runs per input (R)** -- How many times each test input runs in one experiment. Default: 2 (3 inputs x 2 = 6 runs). More runs = more reliable scores but slower and costlier.
 4. **Budget cap** -- Optional. Max number of experiment cycles before stopping. Default: no cap (runs until you stop it).
 
 Do NOT ask the user for eval criteria yet. Evals come from observing real failures, not from guessing upfront.
@@ -64,11 +65,11 @@ Do NOT skip this. You need to understand both the skill AND what makes skills wo
 
 ## Step 2: Discovery Runs
 
-Run the skill 3-5 times AS-IS using the test inputs. Do NOT score anything yet -- just collect outputs and observe.
+Run the skill AS-IS for one full experiment: every test input, R times each. These outputs become the baseline in Step 5, so they must match what each later experiment runs. Do NOT score anything yet -- just collect outputs and observe.
 
-1. Create working directory: `autoresearch-[skill-name]/` as sibling to the skill
-2. Back up the original SKILL.md as `SKILL.md.baseline`
-3. Run the skill with each test input
+1. Create the workspace `${CLAUDE_PLUGIN_DATA}/autoresearch-[skill-name]/` -- never next to the target skill, where it would ship with the skill
+2. Back up the original SKILL.md there as `SKILL.md.baseline`
+3. Run the skill as described in "How to run the skill" below, saving to `exp-0/`
 4. **Save every output in full** -- you'll need these for reflection later. Don't summarize; keep the raw transcript.
 
 **While reviewing outputs, identify failure patterns:**
@@ -78,6 +79,10 @@ Run the skill 3-5 times AS-IS using the test inputs. Do NOT score anything yet -
 - What would a user complain about?
 
 The highest-signal content comes from real failure points, not theoretical checklists.
+
+### How to run the skill
+
+Every run -- discovery and experiment alike -- goes to a fresh subagent, because this session knows the evals and would quietly write toward them, and a subagent that saw earlier runs would copy them. Give each subagent only the target skill's path, one test input, and the file to save its output to; never the eval criteria or other outputs. Launch all of one experiment's runs (every input x R) in the same turn so they finish together, and save them under `exp-[N]/`.
 
 ---
 
@@ -105,7 +110,7 @@ Present the proposed evals and explain which observed failures each one targets.
 **Max score calculation:**
 
 ```
-max_score = [number of evals] x [runs per experiment]
+max_score = [number of evals] x [number of test inputs] x R
 ```
 
 **IMPORTANT:** Do not proceed to the experiment loop until the user confirms the eval criteria.
@@ -114,21 +119,16 @@ max_score = [number of evals] x [runs per experiment]
 
 ## Step 4: Set Up Dashboard
 
-Before running experiments, create a live HTML dashboard at `autoresearch-[skill-name]/dashboard.html` and open it.
+Before running experiments, write `results.json` in the workspace (schema below), render the dashboard, and open it:
 
-The dashboard must:
-- Auto-refresh every 10 seconds (reads from results.json)
-- Show a score progression line chart (experiment # on X, pass rate % on Y)
-- Show a colored bar for each experiment: green = keep, red = discard, blue = baseline, yellow = marginal
-- Show a table of all experiments: #, score, pass rate, status, description
-- Show **per-eval breakdown**: which evals pass most/least across all runs, with trend arrows (up/down/stable)
-- Show current status: "Running experiment [N]..." or "Idle"
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/render_dashboard.py <workspace>/results.json <workspace>/dashboard.html
+open <workspace>/dashboard.html
+```
 
-Generate as a single self-contained HTML file with inline CSS and JavaScript. Use Chart.js from CDN for the chart. The JS should fetch `results.json` and re-render.
+The script inlines the data into the page -- a page that fetches `results.json` is blocked from `file://` -- and the page reloads every 10 seconds while `status` is `"running"`. It shows the pass-rate progression, a colored bar per experiment, per-eval pass rates with trend arrows, and the experiment table.
 
-**Open it immediately** after creating it: `open dashboard.html`
-
-**Update `results.json`** after every experiment so the dashboard stays current:
+**Update `results.json` and re-run the script** after every experiment so the dashboard stays current:
 
 ```json
 {
@@ -156,7 +156,7 @@ Generate as a single self-contained HTML file with inline CSS and JavaScript. Us
 }
 ```
 
-When the run finishes, update `status` to `"complete"`.
+When the run finishes, set `status` to `"complete"` and render once more.
 
 ---
 
@@ -166,7 +166,7 @@ Now score the discovery run outputs (from Step 2) against the confirmed evals. T
 
 1. Score every output from discovery runs against every eval
 2. Record the baseline score **per-eval** (not just total) and update results.json
-3. Update the dashboard
+3. Re-render the dashboard
 
 **IMPORTANT:** After establishing baseline, confirm the score with the user before proceeding. If baseline is already 90%+, the skill may not need optimization -- ask if they want to continue.
 
@@ -215,7 +215,7 @@ Bad mutations:
 
 ### 6.3 Run and Score
 
-Execute the skill [N] times with the same test inputs. Score every output against every eval. Record **both total score and per-eval scores**.
+Run the mutated skill for one full experiment (every input x R, see "How to run the skill"), saving to `exp-[N]/`. Score every output against every eval. Record **both total score and per-eval scores**.
 
 ### 6.4 Keep or Discard
 
@@ -257,13 +257,11 @@ Reset the consecutive discard counter whenever a mutation is kept.
 
 ### Loop Control
 
-**NEVER STOP.** Once the loop starts, do not pause to ask the user. They may be away. Run autonomously until:
+Once the loop starts, keep going without pausing to ask the user -- they started a hands-off run and may be away, so a question just stalls it. Run until:
 - The user manually stops you
 - You hit the budget cap (if set)
 - You hit 95%+ pass rate for 3 consecutive experiments (diminishing returns)
 - You hit 8 consecutive discards (plateau -- present results and ask)
-
-**If you run out of ideas:** Re-read the reflection guide. Try a completely different approach. Try removing things instead of adding them. Simplification that maintains the score is a win. Re-read the design principles from Step 1 -- there may be a pattern you haven't tried yet. If the skill uses platform features (hooks, frontmatter, allowed-tools) and failures seem structural, fetch the official docs (`https://code.claude.com/docs/en/skills.md` or `hooks.md`) to check if the skill's usage matches the current spec.
 
 ---
 
@@ -271,48 +269,7 @@ Reset the consecutive discard counter whenever a mutation is kept.
 
 The changelog is NOT just a flat log -- it's a structured document that future sessions (or fresh contexts) can read to continue where you left off.
 
-Maintain `autoresearch-[skill-name]/changelog.md` with these sections:
-
-### Current Understanding (update after every kept mutation)
-
-```markdown
-## Current Understanding
-
-**What works:**
-- Specific hex color codes prevent neon color failures (Exp 3)
-- Worked examples are more effective than rules for formatting (Exp 5)
-
-**What doesn't work:**
-- Font size instructions alone don't fix legibility -- model ignores px values (Exp 2)
-- Vague color descriptions ("pastel", "soft") are unreliable
-
-**Remaining failures:**
-- Eval 4 (label formatting) still fails 30% -- labels overlap on dense diagrams
-```
-
-### Experiment Log (append after every experiment)
-
-```markdown
-## Experiment [N] -- [keep/discard/marginal]
-
-**Score:** [X]/[max] ([percent]%)
-**Per-eval:** [Eval1: 5/5] [Eval2: 3/5 DOWN] [Eval3: 4/5]
-**Hypothesis:** [What you diagnosed from reflection]
-**Change:** [One sentence describing what was changed]
-**Result:** [What actually happened -- which evals improved/declined]
-**Failing outputs:** [Brief description of what still fails]
-```
-
-### Ideas Backlog (add during reflection, prune after trying)
-
-```markdown
-## Ideas Backlog
-
-- [ ] Try on-demand hook to block destructive operations
-- [ ] Move the API reference table to references/ -- 40 lines of noise in main body
-- [x] ~~Add worked example for edge case~~ (tried Exp 5, kept)
-- [x] ~~Increase font size instruction~~ (tried Exp 2, didn't work)
-```
+Maintain `changelog.md` in the workspace with three sections -- **Current Understanding** (update after every kept mutation), **Experiment Log** (append after every experiment), and **Ideas Backlog** (add during reflection, prune after trying). Templates: `${CLAUDE_SKILL_DIR}/references/changelog-template.md`.
 
 ---
 
@@ -327,39 +284,7 @@ When the user returns or the loop stops, present:
 5. **Top 3 changes that helped most** (from the changelog)
 6. **Remaining failure patterns** (what the skill still gets wrong)
 7. **The improved SKILL.md** (already saved in place)
-8. **Location of dashboard.html and changelog.md** for reference
-
----
-
-## Output Files
-
-All files in `autoresearch-[skill-name]/`:
-
-```
-autoresearch-[skill-name]/
-  dashboard.html       # live browser dashboard (auto-refreshes)
-  results.json         # data file powering the dashboard
-  changelog.md         # structured archive (understanding + log + ideas)
-  SKILL.md.baseline    # original skill before optimization
-```
-
-Plus the improved SKILL.md saved back to its original location.
-
----
-
-## Example Run: Optimizing a Diagram Skill
-
-Baseline: 16/20 (80%) -- 4 evals x 5 runs.
-
-| # | Reflection -> Mutation | Score | Result |
-|---|---|---|---|
-| 1 | "Outputs include '1.' '2.' prefixes -- skill says 'list steps' which implies numbering" -> Added "Do NOT include step numbers in diagram labels" | 18/20 (90%) | **keep** |
-| 2 | "Text <10px. Tried px minimum but model ignores pixel values" -> Added "minimum 14px font size" | 17/20 (85%) | **discard** -- Eval 2 regressed, Eval 3 only +1 |
-| 3 | "Model picks neon green 60% when skill says 'appropriate colors' -- root cause is ambiguity" -> Replaced with specific hex palette | 19/20 (95%) | **keep** |
-| 4 | "Only 1 failure left. Tried anti-pattern for neon" -> Added neon color anti-pattern | 19/20 (95%) | **discard** -- hex codes already solved it, zero gain |
-| 5 | "Label text correct but overlaps in small boxes -- need visual example" -> Added worked example for label placement | 20/20 (100%) | **keep** |
-
-**Result:** 80% -> 100% in 5 experiments (3 kept, 2 discarded). Key: reflection found px values don't work (Exp 2) so Exp 3 tried a different approach instead of retrying the same tactic.
+8. **Workspace path** (`dashboard.html`, `results.json`, `changelog.md`, `SKILL.md.baseline`, `exp-*/`)
 
 ---
 
@@ -376,4 +301,4 @@ A good autoresearch run:
 7. **Detected plateaus** -- escalated strategy instead of repeating the same failing approach
 8. **Ran autonomously** -- didn't stop to ask permission between experiments
 
-If the skill "passes" all evals but the actual output quality hasn't improved -- the evals are bad, not the skill. Go back to step 2 and write better evals.
+If the skill "passes" all evals but the actual output quality hasn't improved -- the evals are bad, not the skill. Go back to Step 3 and write better evals.
