@@ -14,7 +14,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Task",
+        "matcher": "Agent|Task",
         "hooks": [
           {
             "type": "command",

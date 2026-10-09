@@ -79,7 +79,7 @@ date: YYYY-MM-DD
 **Always present (this order):**
 
 1. **Goal** — What we're trying to accomplish
-2. **First Action** — Single most immediate action when resuming. Must be actionable without reading any other section. Include skill recommendation if applicable (e.g., "run `/tdd` to add the missing test" or "run `/diagnose` to investigate the timeout")
+2. **First Action** — Single most immediate action when resuming. Must be actionable without reading any other section. Include a skill recommendation if one installed in this session fits (e.g., "run the TDD skill to add the missing test")
 3. **Context** — Mental state when pausing: what you were thinking, the plan, where your attention was
 4. **Current Progress** — What's done, read off the commits and working tree rather than memory (see *Accuracy: verify before asserting* above). Include uncommitted changes (`git status` / `git diff --stat`) if any
 
@@ -103,14 +103,3 @@ date: YYYY-MM-DD
 - **Reference, don't duplicate** — if a PRD, ADR, plan, commit, or diff already captures information, point to it by path. Duplicating creates staleness.
 - **Rewrite, don't update** — when continuing a topic, read the old handoff for context, then write fresh. Merging old + current into a new document from scratch produces better results than patching.
 - **Verify, don't recall** — confirm every checkable fact against the repo before it goes in. See *Accuracy: verify before asserting* — this is the difference between a handoff the next agent trusts and one it has to re-audit.
-
-## Gotchas
-
-1. **Don't copy session dialogue** — distill. Next agent needs a brief, not a transcript.
-2. **Don't duplicate artifacts** — existing files get a path reference, not inline content. Duplication drifts from source.
-3. **Don't update existing handoff** — read it, then rewrite from scratch. Inserting/appending produces franken-documents that confuse the next agent.
-4. **First Action must stand alone** — a fresh agent executes it without reading Goal, Context, or anything else.
-5. **Don't include session noise** — corrections, tangents, and dead ends go in What Didn't Work only if they prevent the next agent from repeating them.
-6. **Scan before creating** — always check for existing same-topic handoffs. Reuse the topic name for continuity.
-7. **Don't guess the topic** — if `$ARGUMENTS` is empty and session context is ambiguous, ask the user. Generic names destroy findability.
-8. **Don't assert from memory** — paths, line numbers, symbol names, and "done" claims are exactly the parts that turn out wrong on review. Confirm each against the repo (git + Read/Grep) as you write; if you can't, mark it `(unverified)` rather than stating it as fact.

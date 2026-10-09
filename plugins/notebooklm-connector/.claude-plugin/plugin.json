@@ -1,6 +1,6 @@
 {
   "name": "notebooklm-connector",
-  "description": "Plugin for managing NotebookLM notebooks and querying them via Chrome integration",
+  "description": "Query Google NotebookLM notebooks from Claude Code through Chrome automation, with coverage-checked follow-up queries and a notebook library (add, list, search, enable/disable, remove).",
   "author": {
     "name": "LeeJuOh"
   },

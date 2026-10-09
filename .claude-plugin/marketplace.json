@@ -11,13 +11,13 @@
     {
       "name": "notebooklm-connector",
       "source": "./plugins/notebooklm-connector",
-      "version": "1.3.2",
-      "description": "A plugin to manage NotebookLM notebooks and query them using integrated features."
+      "version": "1.3.3",
+      "description": "Query Google NotebookLM notebooks from Claude Code through Chrome automation, with coverage-checked follow-up queries and a notebook library (add, list, search, enable/disable, remove)."
     },
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -35,7 +35,7 @@
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "3.2.1",
+      "version": "3.2.2",
       "description": "Replaces Claude Code's built-in worktree — aligns with native git worktree where CC diverges (HEAD base, origin/* auto-tracking) and adds layers native lacks: .worktreeinclude/.worktreelink for gitignored files with a /worktree-setup skill that scans and builds them, upstream-aware removal guard, idempotent re-entry."
     },
     {

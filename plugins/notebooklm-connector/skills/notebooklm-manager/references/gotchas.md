@@ -27,14 +27,14 @@ The clear history button is found via `aria-label` patterns (`clear`, `reset`). 
 
 ## Architecture
 
-### Skill Cannot Use Chrome MCP Tools
-The notebooklm-manager skill has `allowed-tools: Read, Write, Edit, Agent, AskUserQuestion`. Chrome MCP tools are only available to the chrome-mcp-query agent. If the skill tries to call them, it will error. If the agent fails, the skill should report the error — not try Chrome tools itself.
+### Skill Delegates Chrome MCP Tools
+The notebooklm-manager skill doesn't call Chrome MCP tools itself. The chrome-mcp-query agent owns tab setup, response polling, and error classification. If the agent fails, the skill should report the error — not try Chrome tools itself.
 
 ### Data Path Must Be Resolved First
 The data directory path is written by the PreToolUse hook when Claude first reads `data-path`. If the hook hasn't fired (e.g., hook not loaded), the file won't exist. Error message should tell the user to restart the session.
 
 ### Smart Add Triggers Coverage Reminder
-The PostToolUse hook fires on all chrome-mcp-query Task completions, including Smart Add metadata queries. The hook skips Smart Add queries to avoid unnecessary coverage analysis prompts.
+The PostToolUse hook fires on all chrome-mcp-query Agent completions, including Smart Add metadata queries. The hook skips Smart Add queries to avoid unnecessary coverage analysis prompts.
 
 ## Coverage Analysis
 

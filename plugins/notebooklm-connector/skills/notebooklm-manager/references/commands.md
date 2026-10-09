@@ -27,7 +27,7 @@ When user provides a URL with `add <url>` (without `--manual`):
 
 2. **Invoke agent to query notebook**
    ```
-   Task({
+   Agent({
      subagent_type: "notebooklm-connector:chrome-mcp-query",
      prompt: "URL: {url}\nQuestion: What is the main topic and content of this notebook? List the document titles.\nclearHistory: false"
    })

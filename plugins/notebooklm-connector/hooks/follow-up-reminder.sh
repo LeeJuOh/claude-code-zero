@@ -18,7 +18,7 @@ cat << 'EOF'
 {
   "hookSpecificOutput": {
     "hookEventName": "PostToolUse",
-    "additionalContext": "COVERAGE_REMINDER: Before presenting the answer, perform coverage analysis per SKILL.md Section 5 (STEP A\u2192B\u2192C\u2192D). Check if all topics from the user's original question are covered in the response."
+    "additionalContext": "COVERAGE_REMINDER: Unless auto_coverage is false in config, perform coverage analysis per SKILL.md Section 5 before presenting the answer (STEP A\u2192B\u2192C\u2192D). Check if all topics from the user's original question are covered in the response."
   }
 }
 EOF

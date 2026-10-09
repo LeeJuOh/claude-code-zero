@@ -1,22 +1,45 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료) · P3 결정 완료(21차 그릴링, 원장만 — §2-3 "P3 결정") · P3 1단계 완료 `3c4f2ab`(22차, codex-advisor 5.2.0) · P3 2단계 완료 `882843b`(23차) · P3 3단계(권한) 완료 `7a0f62c`·`52d5be6`(24~27차) · v1.86.0 배포·푸시(27차, codex-advisor 5.2.0) — P3 끝 · 순서 P5 → P4로 바꿈(28차) · P5 결정·구현 완료 `5a67f5e`(28차, skill-creator-pro 2.1.0, 미배포). 다음은 P4(rubber-duck-tutor)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료) · P3 결정 완료(21차 그릴링, 원장만 — §2-3 "P3 결정") · P3 1단계 완료 `3c4f2ab`(22차, codex-advisor 5.2.0) · P3 2단계 완료 `882843b`(23차) · P3 3단계(권한) 완료 `7a0f62c`·`52d5be6`(24~27차) · v1.86.0 배포·푸시(27차, codex-advisor 5.2.0) — P3 끝 · 순서 P5 → P4로 바꿈(28차) · P5 결정·구현 완료 `5a67f5e`(28차, skill-creator-pro 2.1.0) · v1.87.0 배포·푸시(28차) · P4·claw-mux 안 함, §2-6 notebooklm-connector 완료 `d868b69`(29차, 1.3.3). P7 toolbox 완료 `b6b1bbe`(30차, 2.0.1). claw-mo 안 함(30차). P7 worktree-plus 완료 `7da7ef1`(31차, 3.2.2). vibeproxy-kit 안 함(31차) — 2부 끝. S5 완료(31차: worktree `remove-test-3`·브랜치 삭제, 메모리 폴더 27개 전체 삭제) — **검수 전체 끝**. 남은 것: 배포(사용자가 부를 때)** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-10-08 28차 → 29차)
+## 핸드오프 (2026-10-09 31차 → 32차)
 
-**목표:** 2부 P4(rubber-duck-tutor)를 시작한다. P5(skill-creator-pro)는 28차에 결정·구현 완료 `5a67f5e`(2.1.0) — **미배포·미푸시**(§2-2 "P5 결정").
+**목표:** P7(§2-7 나머지)을 플러그인 하나씩 처리한다. P7 끝(vibeproxy-kit도 31차에 안 함). 2부 끝. S5도 31차에 끝 — 검수 전체 끝.
 
-**첫 행동:** §1-5 #8을 사용자에게 한 줄로 묻는다: rubber-duck #2 수정안 (a) 4번 재정의 vs (b) 3·4번 순서 교환, 추천 (b)(Mode Map 순서와 맞고, (a)는 duck-verify:4와 어긋남). 답을 받으면 §2-4를 현재 코드에서 다시 열어 행마다 확인 → 짧게 보고 → 승인.
+**첫 행동:** 할 일 없음. 사용자가 배포를 부르면 `docs/release-workflow.md`를 따른다(v1.87.0 이후 worktree-plus 3.2.2·toolbox 2.0.1·notebooklm-connector 1.3.3 미배포).
+
+**맥락:** 행마다 "문제(예시: 무엇이 언제 깨지나) → 최강 변형 → 추천 → 질문 하나". 사용자는 잘 안 쓰는 플러그인을 통째로 건너뛴다(29차 P4·claw-mux, 30차 claw-mo "잘안써서 안고쳐도 될듯 다음") — 건너뛰면 원장에 "안 함"만 적고 다음으로.
+
+**현재 상태(git 확인):** develop, 작업 트리 깨끗. origin/develop(`fe44f83`)보다 6커밋 앞섬 + 이 핸드오프 커밋(미푸시). main·태그는 v1.87.0 그대로 — 배포는 사용자가 부를 때(`docs/release-workflow.md`). 30차 커밋: `b6b1bbe`(toolbox 2.0.1 — #8·#12·#13·#19·#20·#22) → `92c1bd2`(원장) → `5d87fab`(원장, claw-mo 안 함).
+
+**30차 결정(재논의 금지):** toolbox #13 MCP 절은 references로 옮기지 않고 본문 유지(`.mcp.json`은 description의 주 대상) · claw-mo(#4·#11·#14·#15) 전체 안 함 — 단 #4는 실제 버그로 확인해 원장에 근거를 남김.
+
+**30차 교훈**
+- ✅ 원장의 🔹(코드 읽기) 버그를 실제 도구로 1분 안에 확인: claw-mo #4는 scratchpad에서 `mo --no-open -p 639x <파일|폴더|-w 패턴>` → `mo --status --json`으로 patterns 확인 → `mo --shutdown -p`. 원장보다 큰 문제(비교 스크립트 TypeError)를 찾았다. 남은 것: mo status에 "stopped" 기록 6395~6399 5개(무해).
+- ✅ 공식 문서 사실은 `curl -sL https://code.claude.com/docs/en/<page>.md`로 받아 grep(hooks.md `CLAUDE_ENV_FILE`, permissions.md "Compound commands").
+- ⚠️ 사용자 "먼소리야 이해안가 머가문제라고? 예시들어" — 추상 설명(“기존 env에 덧붙이므로 흔하다”) 대신 처음부터 "1. 이런 파일이 있다 → 2. 이 명령 → 3. 출력에 진짜 키"처럼 예시로 보고한다.
+- ⚠️ "/diagnose는 실제 이름이 diagnosing-bugs라 지금도 틀렸다"고 이 세션 목록만 보고 단정했다 → 사용자 "무슨말이야? 핸드오프가 이 스킬을 호출한다고?". 지시문 속 예시를 "호출"처럼 들리게 말하지 말고, 확인 안 한 주장은 하지 않는다.
+- ⚠️ 개수를 세고 말한다: "gotcha 6개 삭제"라고 보고했는데 실제 7개.
+- ⚠️ 원장 지시(사용자 핸드오프 요청 시): 별도 handoff 파일을 만들지 않고 이 절을 다시 쓴다. toolbox handoff 스킬이 불려도 동일. 단, 이 세션의 handoff 스킬은 캐시 2.0.0(수정 전)이었다 — 2.0.1은 `/reload-plugins`·재설치 뒤 반영.
+
+**29차 교훈**
+- ✅ 원장의 "(추측)" 버그는 고치기 전에 싸게 실행 확인했다: notebooklm #4(hook matcher `Task`가 안 걸린다)는 stub 에이전트 + 로그만 남기는 hook 사본 두 벌(옛/새)로 `claude -p --plugin-dir … --model claude-haiku-5-5 --allowedTools Agent` 순차 실행, $0.009. 옛 matcher도 발동 → 버그 아님. 공식 문서에 없는 별칭도 실제로는 동작할 수 있다.
+- ✅ 행마다 "문제(현재 코드 확인) → 최강 변형 → 추천 한 줄 → 질문 하나"로 보고하니 사용자가 "ㅇㅇ"·"추천대로"로 바로 답했다. 부수 발견(README "Rejects" ↔ 실제 "Condenses", setup-data.sh 틀린 주석)은 괄호 한 줄로 붙여 같은 행에서 처리.
+- ✅ 플러그인 하나의 행들을 한 커밋 + 한 번의 버전 범프로 묶었다(사용자 승인).
+- ⚠️ 전역 CLAUDE.md가 `@~/.codex/AGENTS.md`로 바뀜: 한국어, 짧은 문장, 결론 먼저, 불릿, 핵심 굵게.
 
 **28차 교훈**
-- ✅ 원장이 묶어 둔 결정(#9 ↔ #11)을 공식 원본과 대조하니 묶일 이유가 없었다(공식에 Claude.ai 절은 있고 예약 규칙은 없음). 결정 질문 전에 "공식에 있나"를 먼저 확인한다.
-- ⚠️ 첫 스모크 테스트는 없는 파일을 가리켜 Skill이 아예 안 불렸는데 "자동 실행 0"으로 기록할 뻔했다. 트리거 테스트는 옛 버전(`git archive <커밋> plugins/<p> | tar -x`)을 대조군으로 같은 프롬프트에 돌린다 — 옛 버전이 트리거돼야 시험이 유효하다.
-- ⚠️ 비용 예상 $0.2 → 실제 $0.48(새 버전이 스킬 안으로 더 진행). `--max-turns`는 비용 상한이 아니다.
+- ✅ 원장이 묶어 둔 결정(#9 ↔ #11)을 공식 원본(`~/.claude/plugins/cache/claude-plugins-official/skill-creator/<hash>/`)과 대조하니 묶일 이유가 없었다. 결정 질문 전에 "공식에 있나"를 먼저 확인한다.
+- ✅ 사용자의 "점진적 접근이면 해결되는 거 아냐?"를 최강 변형으로 따져, 맞는 곳(공식 Claude.ai 절 → references)과 안 맞는 곳(pro 추가 블록, ADR 0001)을 나눠 안을 고쳤다.
+- ✅ 구현 전 advisor 검토가 놓칠 뻔한 것을 잡았다: #4 실행 단위가 4곳에서 어긋남, Claude.ai 절 이동으로 깨지는 Cowork 참조, auto-optimize가 제목으로 인용하는 절 5개.
+- ⚠️ 첫 스모크 테스트는 없는 파일을 가리켜 Skill이 아예 안 불렸는데 "자동 실행 0"으로 기록할 뻔했다. 트리거 테스트는 옛 버전(`git archive <커밋> plugins/<p> | tar -x -C <scratch>`)을 대조군으로 같은 프롬프트에 돌린다 — 옛 버전이 트리거돼야 시험이 유효하다.
+- ⚠️ 비용 예상 $0.2 → 실제 $0.48(새 버전이 스킬 안으로 더 진행). `--max-turns`는 비용 상한이 아니다. macOS엔 `timeout`이 없다(exit 127).
+- ⚠️ 사용자가 공식 skill-creator를 불렀을 때 그 스킬의 기본(작업 폴더를 스킬 옆에)을 따르면 배포본에 섞인다 — 이 레포에서는 scratchpad.
 
 **27차 진행**
 - 검사기 3개 + `claude plugin validate .` 통과 → `7a0f62c`(P3 3단계 권한) → 원장 `b369a77`.
@@ -136,7 +159,7 @@
 | S3 ✅ `d3c669c` | INDEX.md + §1-2 퇴적 삭제 + skill 가이드 2개 삭제(#13) + auto-optimize 참조 삭제, skill-creator-pro 2.0.6 | — |
 | S4 ✅ `b74fb20` | §1-1 설계 기록 표(상태줄·배너·링크) + rubber-duck 용어집 병합(영어) + context 4개 용어집 형식 정리 + CONTEXT-MAP. rubber-duck-tutor 3.1.2 | — |
 | 1부 결정 ✅ `b8b9b61`·`de3166e`·`d1b4bcc` | #16 load-secrets.sh 삭제, #15 버림, #12 메모리 2개 처리 + AGENTS `wiki/` | — |
-| S5 | 원 작성 머신: 메모리 폴더 정리(`feedback_audit_scope` 포함 삭제), worktree | #4 |
+| S5 | ~~원 작성 머신: 메모리 폴더 정리(`feedback_audit_scope` 포함 삭제), worktree~~ ✅ 31차(폴더 전체 삭제 — `project_product_demo_video`도 영상 소스가 git에 없어 낡음) | #4 |
 | P1~P7 | 2부. 분할은 아래 표 | §1-5 #8~#11 |
 
 | # | 2부 범위 | 막는 결정 |
@@ -144,10 +167,10 @@
 | P1 | 실제 버그: ~~§2-1 #1·#4·#32~~ ✅ `5be2cec`(+`143aa9c`), ~~§2-2 #1~~ ✅ `59eb822`, ~~§2-3 #17~~ ✅ `dae4f7f`·`85f10d5`·`a3cfba4`, ~~§2-4 #1·#21~~ ✅ `d7ea71d`, ~~§2-5 #1~~ ✅ `ca54ade`, ~~§2-6 #3~~ ✅ `d9b5177`, ~~§2-7 #1·#2~~ ✅ `ebbdffa`, ~~§2-7 #6~~ ✅ 플러그인 삭제 `e69be21` | — (Q11은 "우선순위 순 하나씩"으로 대체) |
 | P2 | §2-1 vision-powers 나머지 — 13차에 결정 완료, 7단계로 나눔(§2-1 "P2 결정"·"P2 구현 단계"). 14차 1~3단계 ✅, 15차 4단계 ✅, 16차 5단계 ✅, 17차 6단계 ✅, 7단계 남음 | ~~#10~~ 13차 결정 |
 | P3 | §2-3 codex-advisor 나머지 — 21차에 결정 완료, 3단계로 나눔(§2-3 "P3 결정") | — |
-| P4 | §2-4 rubber-duck-tutor | #8 |
+| P4 | ~~§2-4 rubber-duck-tutor~~ — **29차: 안 함**(사용자 결정, #2·나머지 행 모두) | ~~#8~~ |
 | P5 | §2-2 skill-creator-pro(#15 `claude plugin eval` 분기 포함) | #9 |
-| P6 | §2-5 claw-mux, §2-6 notebooklm-connector | #11(claw-mux #2 라이브 확인) |
-| P7 | §2-7 나머지. vibeproxy-kit 행(#24 포함)은 맨 끝 — 다시 쓸 때 수정(#2 결정) | — |
+| P6 | ~~§2-5 claw-mux~~ — **29차: 안 함**(사용자 결정), ~~§2-6 notebooklm-connector~~ ✅ `d868b69`(29차, 1.3.3) | ~~#11~~ |
+| P7 | §2-7 나머지 — toolbox ✅ `b6b1bbe`, worktree-plus ✅ `7da7ef1`, claw-mo·vibeproxy-kit **안 함**(30·31차 사용자 결정) | — |
 
 - §2-5 #1(claw-mux `$SKILL_DIR`)·§2-7 #24(vibeproxy 백업 경로)의 수정안은 "references 파일은 치환 안 됨"(2026-09-24 확인)을 전제로 그대로 유효.
 
@@ -358,11 +381,11 @@ HEAD `23c69ec` 기준으로 전 행을 다시 대조했다. 작성 직후 issue 
 1. ~~협업 규칙(§1-4 마지막 행 4개 + `deterministic_over_clever` 뒷부분 "기각 전 최선 변형") 위치 — 전역 `~/.claude/CLAUDE.md` vs AGENTS.md~~ — **결정(2026-09-24): AGENTS.md.** 두 머신이 git으로 공유. 다른 레포엔 적용 안 됨을 감수
 2. ~~handoff 중 살릴 것 — `claude-preset` 아이디어(삭제/spec), new-vibe Issue 7~~ — **결정(2026-09-24):** claude-preset 삭제. Issue 7은 실제 버그 → §2-7 #24에 합치고 vibeproxy-kit 작업은 2부 맨 끝(플러그인은 유지)
 3. ~~research 2개 llm-wiki 이동~~ — **결정(2026-09-24): 삭제.** 위키에 이미 있음
-4. `.claude/worktrees/remove-test-3` 제거 여부 (원 작성 머신)
+4. ~~`.claude/worktrees/remove-test-3` 제거 여부 (원 작성 머신)~~ — **31차: 삭제**(develop에 없는 커밋 0개, 브랜치도 삭제)
 5. ~~`settings.local.json` `git push` allow → ask 전환 여부~~ — **종결(2026-09-24): 불필요.** push 금지는 하네스 기본 지시
 6. ~~release-workflow 레포 태그 번호 기준~~ — **결정(2026-09-24): 기존 관행 명문화.** 이번 릴리즈에 minor·major로 오른 플러그인이 있으면 태그 minor, patch만이면 태그 patch(v1.83.0 ← codex 5.0.0, v1.83.1 ← 5.0.2)
 7. ~~AGENTS.md:60(모든 플러그인 작업 → `/skill-creator-pro`) — 제안 문구(§1-1)로 할지~~ — **결정(2026-09-24): 제안 문구대로.** 공식 skill-creator 대신 pro를 가리킨다(본문 동일 + 플러그인 스킬용 35줄, 결함은 §2-2에서 수정). 플러그인 스킬의 동작 검증(`claude plugin eval`)은 스킬에 넣는다(§2-2 #15). :82는 삭제
-8. rubber-duck #2 수정안 — (a) 원안: 4번을 "already committed session edits"로 재정의 (b) 3·4번 순서 교환. (a)는 미커밋 세션 편집을 `/duck-review`로 보내 duck-verify:4("code just written")와 어긋나고, (b)는 Mode Map(:18-19) 순서와 맞는다
+8. ~~rubber-duck #2 수정안 — (a) 원안: 4번을 "already committed session edits"로 재정의 (b) 3·4번 순서 교환. (a)는 미커밋 세션 편집을 `/duck-review`로 보내 duck-verify:4("code just written")와 어긋나고, (b)는 Mode Map(:18-19) 순서와 맞는다~~ — **결정(2026-10-09, 29차): 안 고침.** 이어서 P4 전체를 하지 않기로 함
 9. ~~skill-creator-pro #9 — `claude`/`anthropic` 예약 규칙 유지 여부. API·claude.ai 스킬엔 유효한 규칙이라 #11(Claude.ai 절 삭제, ADR 0001) 결정과 묶인다~~ — **결정(2026-10-08, 28차): 묶이지 않음.** 공식 skill-creator에 Claude.ai 절은 있고 예약 규칙은 없다(pro 추가분). Claude.ai 절은 references로 옮겨 유지, 예약 문장은 둘로 나눔 — §2-2 "P5 결정"
 10. vision-powers #7 — doc-visual의 md 게시 예외를 인정하려면 channel-decision.md의 권위인 ADR 0009 §3 개정이 따라온다. 개정할지, doc-visual의 md 게시를 없앨지
 11. 실행 확인 필요(결정 아님): claw-mux #2(라이브 pane에서 `❯` 오판 재현) — 남음. ~~2부 공통 "reference 파일 치환"~~ 확인됨(치환 안 됨, 2026-09-24)
@@ -638,15 +661,15 @@ ADR 0003·0008은 재논의하지 않음.
 | # | sev | 위치 | 문제 | 수정안 | 확인 |
 |---|---|---|---|---|---|
 | 1 | high | agents/chrome-mcp-query.md:16-18 | `permissionMode: bypassPermissions` — 플러그인 에이전트에선 무시(plugins-reference.md:73), 작성자는 켜진 줄 앎 | 삭제, README에 allow 규칙 안내 | ✅ |
-| 2 | high | notebooklm-manager/SKILL.md:18, references/gotchas.md:31 | "Chrome MCP tools aren't in allowed tool set — calling will error" — 공식: allowed-tools는 제한 아님 | 이유를 "에이전트가 탭·폴링·에러를 소유"로 교체, 중복 삭제 | 🔹 |
+| 2 | high | notebooklm-manager/SKILL.md:18, references/gotchas.md:31 | "Chrome MCP tools aren't in allowed tool set — calling will error" — 공식: allowed-tools는 제한 아님 | 이유를 "에이전트가 탭·폴링·에러를 소유"로 교체, 중복 삭제 | ✅ `d868b69` — 이유를 "에이전트가 탭·폴링·에러 분류를 맡음"으로, SKILL.md 끝 Tool Boundaries 중복 절 삭제 |
 | 3 | high | hooks/ensure-skill-loaded.sh:5,10 | regex `노트북`(=laptop)·`notebook.*list` 등 과매칭 + "MUST invoke" — **이번 세션에서 NotebookLM과 무관한 프롬프트에 실제 발동 관측**. 2026-09-23 재검수 세션에서도 재현(서브에이전트 보고 메시지에 발동) | ~~`notebooklm` 중심으로 좁히고 조건부 문구~~ **hook 삭제**(2026-09-24, `d9b5177`, 1.3.2). 스킬 description이 같은 트리거(URL·NotebookLM 언급)를 이미 말함. 원 목적(`982f6a1` "후속 메시지에서 스킬 재호출")은 키워드 없는 후속 메시지엔 어차피 안 걸림. 재호출의 실익(`allowed-tools` 승인이 다음 메시지에 풀림, skills.md:528)은 #1의 README allow 규칙 안내로 | ✅ |
-| 4 | med | hooks/hooks.json:27, SKILL.md:18,72,116 | matcher `Task` — 도구명은 `Agent`로 바뀜. `Task` alias는 settings·에이전트 정의에만 명시(sub-agents.md:481), hook matcher는 `tool_name` 정확 매칭(hooks.md:287-291) (추측) | `"Agent\|Task"`, 본문 `Agent`로 — 어느 쪽이든 안전 | 🔹 |
-| 5 | med | follow-up-reminder.sh:21 ↔ SKILL.md:114 | hook이 config를 읽지 않음. 다만 "per Section 5" 문구가 :114 skip을 포함해 "매번 강제"는 과장 | "unless auto_coverage is false" | 🔹 |
-| 6 | med | agents/chrome-mcp-query.md:216,231-233,311, SKILL.md:97 | textarea maxLength 분기 — gotchas:17 "no maxLength" → 절대 실행 안 됨 | 분기·출력 줄 삭제, SKILL.md:97 함께 | 🔹 |
-| 7 | med | SKILL.md:166-193,197-200 | hook 내부 마이그레이션 설명 28줄, 모델 할 일 없음 | 한 줄 | 🔹 |
-| 8 | med | SKILL.md:101-108 ↔ agents:76-83 | 복구 6단계 동일 복제 | 에이전트 출력 SSOT | 🔹 |
-| 10 | low | plugin.json ↔ marketplace.json | description 문구 다름 | 동기화 | 🔹 |
-| 11 | low | hooks/setup-data.sh:70 | PreToolUse `{"decision":"approve"}` deprecated(hooks.md:1848) | 현 형식으로 | 🔹 |
+| 4 | med | hooks/hooks.json:27, SKILL.md:18,72,116 | matcher `Task` — 도구명은 `Agent`로 바뀜. `Task` alias는 settings·에이전트 정의에만 명시(sub-agents.md:481), hook matcher는 `tool_name` 정확 매칭(hooks.md:287-291) (추측) | `"Agent\|Task"`, 본문 `Agent`로 — 어느 쪽이든 안전 | ✅ `d868b69` — **버그 아님(실행 확인)**: 2.1.295 `claude -p` stub 시험에서 옛 matcher `Task`도 hook 발동. 이름 정리만: matcher `Agent\|Task`, 본문 `Task` 9곳 → `Agent` |
+| 5 | med | follow-up-reminder.sh:21 ↔ SKILL.md:114 | hook이 config를 읽지 않음. 다만 "per Section 5" 문구가 :114 skip을 포함해 "매번 강제"는 과장 | "unless auto_coverage is false" | ✅ `d868b69` |
+| 6 | med | agents/chrome-mcp-query.md:216,231-233,311, SKILL.md:97 | textarea maxLength 분기 — gotchas:17 "no maxLength" → 절대 실행 안 됨 | 분기·출력 줄 삭제, SKILL.md:97 함께 | ✅ `d868b69` — JS 잘라내기 제거(반환 `inputLength`만), `node --check` 통과 |
+| 7 | med | SKILL.md:166-193,197-200 | hook 내부 마이그레이션 설명 28줄, 모델 할 일 없음 | 한 줄 | ✅ `d868b69` — Storage 절 한 줄 |
+| 8 | med | SKILL.md:101-108 ↔ agents:76-83 | 복구 6단계 동일 복제 | 에이전트 출력 SSOT | ✅ `d868b69` |
+| 10 | low | plugin.json ↔ marketplace.json | description 문구 다름 | 동기화 | ✅ `d868b69` — 기능 나열 문구로 동기화. README 길이 검사 행 "Rejects" → "Condenses"도 |
+| 11 | low | hooks/setup-data.sh:70 | PreToolUse `{"decision":"approve"}` deprecated(hooks.md:1848) | 현 형식으로 | ✅ `d868b69` — `permissionDecision: allow`. :11-12 틀린 주석(grant는 다음 메시지에서 풀림)도 고침. 격리 HOME 실행 확인 |
 
 재검수 삭제: #9 — agent:373은 추가 *javascript_tool* 호출만 금지. :367(tabs_context 재시도)·:369(스크린샷 폴백)와 충돌 없음.
 
@@ -657,25 +680,25 @@ ADR 0003·0008은 재논의하지 않음.
 | 1 | high | worktree-plus/skills/worktree-setup/SKILL.md:94 | "migration re-trigger by restarting" — `setup-check.sh:40-41` fast path가 migration 블록보다 먼저 exit | `git config --global` 수동 명령 안내, v3.0.0 migration 절 축소 검토 | ✅ **완료**(2026-09-24, `ebbdffa`, 3.1.1). 94줄만 교체 — `git config --global` 수동 안내 + 재시작이 안 되는 이유 + prefix `-` 규칙. 검수 eval(새 11/11, 옛 7/12)에서 빈 prefix에도 `-`를 붙이라는 문구 결함 발견 → 비어 있지 않을 때만 `-`, 빈 값은 `""`로 수정(3.1.2). 영향은 드문 경로(플래그 없는데 env var 남음). 마이그레이션 절 축소는 안 함 |
 | 2 | high | worktree-plus/.../SKILL.md:75 | "`dirBase`: no tilde expansion (stays literal)" — 실제 `worktree-create.sh:43-45`가 `exit 1` | "`~` values are rejected — write an absolute path" | ✅ **완료**(2026-09-24, `ebbdffa`, 3.1.1). README:110은 이미 "use an absolute path"라 그대로 |
 | 3 | high | ~~e2e-test-runner/skills/e2e-test/SKILL.md:39~~ | `--resultsPath ./e2e-results` 고정 → 기본값 `./e2e-results/${Date.now()}`(args.ts:22) 무력화, 매 실행 덮어씀, Quick Start `--baseline` 경로가 존재 불가 | 플래그 삭제, 출력된 경로 읽기. SKILL 5-6단계도 함께 | 종결 — 플러그인 삭제(`e69be21`, 10차) |
-| 4 | high | claw-mo/skills/claw-mo-open/SKILL.md:73-78 | 런타임은 파일만 watch하는데 config엔 `*.md` 저장 → 다음 `/claw-mo-up`이 drift로 `--clear`(shared.md:98,134-135 패턴 비교). dir 모드도 `dir/*.md`로 drift (코드 읽기로 확인) | 저장값을 실제 시작 형태와 일치 | 🔹 |
+| 4 | high | claw-mo/skills/claw-mo-open/SKILL.md:73-78 | 런타임은 파일만 watch하는데 config엔 `*.md` 저장 → 다음 `/claw-mo-up`이 drift로 `--clear`(shared.md:98,134-135 패턴 비교). dir 모드도 `dir/*.md`로 drift (코드 읽기로 확인) | 저장값을 실제 시작 형태와 일치 | 안 함(30차, 사용자: 잘 안 씀) — mo 0.23.3 실측으로 버그 확인: 파일·폴더 시작 서버는 patterns `null`, shared.md 비교의 `sorted(g.get('patterns', []))`가 TypeError → 항상 differ |
 | 5 | high | vibeproxy-kit/skills/setup-aliases/SKILL.md:232 ↔ :291 ↔ :303 | merged-config 재생성 시점 "launch만" vs "launch or toggle" | 사실 하나로 확정, Phase 9 한 곳에 | 🔹 |
 | 6 | med | ~~e2e-test-runner/hooks/hooks.json:9,14~~ | `timeout: 120000`·`5000` — 단위가 초(hooks.md:430) → 약 33시간 | `180`/`5` | ✅ 종결 — 플러그인 삭제(`e69be21`, 10차). 10차 재확인 때 추가 발견: 타임아웃으로 끊기면 `\|\| rm -f`가 안 돌아 복사된 `package.json`이 남고 다음 세션이 설치를 건너뜀(코드 판독) |
 | 7 | med | ~~e2e-test-runner SKILL.md:29-36,67-68 + hooks~~ | 의존성 체크 3곳 | SKILL은 fallback 1줄 | 종결 — 플러그인 삭제(`e69be21`, 10차) |
-| 8 | med | toolbox/skills/secret-setup/SKILL.md:218 | 검증 단계 `cat "$MOCK_ENV"` — 실값이 컨텍스트에 찍힘 | `cut -d= -f1`(이름만) + `bash -n` | 🔹 |
+| 8 | med | toolbox/skills/secret-setup/SKILL.md:218 | 검증 단계 `cat "$MOCK_ENV"` — 실값이 컨텍스트에 찍힘 | `cut -d= -f1`(이름만) + `bash -n` | ✅ `b6b1bbe` |
 | 9 | med | vibeproxy-kit setup-aliases (여러 줄) | 같은 규칙 2-5회 + references 반복 | SSOT 지정, Gotchas 대부분 삭제 | 🔹 |
 | 10 | med | vibeproxy-kit setup-aliases:62-75,101-135,307-317 | 317줄, 조건부 onboarding·Scripts 표 | `references/onboarding.md`, 표 삭제 | 🔹 |
-| 11 | med | claw-mo/references/shared.md:3 ↔ 스킬들 | "do not duplicate" 선언과 달리 스킬마다 복제 | 스킬 Gotchas 복제분 삭제, autosync는 references로 | 🔹 |
-| 12 | med | toolbox/skills/handoff/SKILL.md:105-116 | 검증 규칙 3회, Gotchas가 Principles 재진술 | Gotchas 절 삭제 | 🔹 |
-| 13 | med | toolbox/skills/secret-setup:177-208,234-244 | MCP 분기·중복 gotcha | references로, 중복 삭제 | 🔹 |
-| 14 | low | claw-mo-open:56-60 ↔ manage:98, shared.md:159,171 | curl API vs "mo CLI 우선" | `mo -w`로 | 🔹 |
-| 15 | low | claw-mo-up:3 ↔ claw-mo-open:3 | 트리거 겹침 | 분리 | 🔹 |
+| 11 | med | claw-mo/references/shared.md:3 ↔ 스킬들 | "do not duplicate" 선언과 달리 스킬마다 복제 | 스킬 Gotchas 복제분 삭제, autosync는 references로 | 안 함(30차, 사용자: 잘 안 씀) |
+| 12 | med | toolbox/skills/handoff/SKILL.md:105-116 | 검증 규칙 3회, Gotchas가 Principles 재진술 | Gotchas 절 삭제 | ✅ `b6b1bbe` |
+| 13 | med | toolbox/skills/secret-setup:177-208,234-244 | MCP 분기·중복 gotcha | references로, 중복 삭제 | ✅ `b6b1bbe` (gotcha 7개 삭제, MCP 절은 본문 유지 — description 주 대상) |
+| 14 | low | claw-mo-open:56-60 ↔ manage:98, shared.md:159,171 | curl API vs "mo CLI 우선" | `mo -w`로 | 안 함(30차, 사용자: 잘 안 씀) |
+| 15 | low | claw-mo-up:3 ↔ claw-mo-open:3 | 트리거 겹침 | 분리 | 안 함(30차, 사용자: 잘 안 씀) |
 | 16 | low | vibeproxy-kit setup-aliases:239 ↔ :153 | "Do not skip" ↔ Remove 경로 | 예외 명시 | 🔹 |
 | 17 | low | vibeproxy-kit references/effort-levels.md:9-31, model-selection.md:86 | 모델 표 노후 가능 (추측), 설치본에 없는 research §9.2 인용 | 확인일 명시, 인용 삭제 | 🔹 |
-| 18 | low | worktree-setup:117,:193 | compound 명령 권한 설명 틀림, 중복 | 삭제 | 🔹 |
-| 19 | low | secret-setup:237 | "`CLAUDE_ENV_FILE` only in SessionStart" — Setup·CwdChanged·FileChanged도 가능 | 수정 | 🔹 |
-| 20 | low | toolbox handoff:82 | 다른 플러그인 스킬명(`/tdd`, `/diagnose`) 지목 | 일반 문구 | 🔹 |
+| 18 | low | worktree-setup:117,:193 | compound 명령 권한 설명 틀림, 중복 | 삭제 | ✅ `7da7ef1` (permissions.md "Compound commands" 확인, 3.2.2) |
+| 19 | low | secret-setup:237 | "`CLAUDE_ENV_FILE` only in SessionStart" — Setup·CwdChanged·FileChanged도 가능 | 수정 | ✅ `b6b1bbe` (hooks.md 확인) |
+| 20 | low | toolbox handoff:82 | 다른 플러그인 스킬명(`/tdd`, `/diagnose`) 지목 | 일반 문구 | ✅ `b6b1bbe` |
 | 21 | low | vibeproxy-kit·notebooklm README | 모드 수·동작 불일치 | 수정 | 🔹 |
-| 22 | low | toolbox fetch-sitemap:87-93,107-112 | curl 플래그 설명·예시 중복 | 삭제 | 🔹 |
+| 22 | low | toolbox fetch-sitemap:87-93,107-112 | curl 플래그 설명·예시 중복 | 삭제 | ✅ `b6b1bbe` |
 | 23 | low | vibeproxy-kit plugin.json(151자) ↔ marketplace(198자) | description 불일치 | 동기화 | 🔹 |
 | 24 | med | vibeproxy-kit/skills/setup-aliases/scripts/write_user_config.py:62, references/write-guide.md:53-58 (재검수 추가), scripts/discover.sh:16(new-vibe handoff Issue 7 — 실제로 codex 폴더를 읽은 기록) | 백업·상태 경로 기본값을 `os.environ["CLAUDE_PLUGIN_DATA"]`에서 읽음 — Bash 환경엔 없거나 남의 값(2부 공통 "Bash 환경변수"). write-guide.md가 `"backup_dir": "${CLAUDE_PLUGIN_DATA}/backups"`를 넘기지만 references 파일이라 치환 안 될 수 있음 → 백업이 다른 플러그인 폴더로 | 백업 경로를 SKILL.md(치환됨)에서 명시적으로 넘기고, 스크립트는 env 폴백 삭제 | ✅(env) (추측)(치환) |
 | 25 | high | worktree-plus/hooks/scripts/worktree-create.sh:47,56 | 절대 경로 `dirBase`는 `<dirBase>/<name>`이라 레포 구분이 없다. 두 레포가 같은 worktree 이름을 쓰면 뒤 레포가 앞 레포의 worktree를 "Reusing existing worktree"로 받아, 다른 레포에서 작업하게 된다. worktree-setup 스킬은 전역 절대 경로 설정을 돕기까지 한다 | (미정) 재사용 전에 그 worktree가 같은 레포 것인지 확인(`git rev-parse --git-common-dir` 비교), 또는 절대 경로 아래 레포별 하위 폴더 | ✅ 8차 격리 실행으로 재현(레포 A·B, name=fix → B가 A의 worktree를 받음). ✅ **완료**(2026-09-25 10차, `231504a`, 3.2.0). 결정: 두 안(재사용 전 레포 확인만 / 레포 폴더) 중 둘 다. 레포 폴더는 값이 `--local`이 아닐 때(`--global`·system)만 `<dirBase>/<repo>/<name>` — `--local` 절대 경로는 이미 레포 전용이라 그대로 두어 `/wt/proj/proj/fix` 두 겹을 피함(`--show-scope`는 git 2.26+라 `--local --get` 값 비교로 판정). repo 이름은 `--git-common-dir`에서(worktree 안 세션·bare 레포도 맞음). 재사용 전 `--git-common-dir`(pwd -P) 비교 → 다른 레포면 exit 1 + 이유(같은 폴더명 레포, 같은 local 값 복사). 옛 `<dirBase>/<name>` worktree는 기존 브랜치 검색으로 다시 열림. 검수: 격리 시나리오 11개 새 13/13, 옛 9/13(S1·S3 버그 재현) — `plugins/worktree-plus/.evals/dirbase-repo-scope/script-tests.sh`. 스킬 문구 드라이런 eval 3개 새 100%·옛 44%(옛은 레포 폴더를 몰라 '충돌 가능(추측)'·`--local` 우회 권장). 미확인: 전역/로컬 구분을 추가한 뒤 스킬 문구 eval 재실행 안 함(한 구절 추가), 실제 `claude -w` 실행 안 함(훅 입출력 계약만 검사) |
