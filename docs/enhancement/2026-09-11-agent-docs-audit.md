@@ -7,17 +7,25 @@
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-10-09 29차 → 30차)
+## 핸드오프 (2026-10-09 30차 → 31차)
 
-**목표:** P7(§2-7 나머지)을 플러그인 하나씩 처리한다. 순서: toolbox → claw-mo → worktree-plus → vibeproxy-kit(맨 끝, §1-5 #2).
+**목표:** P7(§2-7 나머지)을 플러그인 하나씩 처리한다. toolbox 끝, claw-mo 안 함. 남은 순서: worktree-plus(#18 한 행) → vibeproxy-kit(맨 끝, §1-5 #2).
 
-**첫 행동:** toolbox §2-7 #8부터. `plugins/toolbox/skills/secret-setup/SKILL.md`의 검증 단계 `cat "$MOCK_ENV"`(29차 확인 :218)가 실제 비밀값을 컨텍스트에 찍는다. 현재 코드에서 다시 열어 확인 → 짧게 보고(문제·최강 변형·추천 한 줄) → 승인 → 고침. 원장 수정안: `cut -d= -f1`(이름만) + `bash -n`. 그다음 toolbox 나머지 #12·#13·#19·#20·#22를 한 행씩 같은 방식으로. toolbox는 끝에 한 커밋 + 버전 범프(marketplace.json, 지금 2.0.0) → 원장 커밋 따로.
+**첫 행동:** worktree-plus §2-7 #18을 사용자에게 다시 묻는다(30차에 보고까지 했고 답을 못 받음). 보고 내용: `plugins/worktree-plus/skills/worktree-setup/SKILL.md`의 (1) "Run it on its own, not chained behind another command — the pre-approval … is a prefix match" 문장은 공식 permissions.md "Compound commands"(subcommand마다 따로 매칭)와 반대 — `git rev-parse … && git ls-files …`는 둘 다 allowed-tools에 있어 확인 창이 안 뜬다. (2) Gotchas의 "**Narrow `allowed-tools` scope.**" 불릿은 frontmatter `allowed-tools` + 같은 파일의 "The confirm step isn't a formality" 문단과 중복. 추천: 둘 다 삭제. 승인 → 고침 → worktree-plus 버전 범프(marketplace.json, 지금 3.2.1 — 열어서 확인) 한 커밋 → 원장 커밋 따로.
 
-**맥락:** 29차에 사용자가 P4(rubber-duck-tutor)와 claw-mux(§2-5)를 통째로 건너뛰었다("안고칠거야 다음", "패스"). 행이 길게 남은 플러그인은 사용자가 건너뛸 수 있다 — 첫 행을 보고할 때 그 가능성을 염두에 두고, 건너뛰면 원장에 "안 함"만 적고 다음으로. notebooklm-connector(§2-6)는 8행 모두 처리.
+**맥락:** 행마다 "문제(예시: 무엇이 언제 깨지나) → 최강 변형 → 추천 → 질문 하나". 사용자는 잘 안 쓰는 플러그인을 통째로 건너뛴다(29차 P4·claw-mux, 30차 claw-mo "잘안써서 안고쳐도 될듯 다음") — 건너뛰면 원장에 "안 함"만 적고 다음으로.
 
-**현재 상태(git 확인):** develop, 작업 트리 깨끗. origin/develop보다 앞섬(29차 커밋 미푸시): `d868b69`(notebooklm-connector 1.3.3) → `69896de`(원장) → 이 핸드오프 커밋. main·태그는 v1.87.0 그대로 — 배포는 사용자가 부를 때(`docs/release-workflow.md`).
+**현재 상태(git 확인):** develop, 작업 트리 깨끗. origin/develop(`fe44f83`)보다 6커밋 앞섬 + 이 핸드오프 커밋(미푸시). main·태그는 v1.87.0 그대로 — 배포는 사용자가 부를 때(`docs/release-workflow.md`). 30차 커밋: `b6b1bbe`(toolbox 2.0.1 — #8·#12·#13·#19·#20·#22) → `92c1bd2`(원장) → `5d87fab`(원장, claw-mo 안 함).
 
-**29차 결정(재논의 금지):** rubber-duck §1-5 #8 안 고침 · P4 전체 안 함 · claw-mux(§2-5) 전체 안 함 · notebooklm #4는 이름 정리만(아래 교훈) · #6 maxLength 잘라내기 분기 삭제 · #7 Storage 절 한 줄 · #8 재연결 단계는 에이전트 출력이 원본 · #11 `permissionDecision: allow`.
+**30차 결정(재논의 금지):** toolbox #13 MCP 절은 references로 옮기지 않고 본문 유지(`.mcp.json`은 description의 주 대상) · claw-mo(#4·#11·#14·#15) 전체 안 함 — 단 #4는 실제 버그로 확인해 원장에 근거를 남김.
+
+**30차 교훈**
+- ✅ 원장의 🔹(코드 읽기) 버그를 실제 도구로 1분 안에 확인: claw-mo #4는 scratchpad에서 `mo --no-open -p 639x <파일|폴더|-w 패턴>` → `mo --status --json`으로 patterns 확인 → `mo --shutdown -p`. 원장보다 큰 문제(비교 스크립트 TypeError)를 찾았다. 남은 것: mo status에 "stopped" 기록 6395~6399 5개(무해).
+- ✅ 공식 문서 사실은 `curl -sL https://code.claude.com/docs/en/<page>.md`로 받아 grep(hooks.md `CLAUDE_ENV_FILE`, permissions.md "Compound commands").
+- ⚠️ 사용자 "먼소리야 이해안가 머가문제라고? 예시들어" — 추상 설명(“기존 env에 덧붙이므로 흔하다”) 대신 처음부터 "1. 이런 파일이 있다 → 2. 이 명령 → 3. 출력에 진짜 키"처럼 예시로 보고한다.
+- ⚠️ "/diagnose는 실제 이름이 diagnosing-bugs라 지금도 틀렸다"고 이 세션 목록만 보고 단정했다 → 사용자 "무슨말이야? 핸드오프가 이 스킬을 호출한다고?". 지시문 속 예시를 "호출"처럼 들리게 말하지 말고, 확인 안 한 주장은 하지 않는다.
+- ⚠️ 개수를 세고 말한다: "gotcha 6개 삭제"라고 보고했는데 실제 7개.
+- ⚠️ 원장 지시(사용자 핸드오프 요청 시): 별도 handoff 파일을 만들지 않고 이 절을 다시 쓴다. toolbox handoff 스킬이 불려도 동일. 단, 이 세션의 handoff 스킬은 캐시 2.0.0(수정 전)이었다 — 2.0.1은 `/reload-plugins`·재설치 뒤 반영.
 
 **29차 교훈**
 - ✅ 원장의 "(추측)" 버그는 고치기 전에 싸게 실행 확인했다: notebooklm #4(hook matcher `Task`가 안 걸린다)는 stub 에이전트 + 로그만 남기는 hook 사본 두 벌(옛/새)로 `claude -p --plugin-dir … --model claude-haiku-5-5 --allowedTools Agent` 순차 실행, $0.009. 옛 matcher도 발동 → 버그 아님. 공식 문서에 없는 별칭도 실제로는 동작할 수 있다.
