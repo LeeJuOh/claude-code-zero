@@ -114,8 +114,6 @@ Ground truth is what git actually ignores, not what `.gitignore` says:
 git ls-files --others --ignored --exclude-standard --directory --full-name
 ```
 
-Run it on its own, not chained behind another command — the pre-approval in `allowed-tools` is a prefix match, so `git rev-parse --show-toplevel && git ls-files …` doesn't match `Bash(git ls-files *)` and costs the user a permission prompt for a read they already approved.
-
 This folds in every ignore layer (`.gitignore`, `.git/info/exclude`, global `core.excludesFile`) and prints only paths that **exist on disk** — the same criterion the hook uses, since anything absent is logged `skipped (not found)`. `--directory` collapses a fully-ignored directory to a single line. `--full-name` keeps paths relative to the repo root; without it, running from a subdirectory yields cwd-relative paths, and the hook resolves them against the repo root instead — silently wrong entries.
 
 Size the plausible candidates, since large is the main argument for link over copy:
@@ -190,4 +188,3 @@ Report, then stop — don't delete. A path missing from disk isn't necessarily s
 - **`--global` writes go to `~/.gitconfig`.** If the user wants truly project-scoped, use `--local` (writes to `.git/config`). Local overrides global.
 - **`worktree.guessRemote=true` is the plugin's non-default.** Setting it explicitly to `false` disables auto-tracking of remote branches — user gets pure HEAD branch creation. Git's own default is `false`; the plugin flips it for better UX but respects explicit user config.
 - **`branchPrefix` is literal (no auto-separator).** Different from the pre-v3 env var which inserted `-` automatically. The migration adds the `-` for you when converting, but fresh writes don't.
-- **Narrow `allowed-tools` scope.** Pre-approved here: `git config` (read/write), plus the read-only `git worktree list`, `git rev-parse`, `git ls-files`, `du`, `ls`, and `Read`. Anything else — `Write`, `Edit`, `git worktree remove` — raises a permission prompt, and that's the design. This skill writes git config directly, but `.worktreeinclude` / `.worktreelink` are user files at the repo root: the skill scans and proposes, the user approves, and the prompt confirms. Worktree lifecycle itself belongs to the `worktree-plus` hooks, not here.
