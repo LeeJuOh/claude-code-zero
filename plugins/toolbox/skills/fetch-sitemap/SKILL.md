@@ -84,14 +84,6 @@ If a pattern is provided, pipe the result through `grep -E '<pattern>'` to filte
 curl -sfL --compressed --connect-timeout 10 --max-time 30 <sitemap-url> | grep -oE '<loc>[^<]+</loc>' | sed 's/<loc>//;s/<\/loc>//' | grep -E '<pattern>'
 ```
 
-**curl flags explained:**
-- `-s`: silent mode (no progress bar)
-- `-f`: fail on HTTP errors (4xx/5xx) instead of returning the error page as content
-- `-L`: follow redirects
-- `--compressed`: handle gzip-compressed sitemaps
-- `--connect-timeout 10`: connection timeout of 10 seconds
-- `--max-time 30`: total operation timeout of 30 seconds
-
 If the curl command fails (non-zero exit code), report the error clearly to the user (e.g., "Failed to fetch sitemap: connection timed out" or "Failed to fetch sitemap: HTTP 404").
 
 ## Output
@@ -103,10 +95,3 @@ If the curl command fails (non-zero exit code), report the error clearly to the 
 4. If curl failed, report the error clearly (do not silently show "no results")
 
 **Never re-fetch:** All URLs have already been fetched. If the user later asks to save the results to a file, use the Write tool with the already-displayed output. Never run curl again for the same sitemap.
-
-## Examples
-
-- `/fetch-sitemap https://kotlinlang.org/docs` — auto-discover sitemap and list all URLs
-- `/fetch-sitemap https://example.com/sitemap.xml` — use direct sitemap URL
-- `/fetch-sitemap https://example.com docs` — auto-discover and filter URLs containing "docs"
-- `/fetch-sitemap https://example.com/sitemap.xml 'skills|hooks'` — URLs matching "skills" or "hooks"
