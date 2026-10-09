@@ -15,7 +15,7 @@ Query orchestration and notebook registry management.
 ## Instructions
 
 ### Tool Boundaries
-Chrome MCP tools (`mcp__claude-in-chrome__*`) aren't in this skill's allowed tool set — calling them directly will error. All browser interaction goes through the chrome-mcp-query agent via Task. If the agent returns an error, don't attempt Chrome tools yourself.
+Don't call Chrome MCP tools (`mcp__claude-in-chrome__*`) directly. All browser interaction goes through the chrome-mcp-query agent via Agent, because the agent owns tab setup, response polling, and error classification. If the agent returns an error, report it instead of attempting Chrome tools yourself.
 
 ### 0. Data Path Resolution (run first)
 
@@ -69,7 +69,7 @@ If `question.length > max_query_length`:
 ### 4. Agent Invocation
 
 ```
-Task({
+Agent({
   subagent_type: "notebooklm-connector:chrome-mcp-query",
   prompt: `Execute the workflow: Input parsing → Tab setup → Title extraction → Submit question → Poll response → Output and exit
 
@@ -81,31 +81,21 @@ Output the response immediately upon receiving it and exit.`
 })
 ```
 
-**Follow-up queries** use the same Task format with the follow-up question.
+**Follow-up queries** use the same Agent format with the follow-up question.
 The agent's STEP 1 automatically reuses the existing tab for the same URL.
 
 #### 4.1 Agent Result Parsing
 
-After Task returns, check the agent output:
+After Agent returns, check the agent output:
 
 | Agent Output Contains | Action |
 |---|---|
-| `ERROR_TYPE: CHROME_NOT_CONNECTED` | Show Chrome Connection Troubleshooting (below), stop |
+| `ERROR_TYPE: CHROME_NOT_CONNECTED` | Show the agent's "Steps to fix" to the user, stop |
 | `ERROR_TYPE: AUTH_REQUIRED` | Tell user to log in to Google in Chrome, stop |
 | `ERROR_TYPE:` (any other) | Show error details from agent output, stop |
-| Task tool itself errors | Inform user the agent could not start. Check plugin installation. |
-| `truncated: true` in agent output | Present the response but warn user that NotebookLM truncated the input. Suggest shortening the query or increasing `max_query_length` in config. |
+| Agent tool itself errors | Inform user the agent could not start. Check plugin installation. |
 | Response is empty or very short (< 20 chars) | Inform user that NotebookLM returned no meaningful response. Likely causes: input too long, no relevant content in notebook, or backend timeout. Do NOT proceed to coverage analysis. |
 | Normal response (no ERROR_TYPE, ≥ 20 chars) | Proceed to Section 5 |
-
-**Chrome Connection Troubleshooting** (show to user):
-1. Verify Chrome or Edge browser is running
-2. Chrome → `chrome://extensions` → Ensure "Claude in Chrome" extension is enabled
-3. In Chrome, click extension icon → Side panel → Click **"Connect" button**
-   - If a login screen appears, sign in with your Claude account (Pro/Max/Team/Enterprise required)
-4. In Claude Code: `/chrome` → Select "Reconnect extension"
-5. If this is your first time connecting, restart the browser to register the native messaging host, then repeat steps 3-4
-6. Retry the query
 
 ### 5. Coverage Analysis
 
@@ -113,7 +103,7 @@ NotebookLM frequently answers only the first part of multi-topic questions. With
 
 If `auto_coverage` is `false` in config, skip to Section 6.
 
-After every successful Task(chrome-mcp-query) return, check coverage before presenting the answer.
+After every successful Agent(chrome-mcp-query) return, check coverage before presenting the answer.
 The PostToolUse hook will also remind you via `COVERAGE_REMINDER`.
 
 #### STEP A: ANALYZE
@@ -123,7 +113,7 @@ Re-read user's original message. List ALL keywords/topics.
 Each keyword: ✅ covered / ❌ missing
 
 #### STEP C: QUERY (if gaps)
-Launch follow-up: `Task(subagent_type: "notebooklm-connector:chrome-mcp-query", same URL, missing topic question)`
+Launch follow-up: `Agent(subagent_type: "notebooklm-connector:chrome-mcp-query", same URL, missing topic question)`
 Follow-ups are cheap — the same Chrome tab is reused.
 Then return to STEP A.
 
@@ -165,39 +155,7 @@ See [references/commands.md](references/commands.md) for full command reference.
 
 ## Storage
 
-Data is isolated per install scope. The hook resolves the correct path automatically.
-When `${CLAUDE_PLUGIN_DATA}` is available, it is used as the base directory.
-Otherwise falls back to `~/.claude-code-zero/notebooklm-connector/`.
-
-```
-{base}/
-├── data-path                       # Always at ~/.claude-code-zero/notebooklm-connector/data-path
-├── global/data/                    # User-level install (shared across projects)
-│   ├── library.json
-│   ├── archive.json
-│   ├── config.json
-│   └── notebooks/{id}.json
-└── projects/<md5-hash>/data/       # Project-level install (per-project isolation)
-    ├── library.json
-    ├── archive.json
-    ├── config.json
-    └── notebooks/{id}.json
-```
-
-The `data-path` file is always at `~/.claude-code-zero/notebooklm-connector/data-path` (fixed location).
-Data directory and default files are lazily created on first `data-path` read.
-
-**Migration (automatic)**:
-- `data/` → `global/data/`: Existing flat data layout is moved to the global subdirectory.
-- Legacy paths (`~/.claude/plugins/...`, `~/.claude/claude-code-zero/...`) are copied to `global/data/`.
-- `~/.claude-code-zero/` → `${CLAUDE_PLUGIN_DATA}/`: When the env var becomes available, data is migrated.
-
----
-
-## Tool Boundaries
-
-- **Use**: Read, Write (data dir), Edit (data dir), Task, AskUserQuestion
-- **Do NOT use**: Chrome MCP tools directly (`mcp__claude-in-chrome__*`)
+The hook picks the data directory per install scope and migrates legacy layouts. Always use `{DATA_DIR}` from Section 0. File formats: [references/schemas.md](references/schemas.md).
 
 ---
 

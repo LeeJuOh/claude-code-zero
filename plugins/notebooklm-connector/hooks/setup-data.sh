@@ -8,8 +8,8 @@
 #   4. Initializes data files if missing
 #   5. Writes the resolved path to data-path for Claude to read
 #
-# Auto-approve is NOT needed here — the skill's bare allowed-tools
-# (Read, Write, Edit) already auto-approves all paths.
+# The data-path Read is allowed here: the skill's allowed-tools grant clears
+# on the user's next message, so follow-up turns would otherwise prompt.
 
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
@@ -67,7 +67,7 @@ if [ "$FILE_PATH" = "$DATA_PATH_FILE" ]; then
   # Write resolved path for Claude to read
   mkdir -p "$(dirname "$DATA_PATH_FILE")"
   echo "$DATA_DIR" > "$DATA_PATH_FILE"
-  echo '{"decision":"approve"}'
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
   exit 0
 fi
 

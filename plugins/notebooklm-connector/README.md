@@ -14,7 +14,7 @@ This plugin bridges Claude Code and NotebookLM through Chrome automation. You as
 |---------|-------------|
 | Source-grounded answers | Responses come only from your uploaded documents, not training data |
 | Automatic follow-up | Coverage analysis detects gaps and re-queries — default 3 rounds, configurable via `max_followups` |
-| Input length pre-validation | Rejects prompts over ~40k characters before they reach NotebookLM |
+| Input length pre-validation | Condenses prompts over `max_query_length` (default 40k characters) before they reach NotebookLM |
 | Smart Add | Agent opens the notebook and parses the actual title, topics, and description — not just URL slug |
 | Notebook lifecycle | Add, query, `list` / `list --all`, search, `enable` / `disable`, `remove`, `show <id>` |
 | Scope isolation | Per-project state (md5-hashed directory) or per-user state; chosen at install time. Legacy paths auto-migrated |
