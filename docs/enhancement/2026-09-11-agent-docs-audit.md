@@ -1,17 +1,17 @@
 # 에이전트 문서 검수 — 레포 문서 + 플러그인 (2026-09-11)
 
-> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료) · P3 결정 완료(21차 그릴링, 원장만 — §2-3 "P3 결정") · P3 1단계 완료 `3c4f2ab`(22차, codex-advisor 5.2.0) · P3 2단계 완료 `882843b`(23차) · P3 3단계(권한) 완료 `7a0f62c`·`52d5be6`(24~27차) · v1.86.0 배포·푸시(27차, codex-advisor 5.2.0) — P3 끝 · 순서 P5 → P4로 바꿈(28차) · P5 결정·구현 완료 `5a67f5e`(28차, skill-creator-pro 2.1.0) · v1.87.0 배포·푸시(28차) · P4·claw-mux 안 함, §2-6 notebooklm-connector 완료 `d868b69`(29차, 1.3.3). P7 toolbox 완료 `b6b1bbe`(30차, 2.0.1). claw-mo 안 함(30차). 다음은 P7 worktree-plus** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
+> 상태: **검수 완료 · 재검수 반영(2026-09-23) · 1부 렌즈 재검수 반영(2026-09-24) · 1부 S1~S4·남은 결정 완료(2026-09-24, S5만 원 작성 머신), 2부 P1 완료(10/11 수정 + §2-7 #6은 e2e-test-runner 플러그인 삭제 `e69be21`로 종결) + §2-7 #25 편입·완료 `231504a` + §2-7 #28·#29 완료 `b451fb8`(worktree-plus 3.2.1) · v1.84.0 배포 `ee4f077`(12차) · P2 구현 1~3단계 완료 `3abe3ee`·`10686fd`·`d156085`(vision-powers 5.0.0, 14차) · 4단계 완료 `00422aa`(15차) · 5단계 완료 `7c14121`(16차) · 6단계 완료 `a24bbac`(17차) · 7단계 결정 완료(18차, 원장만) · 7단계 완료 `cdae0d8`(19·20차) · v1.85.0 배포 `f2c638c`(20차, vision-powers 5.0.0, 푸시 완료) · P3 결정 완료(21차 그릴링, 원장만 — §2-3 "P3 결정") · P3 1단계 완료 `3c4f2ab`(22차, codex-advisor 5.2.0) · P3 2단계 완료 `882843b`(23차) · P3 3단계(권한) 완료 `7a0f62c`·`52d5be6`(24~27차) · v1.86.0 배포·푸시(27차, codex-advisor 5.2.0) — P3 끝 · 순서 P5 → P4로 바꿈(28차) · P5 결정·구현 완료 `5a67f5e`(28차, skill-creator-pro 2.1.0) · v1.87.0 배포·푸시(28차) · P4·claw-mux 안 함, §2-6 notebooklm-connector 완료 `d868b69`(29차, 1.3.3). P7 toolbox 완료 `b6b1bbe`(30차, 2.0.1). claw-mo 안 함(30차). P7 worktree-plus 완료 `7da7ef1`(31차, 3.2.2). 다음은 P7 vibeproxy-kit** · 수정 순서: 1부(레포 문서) 먼저, 2부(플러그인)는 그 뒤
 > 줄 번호 기준: 커밋 `21a87ab`. 단 codex-advisor 관련 행과 재검수로 고친 행은 `23c69ec` 기준 — 수정 전에 해당 줄을 다시 열어 확인할 것. 공식 문서 줄 번호는 2026-09-23 기준으로 갱신(못 찾은 것은 인용 당시 값)
 > 확인 표기: ✅ 직접 재확인(공식 문서 grep·git·실행) · 🔹 검수 에이전트가 grep/실행으로 확인 · (추측) 미확인
 > 계기: auto memory를 껐다(`~/.claude/settings.json` `autoMemoryEnabled: false`). 메모리 파일은 남지만 로드되지 않으므로, 살릴 내용은 매 세션 읽히는 레포 문서로 옮기고 그 김에 레포 문서의 틀림·중복·퇴적을 정리한다.
 > 작성 환경: 메모리 27개(§1-4), `.claude/settings.local.json`, `.claude/worktrees/remove-test-3`는 원 작성 머신(`/Users/ljo/…/zero-code/claude-code-zero`)에만 있다. 다른 머신에서 작업하면 이 대상은 없다.
 > 다음 세션: 아래 §핸드오프부터 읽는다. 이 문서가 원장이다 — 별도 handoff 파일은 만들지 않는다.
 
-## 핸드오프 (2026-10-09 30차 → 31차)
+## 핸드오프 (2026-10-09 31차 → 32차)
 
-**목표:** P7(§2-7 나머지)을 플러그인 하나씩 처리한다. toolbox 끝, claw-mo 안 함. 남은 순서: worktree-plus(#18 한 행) → vibeproxy-kit(맨 끝, §1-5 #2).
+**목표:** P7(§2-7 나머지)을 플러그인 하나씩 처리한다. toolbox·worktree-plus 끝, claw-mo 안 함. 남은 것: vibeproxy-kit(맨 끝, §1-5 #2).
 
-**첫 행동:** worktree-plus §2-7 #18을 사용자에게 다시 묻는다(30차에 보고까지 했고 답을 못 받음). 보고 내용: `plugins/worktree-plus/skills/worktree-setup/SKILL.md`의 (1) "Run it on its own, not chained behind another command — the pre-approval … is a prefix match" 문장은 공식 permissions.md "Compound commands"(subcommand마다 따로 매칭)와 반대 — `git rev-parse … && git ls-files …`는 둘 다 allowed-tools에 있어 확인 창이 안 뜬다. (2) Gotchas의 "**Narrow `allowed-tools` scope.**" 불릿은 frontmatter `allowed-tools` + 같은 파일의 "The confirm step isn't a formality" 문단과 중복. 추천: 둘 다 삭제. 승인 → 고침 → worktree-plus 버전 범프(marketplace.json, 지금 3.2.1 — 열어서 확인) 한 커밋 → 원장 커밋 따로.
+**첫 행동:** vibeproxy-kit 행(§2-7, #24 포함)을 모아 사용자에게 한 행씩 묻는다. 먼저 "잘 쓰는 플러그인인가, 건너뛸까"를 묻는다. (31차: worktree-plus #18 두 곳 삭제 `7da7ef1`, 3.2.2.)
 
 **맥락:** 행마다 "문제(예시: 무엇이 언제 깨지나) → 최강 변형 → 추천 → 질문 하나". 사용자는 잘 안 쓰는 플러그인을 통째로 건너뛴다(29차 P4·claw-mux, 30차 claw-mo "잘안써서 안고쳐도 될듯 다음") — 건너뛰면 원장에 "안 함"만 적고 다음으로.
 
@@ -694,7 +694,7 @@ ADR 0003·0008은 재논의하지 않음.
 | 15 | low | claw-mo-up:3 ↔ claw-mo-open:3 | 트리거 겹침 | 분리 | 안 함(30차, 사용자: 잘 안 씀) |
 | 16 | low | vibeproxy-kit setup-aliases:239 ↔ :153 | "Do not skip" ↔ Remove 경로 | 예외 명시 | 🔹 |
 | 17 | low | vibeproxy-kit references/effort-levels.md:9-31, model-selection.md:86 | 모델 표 노후 가능 (추측), 설치본에 없는 research §9.2 인용 | 확인일 명시, 인용 삭제 | 🔹 |
-| 18 | low | worktree-setup:117,:193 | compound 명령 권한 설명 틀림, 중복 | 삭제 | 🔹 |
+| 18 | low | worktree-setup:117,:193 | compound 명령 권한 설명 틀림, 중복 | 삭제 | ✅ `7da7ef1` (permissions.md "Compound commands" 확인, 3.2.2) |
 | 19 | low | secret-setup:237 | "`CLAUDE_ENV_FILE` only in SessionStart" — Setup·CwdChanged·FileChanged도 가능 | 수정 | ✅ `b6b1bbe` (hooks.md 확인) |
 | 20 | low | toolbox handoff:82 | 다른 플러그인 스킬명(`/tdd`, `/diagnose`) 지목 | 일반 문구 | ✅ `b6b1bbe` |
 | 21 | low | vibeproxy-kit·notebooklm README | 모드 수·동작 불일치 | 수정 | 🔹 |
