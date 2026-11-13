@@ -90,7 +90,6 @@ S1 ─→ S2 ─→ S3 ─→ S4
 ## 핸드오프 (2026-11-14, 착수 전 일시정지)
 
 - **다음 할 일.** S1부터 시작한다. 시작 전에 `docs/reference/gotchas.md`를 읽는다. 새로 넣은 "Plugin scope" 규칙에 따라, 플러그인 폴더에는 실행할 때 쓰는 파일만 둔다.
-- **사용자 답을 기다리는 질문 2개.** 017 구현을 막지 않는다.
-  1. codex-advisor(`evals/`, `hooks/tests/`, `scripts/tests/`)와 vision-powers(`scripts/*.test.js`)의 개발용 파일을 플러그인 폴더 밖으로 옮기는 일을 별도 작업으로 할지. 추천은 "예, 별도 작업"이다. 옮긴 뒤 검사 스크립트를 붙인다.
-  2. 스펙 C2에 근거를 더할지. 근거는 `raw-articles/How the Claude Code team does code review.md:80`(AI 리뷰어가 PR 본문의 의도를 읽음)과 :106(위험이 낮은 PR은 사람 리뷰 없음)이다. 추천은 "예"다.
+- **나중에 할 일 (사용자 2026-11-14).** codex-advisor(`evals/`, `hooks/tests/`, `scripts/tests/`)와 vision-powers(`scripts/*.test.js`)의 개발용 파일을 플러그인 폴더 밖으로 옮긴다. 017과 별도 작업이다. 옮긴 뒤 검사 스크립트를 붙인다.
+- **push.** S3·S4의 설치 확인(`npx skills`, agy URL)은 GitHub에 있는 코드를 받는다. 그래서 슬라이스마다 커밋하고 `develop`에 push한다. agy URL은 `.../tree/develop/plugins/one-minute-pr`를 쓴다. `main` 병합, 태그, PR은 하지 않는다(릴리스는 `docs/release-workflow.md`, 사용자가 따로 요청).
 - **제안값 (바꿀 수 있음).** 스크립트 이름 `check-body.mjs`, 첫 버전 `0.1.0`. 테스트 위치 `tests/one-minute-pr/`는 사용자가 확정했다.

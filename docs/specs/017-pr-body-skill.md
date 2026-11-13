@@ -44,7 +44,7 @@
   - `npx skills`로도 설치할 수 있어야 한다. (사용자 요구 2026-11-14) 확인: skills 1.8.1에서 `npx skills add LeeJuOh/claude-code-zero --list`가 `plugins/*/skills/` 아래 스킬 38개를 찾았다. 그래서 설치는 `--skill one-minute-pr`로 한다. 이 방식은 스킬 폴더만 받는다고 본다(추정, D27 배포 확인에서 실제 설치로 확인). 그래서 스크립트·별도 파일은 모두 스킬 폴더 안에 둔다(플러그인 루트에 두지 않는다). (2026-11-14)
   배포 방식은 Open에서 정한다.
 
-- **C2 독자는 사람 리뷰어.** SKILL.md는 에이전트가 읽고, PR 본문은 사람 리뷰어가 읽는다(AI 리뷰어도 읽지만 기준은 사람). 목적은 PR 작성자 쪽에서 리뷰 병목을 줄이는 것(A3 제목). 근거: "a one-minute briefing … for a reviewer who has the diff"(S1:13), A2 제목. 규칙이 충돌하면 사람 리뷰어의 가독성을 기준으로 판단한다. (사용자 2026-11-14)
+- **C2 독자는 사람 리뷰어.** SKILL.md는 에이전트가 읽고, PR 본문은 사람 리뷰어가 읽는다(AI 리뷰어도 읽지만 기준은 사람. AI 리뷰어는 PR 본문의 의도를 읽고(`raw-articles/How the Claude Code team does code review.md:80`), 위험이 낮은 PR은 사람 리뷰 없이 머지되기도 한다(:106)). 목적은 PR 작성자 쪽에서 리뷰 병목을 줄이는 것(A3 제목). 근거: "a one-minute briefing … for a reviewer who has the diff"(S1:13), A2 제목. 규칙이 충돌하면 사람 리뷰어의 가독성을 기준으로 판단한다. (사용자 2026-11-14)
 
 ## Decisions
 
