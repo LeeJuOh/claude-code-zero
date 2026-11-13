@@ -16,7 +16,7 @@ Commit your work, then ask the agent to open a PR.
 open a PR for this branch
 ```
 
-The skill pushes the branch, writes the body, checks it, and posts it with your forge CLI (`gh`, `glab`, or another). Without a forge CLI it prints the body.
+The skill pushes the branch, writes the body, checks it, and posts it with your forge CLI, such as `gh` or `glab`. Without a forge CLI, it still pushes the branch and prints the body.
 
 ## Install
 
@@ -35,12 +35,12 @@ Requires git and Node.js 18 or later.
 |---|---|
 | Why | The problem and the approach, in one to three sentences |
 | What changed | The changed contracts, data structures, settings, or flows, as a `diff` block or a diagram |
-| Scope | What the change covers and what it leaves out |
+| Scope | What the change covers and what it leaves out. Always present |
 | Tradeoffs | Rejected alternatives a reviewer would ask about |
 | Blast Radius | What the change touches, the fact that makes it safe or risky, and how far that was checked |
 | Rollback | How to undo the change. Always present |
 | Verification | One to three real runs and their output |
 
-Sections with nothing to say are dropped, except Rollback. The body stays near 40 lines. When there is more, the skill asks whether it goes in a folded PR comment or a document you link.
+The skill drops a section with nothing to say, but keeps Scope and Rollback. Before it posts, a bundled script checks the body. The check fails on a wrong section order, a missing Scope or Rollback, an HTML comment, long dashes, curly quotes, and mid-sentence colons outside code. The body stays near 40 lines. When there is more, the skill asks whether it goes in a folded PR comment or a document you link.
 
 The skill does not commit for you, does not run tests or take screenshots to make new evidence, and does not follow the repo's PR template.

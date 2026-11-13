@@ -141,7 +141,7 @@ Run `/plugin` and check the **Installed** tab.
 
 **Problem:** Agent-written PR bodies are long, prove nothing, and skip how to undo the change. Reviewers read the whole diff anyway.
 
-**Solution:** Opens the PR with a one-minute body in fixed sections (Why, What changed, Scope, Tradeoffs, Blast Radius, Rollback, Verification), using only evidence the agent has seen. A bundled script fails the body on wrong section order or a missing Rollback. Works in Claude Code, Codex, Antigravity, and `npx skills`.
+**Solution:** Pushes the branch and opens the PR with a one-minute body in fixed sections (Why, What changed, Scope, Tradeoffs, Blast Radius, Rollback, Verification), using only evidence the agent has seen. Without a forge CLI, it still pushes and prints the body. A bundled script fails the body on a wrong section order, a missing Scope or Rollback, or an HTML comment. Works in Claude Code, Codex, Antigravity, and `npx skills`.
 
 `one-minute-pr`
 

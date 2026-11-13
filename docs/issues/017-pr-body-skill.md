@@ -1,6 +1,6 @@
 # 이슈 017 — `one-minute-pr` 스킬 구현 (슬라이스 S1~S4)
 
-> 상태: **구현 완료 (S1~S4), 릴리스 전** · 생성: 2026-11-14
+> 상태: **구현 완료 (S1~S4), 리뷰 수정 완료 (0.1.1)** · 생성: 2026-11-14
 > 스펙: `docs/specs/017-pr-body-skill.md`. 결정 D1~D31, 제약 C1·C2는 모두 스펙에 있다. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/one-minute-pr/` (새 플러그인, D28·D30)
 > 원칙: 검사할 수 있는 것은 스크립트로(AGENTS.md "Deterministic first"). SKILL.md에는 규칙만 넣고 근거·기각 이유는 넣지 않는다(D19).
@@ -17,7 +17,7 @@ S1 ─→ S2 ─→ S3 ─→ S4
 
 **What to build**: 스킬 폴더 안에 `scripts/check-body.mjs`(이름은 제안)를 만든다. 입력은 본문 파일 경로 하나, `node scripts/check-body.mjs <body.md>`. node 내장 모듈만 쓴다(D8).
 
-- 실패(종료 코드 ≠ 0): `##` 섹션 이름이 D2 목록 밖이거나 순서가 틀림. `## Rollback`이 없음(D21). 코드 블록·백틱 밖에 긴 대시(`—` `–`), 둥근 따옴표, 문장 중간 콜론(`: ` 뒤 글자)(D13).
+- 실패(종료 코드 ≠ 0): `##` 섹션 이름이 D2 목록 밖이거나 순서가 틀림. `## Rollback`이나 `## Scope`가 없음(D21, D2). 본문에 `<!--`가 있음(D13). 코드 블록·백틱 밖에 긴 대시(`—` `–`), 둥근 따옴표, 문장 중간 콜론(`: ` 뒤 글자)(D13).
 - 경고(종료 코드 0, stdout에 표시): 40줄 초과(D7).
 - D2 순서: Why · What changed · Scope · Tradeoffs · Blast Radius · Rollback · Verification. Rollback 말고는 빠져도 된다.
 
@@ -26,7 +26,7 @@ S1 ─→ S2 ─→ S3 ─→ S4
 **Acceptance criteria** (seam: CLI 종료 코드 + stdout):
 - [x] 바른 본문(7섹션 전부, 그리고 Rollback만 있는 것) → 종료 0
 - [x] 순서가 바뀐 본문, 목록 밖 섹션, Rollback 없는 본문 → 각각 종료 ≠ 0, 어떤 규칙인지 stdout에 나옴
-- [x] 긴 대시·둥근 따옴표·문장 중간 콜론이 본문에 있으면 실패, 코드 블록·백틱 안에 있으면 통과
+- [x] 긴 대시·둥근 따옴표·문장 중간 콜론이 본문에 있으면 실패, 코드 블록·백틱 안에 있으면 통과. 리뷰에서 들여 쓴 코드가 틀려 체크를 풀었다가, 0.1.1 스크립트 수정(4칸 이상 들여 쓴 펜스, 빈 줄 뒤 4칸 코드, 두 줄 인라인 코드) 뒤 다시 체크했다
 - [x] 41줄 본문 → 종료 0, 경고 출력
 - [x] `package.json`·`npm install` 없이 돌아감
 - [x] 테스트 파일은 플러그인 폴더 밖, 레포 루트 `tests/one-minute-pr/`에 둔다(사용자 2026-11-14, 이유는 `docs/reference/gotchas.md` "Plugin scope"). 테스트는 스크립트를 CLI로 실행해 결과를 확인한다
@@ -127,31 +127,31 @@ S1 ─→ S2 ─→ S3 ─→ S4
 
 ## S2 결정 대조표 (2026-11-14)
 
-SKILL.md 898단어(`wc -w`, frontmatter 포함). frontmatter 키 `name, description, compatibility`. C1 금지 문자열 grep 0건. "SKILL.md"는 `plugins/one-minute-pr/skills/one-minute-pr/SKILL.md`, "diagrams"·"overflow"는 같은 폴더의 `references/` 파일.
+SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어. frontmatter 키 `name, description, compatibility`. C1 금지 문자열 grep 0건. "SKILL.md"는 `plugins/one-minute-pr/skills/one-minute-pr/SKILL.md`, "diagrams"·"overflow"는 같은 폴더의 `references/` 파일.
 
 | 결정 | 동작하는 문장 (위치) |
 |---|---|
 | D1 분량 | "Keep the body to about 40 lines." (SKILL.md Length) |
-| D2 섹션·순서 | "Use these `##` sections in this order … Drop a section with nothing to say" + 7개 목록 (SKILL.md Body) |
+| D2 섹션·순서 | "Use these `##` sections in this order … Drop a section with nothing to say, but always keep Scope and Rollback." + 7개 목록, Scope 항목 "With nothing to add, write \"Covers the whole change.\"" (SKILL.md Body) + 스크립트 필수 검사 |
 | D3 넘친 내용 | "Ask the user where the overflow goes, and wait" + 두 선택지 (overflow) |
 | D4 플랫폼 | "Find the forge from the remote URL. If its CLI is installed … With no usable CLI, print" (SKILL.md 5단계) |
 | D5 접기 조건 | "Use `<details>` only when the forge renders it." (overflow) |
 | D6 미리보기 없음 | "ready for review, not as a draft" + "Do not ask for a preview." (SKILL.md 5단계) |
-| D7 스크립트 검사 | "run `node scripts/check-body.mjs <body-file>` … until it exits 0. A line-count warning is not a failure." (SKILL.md 4단계) + 스크립트 |
+| D7 스크립트 검사 | "run `node scripts/check-body.mjs <body-file>` … until it exits 0. A line-count warning does not block." (SKILL.md 4단계) + 스크립트 |
 | D8 node `.mjs` | `compatibility` "Needs git and Node.js 18 or later." + 스크립트 내장 모듈만 |
 | D9 제목 | "Follow the format of the repo's recent PR titles … `type(scope): subject` … Name a real symbol" (SKILL.md Title) |
 | D10 작성 출처 줄 없음 | "No author line or SHAs." (SKILL.md Body) |
-| D11 증거 표 | 7행 표 + "Keep the table out of the body" + "Paste output lines exactly, marking each cut with `…`" + Verification 1~3 불릿 (SKILL.md Evidence) |
+| D11 증거 표 | 7행 표(CLI 행 "before and after") + "Keep it out of the body" + "Paste output lines exactly, inside a code block or backticks, marking each cut with `…`" + "a row's evidence or one side of it … \"not found\"" + Verification 1~3 불릿 (SKILL.md Evidence) |
 | D12 문장 필터 | Writing rules 8줄 (SKILL.md) |
-| D13 스크립트 문장 검사 | 스크립트 long dash·curly quote·mid-sentence colon. SKILL.md "The check fails on these"는 단어 수 때문에 뺐고 규칙 줄만 남김 |
-| D14 본 증거만 | 2단계 "Use only results you saw … Do not run tests or take screenshots … Never invent" + "write \"not found\" … not \"not done\"" + 6단계 빠진 증거 알림 |
+| D13 스크립트 문장 검사 | 스크립트 long dash·curly quote·mid-sentence colon, 코드 판정(몇 칸이든 펜스, 빈 줄 뒤 4칸 코드, 문단 안 인라인 코드), 헤딩 끝 `#` 제거, `<!--` 실패. SKILL.md "The check fails on these"는 단어 수 때문에 뺐고 규칙 줄만 남김 |
+| D14 본 증거만 | 2단계 "Use only results you saw. Do not run tests or take screenshots … Never invent" + "write \"not found\" … not \"not done\"" + 6단계 빠진 증거 알림 |
 | D15 What changed | "The shapes that changed, not files. A shape is a contract …, a data structure …, or a setting … `diff` block … No file tree." (SKILL.md Body) |
 | D16 흐름 그림 | "When a flow changed … read `references/diagrams.md`" (SKILL.md) + 그리는 순서 3단계, HTML 금지 (diagrams) |
 | D17 그림 규칙 | "When you draw with option 2 or 3" + 규칙 3개 (diagrams) |
 | D18 이미지 | "Upload images to the PR, never to the branch. If you cannot, say so in the reply." (SKILL.md Evidence) |
 | D19 900단어·영어 | 898단어, 영어 |
 | D20 PR 템플릿 무시 | "even when the repo has a PR template" (SKILL.md Body) |
-| D21 Rollback | "always keep Rollback" + `## Rollback` 항목 + 스크립트 필수 검사 |
+| D21 Rollback | "always keep Scope and Rollback" + `## Rollback` 항목 + 스크립트 필수 검사와 `<!--` 실패 |
 | D22 다시 부를 때 | "On a second run for the same PR, write the body again from the whole branch instead of patching it …" (SKILL.md Steps 뒤) |
 | D23 Blast Radius | "one fact that makes it safe or risky, with how far you checked it … write \"unproven\"" (SKILL.md Body) |
 | D24 이름 | 해당 없음 (`name: one-minute-pr`) |
@@ -159,7 +159,7 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함). frontmatter 키 `name, descript
 | D26 별도 파일 | `references/diagrams.md`, `references/overflow.md`, SKILL.md에서 "read … when" 문장으로 가리킴 |
 | D27 eval | 해당 없음 (S4) |
 | D28 별도 플러그인 | 해당 없음 (S3) |
-| D29 push만 | 1단계 "stop and tell the user to commit … Do not commit for the user … push the branch with an upstream. Never force-push." |
+| D29 push만 | 1단계 "stop and tell the user to commit … Do not commit for the user. Push the branch with an upstream, even when you cannot post the PR. Never force-push." |
 | D30 위치 | 해당 없음 (S3) |
 | D31 사람 없는 실행 | 해당 없음 (다루지 않음) |
 | C1 에이전트 호환 | 6개 필드만, 도구 이름 없음, 질문은 "Ask the user … and wait" 산문, 스크립트는 skill 폴더 기준 상대 경로 |
@@ -177,15 +177,15 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함). frontmatter 키 `name, descript
 - 스크립트 범위: A. 리스트 안 들여 쓴 펜스, 4칸 들여 쓴 코드, `## Rollback ##`, 줄을 넘는 인라인 코드를 코드로 본다(D13). 본문에 `<!--`가 있으면 실패(symphony `pr_body.check.ex:124`, 숨긴 Rollback 방지, D21). 1~3칸 헤딩·탭·setext·이스케이프 백틱·BOM은 그대로. 테스트를 더하고 S1 체크 항목 3을 다시 체크한다. (사용자 2026-11-14)
 
 **고칠 것 (결정 필요 없음).**
-- [ ] SKILL.md:14 "in this session or that exist in the repo, the conversation, or the PR"는 장소 목록이라 D14 위반. 장소를 빼고 "본 결과만"으로 줄인다.
-- [ ] SKILL.md Evidence에 "붙인 출력은 코드 블록이나 백틱 안에 둔다"를 더한다. 지금은 `Tests: 5 passed` 같은 출력이 콜론 검사(D13)에 걸려 D11 "Never retype"과 부딪친다.
-- [ ] 스펙 출처 줄 고침: `S4:46`→`:43`(D23, 출처 표), `S9:42-48`→`:41-47`, `S9:43`→`:42`(D11), `S9:50`→`:49`(D14), `S9:56`→`:57`(D18), `S9:62` "Never invent a result"→`:65` "Nothing in it was invented"(D14), `A6:102`→`:105`(D11), `A6:100-106`→`:105-109`(D23, 출처 표), `S8:85-89`→`:72-79`(D15), A1:49-55는 7행이 아니라 5행(D11).
-- [ ] 스펙 D14: S4(`S4:17,37` "돌려서 증명")와 A3:99를 "보고만 하는 편"에서 뺀다. D23이 이미 S4와 맞춘다.
-- [ ] 스펙 D8: "실행 검사 스크립트는 check-plan.mjs뿐"은 틀림(symphony `push/SKILL.md:55` `mix pr_body.check`). 결정은 그대로.
-- [ ] 스펙 D27: `wiki/` 근거는 스펙 :10 "위키 요약 제외"와 맞지 않음. 원본으로 바꾸거나 뺀다.
-- [ ] 이 이슈 S2 표 D7 행 인용을 실제 문장 "A line-count warning does not block."으로. S1 체크 항목 3은 들여 쓴 코드에서 틀리므로 스크립트를 고칠 때까지 체크를 푼다.
-- [ ] README 4곳을 결정에 맞춘다(Scope 필수, `<!--` 실패, push 언제나). `plugins/one-minute-pr/README.md`("dropped, except Rollback"), 루트 `README.md`·`README.ko.md`의 one-minute-pr 항목, `plugin.json`·`marketplace.json` description("a missing Rollback"). `docs/reference/readme-style.md`와 technical-writing·unslop을 적용한다. 이전 세션에 README에 unslop을 돌린 기록은 없다.
-- [ ] 플러그인 버전 `0.1.1`, `claude plugin validate .`, SKILL.md 900단어 이하(`wc -w`).
+- [x] SKILL.md:14 "in this session or that exist in the repo, the conversation, or the PR"는 장소 목록이라 D14 위반. 장소를 빼고 "본 결과만"으로 줄인다.
+- [x] SKILL.md Evidence에 "붙인 출력은 코드 블록이나 백틱 안에 둔다"를 더한다. 지금은 `Tests: 5 passed` 같은 출력이 콜론 검사(D13)에 걸려 D11 "Never retype"과 부딪친다.
+- [x] 스펙 출처 줄 고침: `S4:46`→`:43`(D23, 출처 표), `S9:42-48`→`:41-47`, `S9:43`→`:42`(D11), `S9:50`→`:49`(D14), `S9:56`→`:57`(D18), `S9:62` "Never invent a result"→`:65` "Nothing in it was invented"(D14), `A6:102`→`:105`(D11), `A6:100-106`→`:105-109`(D23, 출처 표), `S8:85-89`→`:72-79`(D15), A1:49-55는 7행이 아니라 5행(D11).
+- [x] 스펙 D14: S4(`S4:17,37` "돌려서 증명")와 A3:99를 "보고만 하는 편"에서 뺀다. D23이 이미 S4와 맞춘다.
+- [x] 스펙 D8: "실행 검사 스크립트는 check-plan.mjs뿐"은 틀림(symphony `push/SKILL.md:55` `mix pr_body.check`). 결정은 그대로.
+- [x] 스펙 D27: `wiki/` 근거는 스펙 :10 "위키 요약 제외"와 맞지 않음. 원본으로 바꾸거나 뺀다.
+- [x] 이 이슈 S2 표 D7 행 인용을 실제 문장 "A line-count warning does not block."으로. S1 체크 항목 3은 들여 쓴 코드에서 틀리므로 스크립트를 고칠 때까지 체크를 푼다.
+- [x] README 4곳을 결정에 맞춘다(Scope 필수, `<!--` 실패, push 언제나). `plugins/one-minute-pr/README.md`("dropped, except Rollback"), 루트 `README.md`·`README.ko.md`의 one-minute-pr 항목, `plugin.json`·`marketplace.json` description("a missing Rollback"). `docs/reference/readme-style.md`와 technical-writing·unslop을 적용한다. 이전 세션에 README에 unslop을 돌린 기록은 없다.
+- [x] 플러그인 버전 `0.1.1`, `claude plugin validate .`, SKILL.md 900단어 이하(`wc -w`).
 
 ## 핸드오프 (2026-11-14, 착수 전 일시정지)
 
@@ -194,6 +194,7 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함). frontmatter 키 `name, descript
   재개 순서: 1) 스펙에 결정 반영(D2·D7·D21 Scope 필수, D11 CLI 행, D13 스크립트 범위, D29 push 문장, 새 D32 언어 "정하지 않음")과 출처 줄 고침. 2) 스크립트와 `tests/one-minute-pr/` 테스트(먼저 실패하는 테스트). 3) SKILL.md(900단어 이하, `wc -w`)와 README 4곳(technical-writing, unslop, `docs/reference/readme-style.md`). 4) 이 이슈 S2 표와 S1 체크 항목 3. 5) 버전 `0.1.1`, `claude plugin validate .`, 커밋, push.
   주의: 스크립트 문제 1의 고치는 방법(들여 쓴 펜스는 몇 칸이든 펜스, 빈 줄 뒤 4칸 줄은 코드, 헤딩 끝 `#` 제거, 인라인 코드는 문단 단위)은 사용자에게 설명했고 이의가 없었다. 리뷰 재현 파일은 세션 scratchpad에만 있다. 위 "고칠 것"에 명령과 줄 번호를 남겼다.
   S4 실행 기록(stream, 본문)은 세션 scratchpad에만 있어 세션이 끝나면 사라진다. 결과는 이 이슈의 "S4 결과"에 옮겨 두었다.
+- **리뷰 수정 완료 (2026-11-14).** 재개 순서 1~5를 끝냈다. 스펙에 D2·D7·D11·D13·D29를 반영하고 D32를 더했다. 출처 줄도 고쳤다. 새 테스트 9개는 옛 스크립트에서 먼저 실패했다(Scope 없음, 4칸 펜스, 4칸 코드, `## Rollback ##`, 두 줄 인라인 코드, `<!--` 4개). 스크립트를 고친 뒤 29개가 모두 통과했다. SKILL.md는 900단어다. README 4곳과 description을 맞추고 버전을 `0.1.1`로 올렸다. 다음은 릴리스다.
 - **나중에 할 일 (사용자 2026-11-14).** codex-advisor(`evals/`, `hooks/tests/`, `scripts/tests/`)와 vision-powers(`scripts/*.test.js`)의 개발용 파일을 플러그인 폴더 밖으로 옮긴다. 017과 별도 작업이다. 옮긴 뒤 검사 스크립트를 붙인다.
 - **push.** S3·S4의 설치 확인(`npx skills`, agy URL)은 GitHub에 있는 코드를 받는다. 그래서 슬라이스마다 커밋하고 `develop`에 push한다. agy URL은 `.../tree/develop/plugins/one-minute-pr`를 쓴다. `main` 병합, 태그, PR은 하지 않는다(릴리스는 `docs/release-workflow.md`, 사용자가 따로 요청).
 - **제안값 (바꿀 수 있음).** 스크립트 이름 `check-body.mjs`, 첫 버전 `0.1.0`. 테스트 위치 `tests/one-minute-pr/`는 사용자가 확정했다.

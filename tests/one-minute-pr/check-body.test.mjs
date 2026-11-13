@@ -19,6 +19,7 @@ const check = (body) => {
 	return spawnSync(process.execPath, [script, fixture], { encoding: "utf8" });
 };
 const lines = (...rows) => `${rows.join("\n")}\n`;
+const body = (...rows) => lines("## Scope", "Covers the whole change.", "## Rollback", ...rows);
 
 const ALL = lines(
 	"## Why",
@@ -43,8 +44,14 @@ test("all seven sections in order pass", () => {
 	assert.match(result.stdout, /ok/);
 });
 
-test("Rollback alone passes", () => {
-	assert.equal(check(lines("## Rollback", "Revert the commit.")).status, 0);
+test("Scope and Rollback alone pass", () => {
+	assert.equal(check(body("Revert the commit.")).status, 0);
+});
+
+test("a body without Scope fails", () => {
+	const result = check(lines("## Rollback", "Revert the commit."));
+	assert.notEqual(result.status, 0);
+	assert.match(result.stdout, /missing section "## Scope"/);
 });
 
 test("swapped sections fail with an order message", () => {
@@ -79,35 +86,81 @@ for (const [rule, text] of [
 	["mid-sentence colon", "Note: revert it."],
 ]) {
 	test(`${rule} in prose fails (${JSON.stringify(text)})`, () => {
-		const result = check(lines("## Rollback", text));
+		const result = check(body(text));
 		assert.notEqual(result.status, 0);
-		assert.match(result.stdout, new RegExp(`:2: ${rule}`));
+		assert.match(result.stdout, new RegExp(`:4: ${rule}`));
 	});
 }
 
 test("long dash, curly quote, and colon inside a fenced block pass", () => {
 	const result = check(
-		lines("## Rollback", "```", "a — b", "it’s “ok”", "key: value", "```", "Revert the commit."),
+		body("```", "a — b", "it’s “ok”", "key: value", "```", "Revert the commit."),
 	);
 	assert.equal(result.status, 0, result.stdout);
 });
 
 test("long dash, curly quote, and colon inside inline backticks pass", () => {
-	const result = check(lines("## Rollback", "Run `a — b`, `it’s`, and `key: value`."));
+	const result = check(body("Run `a — b`, `it’s`, and `key: value`."));
 	assert.equal(result.status, 0, result.stdout);
 });
 
 test("a colon before a list passes", () => {
-	assert.equal(check(lines("## Rollback", "Do these steps:", "- Revert.")).status, 0);
+	assert.equal(check(body("Do these steps:", "- Revert.")).status, 0);
 });
 
 test("## Rollback inside a code fence does not count as the section", () => {
-	const result = check(lines("## Why", "Example below.", "```md", "## Rollback", "```"));
+	const result = check(lines("## Scope", "Covers it.", "```md", "## Rollback", "```"));
 	assert.notEqual(result.status, 0);
 	assert.match(result.stdout, /missing section "## Rollback"/);
 });
 
-const padded = (total) => lines("## Rollback", ...Array(total - 1).fill("Revert the commit."));
+test("a fence indented 4 spaces under a nested bullet is code", () => {
+	const result = check(body("- Run the check.", "  - Output.", "    ```", "    a — b", "    key: value", "    ```"));
+	assert.equal(result.status, 0, result.stdout);
+});
+
+test("a 4-space indented block after a blank line is code", () => {
+	const result = check(body("Output below.", "", "    key: value — done", "    it’s ok"));
+	assert.equal(result.status, 0, result.stdout);
+});
+
+test("a 4-space line right after prose is still prose", () => {
+	const result = check(body("Output below.", "    key: value"));
+	assert.notEqual(result.status, 0);
+	assert.match(result.stdout, /:5: mid-sentence colon/);
+});
+
+test("closing hashes on a heading are not part of the name", () => {
+	const result = check(lines("## Scope ##", "Covers it.", "## Rollback ##", "Revert the commit."));
+	assert.equal(result.status, 0, result.stdout);
+});
+
+test("inline code that spans two lines is code", () => {
+	const result = check(body("Run `a —", "key: value` now."));
+	assert.equal(result.status, 0, result.stdout);
+});
+
+test("backticks across a blank line are not one code span", () => {
+	const result = check(body("Run `a", "", "b — c` now."));
+	assert.notEqual(result.status, 0);
+	assert.match(result.stdout, /:6: long dash/);
+});
+
+for (const text of ["<!-- ## Rollback -->", "<!--", "Keep `<!--` out."]) {
+	test(`an HTML comment opener fails (${JSON.stringify(text)})`, () => {
+		const result = check(body("Revert the commit.", text));
+		assert.notEqual(result.status, 0);
+		assert.match(result.stdout, /:5: HTML comment/);
+	});
+}
+
+test("an HTML comment opener inside a fence fails", () => {
+	const result = check(body("```html", "<!-- note -->", "```"));
+	assert.notEqual(result.status, 0);
+	assert.match(result.stdout, /:5: HTML comment/);
+});
+
+const padded = (total) => body(...Array(total - 3).fill("Revert the commit."));
 
 test("a 40-line body passes with no warning", () => {
 	const result = check(padded(40));

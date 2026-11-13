@@ -141,7 +141,7 @@ npx skills add LeeJuOh/claude-code-zero
 
 **문제:** 에이전트가 쓴 PR 본문은 길고, 증거가 없고, 되돌리는 방법이 빠져 있습니다. 리뷰어는 결국 diff를 다 읽습니다.
 
-**해결:** 1분 안에 읽히는 본문으로 PR을 엽니다. 섹션은 고정 순서(Why, What changed, Scope, Tradeoffs, Blast Radius, Rollback, Verification)이고, 에이전트가 실제로 본 증거만 씁니다. 함께 든 스크립트가 섹션 순서가 틀리거나 Rollback이 없으면 실패시킵니다. Claude Code, Codex, Antigravity, `npx skills`에서 동작합니다.
+**해결:** 브랜치를 push하고 1분 안에 읽히는 본문으로 PR을 엽니다. 섹션은 고정 순서(Why, What changed, Scope, Tradeoffs, Blast Radius, Rollback, Verification)이고, 에이전트가 실제로 본 증거만 씁니다. forge CLI가 없어도 push하고 본문을 출력합니다. 함께 든 스크립트는 섹션 순서가 틀리거나, Scope나 Rollback이 없거나, HTML 주석이 있으면 본문을 실패시킵니다. Claude Code, Codex, Antigravity, `npx skills`에서 동작합니다.
 
 `one-minute-pr`
 
