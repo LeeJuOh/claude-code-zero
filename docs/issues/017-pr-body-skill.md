@@ -168,6 +168,11 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함). frontmatter 키 `name, descript
 ## 핸드오프 (2026-11-14, 착수 전 일시정지)
 
 - **다음 할 일 (2026-11-14 갱신).** S1~S4가 `develop`에 있다(`f1194d9`, `50c6a18`, `6758cdd`, `e52b8c3`, 이 커밋). 남은 것은 릴리스(`docs/release-workflow.md`, 사용자 요청 때)와 릴리스 뒤 README의 레포 이름 형식 설치 명령 확인이다. "S4 결과"의 "본 것" 두 줄은 사용자가 정한다.
+- **일시정지 (2026-11-14).** 사용자 답을 기다린다. 정할 것 두 개.
+  1. push 규칙. A) 언제나 push(SKILL.md 1단계에 "올릴 수 없어도 push한다" 추가, D29 그대로) 또는 B) 올릴 수 있을 때만 push(D29 수정). 추천 A.
+  2. 본문 언어. A) 레포의 최근 PR·커밋 언어 B) 대화 언어 C) 정하지 않음. 추천 A. 스펙에 새 결정(D32)으로 넣는다.
+  답을 받으면 스펙에 적고, SKILL.md를 고치고(900단어 이하 유지, `wc -w`), 플러그인 버전을 `0.1.1`로 올리고, `claude plugin validate .`를 돌리고, 커밋하고 push한다. 알림만 한 것(결정 아님): Codex용 파일 안 만듦(S3), 릴리스 뒤 README 설치 명령·CC 평소 설정 설치 확인.
+  S4 실행 기록(stream, 본문)은 세션 scratchpad에만 있어 세션이 끝나면 사라진다. 결과는 이 이슈의 "S4 결과"에 옮겨 두었다.
 - **나중에 할 일 (사용자 2026-11-14).** codex-advisor(`evals/`, `hooks/tests/`, `scripts/tests/`)와 vision-powers(`scripts/*.test.js`)의 개발용 파일을 플러그인 폴더 밖으로 옮긴다. 017과 별도 작업이다. 옮긴 뒤 검사 스크립트를 붙인다.
 - **push.** S3·S4의 설치 확인(`npx skills`, agy URL)은 GitHub에 있는 코드를 받는다. 그래서 슬라이스마다 커밋하고 `develop`에 push한다. agy URL은 `.../tree/develop/plugins/one-minute-pr`를 쓴다. `main` 병합, 태그, PR은 하지 않는다(릴리스는 `docs/release-workflow.md`, 사용자가 따로 요청).
 - **제안값 (바꿀 수 있음).** 스크립트 이름 `check-body.mjs`, 첫 버전 `0.1.0`. 테스트 위치 `tests/one-minute-pr/`는 사용자가 확정했다.
