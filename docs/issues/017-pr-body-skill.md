@@ -1,6 +1,6 @@
 # 이슈 017 — `one-minute-pr` 스킬 구현 (슬라이스 S1~S4)
 
-> 상태: **착수 전** · 생성: 2026-11-14
+> 상태: **진행 중 (S1 완료)** · 생성: 2026-11-14
 > 스펙: `docs/specs/017-pr-body-skill.md`. 결정 D1~D31, 제약 C1·C2는 모두 스펙에 있다. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/one-minute-pr/` (새 플러그인, D28·D30)
 > 원칙: 검사할 수 있는 것은 스크립트로(AGENTS.md "Deterministic first"). SKILL.md에는 규칙만 넣고 근거·기각 이유는 넣지 않는다(D19).
@@ -24,12 +24,12 @@ S1 ─→ S2 ─→ S3 ─→ S4
 스크립트는 스킬 폴더 안에 둔다. `npx skills`가 스킬 폴더만 가져온다고 보기 때문이다(C1, 추정).
 
 **Acceptance criteria** (seam: CLI 종료 코드 + stdout):
-- [ ] 바른 본문(7섹션 전부, 그리고 Rollback만 있는 것) → 종료 0
-- [ ] 순서가 바뀐 본문, 목록 밖 섹션, Rollback 없는 본문 → 각각 종료 ≠ 0, 어떤 규칙인지 stdout에 나옴
-- [ ] 긴 대시·둥근 따옴표·문장 중간 콜론이 본문에 있으면 실패, 코드 블록·백틱 안에 있으면 통과
-- [ ] 41줄 본문 → 종료 0, 경고 출력
-- [ ] `package.json`·`npm install` 없이 돌아감
-- [ ] 테스트 파일은 플러그인 폴더 밖, 레포 루트 `tests/one-minute-pr/`에 둔다(사용자 2026-11-14, 이유는 `docs/reference/gotchas.md` "Plugin scope"). 테스트는 스크립트를 CLI로 실행해 결과를 확인한다
+- [x] 바른 본문(7섹션 전부, 그리고 Rollback만 있는 것) → 종료 0
+- [x] 순서가 바뀐 본문, 목록 밖 섹션, Rollback 없는 본문 → 각각 종료 ≠ 0, 어떤 규칙인지 stdout에 나옴
+- [x] 긴 대시·둥근 따옴표·문장 중간 콜론이 본문에 있으면 실패, 코드 블록·백틱 안에 있으면 통과
+- [x] 41줄 본문 → 종료 0, 경고 출력
+- [x] `package.json`·`npm install` 없이 돌아감
+- [x] 테스트 파일은 플러그인 폴더 밖, 레포 루트 `tests/one-minute-pr/`에 둔다(사용자 2026-11-14, 이유는 `docs/reference/gotchas.md` "Plugin scope"). 테스트는 스크립트를 CLI로 실행해 결과를 확인한다
 
 **Blocked by**: None.
 
