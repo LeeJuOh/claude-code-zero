@@ -1,6 +1,6 @@
 # Gotchas — Plugin Development
 
-> Known traps discovered through real incidents. Moved out of `AGENTS.md` to keep the map thin — this file is the system of record for non-obvious failure modes.
+> System of record for non-obvious failure modes in plugin development, each found in a real incident.
 >
 > When adding a new gotcha, include **what fails** and **how it silently fails** so future agents can recognize the symptom.
 
@@ -20,15 +20,17 @@
 
 **source path** — `marketplace.json` `source` must start with `./` (local) or be a source object (external). `../` is not supported.
 
+**Renaming a plugin** — `name` is the key in users' `enabledPlugins` and the namespace of every component, so a changed `name` breaks every existing install. To relabel only, set `displayName` in `plugin.json`. To change `name`, change it in `plugin.json` and the `marketplace.json` entry (plus `source` if the folder moves), add `"<old>": "<new>"` to a top-level `renames` map so Claude Code migrates users, bump at least minor, and grep the repo for the old name (official `plugins/host-marketplace.md`).
+
 ## Plugin-Scope Silent Ignores
 
-**Plugin agent security** — Plugin agents (`agents/*.md`) silently ignore `permissionMode`, `hooks`, and `mcpServers` frontmatter. To use them, the agent file must live in `.claude/agents/` or `~/.claude/agents/`.
+**Plugin agent security** — Plugin agents (`agents/*.md`) silently ignore `permissionMode`, `hooks`, `mcpServers`, and `initialPrompt` frontmatter (official `plugins/components.md`). Declare hooks and MCP servers at the plugin level instead. `permissionMode` and `initialPrompt` work only when the agent file lives in `.claude/agents/` or `~/.claude/agents/`.
 
 **Plugin settings.json** — Only the `agent` and `subagentStatusLine` keys are supported (official `plugins-reference.md`). `permissions`, `hooks`, and other settings are silently ignored.
 
 **Skill allowed-tools** — Bare names and `Bash(command *)` command-scoped patterns work. `Write(path)` path-scoped does **not**. `$()` command substitution triggers a separate security prompt regardless of `allowed-tools`. Skills inherit parent `settings.json` permissions: `permissions.allow` is additive; `permissions.deny` overrides skill `allowed-tools` (deny > allow).
 
-**allowed-tools is not a whitelist** — `allowed-tools` only pre-approves the listed tools; every tool stays callable (official `skills.md`). A skill that loads another skill declares `Skill(<name>)` so the load runs without a permission prompt mid-flow.
+**allowed-tools is not a whitelist** — `allowed-tools` only pre-approves the listed tools; every tool stays callable (official `skills.md`). A skill that loads another skill declares `Skill(<name>)` so the load runs without a permission prompt mid-flow. The grant clears when the user sends their next message, so a step that runs after the user confirms is no longer pre-approved.
 
 ## Hooks & scripts
 
@@ -36,7 +38,7 @@
 
 **`set -u` and plugin variables** — Under `set -u`, an unguarded `${CLAUDE_PLUGIN_ROOT}` aborts the whole hook when the variable is unset. Guard it: `[[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]`.
 
-**Narrow hooks with `if`** — `matcher` picks the tool; the handler's `if` rule (e.g. `"if": "Bash(git push *)"`) filters before the script spawns. A broad `Bash(git *)` spawned bash, sourced shared code, and parsed JSON on every `git status` (rubber-duck-tutor, fixed in `d0d3ba1`).
+**Narrow hooks with `if`** — `matcher` picks the tool; the handler's `if` rule (e.g. `"if": "Bash(git push *)"`) filters before the script spawns. A broad `Bash(git *)` spawns bash, sources shared code, and parses JSON on every `git status`.
 
 ## Testing
 
@@ -52,7 +54,7 @@
 
 **Persistent data paths** — `${CLAUDE_PLUGIN_ROOT}` is wiped on update. Anything that must survive upgrades, and also temp files and outputs, goes in `${CLAUDE_PLUGIN_DATA}` rather than the CWD (the user's project).
 
-**Plugin variables in the Bash tool** — `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` are substituted inline in skill and agent content and exported to hooks, but they are absent from the Bash tool's environment (official `plugins-reference.md`). There `CLAUDE_PLUGIN_DATA` can even hold another plugin's folder. Write the placeholder in SKILL.md and pass the path to scripts as an argument; a script reading `process.env` / `os.environ` gets the wrong value.
+**Plugin variables in the Bash tool** — `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` are substituted inline in skill, command, and agent content and exported to hooks, but they are absent from the Bash tool's environment (official `plugins-reference.md`). There `CLAUDE_PLUGIN_DATA` can even hold another plugin's folder. Reference files opened with Read and text a hook returns (`additionalContext`) are not substituted either. Write the placeholder in SKILL.md and pass the path to scripts as an argument; a script reading `process.env` / `os.environ` gets the wrong value.
 
 ## Research & Content
 
