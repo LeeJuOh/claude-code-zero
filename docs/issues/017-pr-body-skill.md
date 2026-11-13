@@ -122,7 +122,7 @@ S1 ─→ S2 ─→ S3 ─→ S4
 **지움.** Codex `codex plugin remove`, agy `agy plugin uninstall`, CC는 별도 설정 폴더째 삭제, `npx skills`는 scratch 레포의 `.claude/skills`·`skills-lock.json` 삭제. 실제 `~/.claude` 설정·설치 목록에는 `one-minute-pr` 0건.
 
 **본 것 (고칠지 정할 것).**
-- 스킬이 있는 실행 중 프롬프트가 "본문만 출력"이면 push하지 않았다. 1단계는 push를 시키지만 사용자 말을 따른 것이라 그대로 둔다.
+- 다시 돌린 비교의 스킬 있음 3개는 push하지 않았다. 셋 다 이유로 "forge가 아니다"를 들었다. 1단계(D29)는 forge와 상관없이 push를 시키므로 어긋난다. 호출 확인 4개(CC·Codex·agy·`npx skills`)와 첫 비교에서는 push했다. 1단계에 "올릴 수 없어도 push한다"를 더할지 정한다.
 - 본문 언어는 정하지 않았다. 사용자의 전역 지시가 한국어여도 본문은 영어로 나왔다(SKILL.md가 영어라서로 추정).
 
 ## S2 결정 대조표 (2026-11-14)
