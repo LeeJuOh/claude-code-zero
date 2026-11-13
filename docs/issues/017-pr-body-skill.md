@@ -1,6 +1,6 @@
 # 이슈 017 — `one-minute-pr` 스킬 구현 (슬라이스 S1~S4)
 
-> 상태: **진행 중 (S1 완료)** · 생성: 2026-11-14
+> 상태: **진행 중 (S1·S2 완료)** · 생성: 2026-11-14
 > 스펙: `docs/specs/017-pr-body-skill.md`. 결정 D1~D31, 제약 C1·C2는 모두 스펙에 있다. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/one-minute-pr/` (새 플러그인, D28·D30)
 > 원칙: 검사할 수 있는 것은 스크립트로(AGENTS.md "Deterministic first"). SKILL.md에는 규칙만 넣고 근거·기각 이유는 넣지 않는다(D19).
@@ -42,11 +42,11 @@ S1 ─→ S2 ─→ S3 ─→ S4
 - 일부 경우용 내용은 별도 파일(D26). `references/diagrams.md`(D16, D17 그림 규칙), `references/overflow.md`(D3, D5 넘친 내용). SKILL.md에서 "언제 열지" 문장으로 가리킨다.
 
 **Acceptance criteria** (seam: 파일 내용, grep과 단어 수):
-- [ ] SKILL.md 900단어 이하(스크립트·별도 파일 제외, D19), 영어
-- [ ] frontmatter 키가 6개 필드 밖에 없음(`disable-model-invocation` 0건, D25)
-- [ ] 본문에 `${CLAUDE_`, `$ARGUMENTS`, `` !` ``, `@` 경로, 도구 이름(`AskUserQuestion`, `Bash`) 0건(C1)
-- [ ] 결정 대조표: 스펙의 D1~D31 각각이 SKILL.md나 별도 파일의 어느 문장으로 동작하는지 표로 확인한다. 표는 이 이슈의 핸드오프에 남기고 SKILL.md에는 넣지 않는다. 동작할 문장이 없는 결정(D24 이름, D27 eval, D28·D30 위치, D31)은 "해당 없음"으로 적는다.
-- [ ] 이 레포의 PR 템플릿 유무와 상관없이 D2 섹션으로 쓴다는 문장이 있음(D20)
+- [x] SKILL.md 900단어 이하(스크립트·별도 파일 제외, D19), 영어
+- [x] frontmatter 키가 6개 필드 밖에 없음(`disable-model-invocation` 0건, D25)
+- [x] 본문에 `${CLAUDE_`, `$ARGUMENTS`, `` !` ``, `@` 경로, 도구 이름(`AskUserQuestion`, `Bash`) 0건(C1)
+- [x] 결정 대조표: 스펙의 D1~D31 각각이 SKILL.md나 별도 파일의 어느 문장으로 동작하는지 표로 확인한다. 표는 이 이슈의 핸드오프에 남기고 SKILL.md에는 넣지 않는다. 동작할 문장이 없는 결정(D24 이름, D27 eval, D28·D30 위치, D31)은 "해당 없음"으로 적는다.
+- [x] 이 레포의 PR 템플릿 유무와 상관없이 D2 섹션으로 쓴다는 문장이 있음(D20)
 
 **Blocked by**: S1.
 
@@ -86,6 +86,46 @@ S1 ─→ S2 ─→ S3 ─→ S4
 ## Out of Scope (스펙 참조)
 
 - 커밋 만들기(D29), 증거 새로 만들기(D14), 작성 출처 줄(D10), 사람이 없는 실행 전용 동작(D31), `auto-optimize`(D27 "나중").
+
+## S2 결정 대조표 (2026-11-14)
+
+SKILL.md 898단어(`wc -w`, frontmatter 포함). frontmatter 키 `name, description, compatibility`. C1 금지 문자열 grep 0건. "SKILL.md"는 `plugins/one-minute-pr/skills/one-minute-pr/SKILL.md`, "diagrams"·"overflow"는 같은 폴더의 `references/` 파일.
+
+| 결정 | 동작하는 문장 (위치) |
+|---|---|
+| D1 분량 | "Keep the body to about 40 lines." (SKILL.md Length) |
+| D2 섹션·순서 | "Use these `##` sections in this order … Drop a section with nothing to say" + 7개 목록 (SKILL.md Body) |
+| D3 넘친 내용 | "Ask the user where the overflow goes, and wait" + 두 선택지 (overflow) |
+| D4 플랫폼 | "Find the forge from the remote URL. If its CLI is installed … With no usable CLI, print" (SKILL.md 5단계) |
+| D5 접기 조건 | "Use `<details>` only when the forge renders it." (overflow) |
+| D6 미리보기 없음 | "ready for review, not as a draft" + "Do not ask for a preview." (SKILL.md 5단계) |
+| D7 스크립트 검사 | "run `node scripts/check-body.mjs <body-file>` … until it exits 0. A line-count warning is not a failure." (SKILL.md 4단계) + 스크립트 |
+| D8 node `.mjs` | `compatibility` "Needs git and Node.js 18 or later." + 스크립트 내장 모듈만 |
+| D9 제목 | "Follow the format of the repo's recent PR titles … `type(scope): subject` … Name a real symbol" (SKILL.md Title) |
+| D10 작성 출처 줄 없음 | "No author line or SHAs." (SKILL.md Body) |
+| D11 증거 표 | 7행 표 + "Keep the table out of the body" + "Paste output lines exactly, marking each cut with `…`" + Verification 1~3 불릿 (SKILL.md Evidence) |
+| D12 문장 필터 | Writing rules 8줄 (SKILL.md) |
+| D13 스크립트 문장 검사 | 스크립트 long dash·curly quote·mid-sentence colon. SKILL.md "The check fails on these"는 단어 수 때문에 뺐고 규칙 줄만 남김 |
+| D14 본 증거만 | 2단계 "Use only results you saw … Do not run tests or take screenshots … Never invent" + "write \"not found\" … not \"not done\"" + 6단계 빠진 증거 알림 |
+| D15 What changed | "The shapes that changed, not files. A shape is a contract …, a data structure …, or a setting … `diff` block … No file tree." (SKILL.md Body) |
+| D16 흐름 그림 | "When a flow changed … read `references/diagrams.md`" (SKILL.md) + 그리는 순서 3단계, HTML 금지 (diagrams) |
+| D17 그림 규칙 | "When you draw with option 2 or 3" + 규칙 3개 (diagrams) |
+| D18 이미지 | "Upload images to the PR, never to the branch. If you cannot, say so in the reply." (SKILL.md Evidence) |
+| D19 900단어·영어 | 898단어, 영어 |
+| D20 PR 템플릿 무시 | "even when the repo has a PR template" (SKILL.md Body) |
+| D21 Rollback | "always keep Rollback" + `## Rollback` 항목 + 스크립트 필수 검사 |
+| D22 다시 부를 때 | "On a second run for the same PR, write the body again from the whole branch instead of patching it …" (SKILL.md Steps 뒤) |
+| D23 Blast Radius | "one fact that makes it safe or risky, with how far you checked it … write \"unproven\"" (SKILL.md Body) |
+| D24 이름 | 해당 없음 (`name: one-minute-pr`) |
+| D25 자동, 좁힌 트리거 | description "Use when the user asks to open, create, or make a pull request or merge request." `disable-model-invocation` 없음 |
+| D26 별도 파일 | `references/diagrams.md`, `references/overflow.md`, SKILL.md에서 "read … when" 문장으로 가리킴 |
+| D27 eval | 해당 없음 (S4) |
+| D28 별도 플러그인 | 해당 없음 (S3) |
+| D29 push만 | 1단계 "stop and tell the user to commit … Do not commit for the user … push the branch with an upstream. Never force-push." |
+| D30 위치 | 해당 없음 (S3) |
+| D31 사람 없는 실행 | 해당 없음 (다루지 않음) |
+| C1 에이전트 호환 | 6개 필드만, 도구 이름 없음, 질문은 "Ask the user … and wait" 산문, 스크립트는 skill 폴더 기준 상대 경로 |
+| C2 사람 리뷰어 | "The body is for a human reviewer who has the diff. When rules conflict, choose what reads best for that reviewer." |
 
 ## 핸드오프 (2026-11-14, 착수 전 일시정지)
 
