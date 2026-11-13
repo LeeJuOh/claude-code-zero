@@ -165,13 +165,34 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함). frontmatter 키 `name, descript
 | C1 에이전트 호환 | 6개 필드만, 도구 이름 없음, 질문은 "Ask the user … and wait" 산문, 스크립트는 skill 폴더 기준 상대 경로 |
 | C2 사람 리뷰어 | "The body is for a human reviewer who has the diff. When rules conflict, choose what reads best for that reviewer." |
 
+## 리뷰 결과와 할 일 (2026-11-14)
+
+`/pstack:interrogate`로 리뷰했다(opus 2개, Codex 1개). 모든 발견은 명령을 다시 돌려 재현했다. 결정이 끝나면 아래를 한 번에 고친다.
+
+**정한 것.**
+- push 규칙: A(언제나 push). SKILL.md 1단계에 "PR을 올릴 수 없어도 push한다"를 분명히 적는다. D29는 그대로. (사용자 2026-11-14)
+- 본문 언어: 정하지 않는다(C). 참고 PR 스킬 6개(S1, S6, S8, S9, S10, symphony push)에 언어 규칙 없음(grep). 시험 본문은 모두 영어. 다른 언어가 실제로 나오면 D32로 다시 연다. 스펙에 D32 "정하지 않음"으로 적는다. (사용자 2026-11-14)
+- Scope: 언제나 넣는다(A). 출처는 pstack `S1:17` "`## Scope`: always."뿐(다른 참고 스킬에는 Scope 섹션 없음, grep). 할 말이 없으면 "Covers the whole change." 한 줄. 스펙 D2·D7·D21과 SKILL.md Body, 스크립트 필수 섹션(Rollback, Scope), 테스트를 고친다. (사용자 2026-11-14)
+- CLI 증거 행: "before and after"를 되살린다(A). 출처 Hugo `S9:42`, `A1:54`, mattpocock `:21,:160`. pstack `S1:20`만 결과뿐. 본 적 없는 "전"은 "not found"(D14). (사용자 2026-11-14)
+- 스크립트 범위: A. 리스트 안 들여 쓴 펜스, 4칸 들여 쓴 코드, `## Rollback ##`, 줄을 넘는 인라인 코드를 코드로 본다(D13). 본문에 `<!--`가 있으면 실패(symphony `pr_body.check.ex:124`, 숨긴 Rollback 방지, D21). 1~3칸 헤딩·탭·setext·이스케이프 백틱·BOM은 그대로. 테스트를 더하고 S1 체크 항목 3을 다시 체크한다. (사용자 2026-11-14)
+
+**고칠 것 (결정 필요 없음).**
+- [ ] SKILL.md:14 "in this session or that exist in the repo, the conversation, or the PR"는 장소 목록이라 D14 위반. 장소를 빼고 "본 결과만"으로 줄인다.
+- [ ] SKILL.md Evidence에 "붙인 출력은 코드 블록이나 백틱 안에 둔다"를 더한다. 지금은 `Tests: 5 passed` 같은 출력이 콜론 검사(D13)에 걸려 D11 "Never retype"과 부딪친다.
+- [ ] 스펙 출처 줄 고침: `S4:46`→`:43`(D23, 출처 표), `S9:42-48`→`:41-47`, `S9:43`→`:42`(D11), `S9:50`→`:49`(D14), `S9:56`→`:57`(D18), `S9:62` "Never invent a result"→`:65` "Nothing in it was invented"(D14), `A6:102`→`:105`(D11), `A6:100-106`→`:105-109`(D23, 출처 표), `S8:85-89`→`:72-79`(D15), A1:49-55는 7행이 아니라 5행(D11).
+- [ ] 스펙 D14: S4(`S4:17,37` "돌려서 증명")와 A3:99를 "보고만 하는 편"에서 뺀다. D23이 이미 S4와 맞춘다.
+- [ ] 스펙 D8: "실행 검사 스크립트는 check-plan.mjs뿐"은 틀림(symphony `push/SKILL.md:55` `mix pr_body.check`). 결정은 그대로.
+- [ ] 스펙 D27: `wiki/` 근거는 스펙 :10 "위키 요약 제외"와 맞지 않음. 원본으로 바꾸거나 뺀다.
+- [ ] 이 이슈 S2 표 D7 행 인용을 실제 문장 "A line-count warning does not block."으로. S1 체크 항목 3은 들여 쓴 코드에서 틀리므로 스크립트를 고칠 때까지 체크를 푼다.
+- [ ] README 4곳을 결정에 맞춘다(Scope 필수, `<!--` 실패, push 언제나). `plugins/one-minute-pr/README.md`("dropped, except Rollback"), 루트 `README.md`·`README.ko.md`의 one-minute-pr 항목, `plugin.json`·`marketplace.json` description("a missing Rollback"). `docs/reference/readme-style.md`와 technical-writing·unslop을 적용한다. 이전 세션에 README에 unslop을 돌린 기록은 없다.
+- [ ] 플러그인 버전 `0.1.1`, `claude plugin validate .`, SKILL.md 900단어 이하(`wc -w`).
+
 ## 핸드오프 (2026-11-14, 착수 전 일시정지)
 
 - **다음 할 일 (2026-11-14 갱신).** S1~S4가 `develop`에 있다(`f1194d9`, `50c6a18`, `6758cdd`, `e52b8c3`, 이 커밋). 남은 것은 릴리스(`docs/release-workflow.md`, 사용자 요청 때)와 릴리스 뒤 README의 레포 이름 형식 설치 명령 확인이다. "S4 결과"의 "본 것" 두 줄은 사용자가 정한다.
-- **일시정지 (2026-11-14).** 사용자 답을 기다린다. 정할 것 두 개.
-  1. push 규칙. A) 언제나 push(SKILL.md 1단계에 "올릴 수 없어도 push한다" 추가, D29 그대로) 또는 B) 올릴 수 있을 때만 push(D29 수정). 추천 A.
-  2. 본문 언어. A) 레포의 최근 PR·커밋 언어 B) 대화 언어 C) 정하지 않음. 추천 A. 스펙에 새 결정(D32)으로 넣는다.
-  답을 받으면 스펙에 적고, SKILL.md를 고치고(900단어 이하 유지, `wc -w`), 플러그인 버전을 `0.1.1`로 올리고, `claude plugin validate .`를 돌리고, 커밋하고 push한다. 알림만 한 것(결정 아님): Codex용 파일 안 만듦(S3), 릴리스 뒤 README 설치 명령·CC 평소 설정 설치 확인.
+- **일시정지 (2026-11-14, 리뷰 뒤).** 정할 것은 모두 끝났다(위 "리뷰 결과와 할 일"의 "정한 것" 5개). 사용자가 "고쳐"라고 하면 시작한다.
+  재개 순서: 1) 스펙에 결정 반영(D2·D7·D21 Scope 필수, D11 CLI 행, D13 스크립트 범위, D29 push 문장, 새 D32 언어 "정하지 않음")과 출처 줄 고침. 2) 스크립트와 `tests/one-minute-pr/` 테스트(먼저 실패하는 테스트). 3) SKILL.md(900단어 이하, `wc -w`)와 README 4곳(technical-writing, unslop, `docs/reference/readme-style.md`). 4) 이 이슈 S2 표와 S1 체크 항목 3. 5) 버전 `0.1.1`, `claude plugin validate .`, 커밋, push.
+  주의: 스크립트 문제 1의 고치는 방법(들여 쓴 펜스는 몇 칸이든 펜스, 빈 줄 뒤 4칸 줄은 코드, 헤딩 끝 `#` 제거, 인라인 코드는 문단 단위)은 사용자에게 설명했고 이의가 없었다. 리뷰 재현 파일은 세션 scratchpad에만 있다. 위 "고칠 것"에 명령과 줄 번호를 남겼다.
   S4 실행 기록(stream, 본문)은 세션 scratchpad에만 있어 세션이 끝나면 사라진다. 결과는 이 이슈의 "S4 결과"에 옮겨 두었다.
 - **나중에 할 일 (사용자 2026-11-14).** codex-advisor(`evals/`, `hooks/tests/`, `scripts/tests/`)와 vision-powers(`scripts/*.test.js`)의 개발용 파일을 플러그인 폴더 밖으로 옮긴다. 017과 별도 작업이다. 옮긴 뒤 검사 스크립트를 붙인다.
 - **push.** S3·S4의 설치 확인(`npx skills`, agy URL)은 GitHub에 있는 코드를 받는다. 그래서 슬라이스마다 커밋하고 `develop`에 push한다. agy URL은 `.../tree/develop/plugins/one-minute-pr`를 쓴다. `main` 병합, 태그, PR은 하지 않는다(릴리스는 `docs/release-workflow.md`, 사용자가 따로 요청).
