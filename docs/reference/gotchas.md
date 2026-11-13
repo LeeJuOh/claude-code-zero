@@ -14,7 +14,7 @@
 
 **Plugin independence** — A plugin works with no other plugin installed. When a feature is unavailable, say "these features are unavailable outside this environment" rather than routing users to a specific plugin by name (e.g., "use claw-mo instead") — cross-plugin assumptions fail silently once the other plugin is uninstalled. A genuine hard dependency goes in `plugin.json` `dependencies` (official `plugins-reference.md`), which installs it.
 
-**Plugin scope** — A plugin ships only the knowledge its own features use. Repo conventions, other plugins' details, and whole reference docs ride into every install and go stale unseen.
+**Plugin scope** — Every committed file under `plugins/<plugin-name>/` ships to each install with no warning: Claude Code copies the whole plugin folder into its cache, and `agy plugin install` copies it too (both confirmed 2026-11-14). So the folder holds only what the plugin's features use at run time, plus its README: the manifest, components, the scripts they call, and the references they read. Development files live outside it, tests in the repo-root `tests/<plugin-name>/`. Repo conventions, other plugins' details, and whole reference docs stay out too; they ride into every install and go stale unseen.
 
 ## Marketplace
 
