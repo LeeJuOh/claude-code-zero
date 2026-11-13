@@ -1,6 +1,6 @@
 # 이슈 017 — `one-minute-pr` 스킬 구현 (슬라이스 S1~S4)
 
-> 상태: **진행 중 (S1~S3 완료)** · 생성: 2026-11-14
+> 상태: **구현 완료 (S1~S4), 릴리스 전** · 생성: 2026-11-14
 > 스펙: `docs/specs/017-pr-body-skill.md`. 결정 D1~D31, 제약 C1·C2는 모두 스펙에 있다. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/one-minute-pr/` (새 플러그인, D28·D30)
 > 원칙: 검사할 수 있는 것은 스크립트로(AGENTS.md "Deterministic first"). SKILL.md에는 규칙만 넣고 근거·기각 이유는 넣지 않는다(D19).
@@ -77,16 +77,53 @@ S1 ─→ S2 ─→ S3 ─→ S4
 - 배포: CC marketplace, Codex marketplace, agy 하위 폴더 URL, `npx skills`로 설치하고 한 번씩 부른다. `npx skills`가 스킬 폴더만 가져오는지(C1 추정)도 이때 확인한다.
 
 **Acceptance criteria**:
-- [ ] 호출 요청별 결과(불림/안 불림)를 이 이슈 핸드오프에 기록
-- [ ] 비교 결과 기록. 차이가 없으면 다음 할 일을 적고 멈춘다
-- [ ] 네 설치 방법 각각 설치 성공과 호출 1회 결과 기록. 안 되는 방법은 스펙 D30을 다시 연다
-- [ ] 시험 설치는 끝나면 지운다
+- [x] 호출 요청별 결과(불림/안 불림)를 이 이슈 핸드오프에 기록 (아래 "S4 결과")
+- [x] 비교 결과 기록. 차이가 없으면 다음 할 일을 적고 멈춘다 (차이 있음)
+- [x] 네 설치 방법 각각 설치 성공과 호출 1회 결과 기록. 안 되는 방법은 스펙 D30을 다시 연다 (네 방법 모두 됨, D30 유지)
+- [x] 시험 설치는 끝나면 지운다
 
 **Blocked by**: S3.
 
 ## Out of Scope (스펙 참조)
 
 - 커밋 만들기(D29), 증거 새로 만들기(D14), 작성 출처 줄(D10), 사람이 없는 실행 전용 동작(D31), `auto-optimize`(D27 "나중").
+
+## S4 결과 (2026-11-14)
+
+**울타리.** 모든 실행은 scratch 클론에서 했다. `origin`은 로컬 bare 레포이고 `main`만 있다. 그래서 GitHub에 PR이 생기지 않는다. `gh repo view`는 "none of the git remotes configured for this repository point to a known GitHub host"로 거부했다. 스킬은 D4대로 본문만 출력했다. 실행: `claude -p` (`claude 2.1.322`), `codex exec` (`codex-cli 0.167.1`), `agy -p` (1.5.3), skills 1.8.1. 입력 커밋은 `7da7ef1`(worktree-plus 문장 삭제), `b6b1bbe`(toolbox 3개 스킬 수정), `f1194d9`(S1 스크립트).
+
+**호출.** `--plugin-dir`로 스킬을 넣고 `7da7ef1` 브랜치에서 한 번씩 돌렸다.
+
+| 요청 | 기대 | 결과 |
+|---|---|---|
+| "PR 만들어 줘" (대상) | 불림 | 불림 (`one-minute-pr:one-minute-pr`) |
+| "이 PR 리뷰해 줘" (비슷하지만 대상 아님) | 안 불림 | 안 불림, `code-review`가 불림 |
+| "이거 올려 줘" (애매함) | 안 불림 | 안 불림, 무엇을 올릴지 되물음 |
+
+**비교.** 같은 프롬프트 "이 브랜치로 main에 PR 열어 줘. 쓸 수 있는 forge 원격이 없으면 PR 제목과 본문만 출력해 줘."를 스킬 있음·없음으로 돌렸다. 본문 줄 수는 `markdown` 블록만 센 값, 검사는 `check-body.mjs` 결과.
+
+| 입력 | 스킬 있음 | 스킬 없음 |
+|---|---|---|
+| `7da7ef1` | 31줄, 검사 ok. Why · What changed(`diff`) · Scope · Blast Radius · Rollback · Verification. 증거 2개 "not found" | `## Summary` · `## Changes`만. Rollback·검증 없음 |
+| `b6b1bbe` | 37줄, 검사 ok. 같은 6섹션. Blast Radius에 `load-secrets.sh.template:11`·`:58` 확인. 증거 2개 "not found" | `## Summary`(굵은 글씨+콜론 목록) · `## Files`(파일 목록) · `## Test plan`(실행 안 한 체크박스 2개). Rollback 없음 |
+| `f1194d9` | 37줄, 검사 ok. 같은 6섹션 | 같은 6섹션. 이 커밋의 레포에 스펙 017이 있어 기준 실행이 스펙을 읽었다. 비교에서 뺀다 |
+
+차이가 있으므로 스킬을 다시 생각하지 않는다. 첫 비교(프롬프트 "이 브랜치로 PR 열어 줘", bare origin에 `develop`도 있음)는 기준 실행 3개가 모두 "이미 develop에 있다"며 본문을 쓰지 않아 버리고 다시 돌렸다.
+
+**설치와 호출 1회.** 모두 develop 코드(`e52b8c3`)를 받았다. 레포 이름만 쓰는 README 명령은 `main`을 읽으므로 릴리스 뒤에 동작한다.
+
+| 방법 | 설치 | 받은 파일 | 호출 결과 |
+|---|---|---|---|
+| CC marketplace | `claude plugin marketplace add 'LeeJuOh/claude-code-zero#develop'` + `claude plugin install one-minute-pr@claude-code-zero` 성공, `Version: 0.1.0`. 사용자 설정이 이 marketplace의 소스를 고정해서 별도 `CLAUDE_CONFIG_DIR`에 설치했다 | 플러그인 폴더 전체(README, `.claude-plugin`, 스킬) | 별도 설정 폴더는 로그인이 없어서 설치된 캐시를 `--plugin-dir`로 넣고 `/one-minute-pr` 실행. 캐시 경로에서 `check-body.mjs` 실행, `/tmp/omp/body.md ok`, push, 본문 출력 |
+| Codex marketplace | 이미 있는 `claude-code-zero` marketplace(`.claude-plugin/marketplace.json`)를 `-c 'marketplaces.claude-code-zero.ref="develop"'`로 올린 뒤 `codex plugin add one-minute-pr@claude-code-zero` 성공. 끝나고 `main`(`6380fb9`)으로 되돌림 | 플러그인 폴더 전체 | `codex exec '$one-minute-pr'`. 캐시의 SKILL.md를 읽고 `check-body.mjs` 결과 `ok`, push 성공. upstream 설정은 sandbox가 `.git` 쓰기를 막아 실패 |
+| agy 하위 폴더 URL | `agy plugin install https://github.com/LeeJuOh/claude-code-zero/tree/develop/plugins/one-minute-pr` 성공, `Source: claude-code`, skills 1 | 플러그인 폴더 전체 + 변환한 `plugin.json` | `agy -p "/one-minute-pr"`. 첫 검사 4 problems(`missing section "## Rollback"` 포함) → 고친 뒤 `ok`, push 성공. headless는 권한을 못 물어서 `--settings`로 `command(git *)`·`command(node *)` 등과 `write_file(/tmp/*)`를 허용해야 했다(`--dangerously-skip-permissions`는 쓰지 않음) |
+| `npx skills` | `npx skills add https://github.com/LeeJuOh/claude-code-zero/tree/develop --skill one-minute-pr -a claude-code -y --copy` 성공 | 스킬 폴더만(`SKILL.md`, `references/`, `scripts/`). C1 추정 확인 | `claude -p "/one-minute-pr"`. `check-body.mjs`가 문제를 찾아 고친 뒤 통과, push, 본문 출력, 빠진 증거 2개 알림 |
+
+**지움.** Codex `codex plugin remove`, agy `agy plugin uninstall`, CC는 별도 설정 폴더째 삭제, `npx skills`는 scratch 레포의 `.claude/skills`·`skills-lock.json` 삭제. 실제 `~/.claude` 설정·설치 목록에는 `one-minute-pr` 0건.
+
+**본 것 (고칠지 정할 것).**
+- 스킬이 있는 실행 중 프롬프트가 "본문만 출력"이면 push하지 않았다. 1단계는 push를 시키지만 사용자 말을 따른 것이라 그대로 둔다.
+- 본문 언어는 정하지 않았다. 사용자의 전역 지시가 한국어여도 본문은 영어로 나왔다(SKILL.md가 영어라서로 추정).
 
 ## S2 결정 대조표 (2026-11-14)
 
@@ -130,7 +167,7 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함). frontmatter 키 `name, descript
 
 ## 핸드오프 (2026-11-14, 착수 전 일시정지)
 
-- **다음 할 일.** S1부터 시작한다. 시작 전에 `docs/reference/gotchas.md`를 읽는다. 새로 넣은 "Plugin scope" 규칙에 따라, 플러그인 폴더에는 실행할 때 쓰는 파일만 둔다.
+- **다음 할 일 (2026-11-14 갱신).** S1~S4가 `develop`에 있다(`f1194d9`, `50c6a18`, `6758cdd`, `e52b8c3`, 이 커밋). 남은 것은 릴리스(`docs/release-workflow.md`, 사용자 요청 때)와 릴리스 뒤 README의 레포 이름 형식 설치 명령 확인이다. "S4 결과"의 "본 것" 두 줄은 사용자가 정한다.
 - **나중에 할 일 (사용자 2026-11-14).** codex-advisor(`evals/`, `hooks/tests/`, `scripts/tests/`)와 vision-powers(`scripts/*.test.js`)의 개발용 파일을 플러그인 폴더 밖으로 옮긴다. 017과 별도 작업이다. 옮긴 뒤 검사 스크립트를 붙인다.
 - **push.** S3·S4의 설치 확인(`npx skills`, agy URL)은 GitHub에 있는 코드를 받는다. 그래서 슬라이스마다 커밋하고 `develop`에 push한다. agy URL은 `.../tree/develop/plugins/one-minute-pr`를 쓴다. `main` 병합, 태그, PR은 하지 않는다(릴리스는 `docs/release-workflow.md`, 사용자가 따로 요청).
 - **제안값 (바꿀 수 있음).** 스크립트 이름 `check-body.mjs`, 첫 버전 `0.1.0`. 테스트 위치 `tests/one-minute-pr/`는 사용자가 확정했다.
