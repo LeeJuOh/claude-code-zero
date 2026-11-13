@@ -35,8 +35,15 @@
   - frontmatter는 Agent Skills spec 6개 필드만 (`references/agentskills-spec/docs/specification.mdx:27-32`). CC 문서도 CC 밖에서는 이 6개만 쓰라고 한다 (`code.claude.com/docs/en/skills.md`, "Using skill frontmatter outside Claude Code").
   - 본문에 `${CLAUDE_*}`, `$ARGUMENTS`, `` !`cmd` ``, `@path`, 도구 이름(`AskUserQuestion`, `Bash`)을 쓰지 않는다. 질문은 산문으로 "ask the user … and wait"라고 쓴다. 질문 도구 이름이 에이전트마다 다르다 (CC `AskUserQuestion`, Codex `tool/requestUserInput`, Antigravity `ask_question` — `antigravity.google/docs/sdk/tools.md`).
   - 번들 파일은 skill root 기준 상대 경로. 스크립트는 TTY 입력 없이 인자와 stdout만 (`using-scripts.mdx:229-231`).
-  - 탐색 경로가 다르다. CC는 `.claude/skills`·`<plugin>/skills`, Codex와 Antigravity는 `.agents/skills` (`learn.chatgpt.com/docs/build-skills.md`, `antigravity.google/docs/skills.md`). CC 플러그인 skill은 다른 에이전트에서 안 보인다 → 배포 방식은 별도 결정.
+  - 탐색 경로가 다르다. CC는 `.claude/skills`·`<plugin>/skills`, Codex와 Antigravity는 `.agents/skills` (`learn.chatgpt.com/docs/build-skills.md`, `antigravity.google/docs/skills.md`). CC 플러그인 skill은 다른 에이전트에서 그대로 안 보인다. 단 Codex도 자체 플러그인·marketplace가 있다(CLI `/plugins`, `learn.chatgpt.com/docs/plugins.md:54-56`, 2026-11-14 확인). agy도 플러그인이 있다(2026-11-14 조사, 다운로드한 문서 확인):
+    - 매니페스트: CC `.claude-plugin/plugin.json`, Codex `.codex-plugin/plugin.json` 또는 루트 `plugin.json`(`developers.openai.com/plugins/build/plugins.md:14-26`), agy `.antigravity-plugin/plugin.json`(여러 에이전트 레포용, `antigravity.google/docs/build-plugins.md:98`). `skills/`는 공유.
+    - marketplace: Codex `.agents/plugins/marketplace.json`, `source.path: "./plugins/x"` 가능(plugins.md:410-466). agy는 공식 marketplace 하나뿐, GitHub URL·로컬 경로로 설치(`agy-docs-plugins.md:129-150`). 하위 폴더 URL 설치는 미확인.
+    - 호출: CC 맨 이름 `/fancy`도 됨, 다른 명령과 겹치지 않을 때(`code.claude.com/docs/en/skills.md:455`). agy `/<skill-name>` 접두어 없음(`agy-docs-plugins.md:37`). Codex `$` 멘션(`skills-and-plugins.md:44-45`), 플러그인 접두어 여부 미확인.
+    - 전례: `references/superpowers/`(`.claude-plugin`·`.codex-plugin`·`.antigravity-plugin`·`.agents/plugins` + 공유 `skills/`), `references/compound-engineering-plugin/`. 모두 레포 루트에 플러그인 하나. 우리 레포처럼 `plugins/<name>/` 여러 개인 전례는 없다.
+  배포 방식은 Open에서 정한다.
   - 답을 받을 수 없는 모드(CC `-p`, Codex approval never, Antigravity headless)에서의 기본 동작을 스킬에 적는다.
+
+- **C2 독자는 사람 리뷰어.** SKILL.md는 에이전트가 읽고, PR 본문은 사람 리뷰어가 읽는다(AI 리뷰어도 읽지만 기준은 사람). 목적은 PR 작성자 쪽에서 리뷰 병목을 줄이는 것(A3 제목). 근거: "a one-minute briefing … for a reviewer who has the diff"(S1:13), A2 제목. 규칙이 충돌하면 사람 리뷰어의 가독성을 기준으로 판단한다. (사용자 2026-11-14)
 
 ## Decisions
 
@@ -50,7 +57,7 @@
 
 - **D5 접기 조건: forge가 렌더할 때만 `<details>`로 접는다.** 스킬 문장은 "Fold the details with `<details>` when the forge renders it." 한 줄이고 특정 forge 이름은 쓰지 않는다. 조건이 없으면 태그가 글자 그대로 보인다 (S10:86,99). D3 보완. (그릴 2026-11-13)
 
-- **D6 미리보기 없음: 바로 올린다.** 스킬 호출이 곧 게시 의도다. 올린 뒤 PR 링크를 주고, 사용자가 고칠 곳을 말하면 고친다. 본문 수정은 되돌릴 수 있다 (S8 two-way door). 멈추는 곳은 D3 질문(넘친 내용이 있을 때)뿐이다. 근거: pstack·visual-pr는 바로 올린다 (S1:30, S6:44). Hugo의 게시 전 승인(S9:10)은 기각. 기각 비용: PR 생성 알림에 첫 본문이 실릴 수 있다(추론). (그릴 2026-11-13)
+- **D6 미리보기 없음: 바로 올린다.** 스킬 호출이 곧 게시 의도다. 올린 뒤 PR 링크를 주고, 사용자가 고칠 곳을 말하면 고친다. 본문 수정은 되돌릴 수 있다 (S8 two-way door). 멈추는 곳은 D3 질문(넘친 내용이 있을 때)뿐이다. 근거: pstack·visual-pr는 바로 올린다 (S1:30, S6:44). Hugo의 게시 전 승인(S9:10)은 기각. 기각 비용: PR 생성 알림에 첫 본문이 실릴 수 있다(추론). 반대 근거(기각): "the person who asked for the change signs off on it"(`raw-articles/How the Claude Code team does code review.md:98`), 리뷰 보내기 전 작성자가 diff를 읽고 설명을 고친다(`raw-articles/The Brain Sandwich.md:31`). 둘 다 "사람이 확인"이지 "올리기 전"은 아니다. 올린 뒤 확인으로 충족(사용자 2026-11-14 "일단 게시하고 보면 된다"). draft PR로 올리는 중간안도 기각(S1:30 "never as a draft"). (그릴 2026-11-13, 보강 11-14)
 
 - **D7 스크립트 검사: 섹션만 막고 줄 수는 경고.** 올리기 전에 스크립트로 `##` 섹션 이름과 순서를 검사하고, 틀리면 실패한다. 줄 수는 40줄을 넘으면 경고만 한다(D1 "대략", D3로 넘김). 런타임 요구는 `compatibility` 필드에 적는다 (`references/agentskills-spec/docs/skill-creation/using-scripts.mdx:86`). 근거: pstack `check-plan.mjs` (`poteto-mode/playbooks/multi-phase-plan.md:10`), AGENTS.md "Deterministic first". 참고 PR 스킬(S6, S8, S9)에는 스크립트 검사가 없다. (그릴 2026-11-13)
 
@@ -76,24 +83,38 @@
 
 - **D18 이미지 올리기: 한 줄만.** SKILL.md에 "이미지는 PR에 올린다. 브랜치에 커밋하지 않는다. 못 올리면 채팅에서 알린다." 한 줄만 둔다. 올리는 방법은 에이전트가 forge에 맞게 찾는다. 근거: Hugo 한 줄(S9:56), pstack "attach" 한 마디(S1:22), visual-pr·mattpocock은 언급 없음. 사실: GitHub 문서에 `gh pr create/edit --attach`가 있다(docs.github.com/en/github-cli/github-cli/attaching-files-with-github-cli, 2026-11-13 확인), 로컬 `gh` 2.95.0에는 없다(직접 확인). GitLab은 `POST /projects/:id/uploads`, 응답에 `markdown` 필드(docs.gitlab.com/api/project_markdown_uploads). 처음 케이스 표로 제안했다가 사용자가 과하다고 바로잡음. (그릴 2026-11-13)
 
-- **D19 분량과 언어: 참고 스킬 수준, 영어.** SKILL.md는 900단어 이하(스크립트 제외). 참고 스킬 분량(직접 셈): visual-pr 490(+그림 규칙 파일 406), mattpocock 568, Hugo 909, pstack PR 929, pr-lens 4,829(전용 CLI 설명서라 제외). 확정한 결정은 모두 동작하게 담는다. spec의 근거·기각 이유는 SKILL.md에 넣지 않고 규칙만 넣는다. 넘치면 규칙 문장을 줄이고 별도 파일로 옮기지 않는다. 언어는 영어(AGENTS.md Coding Style). (그릴 2026-11-13)
+- **D19 분량과 언어: 참고 스킬 수준, 영어.** SKILL.md는 900단어 이하(스크립트 제외). 참고 스킬 분량(직접 셈): visual-pr 490(+그림 규칙 파일 406), mattpocock 568, Hugo 909, pstack PR 929, pr-lens 4,829(전용 CLI 설명서라 제외). 확정한 결정은 모두 동작하게 담는다. spec의 근거·기각 이유는 SKILL.md에 넣지 않고 규칙만 넣는다. 넘치면 규칙 문장을 줄인다. (별도 파일 금지는 D26에서 고침: 일부 경우용 내용은 별도 파일.) 언어는 영어(AGENTS.md Coding Style). (그릴 2026-11-13)
 
 - **D20 레포 PR 템플릿: 무시하고 우리 양식.** 레포에 PR 템플릿이 있어도 D2 섹션으로 쓴다. D7 섹션 검사는 언제나 돈다. 근거: 일반 PR 스킬 4개 중 3개가 자기 양식만 쓴다(visual-pr S6:51 "Do not expand the PR body beyond that template", mattpocock S8:12, pstack S1:13). 레포 템플릿을 따르는 곳은 Hugo(S9:25)와 symphony(`references/symphony/.codex/skills/push/SKILL.md:47`, 자기 레포 전용)뿐. 기각 이유: 템플릿마다 섹션이 달라 에이전트가 우리 내용을 어느 섹션에 넣을지 매번 추측한다(사용자 판단). 기각 비용: 템플릿 레포에서 필수 항목(체크박스 등)이 빠지고, CI가 본문 형식을 검사하는 레포(`references/symphony/.github/workflows/pr-description-lint.yml:38`)에서는 막힌다. 팀 레포에서 필요해지면 다시 정한다. (그릴 2026-11-13)
+
+- **D21 되돌리는 방법: 별도 섹션.** Blast Radius에 섞지 않고 섹션을 따로 둔다. 근거: Claude Code 팀 템플릿이 "Risk"와 "How to revert"를 따로 묻는다(`raw-articles/How the Claude Code team does code review.md:98,219`). A3:79-80도 Impact와 Rollback cost를 다른 질문으로 둔다(리뷰어 질문 목록, 섹션 목록 아님). 기각: Blast Radius 안 한 문장(mattpocock Merge Danger S8, 에이전트 추천), 쓰지 않음(pstack S1:19). 항상 넣는다(D2 "할 말 없는 섹션은 뺀다"의 예외). 쉬우면 한 줄(예: "revert 커밋 하나로 되돌린다"). 이유: 빠지면 리뷰어가 "쉬워서"와 "잊어서"를 구별 못 한다. Claude Code 팀 템플릿도 매번 묻는다(:98). D7 스크립트는 이 섹션이 없으면 실패. 이름 `## Rollback`(A3:80, 다른 섹션처럼 짧은 명사, git revert 밖의 방법 예: flag 끄기도 담음). 기각: `How to revert`(CC 팀 :219, 문장형), `Revert`(git 명령 하나로 좁음). 위치는 Blast Radius 바로 뒤: Why · What changed · Scope · Tradeoffs · Blast Radius · Rollback · Verification. 이유: 출처 3개 모두 위험 바로 뒤에 되돌리기(CC 팀 :219 Risk → How to revert, S8 Merge Danger 한 섹션). 기각: 맨 끝. D2·D7 섹션 목록에 반영할 것. (그릴 2026-11-13)
+
+- **D22 다시 부를 때: 새로 쓴다.** 같은 PR에서 다시 부르면(커밋 추가, 리뷰 뒤) 브랜치 전체 기준으로 본문을 새로 쓰고 옛 문장은 다시 쓰지 않는다(`references/symphony/.codex/skills/push/SKILL.md:51-54`). 리뷰에서 정한 내용은 넣는다(`raw-articles/Software Engineering at Google.md:167`). 옛 본문의 증거(출력, 스크린샷 링크)는 지금 코드에 맞으면 남긴다(D14 본 증거). 기각: 덧붙이기(옛 문장이 틀린 채 남음, 예: "캐시로 빠르게 한다" + "캐시는 뺐다"), 그대로 두기. 변경 요약 코멘트는 출처 없어 넣지 않는다. visual-pr도 기존 PR 본문을 통째로 바꾼다(S6:17,44). (그릴 2026-11-13)
+
+- **D23 Blast Radius: 이유 하나 + 확인 수준.** 1~2문장(S1:19 원문 "1–2 sentences on who or what it touches and why that is safe or risky"). 안전한 이유가 되는 사실 하나를 쓰고(S4:43 "the one fact"), 어디까지 확인했는지 쉬운 말로 붙인다(S4:20-28, A6:100-106의 5단계를 번호 없이, 예: "`app/routes.ts:12`에서 확인", "테스트로 확인"). 실행이 필요한 4~5단계는 이미 본 결과가 있을 때만(D14). 확인 못 했으면 "확인 못 함"(S4:46 "write unproven"). pstack PR playbook은 확인 수준을 쓰지 않는다(grep 0). 처음 "쓰지 않음"을 추천했다가 1~3단계는 코드 읽기라 D14와 충돌하지 않음을 바로잡음. (그릴 2026-11-14)
+
+- **D24 스킬 이름: `one-minute-pr`.** 목표(리뷰어가 1분 안에 판단, S1:13 "one-minute briefing")와 문제(리뷰 병목)를 담는다. 약속을 D1·D7이 지킨다. 1분 넘는 PR은 목표로 읽고 넘친 내용은 D3. 기각: `pr-body`(PR을 만드는 스킬인데 본문만 보임), `open-pr`(차별점 없음), `pr`(mattpocock과 충돌), `pr-brief`, `review-ready-pr`, `human-readable-pr`, `proof-pr`(증거를 새로 만들라는 뜻으로 읽힘, D14 충돌), `visual-pr`(이미 있는 스킬, 그림은 차별점 아님). (그릴 2026-11-14)
+
+- **D25 호출: 자동, 좁힌 트리거.** description은 "사용자가 PR을 열거나 만들라고 할 때"로 좁힌다. 자연어 요청에도 불리고, 호출이 곧 사용자 의도라 D6이 안전하다. 비용: mattpocock `pr`("Use when writing a PR body")과 겹침(사용자 로컬 설치). 참고: visual-pr 수동(description 문장, S6:3), Hugo(S9:3)·mattpocock(S8:3)·pstack 자동. `disable-model-invocation`은 CC 전용이라 C1과 맞지 않아 쓰지 않는다. 처음 수동을 추천했다가 자동의 가장 좋은 형태(좁힌 트리거)를 따져 바꿈. (그릴 2026-11-14)
+
+- **D26 별도 파일: 일부 경우용만 (D19 수정).** 일부 경우에만 필요한 내용(D17 그림 규칙, D3·D5 넘친 내용 처리)은 skill root 아래 별도 파일에 두고, SKILL.md에서 "언제 열지"를 쓴 문장으로 가리킨다(예: "Before you draw a diagram yourself, read `references/diagrams.md`."). 매번 필요한 단계·섹션 규칙·증거 표·문장 규칙은 SKILL.md에. 900단어 제한은 SKILL.md에만. 근거: visual-pr 그림 규칙 별도 파일(S6:26), writing-for-agents의 분기 기준(모든 경우에 필요한 것은 본문, 일부 경우는 포인터 뒤). D19의 "별도 파일로 옮기지 않는다"에는 근거가 적혀 있지 않았다. (그릴 2026-11-14)
+
+- **D27 eval: 작게.** 형식은 D7 스크립트의 단위 테스트(eval 아님). 호출은 요청 몇 개(대상·비슷하지만 대상 아님·애매함). 결과·비교는 이 레포 실제 PR 2~3개로 스킬 있음/없음을 같은 입력으로 비교하고, 같으면 스킬을 다시 생각한다. 배포는 세 에이전트에 설치 후 한 번씩 호출. `auto-optimize`는 나중. 근거: `wiki/concepts/skill-evaluation.md:9-15,32-36`, pstack authoring playbook 3단계("Test cases if structural"). (그릴 2026-11-14)
+
+- **D28 플러그인: 별도 플러그인 `one-minute-pr`.** toolbox에 넣지 않는다. 플러그인 이름 = 스킬 이름이어도 호출은 짧다(CC 맨 이름 `skills.md:455`, agy `/<skill>`). 위치(이 레포 `plugins/one-minute-pr/` vs 별도 레포)는 아래 Open. (사용자 2026-11-14)
 
 ## Open
 
 다음 질문 순서대로. 한 번에 하나씩, 출처와 추천을 붙여 묻는다. 새 규칙은 이미 정한 케이스 중 어디에 적용되는지 먼저 표로 확인한다.
 
-- **되돌리는 방법 (다음, 답 대기).** Claude Code 팀 템플릿이 "How to revert"를 묻는다(`raw-articles/How the Claude Code team does code review.md:98,219`). A3:80 rollback cost. mattpocock one-way/two-way door(S8:168). pstack Blast Radius는 "safe or risky" 1~2문장, 되돌리기 언급 없음(S1:19). D2에 자리가 없다. 제안: 새 섹션 없이 Blast Radius 안에 한 문장(예: "revert 커밋 하나로 되돌린다" / "DB 컬럼을 지워 revert로 데이터가 돌아오지 않는다"). 추천 예.
-- **같은 PR에서 다시 부를 때 (위키 감사).** 본문을 PR 전체 범위로 새로 쓰고 옛 문장을 재사용하지 않는다(`references/symphony/.codex/skills/push/SKILL.md:51-54`), 리뷰 중 새 결정은 설명에 반영(`raw-articles/Software Engineering at Google.md:167`).
-- **D6 반대 근거 기록 (위키 감사).** "Claude can fill that in, but the person who asked for the change signs off on it."(How the Claude Code team…:98), 작성자가 diff를 읽고 설명을 고친다(`raw-articles/The Brain Sandwich.md:31`). 감사 제안: D6 유지(스킬 호출이 확인), 기각 근거로만 적는다.
-- Blast Radius 증명 강도: A6:100-106, S4:20-28 5단계를 쓸지.
-- 스킬 이름, 둘 플러그인, 에이전트별 배포 경로 (C1 탐색 경로 차이).
+- **커밋·push 범위 (다음, 새로 찾은 빈칸).** 스킬이 커밋·push까지 하는가. visual-pr는 커밋·push 후 PR 생성(S6:18-19). pstack·Hugo·mattpocock는 아직 확인 안 함. 참고 스킬 표를 먼저 만들고 묻는다.
+- **D28 위치.** 이 레포 `plugins/one-minute-pr/`에 둘지 별도 레포로 뺄지. 세 에이전트 전례(`references/superpowers/`, `references/compound-engineering-plugin/`)는 모두 레포 루트에 플러그인 하나. Codex marketplace는 `./plugins/x` 경로 가능. agy GitHub 하위 폴더 설치는 미확인: agy 문서(`scratchpad`에 받았던 `agy-docs-plugins.md:129-150`)를 다시 받아 확인하거나 실제 설치로 확인.
+- **구현 전 할 일.** D2·D7 섹션 목록에 Rollback 반영(D21). 도구: `/skill-creator-pro`로 작성, pstack authoring playbook의 "When in doubt, delete. Keep only prose that changes a decision." 기준 적용(`poteto-mode/playbooks/authoring-a-skill.md`), C1은 별도 확인.
 
 ## Resume
 
-그릴 일시정지 2026-11-13 (3차, D14~D20 확정). 재개 시 `/mattpocock-skills:grill-with-docs`로 이 파일을 읽고 Open 첫 항목(되돌리는 방법)의 제안부터 다시 묻는다. 그 뒤 순서: 같은 PR 재호출 → D6 반대 근거 기록 → Blast Radius 증명 강도 → 스킬 이름·플러그인·배포 경로. 그릴이 끝나면 구현 전에 사용자 승인을 받는다.
+그릴 4차 일시정지 2026-11-14 (C2, D21~D28 확정, D6 보강, C1 배포 사실 추가). 재개 시 `/mattpocock-skills:grill-with-docs`로 이 파일을 읽고 Open 첫 항목(커밋·push 범위)부터 묻는다. 그 뒤 D28 위치. Open이 비면 구현 전 할 일을 정리하고 사용자 승인을 받는다.
 
 사용자 선호: 질문은 하나씩, 짧고 쉬운 한국어(영어 문장 그대로 던지지 말고 번역, 예시 붙이기). 장황하게 말하지 않는다. 근거는 출처 경로:줄(스킬 S*와 아티클 A* 둘 다), 추천을 반드시 붙인다. 출처 간 충돌을 먼저 찾아 보고하고, 참고 스킬들이 실제로 어떻게 하는지 표로 먼저 보인다. 예시는 예시라고 밝힌다. 플랫폼(GitHub 등)을 단정하지 않는다.
 
-주의(이번 세션에서 사용자가 바로잡은 것): 1) 출처 없는 규칙을 과하게 더하지 않는다(D9, D15, D16, D18 축소). 참고 스킬이 한 줄로 끝내는 것은 한 줄로. 2) 새 규칙은 이미 정한 케이스 중 어디에 적용되는지 먼저 확인한다(D17). 3) 새 용어·섹션을 꺼낼 때 그것이 무엇인지 예시로 먼저 설명한다. 4) SKILL.md는 900단어 이하, 영어, 확정 결정은 모두 동작하게(D19).
+주의(이번 세션에서 사용자가 바로잡은 것): 1) 출처 없는 규칙을 과하게 더하지 않는다(D9, D15, D16, D18 축소). 참고 스킬이 한 줄로 끝내는 것은 한 줄로. 2) 새 규칙은 이미 정한 케이스 중 어디에 적용되는지 먼저 확인한다(D17). 3) 새 용어·섹션을 꺼낼 때 그것이 무엇인지 예시로 먼저 설명한다. 4) SKILL.md는 900단어 이하, 영어, 확정 결정은 모두 동작하게(D19, D26). 5) 다른 에이전트 동작은 단정하기 전에 공식 문서를 먼저 확인한다(4차에서 "Codex는 플러그인이 없다"고 잘못 말함, AGENTS.md 규칙).
