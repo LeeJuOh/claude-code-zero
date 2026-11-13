@@ -137,6 +137,16 @@ Run `/plugin` and check the **Installed** tab.
 
 ---
 
+### [one-minute-pr](plugins/one-minute-pr/README.md)
+
+**Problem:** Agent-written PR bodies are long, prove nothing, and skip how to undo the change. Reviewers read the whole diff anyway.
+
+**Solution:** Opens the PR with a one-minute body in fixed sections (Why, What changed, Scope, Tradeoffs, Blast Radius, Rollback, Verification), using only evidence the agent has seen. A bundled script fails the body on wrong section order or a missing Rollback. Works in Claude Code, Codex, Antigravity, and `npx skills`.
+
+`one-minute-pr`
+
+---
+
 ### [vibeproxy-kit](plugins/vibeproxy-kit/README.md)
 
 **Problem:** Wiring VibeProxy manually (OAuth, aliases, config.yaml, shell edits) is error-prone. State is unclear — which backend is actually responding?
