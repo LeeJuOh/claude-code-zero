@@ -1,0 +1,7 @@
+{
+  "name": "one-minute-pr",
+  "description": "Pushes the branch and opens a pull request whose body a human reviewer can judge in one minute. The body uses fixed sections (Why, What changed, Scope, Tradeoffs, Blast Radius, Rollback, Verification) and only evidence the agent has seen. A bundled script fails the body on a wrong section order, a missing Scope or Rollback, an HTML comment, long dashes, curly quotes, or mid-sentence colons outside code. Works in Claude Code, Codex, and Antigravity.",
+  "author": { "name": "LeeJuOh" },
+  "license": "MIT",
+  "keywords": ["pull-request", "pr", "code-review", "git"]
+}
