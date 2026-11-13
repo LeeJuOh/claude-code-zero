@@ -1,6 +1,6 @@
 # 이슈 017 — `one-minute-pr` 스킬 구현 (슬라이스 S1~S4)
 
-> 상태: **진행 중 (S1·S2 완료)** · 생성: 2026-11-14
+> 상태: **진행 중 (S1~S3 완료)** · 생성: 2026-11-14
 > 스펙: `docs/specs/017-pr-body-skill.md`. 결정 D1~D31, 제약 C1·C2는 모두 스펙에 있다. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/one-minute-pr/` (새 플러그인, D28·D30)
 > 원칙: 검사할 수 있는 것은 스크립트로(AGENTS.md "Deterministic first"). SKILL.md에는 규칙만 넣고 근거·기각 이유는 넣지 않는다(D19).
@@ -62,9 +62,10 @@ S1 ─→ S2 ─→ S3 ─→ S4
 시작 전에 `docs/reference/gotchas.md`를 읽는다(AGENTS.md).
 
 **Acceptance criteria** (seam: CLI 검증):
-- [ ] `claude plugin validate .` 통과(`No version specified` 경고는 정상)
-- [ ] Codex 확인 결과가 스펙 C1에 출처와 함께 있음
-- [ ] `npx skills add LeeJuOh/claude-code-zero --list`에 `one-minute-pr`가 나옴(push 뒤)
+- [x] `claude plugin validate .` 통과(`No version specified` 경고는 정상)
+- [x] Codex 확인 결과가 스펙 C1에 출처와 함께 있음
+- [x] `npx skills add LeeJuOh/claude-code-zero --list`에 `one-minute-pr`가 나옴(push 뒤). 결과: 레포 이름만 주면 기본 브랜치 `main`을 읽어 38개, `one-minute-pr` 없음. `npx skills add https://github.com/LeeJuOh/claude-code-zero/tree/develop --list`는 39개, `one-minute-pr` 있음(skills 1.8.1, 2026-11-14). 레포 이름 형식은 릴리스(main 병합) 뒤에 나온다.
+- 바꾼 점: 4단계 `.agents/plugins/marketplace.json`은 만들지 않았다. Codex가 지금 `.claude-plugin/marketplace.json`을 읽는다(스펙 C1). 루트 `README.md`·`README.ko.md` 플러그인 목록에도 넣었다.
 
 **Blocked by**: S2.
 
