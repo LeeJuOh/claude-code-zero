@@ -1,6 +1,6 @@
 # 이슈 017 — `one-minute-pr` 스킬 구현 (슬라이스 S1~S4)
 
-> 상태: **구현 완료 (S1~S4), 리뷰 수정 완료 (0.1.1)** · 생성: 2026-11-14
+> 상태: **릴리스 완료 (v1.88.0, one-minute-pr 0.1.1)** · 생성: 2026-11-14
 > 스펙: `docs/specs/017-pr-body-skill.md`. 결정 D1~D31, 제약 C1·C2는 모두 스펙에 있다. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/one-minute-pr/` (새 플러그인, D28·D30)
 > 원칙: 검사할 수 있는 것은 스크립트로(AGENTS.md "Deterministic first"). SKILL.md에는 규칙만 넣고 근거·기각 이유는 넣지 않는다(D19).
@@ -64,7 +64,7 @@ S1 ─→ S2 ─→ S3 ─→ S4
 **Acceptance criteria** (seam: CLI 검증):
 - [x] `claude plugin validate .` 통과(`No version specified` 경고는 정상)
 - [x] Codex 확인 결과가 스펙 C1에 출처와 함께 있음
-- [x] `npx skills add LeeJuOh/claude-code-zero --list`에 `one-minute-pr`가 나옴(push 뒤). 결과: 레포 이름만 주면 기본 브랜치 `main`을 읽어 38개, `one-minute-pr` 없음. `npx skills add https://github.com/LeeJuOh/claude-code-zero/tree/develop --list`는 39개, `one-minute-pr` 있음(skills 1.8.1, 2026-11-14). 레포 이름 형식은 릴리스(main 병합) 뒤에 나온다.
+- [x] `npx skills add LeeJuOh/claude-code-zero --list`에 `one-minute-pr`가 나옴(push 뒤). 결과: 레포 이름만 주면 기본 브랜치 `main`을 읽어 38개, `one-minute-pr` 없음. `npx skills add https://github.com/LeeJuOh/claude-code-zero/tree/develop --list`는 39개, `one-minute-pr` 있음(skills 1.8.1, 2026-11-14). 레포 이름 형식은 릴리스(main 병합) 뒤에 나온다. v1.88.0 뒤 `npx skills@1.8.1 add LeeJuOh/claude-code-zero --list`는 39개, `one-minute-pr` 있음(2026-11-14).
 - 바꾼 점: 4단계 `.agents/plugins/marketplace.json`은 만들지 않았다. Codex가 지금 `.claude-plugin/marketplace.json`을 읽는다(스펙 C1). 루트 `README.md`·`README.ko.md` 플러그인 목록에도 넣었다.
 
 **Blocked by**: S2.
@@ -189,8 +189,8 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어. frontmat
 
 ## 핸드오프 (2026-11-14, 착수 전 일시정지)
 
-- **다음 할 일 (2026-11-14 갱신).** S1~S4가 `develop`에 있다(`f1194d9`, `50c6a18`, `6758cdd`, `e52b8c3`, 이 커밋). 남은 것은 릴리스(`docs/release-workflow.md`, 사용자 요청 때)와 릴리스 뒤 README의 레포 이름 형식 설치 명령 확인이다. "S4 결과"의 "본 것" 두 줄은 사용자가 정한다.
-- **일시정지 (2026-11-14, 리뷰 뒤).** 정할 것은 모두 끝났다(위 "리뷰 결과와 할 일"의 "정한 것" 5개). 사용자가 "고쳐"라고 하면 시작한다.
+- **다음 할 일 (2026-11-14 갱신).** S1~S4가 `develop`에 있다(`f1194d9`, `50c6a18`, `6758cdd`, `e52b8c3`, 이 커밋). v1.88.0으로 릴리스했다(`main` `8f031a5`). 레포 이름 형식 `npx skills` 목록도 확인했다(S3). "S4 결과"의 "본 것" 두 줄은 "리뷰 결과와 할 일"의 "정한 것"에서 정했다.
+- **일시정지 (2026-11-14, 리뷰 뒤).** 정할 것은 모두 끝났다(위 "리뷰 결과와 할 일"의 "정한 것" 5개). 아래 재개 순서는 끝났다("리뷰 수정 완료").
   재개 순서: 1) 스펙에 결정 반영(D2·D7·D21 Scope 필수, D11 CLI 행, D13 스크립트 범위, D29 push 문장, 새 D32 언어 "정하지 않음")과 출처 줄 고침. 2) 스크립트와 `tests/one-minute-pr/` 테스트(먼저 실패하는 테스트). 3) SKILL.md(900단어 이하, `wc -w`)와 README 4곳(technical-writing, unslop, `docs/reference/readme-style.md`). 4) 이 이슈 S2 표와 S1 체크 항목 3. 5) 버전 `0.1.1`, `claude plugin validate .`, 커밋, push.
   주의: 스크립트 문제 1의 고치는 방법(들여 쓴 펜스는 몇 칸이든 펜스, 빈 줄 뒤 4칸 줄은 코드, 헤딩 끝 `#` 제거, 인라인 코드는 문단 단위)은 사용자에게 설명했고 이의가 없었다. 리뷰 재현 파일은 세션 scratchpad에만 있다. 위 "고칠 것"에 명령과 줄 번호를 남겼다.
   S4 실행 기록(stream, 본문)은 세션 scratchpad에만 있어 세션이 끝나면 사라진다. 결과는 이 이슈의 "S4 결과"에 옮겨 두었다.
