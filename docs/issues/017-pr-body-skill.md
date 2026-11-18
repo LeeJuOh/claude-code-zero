@@ -1,6 +1,6 @@
 # 이슈 017 — `one-minute-pr` 스킬 구현 (슬라이스 S1~S4)
 
-> 상태: **구현 완료 (S1~S4), 리뷰 수정 완료 (0.1.1)** · 생성: 2026-11-14
+> 상태: **릴리스 완료 (v1.88.1, one-minute-pr 0.1.2)** · 생성: 2026-11-14
 > 스펙: `docs/specs/017-pr-body-skill.md`. 결정 D1~D31, 제약 C1·C2는 모두 스펙에 있다. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/one-minute-pr/` (새 플러그인, D28·D30)
 > 원칙: 검사할 수 있는 것은 스크립트로(AGENTS.md "Deterministic first"). SKILL.md에는 규칙만 넣고 근거·기각 이유는 넣지 않는다(D19).
@@ -64,7 +64,7 @@ S1 ─→ S2 ─→ S3 ─→ S4
 **Acceptance criteria** (seam: CLI 검증):
 - [x] `claude plugin validate .` 통과(`No version specified` 경고는 정상)
 - [x] Codex 확인 결과가 스펙 C1에 출처와 함께 있음
-- [x] `npx skills add LeeJuOh/claude-code-zero --list`에 `one-minute-pr`가 나옴(push 뒤). 결과: 레포 이름만 주면 기본 브랜치 `main`을 읽어 38개, `one-minute-pr` 없음. `npx skills add https://github.com/LeeJuOh/claude-code-zero/tree/develop --list`는 39개, `one-minute-pr` 있음(skills 1.8.1, 2026-11-14). 레포 이름 형식은 릴리스(main 병합) 뒤에 나온다.
+- [x] `npx skills add LeeJuOh/claude-code-zero --list`에 `one-minute-pr`가 나옴(push 뒤). 결과: 레포 이름만 주면 기본 브랜치 `main`을 읽어 38개, `one-minute-pr` 없음. `npx skills add https://github.com/LeeJuOh/claude-code-zero/tree/develop --list`는 39개, `one-minute-pr` 있음(skills 1.8.1, 2026-11-14). 레포 이름 형식은 릴리스(main 병합) 뒤에 나온다. v1.88.0 뒤 `npx skills@1.8.1 add LeeJuOh/claude-code-zero --list`는 39개, `one-minute-pr` 있음(2026-11-14).
 - 바꾼 점: 4단계 `.agents/plugins/marketplace.json`은 만들지 않았다. Codex가 지금 `.claude-plugin/marketplace.json`을 읽는다(스펙 C1). 루트 `README.md`·`README.ko.md` 플러그인 목록에도 넣었다.
 
 **Blocked by**: S2.
@@ -127,7 +127,7 @@ S1 ─→ S2 ─→ S3 ─→ S4
 
 ## S2 결정 대조표 (2026-11-14)
 
-SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어. frontmatter 키 `name, description, compatibility`. C1 금지 문자열 grep 0건. "SKILL.md"는 `plugins/one-minute-pr/skills/one-minute-pr/SKILL.md`, "diagrams"·"overflow"는 같은 폴더의 `references/` 파일.
+SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어, 0.1.2에서 900단어. frontmatter 키 `name, description, compatibility`. C1 금지 문자열 grep 0건. "SKILL.md"는 `plugins/one-minute-pr/skills/one-minute-pr/SKILL.md`, "diagrams"·"overflow"는 같은 폴더의 `references/` 파일.
 
 | 결정 | 동작하는 문장 (위치) |
 |---|---|
@@ -152,7 +152,7 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어. frontmat
 | D19 900단어·영어 | 898단어, 영어 |
 | D20 PR 템플릿 무시 | "even when the repo has a PR template" (SKILL.md Body) |
 | D21 Rollback | "always keep Scope and Rollback" + `## Rollback` 항목 + 스크립트 필수 검사와 `<!--` 실패 |
-| D22 다시 부를 때 | "On a second run for the same PR, write the body again from the whole branch instead of patching it …" (SKILL.md Steps 뒤) |
+| D22 다시 부를 때 | "On a second run for the same PR, rewrite the body from the whole branch. … Rewrite an earlier overflow comment, or delete it if nothing overflows." (SKILL.md Steps 뒤, 0.1.2) |
 | D23 Blast Radius | "one fact that makes it safe or risky, with how far you checked it … write \"unproven\"" (SKILL.md Body) |
 | D24 이름 | 해당 없음 (`name: one-minute-pr`) |
 | D25 자동, 좁힌 트리거 | description "Use when the user asks to open, create, or make a pull request or merge request." `disable-model-invocation` 없음 |
@@ -189,8 +189,8 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어. frontmat
 
 ## 핸드오프 (2026-11-14, 착수 전 일시정지)
 
-- **다음 할 일 (2026-11-14 갱신).** S1~S4가 `develop`에 있다(`f1194d9`, `50c6a18`, `6758cdd`, `e52b8c3`, 이 커밋). 남은 것은 릴리스(`docs/release-workflow.md`, 사용자 요청 때)와 릴리스 뒤 README의 레포 이름 형식 설치 명령 확인이다. "S4 결과"의 "본 것" 두 줄은 사용자가 정한다.
-- **일시정지 (2026-11-14, 리뷰 뒤).** 정할 것은 모두 끝났다(위 "리뷰 결과와 할 일"의 "정한 것" 5개). 사용자가 "고쳐"라고 하면 시작한다.
+- **다음 할 일 (2026-11-14 갱신).** S1~S4가 `develop`에 있다(`f1194d9`, `50c6a18`, `6758cdd`, `e52b8c3`, 이 커밋). v1.88.0으로 릴리스했다(`main` `8f031a5`). 레포 이름 형식 `npx skills` 목록도 확인했다(S3). "S4 결과"의 "본 것" 두 줄은 "리뷰 결과와 할 일"의 "정한 것"에서 정했다.
+- **일시정지 (2026-11-14, 리뷰 뒤).** 정할 것은 모두 끝났다(위 "리뷰 결과와 할 일"의 "정한 것" 5개). 아래 재개 순서는 끝났다("리뷰 수정 완료").
   재개 순서: 1) 스펙에 결정 반영(D2·D7·D21 Scope 필수, D11 CLI 행, D13 스크립트 범위, D29 push 문장, 새 D32 언어 "정하지 않음")과 출처 줄 고침. 2) 스크립트와 `tests/one-minute-pr/` 테스트(먼저 실패하는 테스트). 3) SKILL.md(900단어 이하, `wc -w`)와 README 4곳(technical-writing, unslop, `docs/reference/readme-style.md`). 4) 이 이슈 S2 표와 S1 체크 항목 3. 5) 버전 `0.1.1`, `claude plugin validate .`, 커밋, push.
   주의: 스크립트 문제 1의 고치는 방법(들여 쓴 펜스는 몇 칸이든 펜스, 빈 줄 뒤 4칸 줄은 코드, 헤딩 끝 `#` 제거, 인라인 코드는 문단 단위)은 사용자에게 설명했고 이의가 없었다. 리뷰 재현 파일은 세션 scratchpad에만 있다. 위 "고칠 것"에 명령과 줄 번호를 남겼다.
   S4 실행 기록(stream, 본문)은 세션 scratchpad에만 있어 세션이 끝나면 사라진다. 결과는 이 이슈의 "S4 결과"에 옮겨 두었다.
@@ -198,3 +198,4 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어. frontmat
 - **나중에 할 일 (사용자 2026-11-14).** codex-advisor(`evals/`, `hooks/tests/`, `scripts/tests/`)와 vision-powers(`scripts/*.test.js`)의 개발용 파일을 플러그인 폴더 밖으로 옮긴다. 017과 별도 작업이다. 옮긴 뒤 검사 스크립트를 붙인다.
 - **push.** S3·S4의 설치 확인(`npx skills`, agy URL)은 GitHub에 있는 코드를 받는다. 그래서 슬라이스마다 커밋하고 `develop`에 push한다. agy URL은 `.../tree/develop/plugins/one-minute-pr`를 쓴다. `main` 병합, 태그, PR은 하지 않는다(릴리스는 `docs/release-workflow.md`, 사용자가 따로 요청).
 - **제안값 (바꿀 수 있음).** 스크립트 이름 `check-body.mjs`, 첫 버전 `0.1.0`. 테스트 위치 `tests/one-minute-pr/`는 사용자가 확정했다.
+- **0.1.2 (2026-11-18).** 다시 실행할 때 본문만 새로 쓰고 넘친 내용의 옛 코멘트(D3)는 그대로 두던 빈틈을 막았다. SKILL.md는 옛 코멘트를 새 본문에 맞게 다시 쓰고, 넘치지 않으면 지운다(D22). 넘친 내용을 본문 안 `<details>`로 옮기는 안은 기각했다. 접은 내용이 squash 커밋 본문에 들어갈 수 있고(pstack S1:13, 저장소 설정에 따름), `check-body.mjs`가 접은 줄까지 세어 40줄 경고가 난다. 계기는 `raw-articles/Post by @p44v9n on X.md`(에이전트 설명 전체를 본문 `<details>`로 접는 사례). SKILL.md 900단어 유지. v1.88.1로 릴리스.
