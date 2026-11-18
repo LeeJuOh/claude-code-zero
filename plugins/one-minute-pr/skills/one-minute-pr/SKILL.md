@@ -17,7 +17,7 @@ The body is for a human reviewer who has the diff. When rules conflict, choose w
 5. **Post.** Find the forge from the remote URL. If its CLI is installed and signed in, create the PR ready for review, not as a draft. If the branch already has an open PR, replace its title and whole body. With no usable CLI, print the title and the body. Do not ask for a preview.
 6. **Reply.** Give the PR link. Name each kind of needed evidence that you did not find. When the user sends evidence or a change, edit the body and check it again.
 
-On a second run for the same PR, rewrite the body from the whole branch. Keep old evidence that still matches the code. Include decisions from review. Rewrite an earlier overflow comment, or delete it if nothing overflows.
+On a second run for the same PR, rewrite the body from the whole branch. Keep old evidence that still matches the code. Include decisions from review. Then read `references/overflow.md` for an earlier overflow comment.
 
 ## Title
 

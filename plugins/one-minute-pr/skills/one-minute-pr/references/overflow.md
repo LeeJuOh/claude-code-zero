@@ -11,4 +11,13 @@ Ask the user where the overflow goes, and wait for the answer:
 
 Use `<details>` only when the forge renders it. Otherwise the tag shows as plain text, so post the comment without it.
 
+Start the comment with the line `More details (one-minute-pr)`. With `<details>`, that line is the `<summary>`. The forge CLI posts as the user, so this line is the only way a later run can tell your comment from theirs.
+
 This is the only question the skill asks. When nothing overflows, do not ask.
+
+## Second run
+
+Look for a PR comment whose first line or `<summary>` is `More details (one-minute-pr)`. Never edit or delete any other comment.
+
+- If the new body overflows, edit that comment. Do not ask again.
+- If nothing overflows now, delete it.
