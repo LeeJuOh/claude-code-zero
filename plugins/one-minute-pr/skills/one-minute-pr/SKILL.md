@@ -11,13 +11,13 @@ The body is for a human reviewer who has the diff. When rules conflict, choose w
 ## Steps
 
 1. **Check the branch.** If there are uncommitted changes, stop and tell the user to commit them. Do not commit for the user. Push the branch with an upstream, even when you cannot post the PR. Never force-push.
-2. **Collect the evidence you have seen.** Use only results you saw. Do not run tests or take screenshots to make new evidence. Never invent a result.
+2. **Collect the evidence you have seen.** Do not run tests or take screenshots for new evidence. Never invent a result.
 3. **Write the title and the body** with the rules below. Save the body to a temporary file outside the repo.
 4. **Check the body.** From this skill's folder, run `node scripts/check-body.mjs <body-file>`. Fix each problem until it exits 0. A line-count warning does not block.
 5. **Post.** Find the forge from the remote URL. If its CLI is installed and signed in, create the PR ready for review, not as a draft. If the branch already has an open PR, replace its title and whole body. With no usable CLI, print the title and the body. Do not ask for a preview.
 6. **Reply.** Give the PR link. Name each kind of needed evidence that you did not find. When the user sends evidence or a change, edit the body and check it again.
 
-On a second run for the same PR, write the body again from the whole branch instead of patching it. Keep old evidence that still matches the code. Include decisions from review.
+On a second run for the same PR, rewrite the body from the whole branch. Keep old evidence that still matches the code. Include decisions from review. Rewrite an earlier overflow comment, or delete it if nothing overflows.
 
 ## Title
 

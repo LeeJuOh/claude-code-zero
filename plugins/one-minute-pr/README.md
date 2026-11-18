@@ -41,6 +41,6 @@ Requires git and Node.js 18 or later.
 | Rollback | How to undo the change. Always present |
 | Verification | One to three real runs and their output |
 
-The skill drops a section with nothing to say, but keeps Scope and Rollback. Before it posts, a bundled script checks the body. The check fails on a wrong section order, a missing Scope or Rollback, an HTML comment, long dashes, curly quotes, and mid-sentence colons outside code. The body stays near 40 lines. When there is more, the skill asks whether it goes in a folded PR comment or a document you link.
+The skill drops a section with nothing to say, but keeps Scope and Rollback. Before it posts, a bundled script checks the body. The check fails on a wrong section order, a missing Scope or Rollback, an HTML comment, long dashes, curly quotes, and mid-sentence colons outside code. The body stays near 40 lines. When there is more, the skill asks whether it goes in a folded PR comment or a document you link. When you run the skill again on the same PR, it rewrites that comment too, or deletes it if nothing overflows.
 
 The skill does not commit for you, does not run tests or take screenshots to make new evidence, and does not follow the repo's PR template.

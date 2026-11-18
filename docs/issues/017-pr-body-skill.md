@@ -1,6 +1,6 @@
 # 이슈 017 — `one-minute-pr` 스킬 구현 (슬라이스 S1~S4)
 
-> 상태: **릴리스 완료 (v1.88.0, one-minute-pr 0.1.1)** · 생성: 2026-11-14
+> 상태: **릴리스 완료 (v1.88.1, one-minute-pr 0.1.2)** · 생성: 2026-11-14
 > 스펙: `docs/specs/017-pr-body-skill.md`. 결정 D1~D31, 제약 C1·C2는 모두 스펙에 있다. 스펙과 이 문서가 다르면 스펙이 맞다.
 > 대상 플러그인: `plugins/one-minute-pr/` (새 플러그인, D28·D30)
 > 원칙: 검사할 수 있는 것은 스크립트로(AGENTS.md "Deterministic first"). SKILL.md에는 규칙만 넣고 근거·기각 이유는 넣지 않는다(D19).
@@ -127,7 +127,7 @@ S1 ─→ S2 ─→ S3 ─→ S4
 
 ## S2 결정 대조표 (2026-11-14)
 
-SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어. frontmatter 키 `name, description, compatibility`. C1 금지 문자열 grep 0건. "SKILL.md"는 `plugins/one-minute-pr/skills/one-minute-pr/SKILL.md`, "diagrams"·"overflow"는 같은 폴더의 `references/` 파일.
+SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어, 0.1.2에서 900단어. frontmatter 키 `name, description, compatibility`. C1 금지 문자열 grep 0건. "SKILL.md"는 `plugins/one-minute-pr/skills/one-minute-pr/SKILL.md`, "diagrams"·"overflow"는 같은 폴더의 `references/` 파일.
 
 | 결정 | 동작하는 문장 (위치) |
 |---|---|
@@ -152,7 +152,7 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어. frontmat
 | D19 900단어·영어 | 898단어, 영어 |
 | D20 PR 템플릿 무시 | "even when the repo has a PR template" (SKILL.md Body) |
 | D21 Rollback | "always keep Scope and Rollback" + `## Rollback` 항목 + 스크립트 필수 검사와 `<!--` 실패 |
-| D22 다시 부를 때 | "On a second run for the same PR, write the body again from the whole branch instead of patching it …" (SKILL.md Steps 뒤) |
+| D22 다시 부를 때 | "On a second run for the same PR, rewrite the body from the whole branch. … Rewrite an earlier overflow comment, or delete it if nothing overflows." (SKILL.md Steps 뒤, 0.1.2) |
 | D23 Blast Radius | "one fact that makes it safe or risky, with how far you checked it … write \"unproven\"" (SKILL.md Body) |
 | D24 이름 | 해당 없음 (`name: one-minute-pr`) |
 | D25 자동, 좁힌 트리거 | description "Use when the user asks to open, create, or make a pull request or merge request." `disable-model-invocation` 없음 |
@@ -198,3 +198,4 @@ SKILL.md 898단어(`wc -w`, frontmatter 포함), 0.1.1에서 900단어. frontmat
 - **나중에 할 일 (사용자 2026-11-14).** codex-advisor(`evals/`, `hooks/tests/`, `scripts/tests/`)와 vision-powers(`scripts/*.test.js`)의 개발용 파일을 플러그인 폴더 밖으로 옮긴다. 017과 별도 작업이다. 옮긴 뒤 검사 스크립트를 붙인다.
 - **push.** S3·S4의 설치 확인(`npx skills`, agy URL)은 GitHub에 있는 코드를 받는다. 그래서 슬라이스마다 커밋하고 `develop`에 push한다. agy URL은 `.../tree/develop/plugins/one-minute-pr`를 쓴다. `main` 병합, 태그, PR은 하지 않는다(릴리스는 `docs/release-workflow.md`, 사용자가 따로 요청).
 - **제안값 (바꿀 수 있음).** 스크립트 이름 `check-body.mjs`, 첫 버전 `0.1.0`. 테스트 위치 `tests/one-minute-pr/`는 사용자가 확정했다.
+- **0.1.2 (2026-11-18).** 다시 실행할 때 본문만 새로 쓰고 넘친 내용의 옛 코멘트(D3)는 그대로 두던 빈틈을 막았다. SKILL.md는 옛 코멘트를 새 본문에 맞게 다시 쓰고, 넘치지 않으면 지운다(D22). 넘친 내용을 본문 안 `<details>`로 옮기는 안은 기각했다. 접은 내용이 squash 커밋 본문에 들어갈 수 있고(pstack S1:13, 저장소 설정에 따름), `check-body.mjs`가 접은 줄까지 세어 40줄 경고가 난다. 계기는 `raw-articles/Post by @p44v9n on X.md`(에이전트 설명 전체를 본문 `<details>`로 접는 사례). SKILL.md 900단어 유지. v1.88.1로 릴리스.
