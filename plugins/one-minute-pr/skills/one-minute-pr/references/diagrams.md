@@ -1,14 +1,14 @@
 # Diagrams
 
-Draw the diagram from the diff. If the repo, the PR, or the conversation already has a diagram that fits the change, use it as it is.
+Draw the changed flow from the diff. If the repo, the PR, or the conversation already has a diagram that fits the change, use it as it is.
 
 To make a new diagram, use the first option that works:
 
-1. A diagram skill or tool that you have, when it gives an image or text that the forge renders.
-2. A diagram syntax that the forge renders, such as Mermaid.
-3. A text diagram in a code block.
+1. Use a tool requested by the user or specified by the repo if it is available and the forge can display its output.
+2. Otherwise, write a Mermaid diagram if the forge renders Mermaid.
+3. Otherwise, draw a text diagram in a fenced `text` block.
 
-Do not make an HTML page. Link one only when it already exists. Upload an image diagram to the PR, as with screenshots.
+Do not create an HTML page for the PR. Upload an image diagram to the PR, as with screenshots.
 
 When you draw with option 2 or 3, follow these rules:
 
