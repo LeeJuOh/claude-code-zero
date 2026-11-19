@@ -12,7 +12,7 @@ Status: README changes implemented on 2026-11-20.
 - [x] Settle the plugin README structure and exceptions.
 - [x] Rewrite approved content with technical-writing and unslop guidance.
 - [x] Reconcile command lists with shipped components and align both marketplace languages.
-- [ ] Verify demo playback in both published READMEs.
+- [x] Played both embedded demos on the published develop branch in signed-in Chrome. Playback advanced to 0:03 in English and 0:08 in Korean.
 
 ## Existing wiki evidence
 
