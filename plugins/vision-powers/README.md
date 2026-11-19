@@ -1,14 +1,12 @@
 # vision-powers
 
-> Analyze Claude Code plugins and visualize development artifacts as interactive HTML reports.
+> Understand a change, plugin, or document through diagrams and an annotated report.
 
 ## Why
 
-Claude Code is strong at analysis but flat at expression. Whether terminal text or markdown, relationships, hierarchies, and proportions are described in words — never shown. You read that A depends on B depends on C, but past a handful of nodes, no amount of prose makes the shape visible.
+A diff can show you a changed function without showing the caller that depends on it. Before you judge the patch, `diff-visual` introduces the surrounding system, draws the relationships, and walks through the changed code. Geoffrey Litt's [explain-diff](https://gist.github.com/geoffreylitt/a29df1b5f9865506e8952488eac3d524) illustrates this approach.
 
-vision-powers gives Claude visual expression. Diagrams show relationships, structured sections make output navigable, and both HTML and markdown outputs improve on Claude's bare output. HTML goes further — interactive, spatial, shareable as a single file. Markdown fits where browsers can't: PR descriptions, chat threads, headless CI.
-
-The thesis behind this plugin echoes what Thariq Shihipar (Anthropic, Claude Code team) articulated in [The unreasonable effectiveness of HTML](https://thariqs.github.io/html-effectiveness/) — HTML preserves the spatial, structural, and interactive information that plain text flattens.
+Use an HTML report when the reader needs to explore a diagram. Choose Markdown when the explanation belongs in a PR or chat. For examples of what a diagram can show alongside code, see Thariq Shihipar's [The unreasonable effectiveness of HTML](https://thariqs.github.io/html-effectiveness/).
 
 ## Features
 

@@ -1,12 +1,12 @@
 # toolbox
 
-> Developer utility skills that fill the gaps in Claude Code's built-in capabilities.
+> Hand off a session, move secrets out of configuration files, read a sitemap, or update reference repositories.
 
 ## Why
 
-Claude Code doesn't come with everything. Handoff between sessions loses context. Secrets get hardcoded into config files. XML sitemaps need manual parsing. Reference repos drift out of date.
+When work moves to a new session, the next agent needs to know what you decided, what is still open, and where to look. A transcript leaves it to the reader to find those details. `handoff` writes them to a file you can open in the next session. Matt Pocock describes the same problem in [his guide to session handoffs](https://www.aihero.dev/skills-handoff).
 
-toolbox is a collection of small, focused skills — each solves one specific friction point.
+Call the other three tools independently when you need to load a secret from an environment file, find URLs in a sitemap, or pull changes into local reference repositories.
 
 ## Features
 

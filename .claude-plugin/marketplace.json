@@ -11,13 +11,13 @@
     {
       "name": "notebooklm-connector",
       "source": "./plugins/notebooklm-connector",
-      "version": "1.3.3",
+      "version": "1.3.4",
       "description": "Query Google NotebookLM notebooks from Claude Code through Chrome automation, with coverage-checked follow-up queries and a notebook library (add, list, search, enable/disable, remove)."
     },
     {
       "name": "toolbox",
       "source": "./plugins/toolbox",
-      "version": "2.0.1",
+      "version": "2.0.2",
       "description": "Personal utility commands and tools for Claude Code"
     },
     {
@@ -29,25 +29,25 @@
     {
       "name": "vision-powers",
       "source": "./plugins/vision-powers",
-      "version": "5.0.0",
+      "version": "5.0.1",
       "description": "Visualize Claude Code plugins, git diffs, and markdown docs as HTML or markdown reports with diagrams. On a capable account, HTML reports publish as claude.ai Artifacts (--local writes a local file instead). Skills: plugin-visual (plugin audit with security and architecture), diff-visual (catch up on a diff before review, with a quiz), doc-visual (diagrams per section), fact-check (verify claims against code and git history), report-manager (list, open, delete, search, refine). Reports take --format md and --lang."
     },
     {
       "name": "worktree-plus",
       "source": "./plugins/worktree-plus",
-      "version": "3.2.2",
+      "version": "3.2.3",
       "description": "Replaces Claude Code's built-in worktree — aligns with native git worktree where CC diverges (HEAD base, origin/* auto-tracking) and adds layers native lacks: .worktreeinclude/.worktreelink for gitignored files with a /worktree-setup skill that scans and builds them, upstream-aware removal guard, idempotent re-entry."
     },
     {
       "name": "skill-creator-pro",
       "source": "./plugins/skill-creator-pro",
-      "version": "2.1.0",
+      "version": "2.1.1",
       "description": "Create, test, and iteratively improve Claude Code skills with the official lean coaching loop, an eval harness for benchmarking with variance analysis, automated description-trigger optimization, and a user-started autonomous output-quality optimizer"
     },
     {
       "name": "codex-advisor",
       "source": "./plugins/codex-advisor",
-      "version": "5.2.0",
+      "version": "5.2.1",
       "description": "Get Codex's second opinion — and actually trust it: a different model reviews your code, plans, and research, and a fresh independent verifier subagent — never the session that wrote the work — judges every finding (Agreed/Disputed/Nuanced/Unverifiable, plus False Positive/Uncited from the citation script) before you act, catching hallucinated citations. Skills: setup, review, adversarial, rescue, verify, research, status, result, cancel, transfer. Task delegation (rescue) wraps your verbatim request in adaptive, preview-approved prompt blocks. Transfer hands the whole session off to a resumable Codex thread (v1.0.5+). Prompt-running skills accept --model/--effort via config.toml, also passed at run time when a project's own .codex/config.toml would override them."
     },
     {
@@ -72,7 +72,7 @@
     {
       "name": "one-minute-pr",
       "source": "./plugins/one-minute-pr",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "description": "Pushes the branch and opens a pull request whose body a human reviewer can judge in one minute. The body uses fixed sections (Why, What changed, Scope, Tradeoffs, Blast Radius, Rollback, Verification) and only evidence the agent has seen. A bundled script fails the body on a wrong section order, a missing Scope or Rollback, an HTML comment, long dashes, curly quotes, or mid-sentence colons outside code. Works in Claude Code, Codex, and Antigravity."
     }
   ]
