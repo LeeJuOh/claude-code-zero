@@ -1,18 +1,12 @@
 # skill-creator-pro
 
-> The official skill-creator teaches Claude how to create skills. This plugin keeps that lean loop and adds a few hard-won ideas for skills that survive contact with real use.
+> Create a skill and compare what an agent produces with and without it.
 
 ## Why
 
-Making a skill is easy. Making one that triggers when it should, holds up across a thousand different prompts, and doesn't rot the moment the model gets smarter — that's the hard part. Most homegrown skill tooling overcorrects into a heavy framework: forced taxonomies, multi-phase pipelines, rituals you fill in before you've written a line.
+A skill can load for the right request and still give poor instructions. It can also work well when called by name but never get picked from its description. Those problems need different tests.
 
-skill-creator-pro goes the other way. It *is* Anthropic's official [skill-creator](https://github.com/anthropics/claude-code-plugins/tree/main/plugins/skill-creator) — the same warm, flexible coaching loop (draft → test → review with you → improve) and the same eval harness — with only a handful of additions, each one chosen because it changes a decision rather than adds a step:
-
-- **A "is a skill even the right primitive?" gate** before you build, so you don't write a skill when the need really belongs in CLAUDE.md, a hook, or an MCP server.
-- **A retire-don't-just-patch review**, because a skill written to paper over a model limitation becomes dead weight once the next model fixes it.
-- **A pre-ship platform check** for the silent traps — reserved names, YAML booleans, unquoted colons, name collisions — that pass review and then break loading.
-
-Everything else is the official tool. That's the whole idea: official + a few genuinely good ideas, not a framework to learn.
+The description optimizer checks which requests select the skill. The task evaluations run the same prompts with and without it so you can compare the actual work. The plugin builds on [Anthropic's skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator). It also helps you decide when to use a hook instead, when to retire a skill, and what to check before publishing it.
 
 ## Two skills, two speeds
 

@@ -1,35 +1,12 @@
 # codex-advisor
 
-> **Get Codex's second opinion — and actually trust it.** A different model reviews your code, plans, and research; a fresh verifier subagent — not the session that wrote the work — judges every finding it returns, so neither a hallucinated citation nor an author's self-approval slips through.
+> Get a second code review from Codex and see which findings the code supports.
 
 ## Why
 
-Codex is powerful, but calling it from inside Claude Code has sharp edges
-that bite you at exactly the wrong moment.
+An author knows what a patch was meant to do. A reviewer needs to check what it actually does. A second model can spot an assumption the author missed, but it can also point to a line that does not support its claim.
 
-**Example — what used to happen in v4.0.1:**
-
-```
-/codex-advisor:codex-review --base develop, don't pre-analyze the code yourself — just send the review prompt and double-check Codex's result
-```
-
-That single line triggered four failures in a row:
-
-1. The trailing `,` was forwarded to `git rev-parse develop,` — unknown revision.
-2. The free-text meta-instruction (`don't pre-analyze...`) was shoved into Codex's argument parser as focus text, which the built-in reviewer rejects.
-3. The review ran in the foreground and hit Bash's per-call timeout, so the wrapper got SIGKILLed mid-flight.
-4. Claude improvised a manual polling loop with a wrong job ID, burned 28 minutes, and never ran the double-check.
-
-The frustrating part is that everything the user wrote was reasonable —
-they said "review against develop, don't pre-analyze, just send the
-prompt and double-check". All four failures were wrapper bugs.
-
-**What v4.3 does instead:**
-
-- Parses the input with LM intelligence first: drops the trailing comma, attempts to obey the meta-instruction ("don't pre-analyze"), and runs a clean `review --base develop`.
-- Launches long-running reviews in the background so Bash's tool timeout never kills them.
-- Uses the official `status --wait` wait mechanism instead of improvised polling.
-- Hands Codex's findings to a fresh subagent that never saw this conversation, and reports what it sends back: Agreed, Disputed, Nuanced, Unverifiable, plus False Positive (hallucinated file/function) and Uncited from the citation script.
+With `/codex-review`, Codex examines the change. A fresh verifier reads its findings and checks the evidence without the author's conversation. The report tells you which findings to act on, which to dispute, and which still need evidence.
 
 ## What you get
 

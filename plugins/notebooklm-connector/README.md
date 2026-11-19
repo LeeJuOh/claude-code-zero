@@ -1,18 +1,18 @@
 # notebooklm-connector
 
-> Query your Google NotebookLM notebooks directly from Claude Code — source-grounded answers without leaving the terminal.
+> Ask questions about your NotebookLM sources from Claude Code and follow the citations back to the notebook.
 
 ## Why
 
-Working with external documentation in Claude Code means bad trade-offs: feeding entire docs into context burns tokens, Claude may hallucinate when it doesn't have the information, and copy-pasting between NotebookLM and your editor kills flow.
+When your reference material lives in NotebookLM, a question about an API can interrupt the work in your editor. You switch to the notebook, ask, then copy the answer back. This connector sends the question through Chrome and returns the answer with citations you can inspect.
 
-This plugin bridges Claude Code and NotebookLM through Chrome automation. You ask a question in natural language, and it routes to NotebookLM — which answers strictly from your uploaded documents. Coverage analysis detects gaps and sends follow-up queries (default 3 rounds, configurable via `max_followups`) before presenting the final answer with citations.
+If the answer leaves part of the question open, the agent can ask follow-up questions in the same notebook. Set `max_followups` to limit those rounds.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| Source-grounded answers | Responses come only from your uploaded documents, not training data |
+| Source-grounded answers | Ask about your notebook sources and inspect the citations returned with the answer |
 | Automatic follow-up | Coverage analysis detects gaps and re-queries — default 3 rounds, configurable via `max_followups` |
 | Input length pre-validation | Condenses prompts over `max_query_length` (default 40k characters) before they reach NotebookLM |
 | Smart Add | Agent opens the notebook and parses the actual title, topics, and description — not just URL slug |

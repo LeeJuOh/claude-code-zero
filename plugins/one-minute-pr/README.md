@@ -1,12 +1,12 @@
 # one-minute-pr
 
-> A pull request body that a reviewer can judge in one minute.
+> Give reviewers a short PR or MR description with the reason for the change and evidence from the work.
 
 ## Why
 
-An agent can write a PR body faster than a reviewer can read it. The usual result is a long summary of the diff, claims with no proof, and no word on how to undo the change. The reviewer then reads the whole diff to find what the body should have said, and the review queue grows.
+Agent-written pull requests and merge requests were so long that I struggled to find what I needed to review. I built `one-minute-pr` to keep the description short and show why the change matters, what it affects, and how it was checked.
 
-This skill opens the PR with a short body in a fixed order: why the change exists, the shapes that changed, what it leaves out, what it could break, how to roll it back, and what was run to prove it. It uses only evidence the agent has seen. When it cannot find evidence, the body says "not found" and the reply tells you what to send.
+The body includes the scope and a way to undo the change. When verification evidence is missing, the skill says so. Hugo's examples show what evidence can look like in practice, from a screenshot of a UI change to the output of a real run. [What My Pull Requests Look Like Now](https://hugorcd.com/writing/what-my-pull-requests-look-like-now)
 
 ## Quick Start
 

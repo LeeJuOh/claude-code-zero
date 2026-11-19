@@ -1,6 +1,6 @@
 # README redesign
 
-Status: Paused during grilling at the user's request on 2026-11-20. Implementation is not approved. Resume from [the handoff](../handoff/018-readme-resume.md).
+Status: Implemented on 2026-11-20.
 
 ## Goal
 
@@ -18,40 +18,18 @@ The user supplied this ranking on 2026-11-20:
 
 Use this featured order. Do not infer usage frequency from the ranking.
 
-The user then placed toolbox and notebooklm-connector after these five, in that order. The user described claw-mo, claw-mux, vibeproxy-kit, and rubber-duck-tutor as rarely used and experimental. Keep those four available in a lower experimental section. No removal was requested. The public section labels remain undecided.
+The user then placed toolbox and notebooklm-connector after these five, in that order. The user described claw-mo, claw-mux, vibeproxy-kit, and rubber-duck-tutor as rarely used and experimental. Keep those four available in a lower experimental section. All four remain available.
 
-## Open decisions
+## Published layout
 
-- Decide the introduction format and length after the problem, intent, and outcome are settled.
-- Decide the marketplace introduction, installation path, and demo placement.
-- Decide the common plugin README structure and justified exceptions.
-- Decide how to keep English and Korean marketplace content aligned.
+The two marketplace READMEs introduce the same seven plugins in the same order, followed by a short list of experimental plugins. Each core entry links to the plugin README. Both languages list the skills shipped under each core plugin. The demo stays above installation, and the marketplace install remains the first option.
 
-## Presentation history
-
-The user initially accepted a compact selection table, then clarified that introductions must convey the problem, intent, and outcome. A one-sentence limit is not a final requirement. Placement of installation instructions and demos remains open.
-
-## Subsequent content direction
-
-The user clarified that brevity is not the objective by itself. Each introduction must explain the problem, the reason for the approach, and the intended outcome. The final length and presentation remain open after this clarification.
-
-For one-minute-pr, the user identified long, verbose agent-written PR and MR bodies as the personal motivation and said articles informed the design. Lead with that experience. Do not imply a novel invention or claim that everyone follows this approach. Spec 017 identifies Hugo's article on evidence-bearing PRs and Colin Breck's criticism of context-free AI summaries among its sources. Proposed wording remains subject to the ongoing interview.
+Each core plugin README opens with its purpose and a concrete reason to use it. The existing usage and configuration sections remain specific to the plugin. For one-minute-pr, the author identified the original problem: long agent-written PR and MR descriptions made it hard to tell what needed review. The introduction uses that experience directly.
 
 ## Research scope
 
-Search the existing llm-wiki collection for articles and repositories related to the problems addressed by all seven core plugins. Follow wiki links to local original articles and reference repositories. Use those sources to strengthen the explanation of why each plugin exists. This is not a broad search for new external material, a feature expansion, or a popularity ranking. Present researched wording one plugin at a time during grilling.
-
-## Evidence
-
-- The current marketplace README gives all 11 plugins extended problem-and-solution sections. one-minute-pr appears tenth.
-- The marketplace lists context-health-visual, which is absent from the current vision-powers skills directory.
-- README.ko.md omits codex-transfer from its codex-advisor command list while README.md includes it.
-- Reference repositories include mattpocock/skills, cursor/plugins/pstack, emilkowalski/skills, and addyosmani/agent-skills. Compare current upstream content with local references before adopting details.
+The [issue](../issues/018-readme-redesign.md) links the research notes for all seven plugins. They connect articles from llm-wiki to the original text or local reference repository. The outside examples explain the problem. Claims about plugin behavior come from the shipped components.
 
 ## Demo investigation
 
-The user reports that the embedded video previously worked. Chrome reproduces an unavailable-media error in the develop README. Opening the English attachment directly in the signed-in browser reaches the video. Chrome media diagnostics identify H.264 and AAC tracks and record playback initialization. Anonymous HTTP requests to both language-specific attachment URLs return 404. These observations do not establish deletion, an encoding defect, or an access-policy cause.
-
-## Related issue
-
-[Implementation tasks](../issues/018-readme-redesign.md).
+On the signed-in English README, Chrome reported that the page's media policy blocked the attachment address in the HTML video tag. Both READMEs now keep their original attachment URLs on separate Markdown lines. GitHub renders each as a player with a media host that the page allows. Anonymous requests to the original attachment URLs returned 404 during investigation. That was a separate observation.

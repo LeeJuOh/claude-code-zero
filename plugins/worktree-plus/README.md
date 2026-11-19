@@ -1,35 +1,26 @@
 # worktree-plus
 
-> Drop-in replacement for Claude Code's built-in worktree — with gitignored file support.
+> Set up local files in each Claude Code worktree and check for unfinished work before cleanup.
 
 ## Why
 
-You create a worktree, `cd` in, run `npm start` — it fails because `.env` and your local config didn't come with you. You recreate them, finish the work, delete the worktree — and your uncommitted tweaks are gone with it.
+A separate worktree lets another session edit a branch while you keep working. If the app needs a gitignored `.env`, the new checkout alone is not enough to start it. List files to copy in `.worktreeinclude` and large directories to share in `.worktreelink`.
 
-That's Claude Code's built-in worktree. The full list of what bites:
-
-- **Skips gitignored files** — `.env`, local config, and local-only docs don't follow you in, so the project won't run until you recreate them.
-- **No cleanup guard** — `remove` wipes uncommitted changes, untracked files, and unpushed commits without warning.
-- **Branches from the remote default**, not `HEAD` — you can't fork a feature branch off the work you're sitting on.
-- **No remote tracking** — new branches don't track matching `origin/*`, so `git pull` / `push` need `-u` every time.
-- **Fixed prefix and path** — always `worktree-<name>` under `.claude/worktrees/`, no per-repo customization.
-- **Fails on re-entry** — trying to reuse an existing directory or branch errors out instead of reopening.
-
-worktree-plus fixes all of these, and applies everywhere Claude Code creates worktrees: `claude -w` at startup, `EnterWorktree` mid-session, and subagents with `isolation: "worktree"`.
+When you remove the worktree, the hook checks for uncommitted changes and untracked files. For a branch with an upstream, it also checks for commits you have yet to push. If the branch has no upstream, cleanup keeps the branch.
 
 ## Features
 
-| Feature | Built-in | worktree-plus |
-|---------|----------|---------------|
-| Branch base | Remote default branch | HEAD (configurable via `worktreeplus.baseBranch`) |
-| Worktree path | `.claude/worktrees/<name>` (fixed) | Configurable via `worktreeplus.dirBase` |
-| Remote tracking | None | `--guess-remote` support (respects `worktree.guessRemote`) |
-| Branch prefix | `worktree-` (fixed) | Configurable via `worktreeplus.branchPrefix` |
-| Gitignored files | Not copied | `.worktreeinclude` copy / `.worktreelink` symlink |
-| Re-entry behavior | Fails if directory/branch exists | Reuses existing worktree (idempotent) |
-| Audit trail | None | Per-worktree `.worktree.log` with the create event, base branch, include/link outcomes, and BLOCKED reasons |
-| Cleanup protection | None | Blocks removal if uncommitted changes, untracked files, or unpushed commits; only deletes branches with upstream |
-| Setup help | N/A | Bundled `/worktree-setup` skill: view/set/reset settings, and scan your gitignored files to build `.worktreeinclude` / `.worktreelink` |
+| Feature | Behavior |
+|---------|----------|
+| Branch base | HEAD (configurable via `worktreeplus.baseBranch`) |
+| Worktree path | Configurable via `worktreeplus.dirBase` |
+| Remote tracking | `--guess-remote` support (respects `worktree.guessRemote`) |
+| Branch prefix | Configurable via `worktreeplus.branchPrefix` |
+| Gitignored files | `.worktreeinclude` copy / `.worktreelink` symlink |
+| Re-entry behavior | Reuses existing worktree (idempotent) |
+| Audit trail | Per-worktree `.worktree.log` with the create event, base branch, include/link outcomes, and BLOCKED reasons |
+| Cleanup protection | Blocks removal if uncommitted changes, untracked files, or unpushed commits; only deletes branches with upstream |
+| Setup help | Bundled `/worktree-setup` skill: view/set/reset settings, and scan your gitignored files to build `.worktreeinclude` / `.worktreelink` |
 
 ## Prerequisites
 
